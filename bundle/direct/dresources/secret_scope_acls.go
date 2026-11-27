@@ -92,7 +92,9 @@ func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*Secre
 func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
-		return "", nil, err
+		// setACLs reads the current ACLs and puts or deletes only the ones that differ, so
+		// repeating it after a failed request is safe.
+		return "", nil, retrySafe(err)
 	}
 	return state.ScopeName, nil, nil
 }

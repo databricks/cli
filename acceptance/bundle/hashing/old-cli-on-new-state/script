@@ -5,7 +5,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
 trap cleanup EXIT
 
-title "Current CLI deploys: serialized_dashboard is stored as a content hash\n"
+title "Current CLI deploys: serialized_dashboard is stored as a content hash"
 $CLI bundle deploy &> LOG.deploy_new
 contains.py '!panic' '!internal error' < LOG.deploy_new > /dev/null
 print_state.py | gron.py | grep serialized_dashboard
@@ -16,7 +16,7 @@ title "Old CLI on the hashed state plans a drift update, not a recreate or crash
 $CLI_1_16_1 bundle plan &> LOG.plan_old
 contains.py '!recreate' '!panic' '!internal error' < LOG.plan_old > /dev/null
 
-title "The old CLI redeploys and writes full content back, so the drift is self-correcting\n"
+title "The old CLI redeploys and writes full content back, so the drift is self-correcting"
 $CLI_1_16_1 bundle deploy &> LOG.deploy_old
 contains.py '!panic' '!internal error' < LOG.deploy_old > /dev/null
 print_state.py | gron.py | grep serialized_dashboard

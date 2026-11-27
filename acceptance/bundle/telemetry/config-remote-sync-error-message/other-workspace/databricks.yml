@@ -1,0 +1,16 @@
+bundle:
+  name: config-remote-sync-telemetry-other-workspace
+
+workspace:
+  host: $DATABRICKS_HOST
+  workspace_id: "1111"
+
+targets:
+  bad:
+    variables:
+      undefined_var: value
+  profile-workspace:
+    workspace:
+      workspace_id: "2222"
+    variables:
+      undefined_var: value

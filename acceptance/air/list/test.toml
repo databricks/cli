@@ -11,7 +11,13 @@ Response.Body = ''
 # The current runs carry an ai_runtime_task (not modeled by the typed SDK), which
 # is why the CLI parses the response raw. Both runs belong to the default user
 # (tester@databricks.com, from the built-in scim/v2/Me handler). The second run
-# has no AI task and must be filtered out.
+# has the shape of the official multi-task DAB (a notebook prep task before the
+# ai_runtime_task) and must be listed from its AIR task. The third run has two
+# AI Runtime tasks that ended differently: it lists as two rows, each naming its
+# task and reporting its own status. The fourth run has no AI task and must be
+# filtered out. This stub ignores the query: the real scan asks
+# for run_type=SUBMIT_RUN, so a bundle-deployed job, which runs as a JOB_RUN, is
+# reached only through the run index (`--all-status`), not this scan.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/list"
 Response.Body = '''
@@ -31,6 +37,67 @@ Response.Body = '''
           "deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}]
         }
       }]
+    },
+    {
+      "run_id": 334747067049500,
+      "run_name": "air-byot-multitask-dag",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608700000,
+      "end_time": 1717608730000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "tasks": [
+        {
+          "task_key": "prep",
+          "run_id": 334747067049501,
+          "start_time": 1717608700000,
+          "end_time": 1717608705000,
+          "notebook_task": {"notebook_path": "/Workspace/Users/tester@databricks.com/prep"}
+        },
+        {
+          "task_key": "train",
+          "run_id": 334747067049502,
+          "start_time": 1717608710000,
+          "end_time": 1717608730000,
+          "depends_on": [{"task_key": "prep"}],
+          "ai_runtime_task": {
+            "experiment": "air-byot-multitask-dag",
+            "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+          }
+        }
+      ]
+    },
+    {
+      "run_id": 334747067049510,
+      "run_name": "train-then-eval",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608600000,
+      "end_time": 1717608660000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+      "tasks": [
+        {
+          "task_key": "train",
+          "run_id": 334747067049511,
+          "start_time": 1717608600000,
+          "end_time": 1717608640000,
+          "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+          "ai_runtime_task": {
+            "experiment": "train-then-eval",
+            "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+          }
+        },
+        {
+          "task_key": "eval",
+          "run_id": 334747067049512,
+          "start_time": 1717608645000,
+          "end_time": 1717608660000,
+          "depends_on": [{"task_key": "train"}],
+          "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
+          "ai_runtime_task": {
+            "experiment": "train-then-eval",
+            "deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]
+          }
+        }
+      ]
     },
     {
       "run_id": 999000999000,

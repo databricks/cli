@@ -1,0 +1,15 @@
+
+=== Where the testing API is off, a run of all tests is rejected, not run as an older test-only update
+
+>>> musterr [CLI] pipelines test --pipeline-id [UUID] --junit-xml out.not-enabled.xml
+Error: Pipeline testing is not enabled for this pipeline. Contact your Databricks account team to join the preview.
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {}
+  }
+}

@@ -3,6 +3,7 @@
 package log_delivery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "log-delivery",
-		Short: `These APIs manage log delivery configurations for this account.`,
-		Long: `These APIs manage log delivery configurations for this account. The two
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "log-delivery",
+	Short:   `These APIs manage log delivery configurations for this account.`,
+	GroupID: "billing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage log delivery configurations for this account. The two
   supported log types for this API are _billable usage logs_ (AWS only) and
   _audit logs_ (AWS and GCP). This feature is in Public Preview. This feature
   works with all account ID types.
@@ -87,14 +93,13 @@ func New() *cobra.Command {
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
   [GCP]: https://docs.databricks.com/gcp/en/admin/account-settings/audit-logs
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
-  [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
-		GroupID: "billing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -106,8 +111,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

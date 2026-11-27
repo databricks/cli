@@ -6,10 +6,17 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
+	"slices"
+	"strings"
 	"sync"
+	"time"
 )
 
 type execOption func(context.Context, *exec.Cmd) error
+
+// ExecOption is an option of Background and Forwarded. Code that passes options on to them names the type with it.
+type ExecOption = execOption
 
 func WithEnv(key, value string) execOption {
 	return func(ctx context.Context, c *exec.Cmd) error {
@@ -27,6 +34,37 @@ func WithEnvs(envs map[string]string) execOption {
 				return err
 			}
 		}
+		return nil
+	}
+}
+
+// WithoutEnv removes key from the environment that the process inherits, so the process does not see the variable at all.
+// It is not the same as setting the variable to an empty value, which a process may read as set.
+func WithoutEnv(key string) execOption {
+	return func(_ context.Context, c *exec.Cmd) error {
+		c.Env = slices.DeleteFunc(c.Env, func(kv string) bool {
+			return envEntryHasKey(runtime.GOOS, kv, key)
+		})
+		return nil
+	}
+}
+
+// envEntryHasKey reports whether the environment entry kv, of the form key=value, sets key. Windows variable names are
+// case-insensitive, so there the case of key does not matter. goos is a parameter so that tests can check both.
+func envEntryHasKey(goos, kv, key string) bool {
+	name, _, _ := strings.Cut(kv, "=")
+	if goos == "windows" {
+		return strings.EqualFold(name, key)
+	}
+	return name == key
+}
+
+// WithWaitDelay bounds how long Background waits for the output of the process once the process has exited or been
+// killed. Without it, a child that a launcher started and that holds the output open would block Wait past a timeout.
+// Unlike WithProcessGroup, it does not change the process group, so the process stays in the terminal's foreground group.
+func WithWaitDelay(delay time.Duration) execOption {
+	return func(_ context.Context, c *exec.Cmd) error {
+		c.WaitDelay = delay
 		return nil
 	}
 }

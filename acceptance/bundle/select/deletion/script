@@ -8,7 +8,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Deploy both jobs.
-title "Initial deploy\n"
+title "Initial deploy"
 trace $CLI bundle deploy
 # Register [KEEP_ID]/[GONE_ID] from state while both still exist, so the delete
 # request body below is masked deterministically.
@@ -21,7 +21,7 @@ envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
 # one. The plan is filtered to just its deletion.
 trace $CLI bundle plan --select jobs.gone
 
-title "bundle deploy --select jobs.gone\n"
+title "bundle deploy --select jobs.gone"
 trace $CLI bundle deploy --select jobs.gone
 
 # The delete call targeted 'gone' only.
@@ -32,7 +32,7 @@ trace $CLI bundle plan
 
 # The same works with an unqualified name. Deploy 'gone' again, then remove it from
 # config so it is once more orphaned in state.
-title "Redeploy gone, then select it by unqualified name\n"
+title "Redeploy gone, then select it by unqualified name"
 envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 replace_ids.py
@@ -40,7 +40,7 @@ envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
 
 trace $CLI bundle plan --select gone
 
-title "bundle deploy --select gone\n"
+title "bundle deploy --select gone"
 trace $CLI bundle deploy --select gone
 
 trace print_requests.py --sort //jobs/delete

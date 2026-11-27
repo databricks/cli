@@ -15,10 +15,7 @@ from databricks.bundles.secret_scopes._models.azure_key_vault_secret_scope_metad
     AzureKeyVaultSecretScopeMetadata,
     AzureKeyVaultSecretScopeMetadataParam,
 )
-from databricks.bundles.secret_scopes._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.secret_scopes._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.secret_scopes._models.scope_backend_type import (
     ScopeBackendType,
     ScopeBackendTypeParam,
@@ -58,7 +55,7 @@ class SecretScope(Resource):
 
     permissions: VariableOrList[SecretScopePermission] = field(default_factory=list)
     """
-    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
     """
 
     @classmethod
@@ -94,7 +91,7 @@ class SecretScopeDict(TypedDict, total=False):
 
     permissions: VariableOrList[SecretScopePermissionParam]
     """
-    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+    The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
     """
 
 

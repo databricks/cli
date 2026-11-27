@@ -1,0 +1,14 @@
+# Suppressed: best-effort history warnings caused by a dropped connection or the drain budget.
+echo "Warn: Failed to record deployment history: recording operation for resources.pipelines.foo: response body: stream error: stream ID 51; INTERNAL_ERROR; received from peer"
+echo "Warn: Failed to complete deployment history version: response body: stream error: stream ID 9429; INTERNAL_ERROR; received from peer"
+echo "Warn: Could not enable deployment history for this deploy: failed to create deployment: response body: stream error: stream ID 43; INTERNAL_ERROR; received from peer"
+echo "Warn: Could not record deployment history for this destroy: failed to create deployment version: unexpected EOF"
+echo "Warn: Could not read deployment history: response body: stream error: stream ID 13; INTERNAL_ERROR; received from peer"
+echo "Warn: Could not delete deployment history: response body: stream error: stream ID 7; INTERNAL_ERROR; received from peer"
+echo "Warn: Failed to record deployment history: context deadline exceeded"
+
+# Kept: errors the service returns, and transport errors outside deployment history.
+echo "Warn: Could not enable deployment history for this deploy: failed to create deployment: "
+echo "Warn: Could not enable deployment history for this deploy: failed to create deployment version: operations.resource_key must have a known resource type"
+echo "Warn: Failed to complete deployment history version: Internal error"
+echo "Error: cannot create resources.secrets.foo: response body: stream error: stream ID 73; INTERNAL_ERROR; received from peer"

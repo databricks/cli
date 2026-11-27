@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.PolicyTag:
+          type: fixed
+          value: from-policy

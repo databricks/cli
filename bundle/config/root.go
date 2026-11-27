@@ -18,7 +18,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 type Script struct {
@@ -733,7 +733,7 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 	}
 
 	// Resolve the Go type that represents a single resource in this group.
-	typ, ok := ResourcesTypes[resourceType]
+	typ, ok := ResourcesTypes()[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("no such resource type in the config: %q", resourceType)
 	}

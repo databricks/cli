@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -39,6 +40,16 @@ func reportRunAsNotSupported(resourceType string, location diag.Location, curren
 		Locations: []diag.Location{location},
 		Severity:  diag.Error,
 	}}
+}
+
+// Resource groups (by plural name) whose API does not support a run_as identity
+// different from the deploying user. Dashboards are not listed because only those
+// with embed_credentials set are affected; validateRunAs checks them individually.
+var runAsUnsupportedResources = []string{
+	"model_serving_endpoints",
+	"quality_monitors",
+	"data_quality_monitors",
+	"apps",
 }
 
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
@@ -80,46 +91,33 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	// Model serving endpoints do not support run_as in the API.
-	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"model_serving_endpoints",
-			b.Config.GetLocation("resources.model_serving_endpoints"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
+	// Errors are reported in AllResources order. Dashboards are checked inside
+	// the loop to keep their place in that order.
+	for _, group := range b.Config.Resources.AllResources() {
+		resourceType := group.Description.PluralName
 
-	// Monitors do not support run_as in the API.
-	if len(b.Config.Resources.QualityMonitors) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"quality_monitors",
-			b.Config.GetLocation("resources.quality_monitors"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
-	// Dashboards do not support run_as in the API.
-	if len(b.Config.Resources.Dashboards) > 0 {
-		for key, dashboard := range b.Config.Resources.Dashboards {
-			if !dashboard.EmbedCredentials {
-				continue
+		// Dashboards only reject run_as when embed_credentials is set, so check each one.
+		if resourceType == "dashboards" {
+			for key, dashboard := range b.Config.Resources.Dashboards {
+				if !dashboard.EmbedCredentials {
+					continue
+				}
+				diags = diags.Extend(reportRunAsNotSupported(
+					"dashboards with embed_credentials set to true",
+					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
+					b.Config.Workspace.CurrentUser.UserName,
+					identity,
+				))
 			}
-			diags = diags.Extend(reportRunAsNotSupported(
-				"dashboards with embed_credentials set to true",
-				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
-				b.Config.Workspace.CurrentUser.UserName,
-				identity,
-			))
+			continue
 		}
-	}
 
-	// Apps do not support run_as in the API.
-	if len(b.Config.Resources.Apps) > 0 {
+		if len(group.Resources) == 0 || !slices.Contains(runAsUnsupportedResources, resourceType) {
+			continue
+		}
 		diags = diags.Extend(reportRunAsNotSupported(
-			"apps",
-			b.Config.GetLocation("resources.apps"),
+			resourceType,
+			b.Config.GetLocation("resources."+resourceType),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
@@ -216,7 +214,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Track the use of the legacy run_as mode.
-	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
+	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.UseLegacyRunAs))
 
 	// Track whether top level run_as is set.
 	b.Metrics.AddBoolValue("run_as_set", b.Config.RunAs != nil)
@@ -228,7 +226,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	// User has opted to use the legacy behavior of run_as with the
 	// experimental.use_legacy_run_as flag.
-	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
+	if b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.UseLegacyRunAs) {
 		if b.Config.RunAs.GroupName != "" || slices.Contains(b.Config.RunAs.ForceSendFields, "GroupName") {
 			return diag.Errorf("run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity")
 		}

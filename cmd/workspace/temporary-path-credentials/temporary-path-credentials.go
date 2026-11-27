@@ -3,6 +3,7 @@
 package temporary_path_credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "temporary-path-credentials",
-		Short: `Temporary Path Credentials are short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
-		Long: `Temporary Path Credentials are short-lived, downscoped credentials used to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "temporary-path-credentials",
+	Short:   `Temporary Path Credentials are short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Temporary Path Credentials are short-lived, downscoped credentials used to
   access external cloud storage locations registered in Databricks. These
   credentials provide secure and time-limited access to data in cloud
   environments such as AWS, Azure, and Google Cloud. Each cloud provider has its
@@ -46,14 +52,13 @@ func New() *cobra.Command {
   EXTERNAL USE LOCATION is an external location level permission that can only
   be granted by the external location owner explicitly and is not included in
   external location ownership or ALL PRIVILEGES on the external location for
-  security reasons.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  security reasons.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryPathCredentials())
@@ -62,8 +67,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start generate-temporary-path-credentials command

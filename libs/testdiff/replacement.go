@@ -58,25 +58,25 @@ func (r *ReplacementsContext) Replace(s string) string {
 			continue
 		}
 
-		matches := repl.Old.FindAllString(s, -1)
-		if len(matches) <= 1 {
+		// Assign a stable [N] suffix per distinct matched value, in order of first
+		// appearance. Number only when there is more than one distinct value: a lone
+		// value (even if repeated) stays unsuffixed, so the common single-match output
+		// is identical to the non-distinct case.
+		seen := make(map[string]int)
+		for _, match := range repl.Old.FindAllString(s, -1) {
+			if _, ok := seen[match]; !ok {
+				seen[match] = len(seen)
+			}
+		}
+		if len(seen) <= 1 {
 			s = repl.Old.ReplaceAllString(s, repl.New)
 			continue
 		}
 
-		nextIndex := 0
-		seen := make(map[string]int)
 		s = repl.Old.ReplaceAllStringFunc(s, func(match string) string {
-			idx, ok := seen[match]
-			if !ok {
-				idx = nextIndex
-				seen[match] = idx
-				nextIndex++
-			}
-
 			submatches := repl.Old.FindStringSubmatchIndex(match)
 			replaced := repl.Old.ExpandString(nil, repl.New, match, submatches)
-			return string(replaced) + "[" + strconv.Itoa(idx) + "]"
+			return string(replaced) + "[" + strconv.Itoa(seen[match]) + "]"
 		})
 	}
 	return s
@@ -227,9 +227,12 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 	}
 }
 
+// PrepareReplacementsUUID registers the UUID replacement. Distinct UUIDs in a single
+// output are numbered ([UUID][0], [UUID][1], ...) so the golden pins which value
+// appears where; a single distinct UUID stays [UUID], even if repeated.
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
-	r.append(uuidRegex, "[UUID]", 0)
+	r.Repls = append(r.Repls, Replacement{Old: uuidRegex, New: "[UUID]", Distinct: true})
 }
 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {

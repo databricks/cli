@@ -1,0 +1,20 @@
+
+>>> [CLI] air get 123
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Status        ● SUCCESS                                       │
+│  Submitted     2023-11-14 22:13 UTC                            │
+│  Retries       0                                               │
+│  Max Retries   3                                               │
+│  Duration      12s                                             │
+│  Experiment    my-exp                                          │
+│  MLflow Run    N/A                                             │
+│  User          user@example.com                                │
+│  Accelerators  1x A10                                          │
+│  Environment   databricks_ai_v6                                │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]

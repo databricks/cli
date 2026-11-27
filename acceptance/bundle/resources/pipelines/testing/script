@@ -1,0 +1,9 @@
+title "Relative test paths resolve to the deployed workspace paths"
+trace $CLI bundle validate -o json | jq .resources.pipelines.orders.testing
+
+title "Deploy sends testing, with the local wheel uploaded"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/pipelines --nostamp | jq '{method, path, testing: .body.testing}'
+
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

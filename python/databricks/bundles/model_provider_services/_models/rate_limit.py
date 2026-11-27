@@ -35,7 +35,7 @@ class RateLimit:
 
     renewal_period: VariableOr[RateLimitRateLimitRenewalPeriod]
     """
-    Renewal period.
+    Interval after which the request and token counters reset.
     """
 
     principal: VariableOrOptional[str] = None
@@ -76,7 +76,7 @@ class RateLimitDict(TypedDict, total=False):
 
     renewal_period: VariableOr[RateLimitRateLimitRenewalPeriodParam]
     """
-    Renewal period.
+    Interval after which the request and token counters reset.
     """
 
     principal: VariableOrOptional[str]

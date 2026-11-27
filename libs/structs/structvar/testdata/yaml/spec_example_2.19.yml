@@ -10,6 +10,6 @@ hexadecimal: 0xC
 # Octal numbers:
 #   - YAML 1.1: prefix is "0"
 #   - YAML 1.2: prefix is "0o"
-# The "gopkg.in/yaml.v3" package accepts both for backwards compat.
+# The "go.yaml.in/yaml/v4" package accepts both for backwards compat.
 # We accept only the YAML 1.2 prefix "0o".
 octal11: 012345

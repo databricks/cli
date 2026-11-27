@@ -20,10 +20,19 @@ class AppResourceDatabase:
     """"""
 
     database_name: VariableOr[str]
+    """
+    Name of the database within the instance.
+    """
 
     instance_name: VariableOr[str]
+    """
+    Name of the Lakebase database instance.
+    """
 
     permission: VariableOr[AppResourceDatabaseDatabasePermission]
+    """
+    Permission to grant the app on the database.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceDatabaseDict") -> "Self":
@@ -37,10 +46,19 @@ class AppResourceDatabaseDict(TypedDict, total=False):
     """"""
 
     database_name: VariableOr[str]
+    """
+    Name of the database within the instance.
+    """
 
     instance_name: VariableOr[str]
+    """
+    Name of the Lakebase database instance.
+    """
 
     permission: VariableOr[AppResourceDatabaseDatabasePermissionParam]
+    """
+    Permission to grant the app on the database.
+    """
 
 
 AppResourceDatabaseParam = AppResourceDatabaseDict | AppResourceDatabase

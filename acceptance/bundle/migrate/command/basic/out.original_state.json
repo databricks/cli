@@ -2,7 +2,7 @@
   "version": 4,
   "terraform_version": "1.5.5",
   "serial": 4,
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "outputs": {},
   "resources": [
     {
@@ -199,7 +199,7 @@
             "filters": [],
             "gateway_definition": [],
             "health": null,
-            "id": "[UUID]",
+            "id": "[UUID][1]",
             "ingestion_definition": [],
             "last_modified": [UNIX_TIME_MILLIS],
             "latest_updates": null,
@@ -233,19 +233,19 @@
             "serverless": false,
             "serverless_compute_id": null,
             "state": "IDLE",
-            "storage": "dbfs:/pipelines/[UUID]",
+            "storage": "dbfs:/pipelines/[UUID][1]",
             "tags": {
               "myjob_id": "[TEST_JOB_ID]",
               "myjob_name": "Test Migration Job",
               "myjob_timeout": "0",
               "myvolume_id": "mycat.myschema.myvol",
               "volume_catalog_name": "mycat",
-              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][2]/volumes/[UUID][3]"
             },
             "target": null,
             "timeouts": null,
             "trigger": [],
-            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID][1]",
             "usage_policy_id": null
           },
           "sensitive_attributes": [],
@@ -277,7 +277,7 @@
               }
             ],
             "schema_name": "myschema",
-            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][2]/volumes/[UUID][3]",
             "volume_path": "/Volumes/mycat/myschema/myvol",
             "volume_type": "MANAGED"
           },

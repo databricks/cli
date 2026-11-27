@@ -1,0 +1,7 @@
+# Local only, and not because the claims are redundant: the failure is produced by a marker the
+# fake looks for in a feature name, since a real teardown fails on infrastructure no request can
+# ask for. Against a workspace this case would simply succeed.
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]

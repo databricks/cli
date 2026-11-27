@@ -64,6 +64,13 @@ updates:
       interval: "monthly"
     cooldown:
       default-days: 7
+    groups:
+      # Without grouping, an action used in both directories gets one PR per
+      # directory. Group by dependency name so each action bump is a single PR.
+      github-actions:
+        group-by: dependency-name
+        patterns:
+          - "*"
     # tagging.yml is generated and maintained externally. Ignore
     # actions/create-github-app-token since it is only used in tagging.yml.
     exclude-paths:

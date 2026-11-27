@@ -1,0 +1,44 @@
+# Hint-exempt commands such as aitools and version skip the install hint; jobs list
+# exercises it against the fake server and prints nothing to stdout.
+sethome ./home
+unset XDG_CONFIG_HOME GEMINI_CLI_HOME CODEX_THREAD_ID
+
+title "Codex is hinted once per thread"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI jobs list
+
+title "Cursor exposes no session id, so it is hinted once per machine"
+trace CURSOR_AGENT=1 $CLI jobs list
+trace CURSOR_AGENT=1 $CLI jobs list
+
+title "Copilot CLI maps to the copilot registry agent"
+trace COPILOT_CLI=1 $CLI jobs list
+
+title "Gemini CLI with its own Databricks skills is not hinted"
+sethome ./gemini-home
+trace GEMINI_CLI=1 $CLI jobs list
+sethome ./home
+
+title "Agents the CLI cannot install for are not hinted"
+trace WINDSURF_AGENT=1 $CLI jobs list
+trace VSCODE_AGENT=1 $CLI jobs list
+
+title "Nested agents are not hinted"
+trace CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 $CLI jobs list
+
+# With skill hints on, the text names the skills list command. The Cursor line
+# was hinted above with the install text, yet its skills text prints: each text
+# has its own throttle.
+title "With skill hints on, Codex is hinted with the skills list command once per thread"
+trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-4 $CLI jobs list
+trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-4 $CLI jobs list
+
+title "With skill hints on, Cursor is hinted once per machine with the skills list command"
+trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 $CLI jobs list
+trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 $CLI jobs list
+
+# The skills subcommands are stubs until their own changes land, so `skills list`
+# fails with its not-implemented message; the point is that it prints no hint.
+title "With skill hints on, skills commands print no hint"
+musterr trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-5 $CLI skills list

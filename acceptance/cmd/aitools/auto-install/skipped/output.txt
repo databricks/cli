@@ -1,0 +1,97 @@
+
+=== CI: not installed, reported once for the version
+
+>>> CI=true [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_CI","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> CI=true [CLI] jobs list
+
+>>> print_telemetry
+
+>>> cursor_skills
+(no skills)
+
+=== DATABRICKS_AITOOLS_AUTO_INSTALL=false: not installed
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL=false [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_OPTOUT","holdout_arm":"TREATMENT","interactive":false}}
+
+=== auto-install disable: not installed
+
+>>> [CLI] aitools auto-install disable
+Automatic installation of Databricks AI tools is disabled.
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_OPTOUT","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+(no skills)
+
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
+=== commands that never trigger it
+
+>>> [CLI] version
+Databricks CLI v[CLI_VERSION]
+
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
+>>> print_telemetry
+
+>>> DATABRICKS_CACHE_ENABLED=false [CLI] jobs list
+
+>>> print_telemetry
+
+>>> auto_install_state
+{
+  "last_version": "1.32.0",
+  "consented": true,
+  "id": "treatment-machine"
+}
+
+>>> cursor_skills
+(no skills)
+
+=== the gate is off: nothing printed or reported, and the version is settled
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+
+>>> auto_install_state
+{
+  "last_version": "1.33.0",
+  "consented": true,
+  "id": "treatment-machine"
+}
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+
+>>> cursor_skills
+(no skills)
+
+=== a machine in the holdout: not installed
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_HOLDOUT","holdout_arm":"HOLDOUT","interactive":false}}
+
+>>> cursor_skills
+(no skills)
+
+=== no agent config directory: nothing to install
+
+>>> [CLI] jobs list
+
+>>> print_telemetry

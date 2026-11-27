@@ -3,6 +3,7 @@
 package table_constraints
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "table-constraints",
-		Short: `Primary key and foreign key constraints encode relationships between fields in tables.`,
-		Long: `Primary key and foreign key constraints encode relationships between fields in
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "table-constraints",
+	Short:   `Primary key and foreign key constraints encode relationships between fields in tables.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Primary key and foreign key constraints encode relationships between fields in
   tables.
 
   Primary and foreign keys are informational only and are not enforced. Foreign
@@ -34,14 +40,13 @@ func New() *cobra.Command {
 
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
-  existing tables.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  existing tables.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

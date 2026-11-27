@@ -38,11 +38,9 @@ rm -rf pipeline_root src
 
 
 title "Sync with broken local paths"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

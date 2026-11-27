@@ -1,5 +1,6 @@
 
 === Create: the declared library installs on the new cluster
+
 >>> print_requests.py //libraries/install
 {
   "method": "POST",
@@ -17,6 +18,7 @@
 }
 
 === Update: adding a library installs the declared set on the running cluster
+
 >>> print_requests.py //libraries/install //libraries/uninstall
 {
   "method": "POST",
@@ -39,6 +41,7 @@
 }
 
 === Delete: emptying the libraries list uninstalls them
+
 >>> print_requests.py //libraries/uninstall //libraries/install
 {
   "method": "POST",

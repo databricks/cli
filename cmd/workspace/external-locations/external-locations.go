@@ -3,6 +3,7 @@
 package external_locations
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "external-locations",
-		Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
-		Long: `An external location is an object that combines a cloud storage path with a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "external-locations",
+	Short:   `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `An external location is an object that combines a cloud storage path with a
   storage credential that authorizes access to the cloud storage path. Each
   external location is subject to Unity Catalog access-control policies that
   control which users and groups can access the credential. If a user does not
@@ -34,14 +40,13 @@ func New() *cobra.Command {
   credentials directly.
 
   To create external locations, you must be a metastore admin or a user with the
-  **CREATE_EXTERNAL_LOCATION** privilege.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  **CREATE_EXTERNAL_LOCATION** privilege.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -54,8 +59,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -94,7 +97,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: Name of the external location.
-    URL: Path URL of the external location.
+    URL: URL of the cloud storage path that the external location points to,
+      including the scheme (for example s3://, abfss://, or gs://).
     CREDENTIAL_NAME: Name of the storage credential used with this location.`
 
 	cmd.Annotations = make(map[string]string)
@@ -235,7 +239,7 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetExternalLocationRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an external location.`
@@ -302,7 +306,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata.`)
 	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include external locations not bound to the workspace.`)
 
 	// Limit flag for total result capping.
@@ -393,12 +397,12 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
 	// TODO: complex arg: file_event_queue
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the external location.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)
 	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
-	cmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `Path URL of the external location.`)
+	cmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `URL of the cloud storage path that the external location points to, including the scheme (for example s3://, abfss://, or gs://).`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an external location.`

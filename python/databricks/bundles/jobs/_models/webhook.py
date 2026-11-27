@@ -16,6 +16,9 @@ class Webhook:
     """"""
 
     id: VariableOr[str]
+    """
+    The ID of the notification destination to call. Must be a UUID.
+    """
 
     @classmethod
     def from_dict(cls, value: "WebhookDict") -> "Self":
@@ -29,6 +32,9 @@ class WebhookDict(TypedDict, total=False):
     """"""
 
     id: VariableOr[str]
+    """
+    The ID of the notification destination to call. Must be a UUID.
+    """
 
 
 WebhookParam = WebhookDict | Webhook

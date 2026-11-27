@@ -1,0 +1,65 @@
+
+=== The create request times out but the branch was created: deploy uses the branch
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_branches.dev
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+GET /api/2.0/postgres/projects/test-pg-proj/branches/dev
+
+=== The create request times out and the branch was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_branches.dev: retrying after 504 Gateway Timeout from POST /api/2.0/postgres/projects/test-pg-proj/branches
+Created postgres_branches.dev
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+GET /api/2.0/postgres/projects/test-pg-proj/branches/dev
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+GET /api/2.0/postgres/projects/test-pg-proj/branches/dev/operations/[UUID][0]
+
+=== The branch cannot be read after the create request times out: deploy fails with the create error
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_branches.dev: checking whether branch projects/test-pg-proj/branches/dev was created: Fault injected by test.
+Error: cannot create resources.postgres_branches.dev: Fault injected by test. (504 DEADLINE_EXCEEDED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj/branches?branch_id=dev
+HTTP Status: 504 Gateway Timeout
+API error_code: DEADLINE_EXCEEDED
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+GET /api/2.0/postgres/projects/test-pg-proj/branches/dev
+
+=== With replace_existing, a timed-out create request is repeated without reading the branch
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_branches.dev: retrying after 504 Gateway Timeout from POST /api/2.0/postgres/projects/test-pg-proj/branches
+Created postgres_branches.dev
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+POST /api/2.0/postgres/projects/test-pg-proj/branches
+GET /api/2.0/postgres/projects/test-pg-proj/branches/dev/operations/[UUID][1]

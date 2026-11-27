@@ -1,0 +1,9 @@
+# git-repo-init creates a repo in the test directory so the deploy has git metadata.
+Ignore = [
+    '.git',
+]
+
+# The commit is different on every run.
+[[Repls]]
+Old = '\b[0-9a-f]{40}\b'
+New = '[COMMIT_SHA]'

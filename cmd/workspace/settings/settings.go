@@ -3,6 +3,8 @@
 package settings
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
@@ -28,43 +30,45 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "settings",
-		Short:   `Workspace Settings API allows users to manage settings at the workspace level.`,
-		Long:    `Workspace Settings API allows users to manage settings at the workspace level.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "settings",
+	Short:   `Workspace Settings API allows users to manage settings at the workspace level.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Workspace Settings API allows users to manage settings at the workspace level.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
-
 	// Add subservices
-	cmd.AddCommand(aibi_dashboard_embedding_access_policy.New())
-	cmd.AddCommand(aibi_dashboard_embedding_approved_domains.New())
-	cmd.AddCommand(automatic_cluster_update.New())
-	cmd.AddCommand(compliance_security_profile.New())
-	cmd.AddCommand(dashboard_email_subscriptions.New())
-	cmd.AddCommand(default_namespace.New())
-	cmd.AddCommand(default_warehouse_id.New())
-	cmd.AddCommand(disable_legacy_access.New())
-	cmd.AddCommand(disable_legacy_dbfs.New())
-	cmd.AddCommand(enable_export_notebook.New())
-	cmd.AddCommand(enable_notebook_table_clipboard.New())
-	cmd.AddCommand(enable_results_downloading.New())
-	cmd.AddCommand(enhanced_security_monitoring.New())
-	cmd.AddCommand(llm_proxy_partner_powered_workspace.New())
-	cmd.AddCommand(restrict_workspace_admins.New())
-	cmd.AddCommand(sql_results_download.New())
+	cmd.AddCommand(root.NewCommand(ctx, aibi_dashboard_embedding_access_policy.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, aibi_dashboard_embedding_approved_domains.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, automatic_cluster_update.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, compliance_security_profile.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, dashboard_email_subscriptions.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, default_namespace.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, default_warehouse_id.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, disable_legacy_access.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, disable_legacy_dbfs.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, enable_export_notebook.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, enable_notebook_table_clipboard.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, enable_results_downloading.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, enhanced_security_monitoring.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, llm_proxy_partner_powered_workspace.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, restrict_workspace_admins.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, sql_results_download.Spec))
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // end service Settings

@@ -30,17 +30,13 @@ class SubscriptionAttachment:
 
     data_attachment: VariableOrOptional[SubscriptionAttachmentDataAttachment] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
+    Optional: The configuration for the underlying data of dashboard widgets attached as tabular
     data files. If not specified, no tabular data is attached.
     """
 
     page_attachment: VariableOrOptional[SubscriptionAttachmentPageAttachment] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
+    Optional: The selection of dashboard pages included in the attached PDF. If not specified,
     only the first page is included.
     """
 
@@ -57,17 +53,13 @@ class SubscriptionAttachmentDict(TypedDict, total=False):
 
     data_attachment: VariableOrOptional[SubscriptionAttachmentDataAttachmentParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The configuration for the underlying data of dashboard widgets attached as tabular
+    Optional: The configuration for the underlying data of dashboard widgets attached as tabular
     data files. If not specified, no tabular data is attached.
     """
 
     page_attachment: VariableOrOptional[SubscriptionAttachmentPageAttachmentParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional: The selection of dashboard pages included in the attached PDF. If not specified,
+    Optional: The selection of dashboard pages included in the attached PDF. If not specified,
     only the first page is included.
     """
 

@@ -11,6 +11,7 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
 }
 
 === Jobs one and two run_as is updated to bundle-level setting (service_principal_name)
+
 >>> jq .resources.jobs.job_one.run_as
 {
   "service_principal_name": "my_service_principal"
@@ -22,6 +23,7 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
 }
 
 === Pipeline's CAN_VIEW permissions for my_service_principal is upgraded to IS_OWNER
+
 >>> jq .resources.pipelines.nyc_taxi_pipeline.permissions
 [
   {
@@ -39,6 +41,7 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
 ]
 
 === Other resources are not affected
+
 >>> jq .resources.jobs.job_three.run_as
 {
   "service_principal_name": "my_service_principal_for_job"

@@ -1,0 +1,16 @@
+# monitor_fields is the allow-list of quality monitor fields the acceptance tests
+# assert on. Anything the backend returns outside this list is dropped, so a new
+# field in the API response does not break the golden. status and dashboard_id
+# are deliberately left out: right after create, the backend can still report
+# MONITOR_STATUS_PENDING with no dashboard_id yet.
+MONITOR_FIELDS='{assets_dir, drift_metrics_table_name, monitor_version, output_schema_name, profile_metrics_table_name, snapshot, table_name}'
+
+monitor_fields() {
+    jq "$MONITOR_FIELDS"
+}
+
+# plan_monitor_fields applies the same allow-list to remote_state in a
+# `bundle plan -o json` output.
+plan_monitor_fields() {
+    jq "(.plan[] | select(.remote_state)).remote_state |= $MONITOR_FIELDS"
+}

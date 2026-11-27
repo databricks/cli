@@ -1,6 +1,7 @@
 package notebook
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -140,6 +141,10 @@ func TestDetectBytes(t *testing.T) {
 	}{
 		{"nb.py", []byte("# Databricks notebook source\nprint(1)\n"), true, workspace.LanguagePython},
 		{"nb.sql", []byte("-- Databricks notebook source\nSELECT 1\n"), true, workspace.LanguageSql},
+		{"marker_mid_line.sql", []byte("-- MAGIC Databricks notebook source\nSELECT 1\n"), true, workspace.LanguageSql},
+		{"other_comment.py", []byte("// Databricks notebook source\nprint(1)\n"), true, workspace.LanguagePython},
+		{"second_line.py", []byte("print(1)\n# Databricks notebook source\n"), false, ""},
+		{"past_buffer.py", append(bytes.Repeat([]byte("#"), headerLength), []byte(" Databricks notebook source\n")...), false, ""},
 		{"nb.ipynb", ipynb, true, workspace.LanguagePython},
 		{"plain.py", []byte("print(1)\n"), false, ""},
 		{"space.geniespace.json", []byte("{}"), false, ""},

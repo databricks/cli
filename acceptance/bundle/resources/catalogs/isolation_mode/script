@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG="test-catalog-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog/catalogs &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Validate accepts isolation_mode"
+trace $CLI bundle validate --output json | jq '.resources.catalogs.catalog1 | {name, isolation_mode}'
+
+title "Deploy: CreateCatalog does not accept isolation_mode, so the catalog is created and then patched"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog/catalogs
+trace $CLI catalogs get "$CATALOG" | jq '{name, isolation_mode}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+
+title "Removing isolation_mode from the config leaves the remote value alone"
+trace update_file.py databricks.yml "isolation_mode: ISOLATED" "# isolation_mode removed"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog/catalogs
+trace $CLI catalogs get "$CATALOG" | jq '{name, isolation_mode}'
+trace $CLI bundle plan --output json | nostamp | jq '.plan[].changes'
+
+title "Setting OPEN patches the catalog"
+trace update_file.py databricks.yml "# isolation_mode removed" "isolation_mode: OPEN"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog/catalogs
+trace $CLI catalogs get "$CATALOG" | jq '{name, isolation_mode}'

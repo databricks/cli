@@ -1,0 +1,72 @@
+
+=== The mcp group is hidden from aitools help
+
+>>> [CLI] aitools --help
+aitools help does not list mcp
+
+=== The hidden group still answers help for its subcommands
+
+>>> [CLI] aitools mcp --help
+Databricks managed MCP servers give coding agents tools for Databricks services, such as GitHub or web search.
+Use 'add' to install them into coding agents, bound to a Databricks profile, 'list' to see what is installed,
+and 'remove' to uninstall them. Some services use your account with an external provider, such as GitHub:
+'login' signs you in to one and 'logout' removes the sign-in.
+
+Usage:
+  databricks aitools mcp [command]
+
+Available Commands:
+  add         Install Databricks managed MCP servers into coding agents
+  list        List Databricks managed MCP servers installed by this CLI
+  login       Sign in to a Databricks managed MCP service with your account
+  logout      Remove your sign-in to a Databricks managed MCP service
+  remove      Remove Databricks managed MCP servers from coding agents
+
+Flags:
+  -h, --help[=true|false]   help for mcp
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks aitools mcp [command] --help" for more information about a command.
+
+>>> [CLI] aitools mcp add --help
+Install Databricks managed MCP servers into coding agents, bound to a Databricks profile.
+Each server runs through 'databricks aitools mcp serve' with that profile's credentials.
+
+Services come from --names: full names such as system.ai.github, or leaf names such as github. Leaf names
+resolve in --location, which defaults to system.ai, or to the one schema that the full names in --names share when there are no leaf names.
+Agents come from --agents.
+
+In a terminal, the command asks for whatever is not given: the profile, the servers and the agents (detected
+agents are pre-checked). It confirms the plan when it asked for any of them, and it asks before each sign-in unless
+--login or --no-login is given. Without a terminal, --names is required and the agents default to every detected
+MCP-capable agent. With --output json, --names and --agents are required.
+
+Supported agents: claude-code, cursor, codex, opencode, copilot, antigravity, gemini
+
+Usage:
+  databricks aitools mcp add [flags]
+
+Examples:
+  # Install GitHub and web search for Claude Code and Cursor, bound to the dogfood profile
+  databricks aitools mcp add --names github,web_search --agents claude-code,cursor --profile dogfood
+
+Flags:
+      --agents string           Agents to install for, comma-separated (default: a picker in a terminal; otherwise every detected MCP-capable agent)
+      --force[=true|false]      Overwrite an existing server with the same name that this CLI did not write
+  -h, --help[=true|false]       help for add
+      --location string         Schema to resolve leaf names in, as <catalog>.<schema> (default: system.ai, or the one schema that the full names in --names share when there are no leaf names)
+      --login[=true|false]      Sign in to each sign-in-required server that was installed, after the installs
+      --name string             Server name to use instead of the generated one; only with exactly one service
+      --names string            Services to install: full names (system.ai.github) or leaf names (github), comma-separated
+      --no-login[=true|false]   Do not sign in; print the login commands for sign-in-required servers (default without a terminal; in a terminal, the default asks for each one)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)

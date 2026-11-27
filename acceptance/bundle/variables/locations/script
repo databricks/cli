@@ -1,0 +1,7 @@
+export BUNDLE_VAR_from_env=env-value
+
+title "Resolved variable values"
+trace $CLI bundle summary -o json --include-locations --var from_cli=cli-value | jq '.variables | map_values(.value)'
+
+title "Variable locations as file:line:column"
+trace $CLI bundle summary -o json --include-locations --var from_cli=cli-value | jq '.__locations as $l | $l.locations | with_entries(select(.key | startswith("variables"))) | map_values(map("\($l.files[.[0]]):\(.[1]):\(.[2])"))'

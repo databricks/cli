@@ -22,6 +22,9 @@ class JobsHealthRules:
     """
 
     rules: VariableOrList[JobsHealthRule] = field(default_factory=list)
+    """
+    The health rules to evaluate for each run.
+    """
 
     @classmethod
     def from_dict(cls, value: "JobsHealthRulesDict") -> "Self":
@@ -35,6 +38,9 @@ class JobsHealthRulesDict(TypedDict, total=False):
     """"""
 
     rules: VariableOrList[JobsHealthRuleParam]
+    """
+    The health rules to evaluate for each run.
+    """
 
 
 JobsHealthRulesParam = JobsHealthRulesDict | JobsHealthRules

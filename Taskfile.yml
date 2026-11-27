@@ -92,6 +92,22 @@ tasks:
       - task: lint-q-go-root
       - task: lint-python
 
+  aitools-quick:
+    desc: Fast aitools check to run after every edit (lint and unit tests of aitools, build of its importers)
+    # No sources: Go's build and test caches decide what re-runs.
+    cmds:
+      - "uv run --script tools/aitools_quick.py {{.CLI_ARGS}}"
+
+  aitools-full:
+    desc: Full aitools tier to run before a PR (aitools-quick plus importer tests, aitools acceptance tests and deadcode)
+    cmds:
+      - "uv run --script tools/aitools_quick.py --full {{.CLI_ARGS}}"
+
+  aitools-quick-bench:
+    desc: Re-measure aitools-quick wall time after simulated edits (and, with `detect`, its detection rate)
+    cmds:
+      - "uv run --script tools/aitools_quick_bench.py {{.CLI_ARGS}}"
+
   lint-python:
     desc: Lint first-party Python scripts with ruff
     sources:
@@ -265,6 +281,13 @@ tasks:
     cmds:
       - 'uv run -p ">=3.11" --no-project python tools/validate_codeowners.py'
 
+  test-cli-wheels:
+    # release-build.yml runs the scripts themselves on the release binaries.
+    desc: Unit-test the scripts that build and validate the CLI wheels for PyPI
+    dir: tools
+    cmds:
+      - 'uv run -q -p ">=3.11" --no-project --with-requirements requirements.txt python -m unittest -q test_build_cli_wheels test_validate_cli_wheels'
+
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
     env:
@@ -314,11 +337,17 @@ tasks:
       - task: check-codeowners
       - task: check-lockfiles
       - task: check-agents-setup
+      - task: test-cli-wheels
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
     cmds:
       - "uv python install 3.9 3.10 3.11 3.12 3.13"
+
+  install-ruff:
+    desc: Install Ruff 0.9.1 via uv
+    cmds:
+      - uv tool install ruff==0.9.1
 
   # --- Building ---
 
@@ -442,6 +471,7 @@ tasks:
       # internal/build reads these at test time.
       - NOTICE
       - .codegen/_openapi_sha
+      - .github/labeler-test-only.yml
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
       - bundle/internal/schema/annotations*.yml
     generates:
@@ -452,6 +482,12 @@ tasks:
       # The slowest unit package observed across Linux/macOS/Windows is ~83s, so 10m is
       # ample headroom while a hung package (e.g. a wedged goroutine) fails in minutes
       # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
+      #
+      # CLI_GOCOVERDIR_UNIT (an absolute path) turns on coverage of every package by
+      # every test (tools/coverpack reads it). It is a coverage directory, not
+      # -coverprofile, because --rerun-fails runs go test again with the same flags and
+      # that would overwrite the profile with the coverage of the rerun alone.
+      - '[ -z "$CLI_GOCOVERDIR_UNIT" ] || mkdir -p "$CLI_GOCOVERDIR_UNIT"'
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -459,7 +495,8 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-10m}
+          -- ${CLI_GOCOVERDIR_UNIT:+-cover -coverpkg=./...} -timeout=${LOCAL_TIMEOUT:-10m} \
+          ${CLI_GOCOVERDIR_UNIT:+-args -test.gocoverdir=$CLI_GOCOVERDIR_UNIT}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -620,9 +657,25 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
       - cat test-output-unit.json test-output-acc.json > test-output.json
-      - rm -fr ./acceptance/build/cover-merged/
+      - rm -fr ./acceptance/build/cover-merged/ ./acceptance/build/cover-batches/
       - mkdir -p acceptance/build/cover-merged/
-      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
+      # A full run writes thousands of per-test dirs; joined into one -i argument they exceed
+      # Linux's 128KB per-argument limit ("argument list too long"), so merge in batches.
+      - |
+        batch=""; n=0; i=0
+        for d in acceptance/build/cover/*; do
+          batch="$batch,$d"; n=$((n+1))
+          if [ $n -eq 500 ]; then
+            i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+            go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+            batch=""; n=0
+          fi
+        done
+        if [ -n "$batch" ]; then
+          i=$((i+1)); mkdir -p acceptance/build/cover-batches/$i
+          go tool covdata merge -i "${batch#,}" -o acceptance/build/cover-batches/$i
+        fi
+        go tool covdata merge -i "$(printf '%s,' acceptance/build/cover-batches/* | sed 's/,$//')" -o acceptance/build/cover-merged/
       - go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
 
   showcover:
@@ -644,7 +697,7 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run aitools (top-level + experimental) unit and acceptance tests.
+    desc: Run aitools (top-level + experimental) unit and acceptance tests, plus the tests of packages and goldens that depend on aitools.
     sources:
       - cmd/aitools/**
       - libs/aitools/**
@@ -653,20 +706,42 @@ tasks:
       # acceptance/cmd/aitools is not listed on purpose: a change there runs
       # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
+      # internal/testutil/hostenv is not listed on purpose: a change there runs
+      # `test`, which also runs the aitools unit tests on Windows, where Isolate
+      # moves USERPROFILE and LOCALAPPDATA. The packages below still include it:
+      # its tests check that every aitools test package calls hostenv.Isolate.
       - "{{.EMBED_SOURCES}}"
     cmds:
+      # A change under the sources above does not trigger the `test` job, so the
+      # tests of these packages that depend on aitools run here too:
+      #   .                 main.go wires aitools auto-install.
+      #   cmd               registers the aitools command.
+      #   cmd/apps          `apps init` prints the aitools skills tip.
+      #   cmd/experimental  registers the experimental aitools command.
+      #   cmd/root          runs aitools hooks on every command.
+      #   cmd/version       prints the aitools install tip.
+      # cmd/air is left out: its only aitools call is covered by the
+      # air/image-push golden below, and its unit tests take over a minute
+      # without touching aitools.
+      # IMPORTERS and ACCEPTANCE in tools/aitools_quick.py (`./task aitools-full`)
+      # list the same packages and goldens and a few more, for local runs. A new
+      # aitools importer goes in both places.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./internal/testutil/hostenv/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
+      # The help golden prints the aitools command summary, cmd/version prints the
+      # aitools install tip, and air/image-push runs a child process with the
+      # aitools self-exec environment. The last part of each single-test pattern
+      # is anchored at both ends because `-run` matches each part unanchored.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools|TestAccept/^help$|TestAccept/cmd/^version$|TestAccept/air/^image-push$"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -728,6 +803,13 @@ tasks:
 
   # --- Integration tests ---
 
+  # CI runs these on GitHub-hosted runners, which cancel a job after 6h. The 5h20m
+  # go test timeout leaves room for setup, the build and the report steps, so a
+  # slow run ends with a timeout panic that lists the running tests instead of a
+  # killed job with no output for the package.
+  # The cloud tests mostly wait on the workspace, so -parallel 8 rather than 4: at 4
+  # the full acceptance suite (~19h of test time) took close to 5h20m when concurrent
+  # main runs slowed the workspace down.
   integration:
     desc: Run integration tests (requires Databricks workspace)
     deps: [install-pythons]
@@ -739,7 +821,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h
+          -- -parallel 8 -timeout=5h20m
 
   integration-short:
     desc: Run integration tests except the slow ones (skips CloudSlow via -short)
@@ -753,7 +835,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 8 -timeout=5h20m -short
 
   cloud-select:
     desc: Run selection of integration tests (tests changed in this branch)
@@ -858,10 +940,16 @@ tasks:
   # version bumps (go.mod/go.sum) are a manual `go get` step beforehand;
   # TestConsistentDatabricksSdkVersion asserts the two stay in sync.
   #
+  # The same run refreshes climod/.codegen/ in genkit's cli-mod mode:
+  # sdk-go-field-paths.txt maps each field of the modular Go SDK
+  # (github.com/databricks/sdk-go) to its JSON path, and cli.json holds the same
+  # mapping per message. That SDK's names differ from the classic SDK's, so the
+  # files come from its own proto view rather than from the OpenAPI spec.
+  #
   # No `sources:`/`generates:`: this task deliberately refreshes cli.json from
   # an external Universe checkout whenever it is invoked.
   generate-clijson:
-    desc: Produce .codegen/cli.json from its pinned Universe commit via genkit
+    desc: Produce .codegen/cli.json and climod/.codegen/ from their pinned Universe commit via genkit
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
@@ -898,15 +986,21 @@ tasks:
         fi
         git -C "$BUILD_DIR/universe" checkout --quiet --detach "$OPENAPI_SHA"
 
-        echo "Building genkit and OpenAPI spec at ${OPENAPI_SHA}..."
+        echo "Building genkit, OpenAPI spec, and Go SDK descriptor set at ${OPENAPI_SHA}..."
         cd "$BUILD_DIR/universe"
-        ./tools/bazel build //deco/genkit //openapi:all-internal.json
+        ./tools/bazel build //deco/genkit //openapi:all-internal.json \
+          //deco/public_proto:public_proto_sdk_go_descriptor_set_with_source_info
 
         echo "Generating CLI code..."
         "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" update-sdk \
           --dir "{{.ROOT_DIR}}" \
           --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
           --openapi-spec-sha "$OPENAPI_SHA"
+
+        echo "Generating the modular Go SDK's CLI spec..."
+        "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" experimental-update-sdk \
+          --dir "{{.ROOT_DIR}}/climod" \
+          --descriptor-set "$BUILD_DIR/universe/bazel-bin/deco/public_proto/public_proto_sdk_go_with_source_info.pb"
       # The SDK-version consistency check runs here for fast feedback when
       # generate-clijson is invoked manually. Cleanup of genkit's output is
       # delegated to generate-clijson-post so the SDK bumper can reuse it.
@@ -967,8 +1061,15 @@ tasks:
   bump-sdk-post:
     desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
     cmds:
+      # The acceptance tests run uv offline, so the managed interpreters they
+      # pin (3.10 for bundle tests, 3.9-3.13 in one template matrix) must exist
+      # up front. CI installs them in setup-build-environment; the SDK bumper's
+      # image ships only Python 3.12, and a missing version would otherwise be
+      # baked into the goldens as a uv error.
+      - task: install-pythons
+      - task: install-ruff
       - task: generate-check
-      - task: test-update
+      - PATH="$(uv tool dir --bin):$PATH" "{{.TASK_EXE}}" test-update
 
   # Refreshes acceptance/bundle/refschema/output/*.txt, which record the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects

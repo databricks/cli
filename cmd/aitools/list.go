@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -36,22 +37,17 @@ func NewListCmd() *cobra.Command {
 			// doesn't silently degrade to --scope=both. Users who want both
 			// scopes should use --scope=both (the new explicit spelling).
 			if projectFlag && globalFlag && scopeFlag == "" {
-				return errors.New("cannot use --global and --project together")
+				return withCategory(errors.New("cannot use --global and --project together"), protos.AitoolsErrorCategoryInvalidFlags)
 			}
 
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
-				return err
+				return withCategory(err, protos.AitoolsErrorCategoryInvalidFlags)
 			}
 
 			// list: empty scope = show both. --scope=both also lands here.
-			var scope string
-			switch {
-			case projectFlag && !globalFlag:
-				scope = installer.ScopeProject
-			case globalFlag && !projectFlag:
-				scope = installer.ScopeGlobal
-			}
+			scope := explicitScope(projectFlag, globalFlag)
+			funnelFrom(cmd.Context()).setScope(scope)
 			return listSkillsFn(cmd, scope)
 		},
 	}
@@ -60,7 +56,7 @@ func NewListCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Show only project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Show only globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandList)
 }
 
 // listOutput is the structured representation of `aitools list` used by both
@@ -85,8 +81,9 @@ type agentEntry struct {
 	// Detected is the CLI's presence verdict (Agent.IsPreselected), so consumers get
 	// the same answer the CLI would act on.
 	Detected bool `json:"detected"`
-	// SupportsProjectScope mirrors agents.Agent.SupportsProjectScope so consumers can
-	// offer a project-scoped install without hardcoding which agents allow it.
+	// SupportsProjectScope reports whether a default install (plugin for plugin
+	// agents, skills otherwise) works in project scope, so consumers can offer a
+	// project-scoped install without hardcoding which agents allow it.
 	SupportsProjectScope bool `json:"supports_project_scope"`
 	// Installed maps CLI scope -> the install found there; always present, empty
 	// when nothing is installed, matching the skills shape.
@@ -232,11 +229,16 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 	entries := make([]agentEntry, 0, len(agents.Registry))
 	for _, a := range agents.Registry {
 		entry := agentEntry{
-			Name:                 a.Name,
-			DisplayName:          a.DisplayName,
-			Managed:              a.Plugin != nil,
-			Detected:             a.IsPreselected(ctx),
-			SupportsProjectScope: a.SupportsProjectScope,
+			Name:        a.Name,
+			DisplayName: a.DisplayName,
+			Managed:     a.Plugin != nil,
+			Detected:    a.IsPreselected(ctx),
+			// A default install delivers the plugin when there is one, so its
+			// project support decides; --skills-only is not the default.
+			SupportsProjectScope: a.SupportsProjectSkills,
+		}
+		if a.Plugin != nil {
+			entry.SupportsProjectScope = a.SupportsProjectPlugin
 		}
 
 		// Always emit an installed map, empty when nothing is installed, so the
@@ -273,7 +275,7 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 // install signal for skills installs, which have no plugin record to consult.
 func agentHasSkillsInScope(ctx context.Context, a *agents.Agent, scope string) bool {
 	if scope == installer.ScopeProject {
-		if !a.SupportsProjectScope {
+		if !a.SupportsProjectSkills {
 			return false
 		}
 		cwd, err := os.Getwd()
@@ -383,15 +385,17 @@ func renderSkillTable(skills []skillEntry, bothScopes bool) string {
 // are skipped: this line reports the plugin, and their versions would otherwise
 // decide the status of an agent that also has a plugin in another scope.
 func agentStatusLabel(a agentEntry, release string) string {
-	version, upToDate := "", true
+	// picked is separate from version because an empty version ("version
+	// unknown") is a real pick, not "nothing picked yet".
+	version, picked, upToDate := "", false, true
 	for _, scope := range []string{installer.ScopeProject, installer.ScopeGlobal} {
 		info, ok := a.Installed[scope]
 		if !ok || info.Delivery != deliveryPlugin.String() {
 			continue
 		}
 		stale := info.Version != release
-		if version == "" || (upToDate && stale) {
-			version = info.Version
+		if !picked || (upToDate && stale) {
+			version, picked = info.Version, true
 		}
 		if stale {
 			upToDate = false

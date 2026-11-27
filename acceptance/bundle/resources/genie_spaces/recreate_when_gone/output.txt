@@ -8,6 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] genie trash-space [GENIE_SPACE_ID]
 
 === Plan after remote deletion should recreate the space
+
 >>> [CLI] bundle plan
 create genie_spaces.sales_analytics
 

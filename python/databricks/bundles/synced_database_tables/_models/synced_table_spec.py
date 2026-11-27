@@ -41,7 +41,8 @@ class SyncedTableSpec:
     create_database_objects_if_missing: VariableOrOptional[bool] = None
     """
     [Public Preview] If true, the synced table's logical database and schema resources in PG
-    will be created if they do not already exist.
+    will be created if they do not already exist. The request fails if this is false and the database
+    or schema does not exist.
     """
 
     existing_pipeline_id: VariableOrOptional[str] = None
@@ -65,12 +66,18 @@ class SyncedTableSpec:
 
     primary_key_columns: VariableOrList[str] = field(default_factory=list)
     """
-    [Public Preview] Primary Key columns to be used for data insert/update in the destination.
+    [Public Preview] The primary key columns are used to insert and update rows in the destination table. At least one
+    column is required. Rows whose primary key columns contain null values are not synced, and the primary
+    key cannot be changed after the table is created.
     """
 
     scheduling_policy: VariableOrOptional[SyncedTableSchedulingPolicy] = None
     """
-    [Public Preview] Scheduling policy of the underlying pipeline.
+    [Public Preview] Specifies the scheduling policy of the underlying pipeline. With CONTINUOUS, the pipeline keeps running and
+    applies source changes as they happen. With TRIGGERED and SNAPSHOT, the pipeline stops after the
+    initial load and syncs again only when it is run (manually, on a schedule or from a job); TRIGGERED
+    applies source changes incrementally, while SNAPSHOT copies the full source table on every run.
+    CONTINUOUS and TRIGGERED require the source table to provide a change data feed.
     """
 
     source_table_full_name: VariableOrOptional[str] = None
@@ -80,7 +87,9 @@ class SyncedTableSpec:
 
     timeseries_key: VariableOrOptional[str] = None
     """
-    [Public Preview] Time series key to deduplicate (tie-break) rows with the same primary key.
+    [Public Preview] The time series key deduplicates (tie-breaks) rows with the same primary key. When primary key values
+    can repeat in the source table, the synced table keeps only the row with the latest value of this
+    column for each primary key. The key cannot be changed after the table is created.
     """
 
     type_overrides: VariableOrList[SyncedTableSpecTypeOverride] = field(
@@ -116,7 +125,8 @@ class SyncedTableSpecDict(TypedDict, total=False):
     create_database_objects_if_missing: VariableOrOptional[bool]
     """
     [Public Preview] If true, the synced table's logical database and schema resources in PG
-    will be created if they do not already exist.
+    will be created if they do not already exist. The request fails if this is false and the database
+    or schema does not exist.
     """
 
     existing_pipeline_id: VariableOrOptional[str]
@@ -140,12 +150,18 @@ class SyncedTableSpecDict(TypedDict, total=False):
 
     primary_key_columns: VariableOrList[str]
     """
-    [Public Preview] Primary Key columns to be used for data insert/update in the destination.
+    [Public Preview] The primary key columns are used to insert and update rows in the destination table. At least one
+    column is required. Rows whose primary key columns contain null values are not synced, and the primary
+    key cannot be changed after the table is created.
     """
 
     scheduling_policy: VariableOrOptional[SyncedTableSchedulingPolicyParam]
     """
-    [Public Preview] Scheduling policy of the underlying pipeline.
+    [Public Preview] Specifies the scheduling policy of the underlying pipeline. With CONTINUOUS, the pipeline keeps running and
+    applies source changes as they happen. With TRIGGERED and SNAPSHOT, the pipeline stops after the
+    initial load and syncs again only when it is run (manually, on a schedule or from a job); TRIGGERED
+    applies source changes incrementally, while SNAPSHOT copies the full source table on every run.
+    CONTINUOUS and TRIGGERED require the source table to provide a change data feed.
     """
 
     source_table_full_name: VariableOrOptional[str]
@@ -155,7 +171,9 @@ class SyncedTableSpecDict(TypedDict, total=False):
 
     timeseries_key: VariableOrOptional[str]
     """
-    [Public Preview] Time series key to deduplicate (tie-break) rows with the same primary key.
+    [Public Preview] The time series key deduplicates (tie-breaks) rows with the same primary key. When primary key values
+    can repeat in the source table, the synced table keeps only the row with the latest value of this
+    column for each primary key. The key cannot be changed after the table is created.
     """
 
     type_overrides: VariableOrList[SyncedTableSpecTypeOverrideParam]

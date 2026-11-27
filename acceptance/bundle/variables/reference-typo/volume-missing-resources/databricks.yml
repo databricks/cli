@@ -1,0 +1,13 @@
+bundle:
+  name: reference-typo-volume-missing-resources
+
+resources:
+  schemas:
+    test:
+      name: myschema
+      catalog_name: main
+  volumes:
+    ingest:
+      name: myvolume
+      schema_name: ${schemas.test.name}
+      catalog_name: ${schemas.test.catalog_name}

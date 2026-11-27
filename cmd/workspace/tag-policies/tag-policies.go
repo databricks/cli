@@ -3,6 +3,7 @@
 package tag_policies
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,24 +19,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tag-policies",
-		Short: `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
-		Long: `The Tag Policy API allows you to manage policies for governed tags in
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "tag-policies",
+	Short:   `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
+	GroupID: "tags",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Tag Policy API allows you to manage policies for governed tags in
   Databricks. For Terraform usage, see the [Tag Policy Terraform documentation].
   Permissions for tag policies can be managed using the [Account Access Control
   Proxy API].
 
   [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
-  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`,
-		GroupID: "tags",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateTagPolicy())
@@ -48,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-tag-policy command
@@ -70,7 +73,7 @@ func newCreateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&createTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, ``)
+	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, `A description of the governed tag, such as its purpose or the meaning of its values.`)
 	// TODO: array: values
 
 	cmd.Use = "create-tag-policy TAG_KEY"
@@ -82,7 +85,10 @@ func newCreateTagPolicy() *cobra.Command {
   permissions for tag policies, use the [Account Access Control Proxy API].
 
   [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
-  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy
+
+  Arguments:
+    TAG_KEY: The tag key that this policy governs. Tag keys are case-sensitive.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -163,7 +169,10 @@ func newDeleteTagPolicy() *cobra.Command {
   key ungoverned. For Terraform usage, see the [Tag Policy Terraform
   documentation].
 
-  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy
+
+  Arguments:
+    TAG_KEY: The key of the governed tag whose policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -223,7 +232,10 @@ func newGetTagPolicy() *cobra.Command {
   permissions for tag policies, use the [Account Access Control Proxy API].
 
   [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
-  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policy`
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policy
+
+  Arguments:
+    TAG_KEY: The key of the governed tag whose policy to get.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -354,7 +366,7 @@ func newUpdateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&updateTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, ``)
+	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, `A description of the governed tag, such as its purpose or the meaning of its values.`)
 	// TODO: array: values
 
 	cmd.Use = "update-tag-policy TAG_KEY UPDATE_MASK"
@@ -369,18 +381,10 @@ func newUpdateTagPolicy() *cobra.Command {
   [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy
 
   Arguments:
-    TAG_KEY:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+    TAG_KEY: The tag key that this policy governs. Tag keys are case-sensitive.
+    UPDATE_MASK: The comma-separated list of tag policy fields to update. When the mask
+      includes values, the values in the request replace all existing allowed
+      values.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

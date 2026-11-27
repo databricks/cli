@@ -1,0 +1,46 @@
+
+=== The create request times out but the feature was created: deploy uses the feature
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //feature-engineering
+POST /api/2.0/feature-engineering/features
+GET /api/2.0/feature-engineering/features/main.myschema.myfeature
+
+=== The create request times out and the feature was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.features.feature1: retrying after 504 Gateway Timeout from POST /api/2.0/feature-engineering/features
+Created features.feature1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //feature-engineering
+POST /api/2.0/feature-engineering/features
+GET /api/2.0/feature-engineering/features/main.myschema.myfeature
+POST /api/2.0/feature-engineering/features
+
+=== The feature cannot be read after the create request times out: deploy fails with the create error
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.features.feature1: checking whether feature main.myschema.myfeature was created: Fault injected by test.
+Error: cannot create resources.features.feature1: Fault injected by test. (504 DEADLINE_EXCEEDED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/feature-engineering/features
+HTTP Status: 504 Gateway Timeout
+API error_code: DEADLINE_EXCEEDED
+API message: Fault injected by test.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py --get //feature-engineering
+POST /api/2.0/feature-engineering/features
+GET /api/2.0/feature-engineering/features/main.myschema.myfeature

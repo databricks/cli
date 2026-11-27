@@ -65,16 +65,13 @@ cat >> resources/job2.yml << 'YAML'
 YAML
 
 title "Detect and save changes"
-echo
 cp resources/job1.yml resources/job1.yml.backup
 cp resources/job2.yml resources/job2.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Changes in job1.yml"
-echo
 trace diff.py resources/job1.yml.backup resources/job1.yml
 
 title "Changes in job2.yml"
-echo
 trace diff.py resources/job2.yml.backup resources/job2.yml
 rm resources/job1.yml.backup resources/job2.yml.backup

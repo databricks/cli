@@ -1,0 +1,2 @@
+# The script writes .databrickscfg.
+Ignore = [".databrickscfg"]

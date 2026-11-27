@@ -24,8 +24,14 @@ class ServedModelInput:
     """"""
 
     model_name: VariableOr[str]
+    """
+    The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.
+    """
 
     model_version: VariableOr[str]
+    """
+    The version of the model in Databricks Model Registry or Unity Catalog to be served.
+    """
 
     scale_to_zero_enabled: VariableOr[bool]
     """
@@ -101,8 +107,14 @@ class ServedModelInputDict(TypedDict, total=False):
     """"""
 
     model_name: VariableOr[str]
+    """
+    The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of **catalog_name.schema_name.model_name**.
+    """
 
     model_version: VariableOr[str]
+    """
+    The version of the model in Databricks Model Registry or Unity Catalog to be served.
+    """
 
     scale_to_zero_enabled: VariableOr[bool]
     """

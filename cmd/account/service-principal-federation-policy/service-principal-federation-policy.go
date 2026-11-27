@@ -3,6 +3,7 @@
 package service_principal_federation_policy
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "service-principal-federation-policy",
-		Short: `These APIs manage service principal federation policies.`,
-		Long: `These APIs manage service principal federation policies.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "service-principal-federation-policy",
+	Short:   `These APIs manage service principal federation policies.`,
+	GroupID: "oauth2",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage service principal federation policies.
 
   Service principal federation, also known as Workload Identity Federation,
   allows your automated workloads running outside of Databricks to securely
@@ -74,14 +80,13 @@ func New() *cobra.Command {
   your workloads.
 
   You do not need to configure an OAuth application in Databricks to use token
-  federation.`,
-		GroupID: "oauth2",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  federation.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -94,8 +99,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

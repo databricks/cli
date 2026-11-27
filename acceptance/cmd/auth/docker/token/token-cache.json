@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "tokens": {
+    "docker-test": {
+      "access_token": "docker-test-access-token",
+      "token_type": "Bearer",
+      "refresh_token": "docker-test-refresh-token",
+      "expiry": "2099-01-01T00:00:00Z"
+    },
+    "duplicate": {
+      "access_token": "duplicate-access-token",
+      "token_type": "Bearer",
+      "refresh_token": "duplicate-refresh-token",
+      "expiry": "2099-01-01T00:00:00Z"
+    }
+  }
+}

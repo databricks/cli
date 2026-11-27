@@ -3,6 +3,7 @@
 package disable_legacy_access
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,22 +18,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "disable-legacy-access",
-		Short: `'Disabling legacy access' has the following impacts: 1.`,
-		Long: `'Disabling legacy access' has the following impacts:
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "disable-legacy-access",
+	Short: `'Disabling legacy access' has the following impacts: 1.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `'Disabling legacy access' has the following impacts:
 
   1. Disables direct access to Hive Metastores from the workspace. However, you
   can still access a Hive Metastore through Hive Metastore federation. 2.
   Disables fallback mode on external location access from the workspace. 3.
-  Disables Databricks Runtime versions prior to 13.3LTS.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  Disables Databricks Runtime versions prior to 13.3LTS.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -43,8 +48,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

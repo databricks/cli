@@ -117,6 +117,25 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 	return path.Join(sidecarBase, gitStateName), diffPath
 }
 
+// countSnapshotFiles runs the snapshot file selection without packaging or
+// uploading, so --dry-run fails on the same selection errors as a submission.
+func countSnapshotFiles(ctx context.Context, snap *snapshotSourceConfig, configPath string) (int, error) {
+	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
+	if err != nil {
+		return 0, err
+	}
+	git := newGitRepo(repoPath)
+	plan, err := resolveSnapshotPlan(ctx, git, snap.Git, snap.IncludePaths)
+	if err != nil {
+		return 0, err
+	}
+	if plan.mode == modeGitArchive {
+		return git.countFilesAtCommit(ctx, plan.commitSHA, plan.subtreePrefix, plan.includePaths)
+	}
+	files, err := snapshotFiles(ctx, repoPath, plan.includePaths, plan.isGitRepo)
+	return len(files), err
+}
+
 // snapshotTarName resolves the content-addressed upload filename for the snapshot and,
 // for plain_tar, the working-tree file listing used to build both the key and the tarball
 // (nil for git_archive, which lists nothing locally). The name is <dirName>_<key>.tar.gz,

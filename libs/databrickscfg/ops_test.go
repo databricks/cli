@@ -212,6 +212,38 @@ func TestSaveResourcesToProfile(t *testing.T) {
 	assert.NotContains(t, string(contents), "resources")
 }
 
+func TestSaveToProfile_DottedNameDoesNotWriteParentSection(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := os.WriteFile(path, []byte("[team]\nhost = https://team.test\ntoken = xyz\nresources = https://team.test/a\n"), 0o600)
+	require.NoError(t, err)
+
+	require.NoError(t, SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "team.prod",
+		Host:       "https://prod.test",
+		AuthType:   "databricks-cli",
+	}))
+	require.NoError(t, SaveResourcesToProfile(ctx, "team.prod", path, []string{"https://prod.test/b"}))
+
+	file, err := loadConfigFile(ctx, path)
+	require.NoError(t, err)
+	parent, err := file.GetSection("team")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"host":      "https://team.test",
+		"token":     "xyz",
+		"resources": "https://team.test/a",
+	}, parent.KeysHash())
+	child, err := file.GetSection("team.prod")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"host":      "https://prod.test",
+		"auth_type": "databricks-cli",
+		"resources": "https://prod.test/b",
+	}, child.KeysHash())
+}
+
 func TestSaveResourcesToProfile_MissingProfile(t *testing.T) {
 	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
@@ -783,6 +815,143 @@ host = https://only.cloud.databricks.com
 			assert.Contains(t, defaultSection.Comment, defaultComment)
 			if tc.wantDefaultKeys != nil {
 				assert.Equal(t, tc.wantDefaultKeys, defaultSection.KeysHash())
+			}
+		})
+	}
+}
+
+func TestClearDockerProfiles(t *testing.T) {
+	const settings = "[__settings__]\n" +
+		"default_profile = first\n" +
+		"docker_profile.111.container.us-west-2.cloud.databricks.test = first\n" +
+		"docker_profile.222.container.us-west-2.cloud.databricks.test = first\n" +
+		"docker_profile.333.container.us-west-2.cloud.databricks.test = second\n"
+	cases := []struct {
+		name         string
+		initial      string
+		profileName  string
+		wantSettings map[string]string
+		wantNoWrite  bool
+	}{
+		{
+			name:        "clears entries that record the profile",
+			initial:     settings,
+			profileName: "first",
+			wantSettings: map[string]string{
+				"default_profile": "first",
+				"docker_profile.333.container.us-west-2.cloud.databricks.test": "second",
+			},
+		},
+		{
+			name:        "no-op when no entry records the profile",
+			initial:     settings,
+			profileName: "third",
+			wantNoWrite: true,
+		},
+		{
+			name:        "no-op when no settings section",
+			initial:     "[first]\nhost = https://first.test\n",
+			profileName: "first",
+			wantNoWrite: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tc.initial), fileMode))
+
+			require.NoError(t, ClearDockerProfiles(ctx, tc.profileName, path))
+
+			contents, err := os.ReadFile(path)
+			require.NoError(t, err)
+			if tc.wantNoWrite {
+				assert.Equal(t, tc.initial, string(contents))
+			}
+			if tc.wantSettings != nil {
+				file, err := config.LoadFile(path)
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantSettings, file.Section(databricksSettingsSection).KeysHash())
+			}
+		})
+	}
+}
+
+func TestClearDockerProfiles_NoFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	require.NoError(t, ClearDockerProfiles(t.Context(), "first", path))
+	assert.NoFileExists(t, path)
+}
+
+func TestSetDockerProfile(t *testing.T) {
+	const registryHost = "111.container.us-west-2.cloud.databricks.test"
+	cases := []struct {
+		name         string
+		initial      string
+		profileName  string
+		wantPrevious string
+		wantDefault  string
+		wantNoWrite  bool
+	}{
+		{
+			name:        "creates the config file",
+			profileName: "prod",
+		},
+		{
+			name:        "adds to the settings section",
+			initial:     "[__settings__]\ndefault_profile = dev\n\n[prod]\nhost = https://prod.test\n",
+			profileName: "prod",
+			wantDefault: "dev",
+		},
+		{
+			name:         "switches the recorded profile",
+			initial:      "[__settings__]\ndocker_profile." + registryHost + " = dev\n",
+			profileName:  "prod",
+			wantPrevious: "dev",
+		},
+		{
+			name:         "keeps the recorded profile",
+			initial:      "[__settings__]\ndocker_profile." + registryHost + " = prod\n",
+			profileName:  "prod",
+			wantPrevious: "prod",
+			wantNoWrite:  true,
+		},
+		{
+			name:        "ignores other registries",
+			initial:     "[__settings__]\ndocker_profile.222.container.us-west-2.cloud.databricks.test = dev\n",
+			profileName: "prod",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			if tc.initial != "" {
+				require.NoError(t, os.WriteFile(path, []byte(tc.initial), fileMode))
+			}
+
+			before, err := GetDockerProfile(ctx, registryHost, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantPrevious, before)
+
+			previous, err := SetDockerProfile(ctx, registryHost, tc.profileName, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantPrevious, previous)
+
+			got, err := GetDockerProfile(ctx, registryHost, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.profileName, got)
+
+			defaultProfile, err := GetConfiguredDefaultProfile(ctx, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDefault, defaultProfile)
+
+			if tc.wantNoWrite {
+				contents, err := os.ReadFile(path)
+				require.NoError(t, err)
+				assert.Equal(t, tc.initial, string(contents))
 			}
 		})
 	}

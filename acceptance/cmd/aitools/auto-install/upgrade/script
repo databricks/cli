@@ -1,0 +1,57 @@
+use_home home
+# Track the latest skills release, as the compatibility manifest does.
+unset DATABRICKS_SKILLS_REF
+gate true
+skills_dir="${USERPROFILE:-$HOME}/.databricks/aitools/skills"
+skill_file() {
+    cat "$skills_dir/$1/SKILL.md"
+}
+
+title "first run of 1.30.0 installs skills release 0.3.0"
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+# The user edits a skill that the next release drops, and one that it updates.
+echo "my notes" >> "$skills_dir/databricks-dropped/SKILL.md"
+echo "my notes" >> "$skills_dir/databricks-edited/SKILL.md"
+
+# An update does not ask, so it runs with no terminal and no coding agent too.
+unset AGENT
+title "upgrade to 1.31.0 with release 0.4.0: updates like aitools update, keeping the edited skills"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 DATABRICKS_CLI_GITHUB_API_URL=$DATABRICKS_HOST/newer $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace skill_file databricks-kept
+trace skill_file databricks-dropped
+trace skill_file databricks-edited
+# Auto-install made the installation without asking, so it is not the user's
+# consent.
+trace auto_install_state
+
+title "upgrade to 1.32.0 while the latest release is 0.2.0: no downgrade, nothing printed, not retried"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.0 DATABRICKS_CLI_GITHUB_API_URL=$DATABRICKS_HOST/older $CLI jobs list
+trace print_telemetry
+trace skill_file databricks-kept
+trace auto_install_state
+
+title "an older CLI on the same machine (e.g. one an IDE ships) does nothing"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+
+# The user pinned release 0.4.0 with an explicit install. The compatibility
+# manifest pins this CLI to the older 0.3.0, as it pins released CLIs.
+use_home pinned-home
+skills_dir="${USERPROFILE:-$HOME}/.databricks/aitools/skills"
+trace DATABRICKS_SKILLS_REF=v0.4.0 $CLI aitools install --skills-only --scope=global --agents=cursor
+print_telemetry > /dev/null
+gate true 0.3.0
+
+title "upgrade to 1.33.0 pinned to 0.3.0 over an explicit 0.4.0 install: no downgrade, nothing printed, not retried"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0 $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace skill_file databricks-kept
+trace auto_install_state

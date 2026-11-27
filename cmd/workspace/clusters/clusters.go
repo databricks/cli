@@ -3,6 +3,7 @@
 package clusters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clusters",
-		Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
-		Long: `The Clusters API allows you to create, start, edit, list, terminate, and
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clusters",
+	Short:   `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Clusters API allows you to create, start, edit, list, terminate, and
   delete clusters.
 
   Databricks maps cluster node instance types to compute units known as DBUs.
@@ -48,14 +54,13 @@ func New() *cobra.Command {
   IMPORTANT: Databricks retains cluster configuration information for terminated
   clusters for 30 days. To keep an all-purpose cluster configuration even after
   it has been terminated for more than 30 days, an administrator can pin a
-  cluster to the cluster list.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  cluster to the cluster list.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newChangeOwner())
@@ -84,8 +89,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start change-owner command
@@ -114,7 +117,7 @@ func newChangeOwner() *cobra.Command {
   be supplied as an argument to owner_username.
 
   Arguments:
-    CLUSTER_ID:
+    CLUSTER_ID: The ID of the cluster whose owner is changed.
     OWNER_USERNAME: New owner of the cluster_id after this RPC.`
 
 	cmd.Annotations = make(map[string]string)
@@ -208,7 +211,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Supported values: [
+	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   DATA_SECURITY_MODE_AUTO,
   DATA_SECURITY_MODE_DEDICATED,
   DATA_SECURITY_MODE_STANDARD,
@@ -231,7 +234,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
+	cmd.Flags().Var(&createReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
@@ -492,7 +495,7 @@ func newEdit() *cobra.Command {
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Supported values: [
+	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   DATA_SECURITY_MODE_AUTO,
   DATA_SECURITY_MODE_DEDICATED,
   DATA_SECURITY_MODE_STANDARD,
@@ -515,7 +518,7 @@ func newEdit() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
+	cmd.Flags().Var(&editReq.Kind, "kind", `The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
@@ -1470,7 +1473,7 @@ func newRestart() *cobra.Command {
 
 	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, ``)
+	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `User name recorded in the RESTARTING cluster event as the user who restarted the cluster.`)
 
 	cmd.Use = "restart CLUSTER_ID"
 	cmd.Short = `Restart cluster.`

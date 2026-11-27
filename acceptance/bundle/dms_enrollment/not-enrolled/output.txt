@@ -1,0 +1,16 @@
+
+=== The bundle sets nothing and the workspace is not enrolled, so the deploy only asks
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-not-enrolled-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}

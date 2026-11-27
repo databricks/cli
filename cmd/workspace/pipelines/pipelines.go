@@ -3,6 +3,7 @@
 package pipelines
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "pipelines",
-		Short: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
-		Long: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "pipelines",
+	Short:   `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
+	GroupID: "lakeflow",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
   delete, start, and view details about pipelines.
 
   Spark Declarative Pipelines is a framework for building reliable,
@@ -37,14 +43,13 @@ func New() *cobra.Command {
   based on a target schema you define for each processing step. You can also
   enforce data quality with Spark Declarative Pipelines expectations.
   Expectations allow you to define expected data quality and specify how to
-  handle records that fail those expectations.`,
-		GroupID: "lakeflow",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  handle records that fail those expectations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newApplyEnvironment())
@@ -68,8 +73,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start apply-environment command
@@ -93,7 +96,10 @@ func newApplyEnvironment() *cobra.Command {
 Apply the latest environment to the pipeline.
 
   Applies the current pipeline environment onto the pipeline compute. The
-  environment applied can be used by subsequent dev-mode updates.`
+  environment applied can be used by subsequent dev-mode updates.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline to apply the environment to.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -112,14 +118,14 @@ Apply the latest environment to the pipeline.
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline to apply the environment to")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have the id of the pipeline to apply the environment to")
 		}
 		applyEnvironmentReq.PipelineId = args[0]
 
@@ -312,7 +318,10 @@ func newDelete() *cobra.Command {
 
   Deletes a pipeline. If the pipeline publishes to Unity Catalog, pipeline
   deletion will cascade to all pipeline tables. Please reach out to Databricks
-  support for assistance to undo this action.`
+  support for assistance to undo this action.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -331,14 +340,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have the id of the pipeline to delete")
 		}
 		deleteReq.PipelineId = args[0]
 
@@ -377,7 +386,13 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get PIPELINE_ID"
 	cmd.Short = `Get a pipeline.`
-	cmd.Long = `Get a pipeline.`
+	cmd.Long = `Get a pipeline.
+
+  Returns the details of a pipeline, including its settings, current state, and
+  the status of its most recent updates.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -396,14 +411,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have the id of the pipeline")
 		}
 		getReq.PipelineId = args[0]
 
@@ -974,7 +989,7 @@ func newStartUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `Supported values: [
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `What triggered this update, as recorded in the update's cause. Supported values: [
   API_CALL,
   INFRASTRUCTURE_MAINTENANCE,
   JOB_TASK,
@@ -993,6 +1008,8 @@ func newStartUpdate() *cobra.Command {
 	// TODO: array: replace_where_overrides
 	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
+	cmd.Flags().BoolVar(&startUpdateReq.TestOnly, "test-only", startUpdateReq.TestOnly, `If true, this is a test-only update: it runs the pipeline's tests and does not update the pipeline's datasets.`)
+	// TODO: complex arg: test_options
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
@@ -1000,7 +1017,10 @@ func newStartUpdate() *cobra.Command {
 	cmd.Long = `Start a pipeline.
 
   Starts a new update for the pipeline. If there is already an active update for
-  the pipeline, the request will fail and the active update will remain running.`
+  the pipeline, the request will fail and the active update will remain running.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline to start an update for.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1031,14 +1051,14 @@ func newStartUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline to start an update for")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have the id of the pipeline to start an update for")
 		}
 		startUpdateReq.PipelineId = args[0]
 
@@ -1087,7 +1107,10 @@ func newStop() *cobra.Command {
 	cmd.Long = `Stop a pipeline.
 
   Stops the pipeline by canceling the active update. If there is no active
-  update for the pipeline, this request is a no-op.`
+  update for the pipeline, this request is a no-op.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline to stop.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1106,14 +1129,14 @@ func newStop() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID of the pipeline to stop")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have the id of the pipeline to stop")
 		}
 		stopReq.PipelineId = args[0]
 
@@ -1165,16 +1188,16 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
-	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline.`)
+	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts with the name of another pipeline.`)
+	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `ID (UUID) of the serverless budget policy applied to this pipeline.`)
 	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
-	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `SDP Release Channel that specifies which version to use.`)
+	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `Release channel that selects the pipeline runtime version: CURRENT (the default) or PREVIEW, which runs on the upcoming runtime release.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
 	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
 	// TODO: complex arg: deployment
 	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
-	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
+	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition: CORE, PRO, or ADVANCED.`)
 	// TODO: complex arg: environment
 	// TODO: complex arg: event_log
 	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
@@ -1197,6 +1220,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
 	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	// TODO: complex arg: testing
 	// TODO: complex arg: trigger
 	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline.`)
 

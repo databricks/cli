@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"slices"
@@ -15,9 +16,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // ApplyChangesToYAML generates YAML files for the given field changes.
@@ -92,25 +94,36 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			return nil, fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 		}
 
+		source, err := moveDroppedAnchors(content, fieldPathCandidate, fieldChange.Change.Operation)
+		if err != nil {
+			return nil, err
+		}
+
 		patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 		var modifiedContent []byte
 		var patchErr error
 
 		switch fieldChange.Change.Operation {
 		case OperationRemove:
-			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr = patcher.Apply(source, yamlpatch.Patch{yamlpatch.Operation{
 				Type: yamlpatch.OperationRemove,
 				Path: path,
 			}})
 		case OperationReplace:
-			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr = patcher.Apply(source, yamlpatch.Patch{yamlpatch.Operation{
 				Type:  yamlpatch.OperationReplace,
 				Path:  path,
 				Value: fieldChange.Change.Value,
 			}})
 		case OperationAdd:
+			opType := yamlpatch.OperationAdd
+			// A key the file writes as null is absent from the merged config, so the change
+			// arrives as an add; it replaces the existing key, as in RFC 6902.
+			if yamlKeyReplaceable(content, fieldPathCandidate) {
+				opType = yamlpatch.OperationReplace
+			}
 			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-				Type:  yamlpatch.OperationAdd,
+				Type:  opType,
 				Path:  path,
 				Value: fieldChange.Change.Value,
 			}})
@@ -136,6 +149,20 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 		log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
 		if firstErr == nil {
 			firstErr = patchErr
+		}
+	}
+
+	// Reuse an existing parent at any candidate before materializing a null ancestor.
+	if !success && fieldChange.Change.Operation == OperationAdd {
+		for _, candidate := range fieldChange.writePaths() {
+			patched, err := addThroughNullAncestor(content, candidate, fieldChange.Change.Value)
+			if err != nil {
+				return nil, err
+			}
+			if patched != nil {
+				log.Debugf(ctx, "Materialized null ancestor for %s", candidate)
+				return patched, nil
+			}
 		}
 	}
 
@@ -172,6 +199,211 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	}
 
 	return content, nil
+}
+
+// addThroughNullAncestor applies an add by materializing its null ancestor.
+// It returns nil when no null ancestor can be replaced safely.
+func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return nil, err
+	}
+	if len(doc.Content) != 1 {
+		return nil, nil
+	}
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+	current := doc.Content[0]
+	var keyNode *yaml.Node
+	for depth, part := range pattern.AsSlice() {
+		// Replacing anchored content could alter aliases or leave dangling references.
+		if current.Anchor != "" {
+			return nil, nil
+		}
+		if current.Kind == yaml.ScalarNode && current.ShortTag() == "!!null" {
+			for node := pattern; node.Len() > depth; node = node.Parent() {
+				key, isKey := node.StringKey()
+				index, isIndex := node.Index()
+				switch {
+				case isKey:
+					value = map[string]any{key: value}
+				case node.BracketStar(), isIndex && index == 0:
+					value = []any{value}
+				default:
+					// Only the first element can be added to an empty sequence.
+					return nil, nil
+				}
+			}
+			var replacement yaml.Node
+			if err := replacement.Encode(value); err != nil {
+				return nil, err
+			}
+			replacement.HeadComment = current.HeadComment
+			replacement.FootComment = current.FootComment
+			// Block containers cannot carry the scalar's inline comment themselves.
+			if current.LineComment != "" {
+				if keyNode != nil {
+					keyNode.LineComment = strings.TrimSpace(keyNode.LineComment + "\n" + current.LineComment)
+				} else {
+					replacement.HeadComment = strings.TrimSpace(replacement.HeadComment + "\n" + current.LineComment)
+				}
+			}
+			*current = replacement
+			return encodeYAML(&doc)
+		}
+
+		current, keyNode = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return nil, nil
+		}
+	}
+	return nil, nil
+}
+
+// moveDroppedAnchors rewrites content so that removing or replacing the node at
+// fieldPath leaves no alias dangling. An anchor on or inside that node moves to its
+// first alias elsewhere, which becomes a copy of the old value, so the aliases after
+// it keep that value. Like the patcher, the path follows aliases into their anchors.
+func moveDroppedAnchors(content []byte, fieldPath string, operation OperationType) ([]byte, error) {
+	if operation != OperationRemove && operation != OperationReplace {
+		return content, nil
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return nil, err
+	}
+	if len(doc.Content) != 1 {
+		return content, nil
+	}
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+
+	node, key := doc.Content[0], (*yaml.Node)(nil)
+	for _, part := range pattern.AsSlice() {
+		if node.Kind == yaml.AliasNode {
+			node = node.Alias
+		}
+		node, key = yamlChild(node, (*structpath.PathNode)(part))
+		if node == nil {
+			return content, nil
+		}
+	}
+	dropped := node
+
+	anchors := map[*yaml.Node]bool{}
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			anchors[n] = true
+		}
+	})
+	if operation == OperationRemove && key != nil && key.Anchor != "" {
+		anchors[key] = true
+	}
+	if len(anchors) == 0 {
+		return content, nil
+	}
+
+	// A copy keeps its aliases to anchors that stay, so it still follows them, unless
+	// another anchor reuses the name and could take the alias at the copy's place.
+	names := map[string]int{}
+	walkYAML(&doc, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			names[n.Anchor]++
+		}
+	})
+	droppedAnchors := maps.Clone(anchors)
+	keepAlias := func(alias *yaml.Node) bool {
+		return !droppedAnchors[alias.Alias] && names[alias.Alias.Anchor] == 1
+	}
+
+	changed := false
+	var visit func(node, key *yaml.Node)
+	visit = func(node, key *yaml.Node) {
+		if node == dropped {
+			return
+		}
+		if node.Kind == yaml.AliasNode && anchors[node.Alias] {
+			anchored := node.Alias
+			delete(anchors, anchored)
+			replacement := inlineYAMLNode(anchored, keepAlias)
+			replacement.Anchor = anchored.Anchor
+			anchored.Anchor = ""
+			replaceYAMLNode(node, key, replacement)
+			changed = true
+			return
+		}
+		if node.Kind == yaml.MappingNode {
+			for i := 0; i+1 < len(node.Content); i += 2 {
+				visit(node.Content[i], nil)
+				visit(node.Content[i+1], node.Content[i])
+			}
+			return
+		}
+		for _, child := range node.Content {
+			visit(child, nil)
+		}
+	}
+	visit(&doc, nil)
+	// The patcher still parses the dropped node, so its aliases to a moved anchor become copies.
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
+			replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias, keepAlias))
+			changed = true
+		}
+	})
+	if !changed {
+		return content, nil
+	}
+	return encodeYAML(&doc)
+}
+
+func walkYAML(node *yaml.Node, fn func(*yaml.Node)) {
+	fn(node)
+	for _, child := range node.Content {
+		walkYAML(child, fn)
+	}
+}
+
+// inlineYAMLNode copies node with its anchors dropped, so the copy cannot rebind an
+// anchor name for the aliases that follow it, and expands the aliases keep rejects.
+func inlineYAMLNode(node *yaml.Node, keep func(alias *yaml.Node) bool) *yaml.Node {
+	if node.Kind == yaml.AliasNode {
+		if keep(node) {
+			c := *node
+			return &c
+		}
+		return inlineYAMLNode(node.Alias, keep)
+	}
+	c := *node
+	c.Anchor = ""
+	c.Content = make([]*yaml.Node, len(node.Content))
+	for i, child := range node.Content {
+		c.Content[i] = inlineYAMLNode(child, keep)
+	}
+	return &c
+}
+
+// replaceYAMLNode replaces an alias in place and keeps its comments.
+func replaceYAMLNode(alias, key, replacement *yaml.Node) {
+	replacement.HeadComment = alias.HeadComment
+	replacement.LineComment = ""
+	replacement.FootComment = alias.FootComment
+	// A block container would pass the alias's inline comment on to the next line, and
+	// go-yaml cannot encode an anchored one after a key's inline comment, so it goes above.
+	switch {
+	case alias.LineComment == "":
+	case replacement.Kind == yaml.ScalarNode || replacement.Style&yaml.FlowStyle != 0:
+		replacement.LineComment = alias.LineComment
+	case key != nil:
+		key.HeadComment = strings.TrimSpace(key.HeadComment + "\n" + alias.LineComment)
+	default:
+		replacement.HeadComment = strings.TrimSpace(replacement.HeadComment + "\n" + alias.LineComment)
+	}
+	*alias = *replacement
 }
 
 // isParentPathError checks if error indicates missing parent path.
@@ -289,13 +521,152 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 			clearFlowStyleAlongPath(&doc, candidate)
 		}
 	}
+	return encodeYAML(&doc)
+}
+
+// encodeYAML uses the same indentation as the YAML patcher.
+func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
+	if err := yamlutil.Encode(&buf, doc); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), enc.Close()
+	return buf.Bytes(), nil
+}
+
+// yamlChild returns the child and its mapping key so callers can preserve comments.
+// A nil child means the path component cannot be followed.
+func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *yaml.Node) {
+	switch current.Kind {
+	case yaml.MappingNode:
+		key, ok := part.StringKey()
+		if !ok {
+			return nil, nil
+		}
+		// current.Content: [key1, val1, key2, val2, ...]
+		for i := 0; i+1 < len(current.Content); i += 2 {
+			if current.Content[i].Value == key {
+				return current.Content[i+1], current.Content[i]
+			}
+		}
+	case yaml.SequenceNode:
+		index, ok := part.Index()
+		if ok && index >= 0 && index < len(current.Content) {
+			return current.Content[index], nil
+		}
+	default:
+		return nil, nil
+	}
+	return nil, nil
+}
+
+// sourceDocs caches files parsed as nodes, which unlike the merged configuration do not
+// hold keys inherited through a merge key ('<<: *anchor'): the patcher cannot reach those.
+type sourceDocs map[string]*yaml.Node
+
+// written reports whether the key is written at either path, and the path whose mapping
+// can take the key instead: writePath, unless only altWritePath has such a mapping or
+// a key at writePath would not take effect (shadowed), which also discounts one written
+// there. An unreadable file counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file, writePath, altWritePath string, shadowed bool) (key bool, addPath string) {
+	doc, ok := d[file]
+	if !ok {
+		doc = &yaml.Node{}
+		content, err := os.ReadFile(file)
+		if err != nil || yaml.Unmarshal(content, doc) != nil || len(doc.Content) != 1 {
+			doc = nil
+		}
+		d[file] = doc
+	}
+	if doc == nil {
+		return true, ""
+	}
+	key, parent := keyWrittenAt(doc.Content[0], writePath)
+	var altKey, altParent bool
+	if altWritePath != "" {
+		altKey, altParent = keyWrittenAt(doc.Content[0], altWritePath)
+	}
+	if shadowed {
+		key = false
+	}
+	switch {
+	case altParent && (shadowed || !parent):
+		addPath = altWritePath
+	case parent && !shadowed:
+		addPath = writePath
+	}
+	return key || altKey, addPath
+}
+
+// keyWrittenAt follows aliases like the patcher does, but a parent reached through one, or
+// under an anchor, is shared with whatever merges it and is no place to add the key.
+func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
+	path, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return true, true
+	}
+	parts := path.AsSlice()
+	current := root
+	shared := false
+	for i, part := range parts {
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+			shared = true
+		}
+		if current.Anchor != "" {
+			shared = true
+		}
+		if i == len(parts)-1 {
+			parent = current.Kind == yaml.MappingNode && !shared
+		}
+		current, _ = yamlChild(current, part)
+		if current == nil {
+			return false, parent
+		}
+	}
+	return true, parent
+}
+
+// yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
+// itself, with no anchor on or inside its value. Replacing a value that is or holds an
+// anchor would leave its aliases dangling; a key under an anchored mapping is replaced
+// like any other.
+func yamlKeyReplaceable(content []byte, fieldPath string) bool {
+	value := yamlKeyValue(content, fieldPath)
+	return value != nil && !hasAnchor(value)
+}
+
+// yamlKeyValue returns the value of the mapping key fieldPath ends at, or nil when the
+// YAML does not write that key itself. An add at a sequence index inserts rather than
+// replaces, and a key inherited through a merge key has no node of its own, so only
+// written keys count.
+func yamlKeyValue(content []byte, fieldPath string) *yaml.Node {
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil
+	}
+	if _, ok := pattern.StringKey(); !ok {
+		return nil
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil || len(doc.Content) != 1 {
+		return nil
+	}
+	current := doc.Content[0]
+	for _, part := range pattern.AsSlice() {
+		// A patch writes through an alias into its anchor's content.
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+		}
+		current, _ = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return nil
+		}
+	}
+	return current
+}
+
+func hasAnchor(node *yaml.Node) bool {
+	return node.Anchor != "" || slices.ContainsFunc(node.Content, hasAnchor)
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
@@ -313,35 +684,10 @@ func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
 
 	for _, n := range node.AsSlice() {
 		current.Style &^= yaml.FlowStyle
-
-		if key, ok := n.StringKey(); ok {
-			if current.Kind != yaml.MappingNode {
-				return
-			}
-			found := false
-			// current.Content: [key1, val1, key2, val2, ...]
-			for i := 0; i+1 < len(current.Content); i += 2 {
-				if current.Content[i].Value == key {
-					current = current.Content[i+1]
-					found = true
-					break
-				}
-			}
-			if !found {
-				return
-			}
-			continue
+		current, _ = yamlChild(current, n)
+		if current == nil {
+			return
 		}
-
-		if idx, ok := n.Index(); ok {
-			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
-				return
-			}
-			current = current.Content[idx]
-			continue
-		}
-
-		return
 	}
 
 	clearFlowStyleNodes(current)
@@ -363,7 +709,7 @@ const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 // (?:#.*)? — optional comment
 var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
 
-// preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
+// preserveBlankLines replaces blank lines with marker comments that survive YAML round-trips
 func preserveBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
@@ -411,7 +757,7 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // flushBlanks appends blank lines to result. When markers are present,
-// it emits exactly that many blanks (dropping yaml.v3-added duplicates);
+// it emits exactly that many blanks (dropping encoder-added duplicates);
 // otherwise it keeps all blanks as-is.
 func flushBlanks(result []string, blanks, markers int) []string {
 	n := blanks

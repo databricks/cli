@@ -1,5 +1,281 @@
 # Version changelog
 
+## Release v1.28.0 (2026-11-24)
+
+### CLI
+
+ * Retry transient errors in `fs` commands: `fs cp` to a UC Volume from another Volume or DBFS (files up to 8 MiB) on HTTP 503, DBFS uploads when the upload stream is lost, and stat, read and list on UC Volumes on HTTP 500. ([#7607](https://github.com/databricks/cli/pull/7607), [#7763](https://github.com/databricks/cli/pull/7763), [#7839](https://github.com/databricks/cli/pull/7839))
+ * `databricks auth profiles --skip-validate` now omits the `Valid` column instead of reporting `NO` for every profile. ([#7638](https://github.com/databricks/cli/pull/7638))
+ * Fix Ctrl-C taking about 10 seconds to stop `databricks aitools install`, `update` or `uninstall` while it runs a coding agent's CLI, and retry reading an agent's config on Windows while the agent rewrites it. ([#7832](https://github.com/databricks/cli/pull/7832), [#7870](https://github.com/databricks/cli/pull/7870))
+ * Automatic installation of Databricks AI tools no longer asks in containers or installs for the first time without a terminal, no longer runs as root in another user's home, keeps newer skills you installed, no longer hints to install what it is about to install, and on Linux and macOS stops the calling script on Ctrl-C. ([#7828](https://github.com/databricks/cli/pull/7828), [#7834](https://github.com/databricks/cli/pull/7834), [#7874](https://github.com/databricks/cli/pull/7874), [#7888](https://github.com/databricks/cli/pull/7888), [#7890](https://github.com/databricks/cli/pull/7890), [#7901](https://github.com/databricks/cli/pull/7901))
+ * Wait before retrying a failed automatic install of Databricks AI tools, starting at 5 minutes and doubling after each failure, so a skills source or coding agent CLI that stays broken no longer slows down each of the next commands. ([#7900](https://github.com/databricks/cli/pull/7900))
+ * `databricks aitools install` now cancels the agent picker on Esc. ([#7721](https://github.com/databricks/cli/pull/7721))
+ * `databricks aitools uninstall --skills` now fails when its value names no skill instead of removing every skill, and `aitools update` and `uninstall` no longer prompt when a coding agent runs them; with skills in both scopes they fail and ask for `--scope`. ([#7873](https://github.com/databricks/cli/pull/7873))
+ * `databricks aitools install --skills-only` and `databricks aitools update` no longer mix skill files with the Databricks plugin: install skips agents that already have the plugin, and update no longer replaces skill files from a `--skills-only` install made with this release or later while the agent's CLI was on PATH. To keep skill files from an earlier `--skills-only` install, run `databricks aitools install --skills-only` again with the agent's CLI on PATH. ([#7831](https://github.com/databricks/cli/pull/7831), [#7903](https://github.com/databricks/cli/pull/7903))
+ * `apps init` no longer suggests installing skills to Codex and Copilot users who installed the Databricks plugin with `databricks aitools install`. ([#7830](https://github.com/databricks/cli/pull/7830))
+ * Fix `databricks auth login` failing with `data passed to Set was too big` on macOS and Windows for OAuth tokens too large for one keyring item. ([#7845](https://github.com/databricks/cli/pull/7845))
+ * Fix the token storage mode (`auth_storage`) being read from the file named by `DATABRICKS_CONFIG_FILE` instead of the config file the profile was loaded from. ([#7733](https://github.com/databricks/cli/pull/7733))
+ * `databricks auth login` no longer waits for the browser that the default opener starts to close before it continues. ([#7551](https://github.com/databricks/cli/pull/7551))
+ * Allow `databricks auth docker configure` when several profiles match one workspace; the chosen profile is recorded for the registry and shown by `databricks auth docker host`. ([#7383](https://github.com/databricks/cli/pull/7383))
+ * Show the HTTP status, error code and endpoint when an API error has no message, instead of a bare `Error: `, and the HTTP status and path for Files API errors that used to show an empty `databricks-api error:`. ([#7800](https://github.com/databricks/cli/pull/7800), [#7839](https://github.com/databricks/cli/pull/7839))
+ * AI agents can now submit feedback without confirmation; `--yes`/`-y` is deprecated, and agents passing `--yes=false` now get an error. ([#7795](https://github.com/databricks/cli/pull/7795))
+ * Log `/.well-known/databricks-config` fetch failures with a transient HTTP status (408, 429, or 5xx other than 501) at debug level instead of as a warning, like timeouts. ([#7912](https://github.com/databricks/cli/pull/7912))
+ * Fix interactive list output sometimes dropping or reordering a page of rows. ([#7804](https://github.com/databricks/cli/pull/7804), [#7914](https://github.com/databricks/cli/pull/7914))
+ * Allow `databricks sandbox forward` to forward remote ports below 10000. The sandbox refuses a few reserved platform ports with an error that names the port. ([#7861](https://github.com/databricks/cli/pull/7861))
+ * Breaking: `databricks sandbox ssh` now uses local SSH keys and works with sandboxes created through the SDK or API; it no longer accepts `--port` and needs Python 3 and `openssh-server` in the sandbox. Add `databricks sandbox ssh-setup` to configure native SSH and SCP. ([#7588](https://github.com/databricks/cli/pull/7588), [#7589](https://github.com/databricks/cli/pull/7589), [#7590](https://github.com/databricks/cli/pull/7590))
+ * `databricks ssh connect` to serverless CPU compute now defaults to environment version 5, so the first connection after upgrading starts a new server; pass `--environment-version 4` to keep the old one. ([#7847](https://github.com/databricks/cli/pull/7847))
+ * `databricks ssh connect` now downloads the SSH server binaries from PyPI when GitHub is unreachable, using `PIP_INDEX_URL` or `index-url` from the per-user pip config over HTTPS only, and checks SHA-256 digests. ([#7852](https://github.com/databricks/cli/pull/7852))
+
+### AI Runtime
+
+ * Breaking: `compute.pool_id` is no longer accepted in AIR workload YAML; use `compute.accelerator_pool_id`. ([#7698](https://github.com/databricks/cli/pull/7698))
+ * `databricks air convert-to-dabs` handles an existing output directory better: it gives the right guidance when the directory already holds the workload's bundle, `--force` no longer replaces a different bundle or an alternate root file, re-converting removes stale sidecars, and git-pinned code outside the bundle gets an `--output-dir` suggestion. ([#7835](https://github.com/databricks/cli/pull/7835), [#7853](https://github.com/databricks/cli/pull/7853), [#7857](https://github.com/databricks/cli/pull/7857), [#7866](https://github.com/databricks/cli/pull/7866))
+ * `air list` and `air get` now find the AI Runtime task anywhere in a multi-task job; a job with several such tasks lists one row per task (so `run_id` is no longer unique in `air list -o json`), and both report `task_key` (`air get --task-key` selects one). `air list --all-status` now orders runs by submission time instead of by their latest attempt's start. ([#7632](https://github.com/databricks/cli/pull/7632))
+ * Update fallback messages for pending AI Runtime runs when AIR does not report a status reason. ([#7899](https://github.com/databricks/cli/pull/7899))
+ * `air run -o json` now reports config-validation errors as a JSON error envelope, with `UNAUTHENTICATED`, `INVALID_ARGS` or the new `PERMISSION_DENIED` code. ([#7864](https://github.com/databricks/cli/pull/7864))
+
+### Bundles
+
+ * Bundle commands no longer hang after a request timeout on a dead HTTP/2 connection. ([#7723](https://github.com/databricks/cli/pull/7723))
+ * Fix a panic when the local Terraform state is removed after it is pulled and before it is migrated to the direct engine, for example by a concurrent `bundle deploy`. ([#7778](https://github.com/databricks/cli/pull/7778))
+ * The direct deployment engine now uses a Lakebase or postgres catalog that a failed create request still created, instead of failing the deploy. ([#7801](https://github.com/databricks/cli/pull/7801))
+ * `bundle deploy` and `bundle run` for apps now succeed when the app's compute is already active or starting, and deploy the app when the deployment triggered by start failed. ([#7709](https://github.com/databricks/cli/pull/7709), [#7780](https://github.com/databricks/cli/pull/7780))
+ * Add `thumbnail_path` to the `apps` resource, so `bundle deploy` sets, updates and deletes the thumbnail shown for the app in the Apps UI. ([#7728](https://github.com/databricks/cli/pull/7728))
+ * Fix bundle commands failing on a notebook or file path with a colon in its first segment, such as the default workspace notebook name `New Notebook 2026-10-28 12:17:43.ipynb`. ([#7851](https://github.com/databricks/cli/pull/7851))
+ * `bundle run` and `pipelines run` now retry transient errors from the pipeline events and update status reads while waiting for an update. ([#7800](https://github.com/databricks/cli/pull/7800))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7904](https://github.com/databricks/cli/pull/7904))
+ * Update the Go SDK to [v0.203.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.203.0). ([#7869](https://github.com/databricks/cli/pull/7869), [#7906](https://github.com/databricks/cli/pull/7906))
+ * Update `github.com/databricks/sdk-go/files` to [v0.9.0](https://github.com/databricks/sdk-go/blob/files/v0.9.0/files/CHANGELOG.md). ([#7889](https://github.com/databricks/cli/pull/7889))
+
+
+## Release v1.27.0 (2026-11-19)
+
+### Notable Changes
+
+ * `databricks aitools install`, `update` and `uninstall` now exit with code 1 when they do nothing they were asked to. `install` fails when it sets up nothing: no coding agent is detected, every agent is skipped or fails to install, or no skill in the release can be installed (also with `--path`). `update` fails when every update or check it attempts fails, and `uninstall` when every removal it attempts fails. Scripts that ran these commands as a best-effort step and relied on exit code 0 should handle the new exit code. ([#7481](https://github.com/databricks/cli/pull/7481))
+ * Add `file:<path>` selectors to `pipelines run` and pipeline `bundle run`. `--refresh` and `--full-refresh` now use space-separated lists, such as `--refresh "orders payments"`, instead of comma-separated lists. Single names containing spaces now require backticks, e.g. ``--refresh 'table:`order details`'``. ([#7184](https://github.com/databricks/cli/pull/7184))
+ * The Databricks CLI is now available on PyPI as `databricks`: run it with `uvx databricks`, or install it with `uv tool install databricks`, `pipx install databricks` or `pip install databricks`. The package contains only the prebuilt CLI binary. Uninstall the legacy `databricks-cli` package first, since both install a `databricks` command. ([#7704](https://github.com/databricks/cli/pull/7704), [#7777](https://github.com/databricks/cli/pull/7777))
+
+### CLI
+
+ * Add `databricks sandbox fs` commands (`cp`, `ls`, `cat`, `mkdir`, `rm`) to transfer files between your local filesystem and sandboxes using `<sandbox-id>:/path`. ([#7372](https://github.com/databricks/cli/pull/7372))
+ * `databricks fs` commands retry reads (stat, list, open) and deletes on DBFS and Volumes when the server returns a transient error or does not respond within the HTTP timeout. ([#7556](https://github.com/databricks/cli/pull/7556))
+ * Retry UC Volumes file operations (`fs cp`, `fs ls`, `fs rm`, bundle uploads to Volumes) when the Files API returns HTTP 408, 429, 502, 503 or 504 (for example "AWS S3 is throttling requests"), or on a transient network error; this regressed in v1.10.0. ([#7559](https://github.com/databricks/cli/pull/7559))
+ * Stop warning when the host metadata request (`/.well-known/databricks-config`) times out; the CLI already falls back to your config, and the message is still shown with `--debug`. ([#7752](https://github.com/databricks/cli/pull/7752))
+ * Add `databricks aitools auto-install disable` and `enable` to turn off (or back on) the automatic installation of Databricks AI tools on CLI upgrades. A global-scope `databricks aitools uninstall` also turns it off. ([#7701](https://github.com/databricks/cli/pull/7701))
+ * Stop printing the Databricks AI tooling install hint on `auth`, `configure`, `current-user me`, `version`, `help`, and shell-completion commands. ([#7452](https://github.com/databricks/cli/pull/7452))
+ * When Codex, Cursor, GitHub Copilot CLI, OpenCode, Gemini CLI, Antigravity, Pi, Goose or Kiro run the CLI without Databricks skills installed for that agent, the CLI now prints a one-line hint to install them with `databricks aitools install --agents <agent> --scope global`, previously shown only to Claude Code. ([#7586](https://github.com/databricks/cli/pull/7586))
+ * `databricks aitools install` now rejects an unknown `--agents` name before it shows the scope prompt, instead of after. ([#7469](https://github.com/databricks/cli/pull/7469))
+ * `databricks aitools install` no longer asks "Proceed?" after the agent picker; the picker selection confirms the plan. The picker title now shows the install scope, its hint says Enter installs, `--skills-only` runs label plugin agents "skills" and pre-check every agent whose config dir exists, and the plan summary after it is reduced to the scope line. ([#7478](https://github.com/databricks/cli/pull/7478))
+ * `databricks aitools install --output json` reports more specific `error_category` values: `SKILLS_FETCH_FAILED`, `RELEASE_LOOKUP_FAILED`, `RATE_LIMITED`, `MANIFEST_INVALID`, `STATE_INVALID` and `PLUGIN_CLI_TIMEOUT`. A coding agent CLI that does not answer in time is now reported as `timed out after <duration>`, followed by any stderr it wrote before it was stopped. ([#7475](https://github.com/databricks/cli/pull/7475))
+ * `databricks aitools install` no longer prompts when a coding agent runs it, even in a pseudo-terminal; it uses the non-interactive defaults instead and prints a note saying so. ([#7477](https://github.com/databricks/cli/pull/7477))
+ * `databricks aitools install` now prints the directory it installed skills into (for example `Installed 1 skill in ~/.databricks/aitools/skills.`), so agents can open the installed `SKILL.md` files without searching for them. ([#7668](https://github.com/databricks/cli/pull/7668))
+ * `databricks aitools install` now ends a failed install with a step to recover, in the text output and in a new `recovery` field of `--output json`. ([#7480](https://github.com/databricks/cli/pull/7480))
+ * `databricks aitools install` now installs plugins for the other coding agents even when installing skill files fails. ([#7479](https://github.com/databricks/cli/pull/7479))
+ * `databricks aitools install` now installs skill files for a detected coding agent whose CLI is not on PATH (for example a Claude Code desktop or IDE install), unless it already has the plugin, says how to switch to the plugin later, and warns when the current project also has the plugin. `databricks aitools update` no longer tries to install the plugin for such an agent, and no longer writes skill files next to a plugin that such an agent already has. ([#7482](https://github.com/databricks/cli/pull/7482))
+ * Fix `databricks aitools install` waiting a long time on an unreachable or slow workspace while it resolves authentication for telemetry; that wait is now limited to a few seconds. ([#7468](https://github.com/databricks/cli/pull/7468))
+ * `databricks aitools install`, `update` and `list` now refuse a skills manifest that names a skill or file outside the skills directory, before writing any skill files. A skill whose name or file paths are not portable is skipped with a warning, and `update` keeps its installed copy. ([#7722](https://github.com/databricks/cli/pull/7722))
+ * `databricks aitools install` and `databricks aitools update` refresh only the marketplace the Databricks plugin is listed in, so another unreachable marketplace no longer blocks them. When that refresh fails, both commands warn, install or update the plugin from the local copy of the marketplace, and record the plugin version as unknown. ([#7473](https://github.com/databricks/cli/pull/7473))
+ * `databricks aitools install` and `databricks aitools update` now wait up to 20 seconds instead of 5 for a coding agent's CLI to answer the plugin capability check, so a slow first start is less likely to report the agent as unavailable. ([#7472](https://github.com/databricks/cli/pull/7472))
+ * `databricks aitools install` no longer fails a plugin-only install when the lookup of the latest skills release on GitHub fails or is rate-limited. The plugin is installed and its version is recorded as unknown. ([#7474](https://github.com/databricks/cli/pull/7474))
+ * `databricks aitools` commands now send usage telemetry, and the CLI records when it recommends installing Databricks AI tools. When the configured workspace is slow or unreachable, `aitools install`, `update` and `uninstall` can take up to about 6 seconds longer, and `list`, `version` and runs that stop early up to about 3 seconds. Set `DATABRICKS_CLI_DISABLE_TELEMETRY=1` to opt out. ([#7467](https://github.com/databricks/cli/pull/7467), [#7469](https://github.com/databricks/cli/pull/7469), [#7470](https://github.com/databricks/cli/pull/7470))
+ * `databricks aitools install` and `databricks aitools update` now report a coding agent CLI shim (`.cmd` or `.bat`) on Windows that prints its plugin help and then exits with an error as `shim-exited-with-error`, with the command to run to see the error, instead of reporting the CLI as not on PATH. ([#7476](https://github.com/databricks/cli/pull/7476))
+ * `apps init` no longer suggests installing skills when every detected coding agent already has the Databricks plugin. ([#7467](https://github.com/databricks/cli/pull/7467))
+ * `databricks auth login` now gives up on the optional workspace lookup after about 5 seconds instead of retrying for about 5 minutes, and explains the fallback to the manual workspace ID prompt. ([#7522](https://github.com/databricks/cli/pull/7522))
+ * Throttle Claude Code's native plugin install hint separately from the text hint: it prints at most once per 10 minutes per session, so the install dialog still comes up when a subagent, a hook, or a command outside a Claude Code subprocess runs the session's first `databricks` command. ([#7692](https://github.com/databricks/cli/pull/7692))
+ * Print Claude Code's native plugin install hint alongside the text hint, so Claude Code offers a one-click install of the Databricks plugin. Claude Code now counts as having the tooling only when it loads it: skills only in `~/.databricks/aitools/skills` don't count, and a project- or local-scope plugin counts only when the CLI runs inside that project. `auth token`, `auth docker token` and CLI subprocesses no longer print install hints. ([#7585](https://github.com/databricks/cli/pull/7585))
+ * Interactive prompts and pagers now work in Git for Windows' bash and other MSYS2 shells when they run under ConPTY (the default since Git for Windows 2.47) or directly in a Windows console. ([#7699](https://github.com/databricks/cli/pull/7699))
+ * Add the `databricks feedback` command to send feedback about the CLI to Databricks. ([#7724](https://github.com/databricks/cli/pull/7724))
+ * Fix shell completion in `databricks fs` commands for local paths typed with a leading `./` or repeated separators, which previously offered no suggestions. ([#7679](https://github.com/databricks/cli/pull/7679))
+ * Fix a panic in `databricks labs` commands when a non-string SDK setting such as `DATABRICKS_DEBUG_HEADERS` or `DATABRICKS_RATE_LIMIT` is set in the environment. ([#7673](https://github.com/databricks/cli/pull/7673))
+ * Fix a panic in `databricks labs install` for projects whose `labs.yml` has no `install` section. ([#7673](https://github.com/databricks/cli/pull/7673))
+ * `NO_COLOR` no longer disables prompts, spinners or the list pager; they run without color. ([#7700](https://github.com/databricks/cli/pull/7700))
+ * Add the Beta `databricks pipelines test` command, which runs the tests of a pipeline, and the `testing` property of pipelines in bundles. ([#7429](https://github.com/databricks/cli/pull/7429))
+ * Add `databricks sandbox forward`, which serves an app running in a sandbox at a local URL. ([#7395](https://github.com/databricks/cli/pull/7395))
+ * Bound the whole telemetry upload at exit, including config resolution and authentication, by its timeout, so a stalled auth or telemetry endpoint no longer keeps a command from exiting. ([#7467](https://github.com/databricks/cli/pull/7467))
+ * `databricks version --check` now suggests `databricks aitools install` on stderr when a coding agent is detected without the Databricks plugin or skills. ([#7471](https://github.com/databricks/cli/pull/7471))
+
+### AI Runtime
+
+ * `air get -o json` now reports `PENDING` while the run waits for compute, matching `air list`, and includes the run's `status_message`. ([#7455](https://github.com/databricks/cli/pull/7455))
+ * Wrap long failure reasons and log lines in the `air list` info and logs panes, keep the MLflow link (labeled with its retry) when a run's last retry failed before starting, and point `air logs` at earlier retries when the last one has no logs. ([#7456](https://github.com/databricks/cli/pull/7456))
+ * `databricks air logs --node` now reports an out-of-range node index when it can determine the run's node count, instead of looking like a successful run with no logs. ([#7516](https://github.com/databricks/cli/pull/7516))
+ * Add experiment, duration, accelerator, and dashboard metadata to `air list --output json`. For retried runs, `started_at` now reports the latest attempt, matching `air get`. ([#7568](https://github.com/databricks/cli/pull/7568))
+ * `air list` shortens MLflow run names and unnamed-run IDs by keeping their end behind a leading `…`, and its columns no longer overflow on wide (for example CJK) text; `air get` shows an unnamed run's full MLflow run ID. ([#7582](https://github.com/databricks/cli/pull/7582))
+ * Shrink the Experiment and User columns of the interactive `air list` table to fit the terminal width, keeping the end of a shortened experiment name. ([#7583](https://github.com/databricks/cli/pull/7583))
+ * Show the experiment, accelerators and configuration in the `air list` info pane for runs where it showed `N/A`. ([#7587](https://github.com/databricks/cli/pull/7587))
+ * Strip terminal control characters from the MLflow run, experiment and user names shown by `air list` and `air get`, so a run name cannot clear or retitle the terminal of whoever lists it. ([#7601](https://github.com/databricks/cli/pull/7601))
+ * `air logs`, `air get`, and `air run --watch` no longer make an extra credential-check request before fetching the run, and `air get` reuses the configured workspace ID instead of looking it up. ([#7613](https://github.com/databricks/cli/pull/7613))
+ * `air list` no longer waits on extra current-user requests before listing runs, which makes the default list about 150ms faster. ([#7615](https://github.com/databricks/cli/pull/7615))
+ * `air list --all-status` requests larger index pages, so it makes far fewer round trips once the server supports `page_size`. ([#7616](https://github.com/databricks/cli/pull/7616))
+ * Fit the interactive `air list` table to narrow terminals: when the Experiment and User columns are at their floors, shorten Started to `MM-DD HH:MM` and size the MLflow column to its labels, then hide Accelerators, User, MLflow and Progress in that order, naming the hidden columns in the hint line. ([#7629](https://github.com/databricks/cli/pull/7629))
+ * `air get -o json` now includes `mlflow_run_id` and `mlflow_experiment_id`, so a run can be handed to MLflow-based steps without parsing `mlflow_url`. They identify the MLflow run `mlflow_url` links to, including one from an earlier retry that `mlflow_retry` names. ([#7636](https://github.com/databricks/cli/pull/7636))
+ * `air get` and the `air list` info pane now show the environment of runs on the Databricks AI environment (`databricks_ai_v*`) instead of `N/A`. ([#7637](https://github.com/databricks/cli/pull/7637))
+ * `air run` now rejects a `code_source.include_paths` path that selects no files instead of uploading a snapshot without it; glob patterns and pathspec magic are left to git. ([#7643](https://github.com/databricks/cli/pull/7643))
+ * `air convert-to-dabs` now suggests the `--output-dir` that converts a working-tree workload whose `code_source.root_path` is outside the bundle directory, instead of suggesting `sync.paths`. ([#7644](https://github.com/databricks/cli/pull/7644))
+ * `air run` now lists a `code_source.root_path` outside a git repository relative to `root_path`, so running from a subdirectory of `root_path` no longer uploads an empty or partial snapshot. ([#7646](https://github.com/databricks/cli/pull/7646))
+ * `air list --all-status` now fills `--limit` past purged or inaccessible indexed runs. ([#7743](https://github.com/databricks/cli/pull/7743))
+ * `air run` now warns about missing PyTorch when a pinned snapshot's `include_paths` selects a Python file. ([#7744](https://github.com/databricks/cli/pull/7744))
+ * `air cancel JOB_RUN_ID` now rejects run IDs that are not AI Runtime runs instead of cancelling unrelated Jobs runs. In `-o json` output, the `failed[].error` text for a run that does not exist or that you cannot view now starts with `failed to get run <id>:` instead of the cancel API error. ([#7569](https://github.com/databricks/cli/pull/7569))
+ * `air get -o json` now reports `mlflow_retry` when the MLflow link comes from an earlier retry because the run's last retry never reached MLflow. ([#7620](https://github.com/databricks/cli/pull/7620))
+ * `databricks air run --help` now shows how to install the databricks-ai-runtime coding agent skill. ([#7652](https://github.com/databricks/cli/pull/7652))
+ * `air run --watch -o json` now reports each lifecycle `STATUS` transition once and never reports a non-terminal state after the run has ended, including when logs are served from MLflow artifacts. ([#7621](https://github.com/databricks/cli/pull/7621))
+ * `air convert-to-dabs` now explains the `--output-dir` workaround when `code_source.root_path` resolves to the bundle root, and notes when the generated job carries the default `max_retries`. ([#7579](https://github.com/databricks/cli/pull/7579))
+ * `air run` now refuses to upload a `code_source` snapshot that selects no files (for example when `root_path` is git-ignored) and explains the cause, and `--dry-run` runs the snapshot file selection and reports the file count. ([#7570](https://github.com/databricks/cli/pull/7570))
+ * Repeat the Jobs run link after live log streaming ends. ([#7571](https://github.com/databricks/cli/pull/7571))
+ * `air get -o json` includes run details including flat `accelerator_type` and `num_accelerators`. Use `--include-config` to include stored config, which may contain plaintext `env_variables` and parameters; downloads over 1 MiB are omitted, and config-dependent `max_retries` is otherwise null. ([#7624](https://github.com/databricks/cli/pull/7624))
+ * `air get` and the `air list` info pane no longer show `Max Retries 0` when the Jobs API leaves the task's retry limit out. For a run submitted with `air run`, the limit now comes from the run's uploaded config, shown as `3 (CLI default)` when the config doesn't set `max_retries`; it shows `N/A` when the limit can't be known (job runs, multi-container runs, legacy runs with no explicit value, or an unreadable config). ([#7623](https://github.com/databricks/cli/pull/7623))
+ * Reorganize `databricks air` help: subcommands are grouped by task, `air run` has examples, and YAML fields are listed under headings, with pool fields marked optional and `command`, `compute.num_accelerators`, and `compute.accelerator_type` correctly marked required. ([#7512](https://github.com/databricks/cli/pull/7512))
+ * `air run -h config` now lists the environment variables AI Runtime sets on every node (such as `MLFLOW_RUN_ID` and `CODE_SOURCE_PATH`), and `air logs --help` notes that `--download-to` cannot be combined with `--tail` or `--minutes`. ([#7655](https://github.com/databricks/cli/pull/7655))
+ * Support full workspace accelerator types in `air list` filters while preserving family matching, and reject invalid filter values. ([#7515](https://github.com/databricks/cli/pull/7515))
+ * `databricks air list --all-status` now warns when the AI Runtime run index is unavailable and it falls back to scanning Jobs runs. That fallback scan is capped at 250 runs, and a stuck index request fails after 15 seconds instead of retrying for minutes. `--all-status --filter user=<your email>` now uses the run index instead of scanning the workspace's full run history. ([#7619](https://github.com/databricks/cli/pull/7619))
+ * Return structured JSON errors for invalid `air list --filter` values when `-o json` is used. ([#7612](https://github.com/databricks/cli/pull/7612))
+ * `air list --all-status` no longer fails when a listed run has been purged. ([#7523](https://github.com/databricks/cli/pull/7523))
+ * **Behavior change:** `databricks air logs` now prints the logs available now and exits, also for an active run, matching `kubectl logs`, `docker logs` and `databricks apps logs`. Pass `--follow` (`-f`) to stream new lines until the run completes; `--tail N --follow` prints the last N lines first. `databricks air run --watch` still submits and streams. ([#7658](https://github.com/databricks/cli/pull/7658))
+ * `databricks air logs -o json` and `databricks air run --watch -o json` now emit a `WAITING` event, for example `{"type":"WAITING","message":"Waiting for accelerator compute capacity..."}`, when the reported waiting status changes. ([#7695](https://github.com/databricks/cli/pull/7695))
+ * `databricks air logs` on a run that ended in the last two minutes now waits for the log index to settle before printing, instead of sometimes dropping lines that were indexed late. ([#7663](https://github.com/databricks/cli/pull/7663))
+ * `air logs` and `air run --watch` now print the waiting status (for example `Waiting for accelerator compute capacity...`) as a line on stderr when stderr is not a terminal, instead of printing nothing until the run produces logs. ([#7657](https://github.com/databricks/cli/pull/7657))
+ * Route AIR log links to the MLflow Logs page instead of the hidden artifact path. ([#7491](https://github.com/databricks/cli/pull/7491))
+ * Invalid `compute.accelerator_type` errors and `air run -h config.compute` no longer list the CLI's built-in accelerator types, which could differ from the workspace's. ([#7520](https://github.com/databricks/cli/pull/7520))
+ * `databricks air --help` now notes that GPU pools are not required to run workloads. ([#7581](https://github.com/databricks/cli/pull/7581))
+ * `air run` now prints the job run URL with the `?o=<workspace-id>` suffix, matching `air get` and `air list`; `dashboard_url` in `air run -o json` and the `--watch` events gains it too. When `air list` cannot resolve the workspace ID, its links now omit `?o=` instead of ending in `?o=0`. ([#7573](https://github.com/databricks/cli/pull/7573))
+ * `databricks air run` now reports an unknown workload YAML key by its field path, suggests the closest valid field, and points to `-h config` instead of naming an internal Go type. ([#7574](https://github.com/databricks/cli/pull/7574))
+ * `air run` (including `--dry-run`) now warns before submitting when the `code_source` imports `torch` but PyTorch is not declared: the environment is the Standard environment (version 5 or later) with no `torch` dependency, so the run may fail after it waits for a GPU. ([#7656](https://github.com/databricks/cli/pull/7656))
+
+### Bundles
+
+ * Add `isolation_mode` to the `catalogs` resource, so a catalog can be deployed as `OPEN` or `ISOLATED`. ([#7463](https://github.com/databricks/cli/pull/7463))
+ * `bundle validate` no longer warns when resource permissions and top-level or target permissions name the same principal. ([#7291](https://github.com/databricks/cli/pull/7291))
+ * Retry bundle file uploads, reads and deletes when the server does not respond within the HTTP timeout ("request timed out after ... of inactivity"). ([#7521](https://github.com/databricks/cli/pull/7521))
+ * Show how to recover when `bundle deploy` fails because an app's service principal does not exist or was deleted. ([#7533](https://github.com/databricks/cli/pull/7533))
+ * Retry transient server errors when creating Lakebase (`postgres_*`) resources in the direct deployment engine. ([#7557](https://github.com/databricks/cli/pull/7557))
+ * Fix `bundle plan` reporting the `spark_conf` and `custom_tags` the backend derives from `is_single_node: true` as drift on clusters. ([#7577](https://github.com/databricks/cli/pull/7577))
+ * Stop planning a spurious update for Lakeflow Connect pipelines whose `ingestion_definition.data_staging_options` is filled in by the backend. ([#7603](https://github.com/databricks/cli/pull/7603))
+ * Retry the root path check in `bundle destroy` on transient errors, so a dropped connection no longer fails the destroy. ([#7597](https://github.com/databricks/cli/pull/7597))
+ * Use the Lakebase branch when its create request times out but the branch was created, instead of failing the deploy, in the direct deployment engine. ([#7602](https://github.com/databricks/cli/pull/7602))
+ * Retry transient server errors when deleting resources in the direct deployment engine. ([#7708](https://github.com/databricks/cli/pull/7708))
+ * Use the Lakebase project when its create request times out but the project was created, instead of failing the deploy with "already exists", in the direct deployment engine. ([#7747](https://github.com/databricks/cli/pull/7747))
+ * Use the feature, model serving endpoint or dashboard that a create request created despite timing out, instead of failing the deploy, in the direct deployment engine. ([#7757](https://github.com/databricks/cli/pull/7757))
+ * Use the Lakebase role when its create request fails with a transient error but the role was created, instead of failing the deploy, in the direct deployment engine. ([#7767](https://github.com/databricks/cli/pull/7767))
+ * Use the MCP service, model service or model provider service that a create request created despite failing with a timeout, a 499 or a reset stream, instead of failing the deploy, in the direct deployment engine. Create recovery for features, serving endpoints and dashboards now also covers 499 and reset streams. ([#7782](https://github.com/databricks/cli/pull/7782))
+ * Retry app updates and deletes in the direct deployment engine when they fail with 400 BAD_REQUEST because the app compute is `UPDATING`, after waiting for the compute to settle. ([#7606](https://github.com/databricks/cli/pull/7606))
+ * Enable drift detection for `source_code_path` and `git_source` on apps. ([#6399](https://github.com/databricks/cli/pull/6399))
+ * `bundle destroy` and `bundle deploy` no longer fail with "internal error, missing in state" when the state holds an empty-ID entry left by an interrupted recreate in an older CLI. ([#7676](https://github.com/databricks/cli/pull/7676))
+ * Fix a feature whose `full_name` contains uppercase letters being recreated on every deploy. ([#7398](https://github.com/databricks/cli/pull/7398))
+ * Fix `bundle deployment bind` (and `bundle generate --bind`) failing with `no such node "resources.internal_immutable_snapshots.immutable"` when `workspace.sync_mode` is `immutable`, as reported in [#7306](https://github.com/databricks/cli/issues/7306). ([#7329](https://github.com/databricks/cli/pull/7329))
+ * Retry creating the deployment lock (without `--force-lock`) when the request fails with a transient server error, times out ("request timed out after ... of inactivity") or loses its connection ("unexpected EOF"). ([#7594](https://github.com/databricks/cli/pull/7594))
+ * Fix a materialization set member whose `feature_name` contains uppercase letters failing to deploy, or recreating the set on every deploy. ([#7398](https://github.com/databricks/cli/pull/7398))
+ * Delete the old resource when its name follows a renamed schema. ([#7718](https://github.com/databricks/cli/pull/7718))
+ * Fix `pipelines dry-run` starting a real run when given a job KEY, and a crash in its shell completion. ([#7672](https://github.com/databricks/cli/pull/7672))
+ * Rename schemas in place; schemas and volumes follow a renamed catalog or schema. ([#7343](https://github.com/databricks/cli/pull/7343))
+ * Fix a panic when validating or deploying jobs with local libraries and serverless job clusters. ([#7725](https://github.com/databricks/cli/pull/7725))
+ * Fix `tgz` artifacts with `git` set producing an empty tarball or failing when the bundle is in a subdirectory of the git repository. ([#7674](https://github.com/databricks/cli/pull/7674))
+ * Apply `presets.trigger_pause_status` and the development mode pause default to `triggers[]` entries on jobs. ([#7450](https://github.com/databricks/cli/pull/7450))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7750](https://github.com/databricks/cli/pull/7750))
+ * Update the Go SDK to [v0.198.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.198.0). ([#7530](https://github.com/databricks/cli/pull/7530))
+ * Update the Go SDK to [v0.199.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.199.0). ([#7584](https://github.com/databricks/cli/pull/7584))
+ * Update the Go SDK to [v0.200.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.200.0). ([#7653](https://github.com/databricks/cli/pull/7653))
+ * Update the Go SDK to [v0.201.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.201.0). ([#7769](https://github.com/databricks/cli/pull/7769))
+
+
+## Release v1.26.0 (2026-11-11)
+
+### AI Runtime
+
+ * `air run` reuses its existing workspace connection for config validation instead of opening a second one, which saves a TCP and TLS handshake per submission. ([#7210](https://github.com/databricks/cli/pull/7210))
+ * Speed up `databricks air run` for git-pinned `code_source` snapshots by compressing the archive in parallel, which substantially shortens packaging on large repositories. ([#7402](https://github.com/databricks/cli/pull/7402))
+ * Point the `air run -h config` agent-skill hint at the stable `databricks-ai-runtime` skill. ([#7454](https://github.com/databricks/cli/pull/7454))
+
+### Bundles
+
+ * Add `DATABRICKS_BUNDLE_INIT_WORKSPACE_HOST_PROFILE`, which names a profile whose host the `workspace_host` template helper returns instead of the selected profile's host. The profile must have the selected profile's workspace ID. ([#7410](https://github.com/databricks/cli/pull/7410))
+ * Fixed an explicit `false` on optional boolean fields (`variables.*.sensitive`, `artifacts.*.dynamic_version`, `bundle.deployment.lock.force`, `workspace.azure_use_msi`, `replace_existing` on postgres endpoints, databases and roles, and the `experimental.*` flags) being dropped, which hid it from `bundle validate -o json` and kept a target from overriding `true` with it. ([#7412](https://github.com/databricks/cli/pull/7412))
+ * Stop sending `compute_size` in the app update mask when the bundle does not declare it, so a deploy no longer resets a manually resized app to the default size. ([#7461](https://github.com/databricks/cli/pull/7461))
+ * `lifecycle.depends_on` can now target the grants or permissions of a resource, as `schemas.foo.grants`. ([#7435](https://github.com/databricks/cli/pull/7435))
+ * Add support for the `feature_specs` resource type, including UC grants on a feature spec. ([#7364](https://github.com/databricks/cli/pull/7364))
+
+### Dependency Updates
+
+ * Update the Go SDK to [v0.197.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.197.0). ([#7457](https://github.com/databricks/cli/pull/7457))
+ * Bump Go toolchain to 1.27.4. ([#7458](https://github.com/databricks/cli/pull/7458))
+
+
+## Release v1.25.0 (2026-11-09)
+
+### CLI
+
+ * `databricks aitools install --output json` now reports a more specific `error_category` (`MANIFEST_NOT_FOUND`, `PERMISSION_DENIED`, `FILESYSTEM`) for some failures it reported as `UNCATEGORIZED`. ([#7380](https://github.com/databricks/cli/pull/7380))
+ * Suggest `databricks auth logout --profile <profile-name> --delete` when multiple profiles match the same workspace in `databricks auth docker` commands. ([#7363](https://github.com/databricks/cli/pull/7363))
+ * Fix `%pip` in Jupyter notebooks opened over `databricks ssh connect` on serverless environment versions 5 and 6 and on dedicated clusters running recent Databricks Runtime versions, which fell back to the stock IPython magic instead of the Databricks one. ([#7263](https://github.com/databricks/cli/pull/7263))
+
+### AI Runtime
+
+ * `databricks air run` now validates the config server-side while it uploads the run artifacts, instead of before, which shortens submission. ([#7368](https://github.com/databricks/cli/pull/7368))
+ * Remove `CRITICAL` as a valid `compute.priority_class` value; the AI Runtime API no longer accepts it. ([#7371](https://github.com/databricks/cli/pull/7371))
+
+### Bundles
+
+ * Built-in templates add the workspace ID to `workspace.host` (`?w=<id>`) when the profile or an environment variable sets it, so generated bundles select the right workspace on hosts shared by several workspaces. Welcome messages show the same URL, and `dbt-sql` also adds `?o=<id>` to the HTTP path it suggests for `dbt init`. ([#7350](https://github.com/databricks/cli/pull/7350))
+ * Fix grants of a renamed or recreated catalog, schema, volume or other UC resource staying recorded under the old name, which made the next `bundle plan` propose to apply them again. ([#7345](https://github.com/databricks/cli/pull/7345))
+ * Fix permissions of a recreated pipeline, app, dashboard, model serving endpoint or other resource staying recorded under the old ID, which made every later `bundle plan` propose to apply them again. ([#7361](https://github.com/databricks/cli/pull/7361))
+ * Add the `postgres_data_apis` resource (Private Preview) for enabling and configuring the Data API of a Lakebase Postgres database. ([#7160](https://github.com/databricks/cli/pull/7160))
+ * Fixes [#4012](https://github.com/databricks/cli/issues/4012): registered model `aliases` are now set in Unity Catalog on deploy instead of being silently ignored. A model without an `aliases` section keeps the aliases set outside the bundle (for example by MLflow), and `aliases: []` removes them. ([#7163](https://github.com/databricks/cli/pull/7163))
+ * Include variable declarations and the source of each resolved value in the `--include-locations` output of `bundle validate` and `bundle summary`. ([#7351](https://github.com/databricks/cli/pull/7351))
+ * Add `.workspace.URLID` to bundle templates: the workspace ID that `.workspace.URL` adds, or empty, so templates can use it without failing when the ID is unknown. ([#7388](https://github.com/databricks/cli/pull/7388))
+ * Expose the workspace of the selected profile to bundle templates as `.workspace`, with `Hostname`, `ID`, and `URL`, so templates can address a workspace on a host shared by several workspaces. A template input named `workspace` takes precedence. ([#7349](https://github.com/databricks/cli/pull/7349))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7394](https://github.com/databricks/cli/pull/7394))
+ * Upgrade `github.com/mattn/go-runewidth` to v0.0.31, which removes ~30ms of startup time from every command. ([#7391](https://github.com/databricks/cli/pull/7391))
+ * Update the Go SDK to [v0.194.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.194.0). ([#7371](https://github.com/databricks/cli/pull/7371))
+ * Update the Go SDK to [v0.195.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.195.0). ([#7384](https://github.com/databricks/cli/pull/7384))
+
+
+## Release v1.24.0 (2026-11-04)
+
+### Notable Changes
+
+ * A variable used as the value of a secret is now sensitive: referencing it from any other field, such as a job parameter or a secret's `comment`, is an error because the value would be used in plain text. Mark other secret-holding variables with `sensitive: true` to get the same protection. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### CLI
+
+ * Fix `databricks auth login` and `databricks configure` overwriting the parent profile's host and token when saving a profile with a dotted name such as `team.prod` next to an existing `[team]`. ([#7266](https://github.com/databricks/cli/pull/7266))
+ * `databricks auth login` and `databricks auth token` now reject the name of an existing profile after "Create a new profile" instead of logging in to that profile. ([#7196](https://github.com/databricks/cli/pull/7196))
+ * `databricks auth login` and `databricks auth token` now reject a host that is not a URL with a hostname, such as `/`, `?o=123` or `https://`, instead of falling back to `DATABRICKS_HOST` or failing later. An empty host after "Enter a host URL manually" in the login profile picker no longer starts discovery login. ([#7195](https://github.com/databricks/cli/pull/7195))
+ * Prompts that validate their input, such as the `databricks configure` host prompt, no longer open with a red cross before anything is typed. ([#7314](https://github.com/databricks/cli/pull/7314))
+ * `databricks ssh connect` now documents `--environment-version` for choosing the serverless environment version, starts a separate default-named server for each version, and rejects the flag together with `--cluster`. Default connection names also include the environment version in their hash, so the default name when `--environment-version` is not specified changes with this release. Configuration associated with the old connection name (secret scope, SSH keys and known hosts in your local `.databricks` folder) will no longer be used and can be safely removed. ([#7310](https://github.com/databricks/cli/pull/7310))
+
+### AI Runtime
+
+ * Show workspace-supported accelerator types in `databricks air run -h config.compute.accelerator_type`. ([#7275](https://github.com/databricks/cli/pull/7275))
+ * `air list` now reports `No active runs found.` for an empty active-only result. ([#7276](https://github.com/databricks/cli/pull/7276))
+ * Stop printing a retry notice on every `air run --watch`; retries are still reported when they happen. ([#7270](https://github.com/databricks/cli/pull/7270))
+
+### Bundles
+
+ * Fix `bundle plan` reporting an update to an app's `config.env` values on every run, which also redeployed the app on every `bundle deploy`. The Apps API returns environment variable names only, so `value` and `value_from` are no longer compared against the remote deployment. ([#7326](https://github.com/databricks/cli/pull/7326))
+ * Add the `data_quality_monitors` resource for data quality monitors on Unity Catalog schemas and tables (direct engine only). ([#7094](https://github.com/databricks/cli/pull/7094))
+ * `bundle deploy` now asks for confirmation before recreating or deleting a Feature View, and `bundle deploy` and `bundle destroy` warn that FeatureSpecs using a Feature View are not checked. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Accept grant `privileges` values that the SDK enum does not list yet: `bundle validate` no longer warns (or errors under `--strict`) on them, and the PyDABs `Privilege` enum accepts unknown strings instead of raising. The JSON schema and PyDABs still advertise the known values for completion. ([#7315](https://github.com/databricks/cli/pull/7315))
+ * Add the `materialization_sets` resource, which materializes Feature Store Feature Views to offline and online stores. ([#7164](https://github.com/databricks/cli/pull/7164))
+ * Detect notebooks with the same rule as the workspace: a `.py`, `.sql`, `.scala` or `.r` file is a notebook when its first line contains `Databricks notebook source`, for example after a byte order mark. Previously such a file was tracked as a plain file, so removing it locally left the remote notebook behind. ([#7290](https://github.com/databricks/cli/pull/7290))
+ * Add `sensitive: true` for bundle variables. A variable used as the value of a secret is sensitive by default. `bundle validate -o json` redacts only sensitive variables instead of every string variable, and a sensitive variable can only be referenced from a sensitive resource field (such as a secret's `value`) or from another sensitive variable. ([#7288](https://github.com/databricks/cli/pull/7288))
+
+### Dependency Updates
+
+ * Bump dependencies with known vulnerabilities. ([#7305](https://github.com/databricks/cli/pull/7305))
+ * Bump dependencies with known vulnerabilities. ([#7327](https://github.com/databricks/cli/pull/7327))
+ * Update the Go SDK to [v0.191.1](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.191.1). ([#7277](https://github.com/databricks/cli/pull/7277))
+ * Update the Go SDK to [v0.193.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.193.0). ([#7303](https://github.com/databricks/cli/pull/7303))
+
+
 ## Release v1.23.0 (2026-10-29)
 
 ### CLI

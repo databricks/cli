@@ -37,7 +37,7 @@ Created postgres_roles.owner
 Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
+>>> retry [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
   "database_id": "my-database",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database",

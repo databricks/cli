@@ -3,6 +3,8 @@
 package recipient_activation
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,11 +16,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "recipient-activation",
-		Short: `The Recipient Activation API is only applicable in the open sharing model where the recipient object has the authentication type of TOKEN.`,
-		Long: `The Recipient Activation API is only applicable in the open sharing model
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "recipient-activation",
+	Short:   `The Recipient Activation API is only applicable in the open sharing model where the recipient object has the authentication type of TOKEN.`,
+	GroupID: "sharing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Recipient Activation API is only applicable in the open sharing model
   where the recipient object has the authentication type of TOKEN. The data
   recipient follows the activation link shared by the data provider to download
   the credential file that includes the access token. The recipient will then
@@ -27,14 +34,13 @@ func New() *cobra.Command {
 
   Note that you can download the credential file only once. Recipients should
   treat the downloaded credential as a secret and must not share it outside of
-  their organization.`,
-		GroupID: "sharing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  their organization.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetActivationUrlInfo())
@@ -44,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-activation-url-info command

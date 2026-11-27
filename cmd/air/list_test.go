@@ -1,14 +1,20 @@
 package aircmd
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -83,6 +89,41 @@ func TestListAirRunsFiltersUserAndType(t *testing.T) {
 	assert.Equal(t, "5", rows[1].RunID)
 }
 
+func TestListAirRunsResolvesCurrentUserOnce(t *testing.T) {
+	runs := []jobs.BaseRun{
+		airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(2, "other@example.com", "GPU_1xA10", 1, "exp"),
+		airBaseRun(3, "me@example.com", "GPU_1xA10", 1, "exp"),
+	}
+	srv := runsServer(t, runsListBody(t, "", runs...))
+
+	var lookups atomic.Int32
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			lookups.Add(1)
+			return "me@example.com", nil
+		}),
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "3", rows[1].RunID)
+	assert.Equal(t, int32(1), lookups.Load())
+}
+
+func TestListAirRunsReportsUserLookupFailure(t *testing.T) {
+	srv := runsServer(t, runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")))
+
+	_, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		currentUser: sync.OnceValues(func() (string, error) {
+			return "", errors.New("failed to resolve current user: boom")
+		}),
+	}).next(10)
+	require.ErrorContains(t, err, "failed to resolve current user: boom")
+}
+
 func TestListAirRunsExperimentFilter(t *testing.T) {
 	runs := []jobs.BaseRun{
 		airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/qwen-train"),
@@ -137,6 +178,10 @@ func TestRunFetcherResumesAcrossCalls(t *testing.T) {
 	}
 	srv := runsServer(t, runsListBody(t, "", runs...))
 	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true})
+	f.validateEmpty = func() error {
+		t.Fatal("validation should not run after an earlier page matched")
+		return nil
+	}
 
 	first, err := f.next(2)
 	require.NoError(t, err)
@@ -167,7 +212,7 @@ func TestBuildListRowFromRun(t *testing.T) {
 	assert.Equal(t, "GPU_1xA10", gpu)
 	assert.Equal(t, 1, count)
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	assert.Equal(t, "842552489592352", row.RunID)
 	assert.Equal(t, "SUCCESS", row.Status)
 	assert.Equal(t, "my-first-air-run", row.Experiment)
@@ -181,7 +226,7 @@ func TestBuildListRow(t *testing.T) {
 	run.EndTime = 1700000012000
 	run.State = &jobs.RunState{ResultState: jobs.RunResultStateSuccess}
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	assert.Equal(t, "123", row.RunID)
 	assert.Equal(t, "me@example.com", row.User)
 	assert.Equal(t, "SUCCESS", row.Status)
@@ -191,6 +236,32 @@ func TestBuildListRow(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.False(t, row.IsSweep)
 	require.NotNil(t, row.StartedAt)
+	assert.Equal(t, "https://example.test/jobs/runs/123?o=456", row.DashboardURL)
+	assert.Equal(t, row.DashboardURL, row.RunURL)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"123","task_key":null,"run_name":"run-123","user":"me@example.com","status":"SUCCESS",
+		"started_at":"2023-11-14T22:13:20+00:00","is_sweep":false,
+		"experiment_name":"exp","duration_seconds":12,
+		"accelerator_type":"GPU_8xH100","num_accelerators":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=456"
+	}`, string(body))
+}
+
+func TestBuildListRowUsesLatestAttemptTiming(t *testing.T) {
+	run := airRun(123, "me@example.com", "GPU_1xA10", 1, "exp")
+	run.Tasks[0].StartTime = 1000
+	run.Tasks[0].EndTime = 2000
+	run.Tasks = append(run.Tasks, jobs.RunTask{StartTime: 10000, EndTime: 22000})
+
+	row := buildListRow(&run, "https://example.test", 456)
+	require.NotNil(t, row.StartedAt)
+	assert.Equal(t, "1970-01-01T00:00:10+00:00", *row.StartedAt)
+	require.NotNil(t, row.DurationSeconds)
+	assert.Equal(t, int64(12), *row.DurationSeconds)
+	assert.Equal(t, "12s", row.Duration)
 }
 
 func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
@@ -198,19 +269,21 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
 	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}
 
-	row := buildListRow(&run, "https://example.test", 0)
+	row := buildListRow(&run, "https://example.test", 456)
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
 
 	assert.Equal(t, "PENDING", row.Status)
 	assert.Equal(t, listRowStatus(row), row.Status)
 	assert.JSONEq(t, `{
-		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"PENDING",
-		"started_at":null,"is_sweep":false
+		"run_id":"123","task_key":null,"run_name":"run-123","user":"me@example.com","status":"PENDING",
+		"started_at":null,"is_sweep":false,"experiment_name":"exp","duration_seconds":null,
+		"accelerator_type":"GPU_8xH100","num_accelerators":8,
+		"dashboard_url":"https://example.test/jobs/runs/123?o=456"
 	}`, string(body))
 }
 
-func TestBuildListRowDashFallbacks(t *testing.T) {
+func TestBuildListRowMissingValues(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
 	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
@@ -219,6 +292,16 @@ func TestBuildListRowDashFallbacks(t *testing.T) {
 	assert.Equal(t, "-", row.MLflowURL)
 	assert.Equal(t, "UNKNOWN", row.Status)
 	assert.Nil(t, row.StartedAt)
+	assert.Equal(t, "https://example.test/jobs/runs/7", row.RunURL)
+	assert.Equal(t, row.RunURL, row.DashboardURL)
+
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"7","task_key":null,"run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
+		"experiment_name":null,"duration_seconds":null,"accelerator_type":null,"num_accelerators":null,
+		"dashboard_url":"https://example.test/jobs/runs/7"
+	}`, string(body))
 }
 
 func TestBuildListRowSweep(t *testing.T) {
@@ -244,11 +327,300 @@ func TestListInvalidLimit(t *testing.T) {
 func TestListInvalidFilter(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newListCommand()
+	cmd := withOutput(newListCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.Flags().Set("filter", "bogus=1"))
 
 	err := cmd.RunE(cmd, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported --filter key")
+}
+
+func TestListInvalidFilterJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		filter  string
+		message string
+	}{
+		{
+			name:    "unsupported key",
+			filter:  "bogus=1",
+			message: "unsupported --filter key \"bogus\": supported keys are accelerator_type, experiment, num_accelerators, user",
+		},
+		{
+			name:    "empty value",
+			filter:  "user=",
+			message: "invalid --filter user=\"\": value cannot be empty",
+		},
+		{
+			name:    "invalid accelerator count",
+			filter:  "num_accelerators=lots",
+			message: "invalid --filter num_accelerators=\"lots\": must be a positive integer",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			m := mocks.NewMockWorkspaceClient(t)
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+			cmd := withOutput(newListCommand(), flags.OutputJSON)
+			cmd.SetContext(ctx)
+			require.NoError(t, cmd.Flags().Set("filter", tt.filter))
+
+			err := cmd.RunE(cmd, nil)
+			require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+			var got map[string]any
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+			assert.Len(t, got, 3)
+			assert.InDelta(t, 1, got["v"], 0)
+			assert.NotEmpty(t, got["ts"])
+			assert.Equal(t, map[string]any{
+				"code":      "INVALID_ARGS",
+				"kind":      "PERMANENT",
+				"message":   tt.message,
+				"retryable": false,
+			}, got["error"])
+		})
+	}
+}
+
+func TestListInvalidAcceleratorFilter(t *testing.T) {
+	jobsCalled := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
+			_, _ = w.Write([]byte(`{}`))
+		case "/api/2.2/jobs/runs/list":
+			jobsCalled = true
+			_, _ = w.Write([]byte(runsListBody(t, "")))
+		case computeOptionsPath:
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newListCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.Flags().Set("all-users", "true"))
+	require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=GPU_1xV100"))
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "valid values for this workspace")
+	assert.Contains(t, err.Error(), "GPU_8xH100")
+	assert.True(t, jobsCalled)
+}
+
+func TestListInvalidAcceleratorFilterJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/list":
+			_, _ = w.Write([]byte(runsListBody(t, "")))
+		case computeOptionsPath:
+			_, _ = w.Write([]byte(`{"compute_options":[{"hardware_accelerator":"GPU_8xH100","display_name":"8x H100"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newListCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.Flags().Set("all-users", "true"))
+	require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=GPU_1xV100"))
+
+	err := cmd.RunE(cmd, nil)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, jsonError{
+		Code:      "INVALID_ARGS",
+		Kind:      "PERMANENT",
+		Message:   `invalid --filter accelerator_type="GPU_1xV100": valid values for this workspace include families (H100), full types (GPU_8xH100)`,
+		Retryable: false,
+	}, got.Error)
+}
+
+func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		runs    string
+		wantErr bool
+	}{
+		{"matching run", runsListBody(t, "", airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "exp")), false},
+		{"no matching run", runsListBody(t, ""), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			computeOptionsCalled := false
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case computeOptionsPath:
+					computeOptionsCalled = true
+					http.Error(w, "unavailable", http.StatusNotFound)
+				case "/api/2.2/jobs/runs/list":
+					_, _ = w.Write([]byte(tc.runs))
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			var buf bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+			cmd := withOutput(newListCommand(), flags.OutputJSON)
+			cmd.SetContext(ctx)
+			require.NoError(t, cmd.Flags().Set("all-users", "true"))
+			require.NoError(t, cmd.Flags().Set("filter", "accelerator_type=A10"))
+
+			err := cmd.RunE(cmd, nil)
+			if tc.wantErr {
+				require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+				var got errorEnvelope
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+				assert.Equal(t, jsonError{
+					Code:      "INTERNAL_ERROR",
+					Kind:      "TRANSIENT",
+					Message:   "no runs matched --filter accelerator_type=\"A10\"\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types",
+					Retryable: true,
+				}, got.Error)
+				assert.True(t, computeOptionsCalled)
+			} else {
+				require.NoError(t, err)
+				assert.False(t, computeOptionsCalled)
+			}
+		})
+	}
+}
+
+func TestBuildTaskEntriesOnePerAirTask(t *testing.T) {
+	run := jobs.Run{RunId: 7, RunName: "dag", CreatorUserName: "me@example.com", Tasks: []jobs.RunTask{
+		notebookTask("prep", 71),
+		aiRuntimeTask("train", 72, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 73, "/Users/me@example.com/exp-b", "GPU_8xH100", 8),
+	}}
+
+	rows := buildTaskEntries(&run, "https://example.test", 0)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "7", rows[0].entry.row.RunID)
+	assert.Equal(t, "train", rows[0].entry.row.taskKey())
+	assert.Equal(t, "exp-a", rows[0].entry.row.Experiment)
+	assert.Equal(t, "1x A10", rows[0].entry.row.Accelerators)
+	assert.Equal(t, []int64{72}, taskRunIDs(rows[0].entry.tasks), "the row's MLflow lookup sees only its own task runs")
+	assert.Equal(t, "7", rows[1].entry.row.RunID)
+	assert.Equal(t, "eval", rows[1].entry.row.taskKey())
+	assert.Equal(t, "exp-b", rows[1].entry.row.Experiment)
+	assert.Equal(t, "8x H100", rows[1].entry.row.Accelerators)
+	assert.Equal(t, []int64{73}, taskRunIDs(rows[1].entry.tasks))
+}
+
+func taskRunIDs(tasks []jobs.RunTask) []int64 {
+	ids := make([]int64, len(tasks))
+	for i, t := range tasks {
+		ids[i] = t.RunId
+	}
+	return ids
+}
+
+func TestListAirRunsAirTaskAfterNotebook(t *testing.T) {
+	// The official multi-task DAB example: a notebook prep task, then the
+	// ai_runtime_task that depends on it.
+	dag := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/air-byot-multitask-dag")
+	dag.Tasks[0].TaskKey, dag.Tasks[0].RunId = "train", 12
+	dag.Tasks = []jobs.RunTask{notebookTask("prep", 11), dag.Tasks[0]}
+	srv := runsServer(t, runsListBody(t, "", dag))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "train", rows[0].taskKey())
+	assert.Equal(t, "air-byot-multitask-dag", rows[0].Experiment)
+	assert.Equal(t, "1x A10", rows[0].Accelerators)
+}
+
+func TestListAirRunsOneRowPerAirTask(t *testing.T) {
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_8xH100", 8),
+	}
+	srv := runsServer(t, runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/exp-c")))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		filters:    listFilters{Experiment: "exp-b"},
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1, "the task filter applies per AIR task")
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "b", rows[0].taskKey())
+
+	rows, err = newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	assert.Equal(t, []string{"1", "1", "2"}, []string{rows[0].RunID, rows[1].RunID, rows[2].RunID})
+	assert.Equal(t, []string{"a", "b", ""}, []string{rows[0].taskKey(), rows[1].taskKey(), rows[2].taskKey()})
+}
+
+func TestListAirRunsLimitCountsRunsNotRows(t *testing.T) {
+	// The first run has two AI Runtime tasks, so it lists as two rows; --limit 1
+	// still shows that whole run, and --limit 2 also shows the next run.
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	body := runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c"))
+
+	for _, tt := range []struct {
+		limit int
+		want  []string
+	}{
+		{1, []string{"1", "1"}},
+		{2, []string{"1", "1", "2"}},
+	} {
+		srv := runsServer(t, body)
+		rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(tt.limit)
+		require.NoError(t, err)
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.RunID
+		}
+		assert.Equal(t, tt.want, ids, "limit %d", tt.limit)
+	}
+}
+
+func TestListAirRunsMarksTheRowsOfAMultiTaskRun(t *testing.T) {
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	srv := runsServer(t, runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c")))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	assert.Equal(t, []bool{true, true, false}, []bool{rows[0].ShowTask, rows[1].ShowTask, rows[2].ShowTask})
+
+	// A filter that leaves one of the two tasks still names it.
+	rows, err = newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		filters:    listFilters{Experiment: "exp-b"},
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.True(t, rows[0].ShowTask)
+	assert.Equal(t, "1 b", rows[0].runIDLabel())
 }

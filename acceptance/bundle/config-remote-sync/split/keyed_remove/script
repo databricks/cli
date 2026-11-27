@@ -21,12 +21,10 @@ r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in ("gamma", "alpha")]
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$remove_job_id" --save
 
 title "Exactly gamma and alpha are gone; beta survives"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
@@ -40,12 +38,10 @@ r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "both"]
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$twoblock_job_id" --save
 
 title "'both' is gone from both blocks; 'keep' survives"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 # grep -c exits non-zero on a count of zero, which would abort the script under
 # bash -e before the second assertion runs.

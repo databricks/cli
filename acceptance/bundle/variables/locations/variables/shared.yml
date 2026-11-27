@@ -1,0 +1,5 @@
+variables:
+  included:
+    default: included-default
+  split:
+    default: split-default

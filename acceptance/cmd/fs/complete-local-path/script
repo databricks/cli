@@ -1,0 +1,6 @@
+# Shells only offer completions that start with the word being completed
+# (bash filters them with compgen), so each completion must extend the input.
+for word in sr ./sr ./ ./src/ src//s; do
+  trace $CLI __complete fs ls "$word"
+  echo "bash offers:" $($CLI __complete fs ls "$word" 2>/dev/null | grep -v '^:' | bash -c 'compgen -W "$(cat)" -- "$1"' _ "$word")
+done

@@ -1,0 +1,27 @@
+state_file=".databricks/bundle/default/resources.json"
+
+# CLIs before #5173 recorded an empty-ID entry when the create step of a recreate failed.
+blank_id() {
+    jq ".state[\"resources.jobs.$1\"].__id__ = \"\"" "$state_file" > state.tmp && mv state.tmp "$state_file"
+}
+
+show_state() {
+    if [ -f "$state_file" ]; then jq -c '.state | keys' "$state_file"; else echo "no state file"; fi
+}
+
+trace $CLI bundle deploy
+
+title "An empty-ID entry for a resource in config is planned as a create"
+blank_id foo
+trace $CLI bundle plan
+
+title "An empty-ID entry for a resource removed from config"
+blank_id bar
+trace cp databricks_no_bar.yml databricks.yml
+trace $CLI bundle deploy
+show_state
+
+title "An empty-ID entry on destroy"
+blank_id baz
+trace $CLI bundle destroy --auto-approve
+show_state

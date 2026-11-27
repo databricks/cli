@@ -81,12 +81,39 @@ func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*
 }
 
 func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
-	waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
-	if err != nil {
-		return "", nil, err
+	create := func(ctx context.Context) (*vectorsearch.EndpointInfo, error) {
+		waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
+		if err != nil {
+			return nil, err
+		}
+		return waiter.Response, nil
 	}
-	id := config.Name
-	return id, newVectorSearchEndpointRemote(waiter.Response), nil
+	start := time.Now()
+	info, err := create(ctx)
+	if err != nil {
+		// The backend can answer 504 TEMPORARILY_UNAVAILABLE after it has created the endpoint.
+		// Endpoint names are chosen by the bundle and unique in the workspace; an older endpoint
+		// (another user's, or the old one of a recreate that is still being deleted) keeps failing
+		// the deploy.
+		info, err = recoverCreate(ctx, createRecovery[vectorsearch.EndpointInfo, *vectorsearch.EndpointInfo]{
+			name:  "vector search endpoint " + config.Name,
+			start: start,
+			get: func(ctx context.Context) (*vectorsearch.EndpointInfo, error) {
+				return r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, config.Name)
+			},
+			createTime: func(found *vectorsearch.EndpointInfo) (time.Time, bool) {
+				return unixMilliTime(found.CreationTimestamp)
+			},
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[vectorsearch.EndpointInfo],
+			create:          repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+	return config.Name, newVectorSearchEndpointRemote(info), nil
 }
 
 func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {

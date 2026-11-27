@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -74,10 +75,14 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	}
 
 	// we only check the most recent 100 events for progress
-	events, err := l.w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		PipelineId: l.PipelineId,
-		MaxResults: 100,
-		Filter:     filter,
+	// The events API intermittently fails with a 500 ("An unexpected error happened."). Listing is a
+	// read, so retry it instead of aborting the whole run.
+	events, err := retry.With(ctx, retry.IsTransientRead, func() ([]pipelines.PipelineEvent, error) {
+		return l.w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+			PipelineId: l.PipelineId,
+			MaxResults: 100,
+			Filter:     filter,
+		})
 	})
 	if err != nil {
 		return nil, err

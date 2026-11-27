@@ -1,5 +1,6 @@
 
 === Test basic pipelines destroy
+
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
 Created pipelines.my_pipeline
@@ -20,6 +21,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Assert pipeline is deleted
+
 >>> errcode [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 

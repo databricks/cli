@@ -3,6 +3,7 @@
 package ip_access_lists
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ip-access-lists",
-		Short: `IP Access List enables admins to configure IP access lists.`,
-		Long: `IP Access List enables admins to configure IP access lists.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ip-access-lists",
+	Short:   `IP Access List enables admins to configure IP access lists.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `IP Access List enables admins to configure IP access lists.
 
   IP access lists affect web application access and REST API access to this
   workspace only. If the feature is disabled for a workspace, all access is
@@ -42,14 +48,13 @@ func New() *cobra.Command {
   of 1000 IP/CIDR values, where one CIDR counts as a single value.
 
   After changes to the IP access list feature, it can take a few minutes for
-  changes to take effect.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  changes to take effect.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -63,8 +68,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

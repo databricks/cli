@@ -92,7 +92,7 @@ func (i *installer) Install(ctx context.Context) error {
 	}
 	w, err := i.login(ctx)
 	if err != nil && errors.Is(err, profile.ErrNoConfiguration) {
-		cfg, err := i.Installer.envAwareConfig(ctx)
+		cfg, err := i.metaEntrypoint(ctx).envAwareConfig(ctx)
 		if err != nil {
 			return err
 		}
@@ -171,7 +171,7 @@ func (i *installer) recordVersion(ctx context.Context) error {
 func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, error) {
 	cfg, err := i.metaEntrypoint(ctx).validLogin(i.cmd)
 	if errors.Is(err, ErrNoLoginConfig) {
-		cfg, err = i.Installer.envAwareConfig(ctx)
+		cfg, err = i.metaEntrypoint(ctx).envAwareConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +181,8 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 	if !i.HasAccountLevelCommands() && cfg.ConfigType() == config.AccountConfig {
 		return nil, errors.New("got account-level client, but no account-level commands")
 	}
-	lc := &loginConfig{Entrypoint: i.Installer.Entrypoint}
+	// labs.yml may have no install hook, so i.Installer can be nil.
+	lc := &loginConfig{Entrypoint: i.metaEntrypoint(ctx)}
 	w, err := lc.askWorkspace(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("ask for workspace: %w", err)
@@ -263,7 +264,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		}
 	}
 	sp.Update("Installing Python library dependencies")
-	if i.Installer.Extras != "" {
+	if i.Installer != nil && i.Installer.Extras != "" {
 		// install main and optional dependencies
 		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))
 	}

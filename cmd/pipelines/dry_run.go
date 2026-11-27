@@ -25,6 +25,7 @@ func dryRunCommand() *cobra.Command {
 		Long: `Validates correctness of the pipeline's graph, identified by KEY. Does not materialize or publish any datasets.
 KEY is the unique name of the pipeline to dry run, as defined in its YAML file.
 If there is only one pipeline in the project, KEY is optional and the pipeline will be auto-selected.`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var noWait bool
@@ -46,8 +47,13 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		suggestPipelineDeploy(ctx, cmd)
 
-		key, _, err := resolveRunArgument(ctx, b, args)
+		key, err := resolvePipelineArgument(ctx, b, args)
 		if err != nil {
+			return err
+		}
+
+		// The runner accepts any runnable resource, and a job has no validate-only mode.
+		if _, err := resolvePipelineIdFromKey(ctx, b, key); err != nil {
 			return err
 		}
 
@@ -103,6 +109,9 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b := root.MustConfigureBundle(cmd)
 		if logdiag.HasError(cmd.Context()) {
 			return nil, cobra.ShellCompDirectiveError
@@ -115,16 +124,10 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		}
 
 		if len(args) == 0 {
-			completions := resources.Completions(b, run.IsRunnable)
+			completions := resources.Completions(b, isPipeline)
 			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
-		} else {
-			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := keyToRunner(b, args[0])
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
-			return runner.CompleteArgs(args[1:], toComplete)
 		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	return cmd

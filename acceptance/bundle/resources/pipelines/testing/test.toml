@@ -1,0 +1,4 @@
+# Runs only against the local test server.
+Cloud = false
+RecordRequests = true
+Ignore = [".databricks"]

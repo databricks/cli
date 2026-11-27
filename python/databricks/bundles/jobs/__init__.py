@@ -4,6 +4,28 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AiClassifyFunction",
+    "AiClassifyFunctionDict",
+    "AiClassifyFunctionInlineLabels",
+    "AiClassifyFunctionInlineLabelsDict",
+    "AiClassifyFunctionInlineLabelsParam",
+    "AiClassifyFunctionLabel",
+    "AiClassifyFunctionLabelDict",
+    "AiClassifyFunctionLabelParam",
+    "AiClassifyFunctionParam",
+    "AiExtractFunction",
+    "AiExtractFunctionDict",
+    "AiExtractFunctionMode",
+    "AiExtractFunctionModeParam",
+    "AiExtractFunctionParam",
+    "AiFunctionTask",
+    "AiFunctionTaskDict",
+    "AiFunctionTaskParam",
+    "AiParseDocumentFunction",
+    "AiParseDocumentFunctionDescriptionElementType",
+    "AiParseDocumentFunctionDescriptionElementTypeParam",
+    "AiParseDocumentFunctionDict",
+    "AiParseDocumentFunctionParam",
     "AiRuntimeTask",
     "AiRuntimeTaskDict",
     "AiRuntimeTaskParam",
@@ -90,6 +112,9 @@ __all__ = [
     "DbtTask",
     "DbtTaskDict",
     "DbtTaskParam",
+    "DeltaTableSource",
+    "DeltaTableSourceDict",
+    "DeltaTableSourceParam",
     "DependencyMode",
     "DependencyModeParam",
     "DependsOn",
@@ -140,6 +165,17 @@ __all__ = [
     "JobCluster",
     "JobClusterDict",
     "JobClusterParam",
+    "JobClusterServerlessCompute",
+    "JobClusterServerlessComputeDict",
+    "JobClusterServerlessComputeParam",
+    "JobCompletionTriggerConfiguration",
+    "JobCompletionTriggerConfigurationDict",
+    "JobCompletionTriggerConfigurationIfStatus",
+    "JobCompletionTriggerConfigurationIfStatusParam",
+    "JobCompletionTriggerConfigurationMonitoredJob",
+    "JobCompletionTriggerConfigurationMonitoredJobDict",
+    "JobCompletionTriggerConfigurationMonitoredJobParam",
+    "JobCompletionTriggerConfigurationParam",
     "JobDict",
     "JobEmailNotifications",
     "JobEmailNotificationsDict",
@@ -245,6 +281,9 @@ __all__ = [
     "PythonWheelTask",
     "PythonWheelTaskDict",
     "PythonWheelTaskParam",
+    "QualifiedName",
+    "QualifiedNameDict",
+    "QualifiedNameParam",
     "QueueSettings",
     "QueueSettingsDict",
     "QueueSettingsParam",
@@ -345,6 +384,9 @@ __all__ = [
     "TriggerSettings",
     "TriggerSettingsDict",
     "TriggerSettingsParam",
+    "VolumeSource",
+    "VolumeSourceDict",
+    "VolumeSourceParam",
     "VolumesStorageInfo",
     "VolumesStorageInfoDict",
     "VolumesStorageInfoParam",
@@ -367,6 +409,44 @@ from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
+)
+from databricks.bundles.jobs._models.ai_classify_function import (
+    AiClassifyFunction,
+    AiClassifyFunctionDict,
+    AiClassifyFunctionParam,
+)
+from databricks.bundles.jobs._models.ai_classify_function_inline_labels import (
+    AiClassifyFunctionInlineLabels,
+    AiClassifyFunctionInlineLabelsDict,
+    AiClassifyFunctionInlineLabelsParam,
+)
+from databricks.bundles.jobs._models.ai_classify_function_label import (
+    AiClassifyFunctionLabel,
+    AiClassifyFunctionLabelDict,
+    AiClassifyFunctionLabelParam,
+)
+from databricks.bundles.jobs._models.ai_extract_function import (
+    AiExtractFunction,
+    AiExtractFunctionDict,
+    AiExtractFunctionParam,
+)
+from databricks.bundles.jobs._models.ai_extract_function_mode import (
+    AiExtractFunctionMode,
+    AiExtractFunctionModeParam,
+)
+from databricks.bundles.jobs._models.ai_function_task import (
+    AiFunctionTask,
+    AiFunctionTaskDict,
+    AiFunctionTaskParam,
+)
+from databricks.bundles.jobs._models.ai_parse_document_function import (
+    AiParseDocumentFunction,
+    AiParseDocumentFunctionDict,
+    AiParseDocumentFunctionParam,
+)
+from databricks.bundles.jobs._models.ai_parse_document_function_description_element_type import (
+    AiParseDocumentFunctionDescriptionElementType,
+    AiParseDocumentFunctionDescriptionElementTypeParam,
 )
 from databricks.bundles.jobs._models.ai_runtime_task import (
     AiRuntimeTask,
@@ -504,6 +584,11 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskDict, DbtTaskParam
+from databricks.bundles.jobs._models.delta_table_source import (
+    DeltaTableSource,
+    DeltaTableSourceDict,
+    DeltaTableSourceParam,
+)
 from databricks.bundles.jobs._models.dependency_mode import (
     DependencyMode,
     DependencyModeParam,
@@ -586,6 +671,25 @@ from databricks.bundles.jobs._models.job_cluster import (
     JobCluster,
     JobClusterDict,
     JobClusterParam,
+)
+from databricks.bundles.jobs._models.job_cluster_serverless_compute import (
+    JobClusterServerlessCompute,
+    JobClusterServerlessComputeDict,
+    JobClusterServerlessComputeParam,
+)
+from databricks.bundles.jobs._models.job_completion_trigger_configuration import (
+    JobCompletionTriggerConfiguration,
+    JobCompletionTriggerConfigurationDict,
+    JobCompletionTriggerConfigurationParam,
+)
+from databricks.bundles.jobs._models.job_completion_trigger_configuration_if_status import (
+    JobCompletionTriggerConfigurationIfStatus,
+    JobCompletionTriggerConfigurationIfStatusParam,
+)
+from databricks.bundles.jobs._models.job_completion_trigger_configuration_monitored_job import (
+    JobCompletionTriggerConfigurationMonitoredJob,
+    JobCompletionTriggerConfigurationMonitoredJobDict,
+    JobCompletionTriggerConfigurationMonitoredJobParam,
 )
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -754,6 +858,11 @@ from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTaskDict,
     PythonWheelTaskParam,
 )
+from databricks.bundles.jobs._models.qualified_name import (
+    QualifiedName,
+    QualifiedNameDict,
+    QualifiedNameParam,
+)
 from databricks.bundles.jobs._models.queue_settings import (
     QueueSettings,
     QueueSettingsDict,
@@ -908,6 +1017,11 @@ from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettings,
     TriggerSettingsDict,
     TriggerSettingsParam,
+)
+from databricks.bundles.jobs._models.volume_source import (
+    VolumeSource,
+    VolumeSourceDict,
+    VolumeSourceParam,
 )
 from databricks.bundles.jobs._models.volumes_storage_info import (
     VolumesStorageInfo,

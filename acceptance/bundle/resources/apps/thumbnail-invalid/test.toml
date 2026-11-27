@@ -1,0 +1,7 @@
+RecordRequests = false
+Cloud = true
+Ignore = ["large.png"]
+
+[[Repls]]
+Old = 'The system cannot find the file specified.'
+New = 'no such file or directory'

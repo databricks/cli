@@ -1,4 +1,5 @@
-Badness = "run_as is still set even though it's not in bundle and not in reset request"
+# Expected backend behavior: once run_as is set on a job it cannot be unset, so the job keeps
+# the previous run identity after run_as is removed from the bundle (see issue #4873).
 Ignore = [".databricks/.gitignore"]
 
 Cloud = true

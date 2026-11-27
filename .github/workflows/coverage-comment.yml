@@ -1,0 +1,60 @@
+name: Coverage comment
+
+# Comments on a PR with its coverage against main's, once its build (push.yml) has uploaded it:
+# on Linux, for a PR whose head commit message has "with-coverage". A new build updates the same
+# comment. This runs from the default branch and reads the build's artifacts only as data
+# (.github/scripts/coverage-comment.sh), so it can also comment on fork PRs.
+on:
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+
+# A newer build of the same branch supersedes this one, so an old comment never overwrites a new one.
+concurrency:
+  group: coverage-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  comment:
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+
+    # The org's IP allow list only lets this runner group call the GitHub API.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    # Bounded, as the build's artifacts are the PR author's.
+    timeout-minutes: 15
+
+    permissions:
+      actions: read
+      contents: read
+      id-token: write # JFrog, for the Go modules of coverpack
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: .github/scripts/coverage-comment.sh

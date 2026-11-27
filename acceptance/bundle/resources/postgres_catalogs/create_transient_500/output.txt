@@ -1,0 +1,48 @@
+
+=== The create request fails with 500 but the catalog was created: deploy uses the catalog
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/catalogs
+POST /api/2.0/postgres/catalogs
+GET /api/2.0/postgres/catalogs/lakebase_test
+
+=== The create request times out and the catalog was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_catalogs.my_catalog: retrying after 504 Gateway Timeout from POST /api/2.0/postgres/catalogs
+Created postgres_catalogs.my_catalog
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/catalogs
+POST /api/2.0/postgres/catalogs
+GET /api/2.0/postgres/catalogs/lakebase_test
+POST /api/2.0/postgres/catalogs
+GET /api/2.0/postgres/catalogs/lakebase_test/operations/[UUID]
+
+=== The catalog cannot be read after the create request fails: deploy fails with the create error
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_catalogs.my_catalog: checking whether catalog catalogs/lakebase_test was created: Fault injected by test.
+Error: cannot create resources.postgres_catalogs.my_catalog: Fault injected by test. (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/catalogs?catalog_id=lakebase_test
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+>>> print_requests.py --get //postgres/catalogs
+POST /api/2.0/postgres/catalogs
+GET /api/2.0/postgres/catalogs/lakebase_test

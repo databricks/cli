@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/locker"
@@ -38,6 +40,7 @@ func (m *acquire) init(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
+	l.ReleasedLocksPath = filepath.Join(b.GetLocalStateDir(ctx), "released-deploy-locks.json")
 	b.Locker = l
 	return nil
 }
@@ -54,7 +57,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	force := b.Config.Bundle.Deployment.Lock.Force
+	force := config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.Lock.Force)
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {

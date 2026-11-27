@@ -1,5 +1,6 @@
 
 === Deploy a cluster with a local wheel library
+
 OK: cluster created with wheel
 
 >>> print_requests.py //libraries/install
@@ -17,6 +18,7 @@ OK: cluster created with wheel
 }
 
 === Badness: wheel code changes but version does not, so redeploy does not reinstall it
+
 >>> jq .plan["resources.clusters.mycluster"].action tmp.plan.json
 "skip"
 

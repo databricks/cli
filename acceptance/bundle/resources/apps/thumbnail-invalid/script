@@ -1,0 +1,9 @@
+# One byte over the 250,000-byte limit, with a PNG signature.
+python3 -c "import sys; sys.stdout.buffer.write(b'\x89PNG\r\n\x1a\n' + bytes(250_001 - 8))" > large.png
+
+for THUMBNAIL_PATH in ./thumbnail.gif ./large.png ./missing.png; do
+    title "thumbnail_path: $THUMBNAIL_PATH"
+    export THUMBNAIL_PATH
+    envsubst < databricks.yml.tmpl > databricks.yml
+    trace musterr $CLI bundle validate
+done

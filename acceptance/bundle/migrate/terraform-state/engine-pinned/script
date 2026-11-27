@@ -1,0 +1,21 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py "$TESTDIR/../terraform-requests.json" "$TESTDIR/../terraform.tfstate"
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+
+title "deploy with DATABRICKS_BUNDLE_ENGINE=terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+trace print_request_paths
+
+title "deploy with bundle.engine: terraform"
+update_file.py databricks.yml '  name: test-bundle' '  name: test-bundle
+  engine: terraform'
+trace musterr $CLI bundle deploy
+trace print_request_paths
+
+# summary allows a terraform bundle.engine (warning only) and migrates the state in memory.
+title "summary with bundle.engine: terraform"
+trace $CLI bundle summary > LOG.summary
+trace print_request_paths

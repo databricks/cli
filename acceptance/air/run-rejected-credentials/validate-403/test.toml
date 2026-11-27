@@ -1,0 +1,9 @@
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '''
+{
+    "error_code": "PERMISSION_DENIED",
+    "message": "User does not have access to the accelerator pool."
+}
+'''
+Response.StatusCode = 403

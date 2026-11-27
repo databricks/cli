@@ -1,11 +1,13 @@
 
 === no run key specified
+
 >>> [CLI] bundle run
 Error: expected a KEY of the resource to run
 
 Exit code: 1
 
 === deploy and run resource
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...
 Created jobs.foo
@@ -20,12 +22,14 @@ Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 1
 
 === no resource key with --
+
 >>> [CLI] bundle run --
 Error: expected a KEY of the resource to run
 
 Exit code: 1
 
 === resource key with parameters
+
 >>> [CLI] bundle run foo -- arg1 arg2
 Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
@@ -34,10 +38,12 @@ Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 1
 
 === inline script
+
 >>> [CLI] bundle run -- echo hello
 hello
 
 === completion handler
+
 >>> [CLI] __complete bundle run ,
 foo
 :4

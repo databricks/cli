@@ -1,0 +1,2 @@
+# Local only: the failure is injected with fault.py, which registers its rule on the fake.
+Cloud = false

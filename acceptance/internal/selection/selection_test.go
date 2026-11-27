@@ -2,6 +2,7 @@ package selection_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -344,4 +345,84 @@ func TestFromDiffTiesAreAlphabetical(t *testing.T) {
 		}
 		assert.Equal(t, expected, names)
 	}
+}
+
+func TestFromGitExclusionChanges(t *testing.T) {
+	const before = "Cloud = false\nEnvMatrixExclude.old = [\"INPUT_CONFIG=old.yml.tmpl\"]\n"
+	const added = before + "EnvMatrixExclude.new = [\"INPUT_CONFIG=new.yml.tmpl\"]\n"
+	for _, tc := range []struct {
+		name    string
+		before  string
+		after   string
+		parent  string
+		script  bool
+		stage   bool
+		commit  bool
+		wantDir bool
+	}{
+		{name: "added exclusion", before: before, after: added},
+		{name: "first exclusion", before: "Cloud = false\n", after: "Cloud = false\nEnvMatrixExclude.new = [\"INPUT_CONFIG=new.yml.tmpl\"]\n"},
+		{name: "empty config", before: "", after: "EnvMatrixExclude.new = [\"INPUT_CONFIG=new.yml.tmpl\"]\n"},
+		{name: "staged exclusion", before: before, after: added, stage: true},
+		{name: "committed exclusion", before: before, after: added, stage: true, commit: true},
+		{name: "removed exclusion", before: before, after: "Cloud = false\n", wantDir: true},
+		{name: "replaced exclusion", before: before, after: "Cloud = false\nEnvMatrixExclude.old = [\"INPUT_CONFIG=new.yml.tmpl\"]\n", wantDir: true},
+		{name: "other setting changed", before: before, after: strings.Replace(added, "false", "true", 1), wantDir: true},
+		{name: "script changed too", before: before, after: added, script: true, wantDir: true},
+		{name: "invalid config", before: before, after: added + "invalid = [\n", wantDir: true},
+		{name: "invalid rule type", before: before, after: before + "EnvMatrixExclude.new = 1\n", wantDir: true},
+		{name: "unknown setting", before: before, after: added + "Unknown = true\n", wantDir: true},
+		{name: "overrides inherited exclusion", before: before, after: added, parent: "EnvMatrixExclude.new = [\"INPUT_CONFIG=other.yml.tmpl\"]\n", wantDir: true},
+		{name: "distinct inherited exclusion", before: before, after: added, parent: "EnvMatrixExclude.other = [\"INPUT_CONFIG=other.yml.tmpl\"]\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := t.TempDir()
+			t.Chdir(repo)
+			runSelectionGit(t, "init", "--quiet", "--initial-branch=main")
+			root := filepath.Join(repo, "acceptance")
+			dir := "bundle/invariant/jobs"
+			configPath := filepath.Join(root, dir, "test.toml")
+			scriptPath := filepath.Join(root, dir, "script")
+			require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o755))
+			require.NoError(t, os.WriteFile(configPath, []byte(tc.before), 0o644))
+			require.NoError(t, os.WriteFile(scriptPath, []byte("echo before\n"), 0o644))
+			if tc.parent != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(root, "bundle/invariant/test.toml"), []byte(tc.parent), 0o644))
+			}
+			runSelectionGit(t, "add", ".")
+			runSelectionGit(t, "commit", "--quiet", "-m", "baseline")
+			runSelectionGit(t, "update-ref", "refs/remotes/origin/main", "HEAD")
+			require.NoError(t, os.WriteFile(configPath, []byte(tc.after), 0o644))
+			if tc.script {
+				require.NoError(t, os.WriteFile(scriptPath, []byte("echo after\n"), 0o644))
+			}
+			if tc.stage {
+				runSelectionGit(t, "add", ".")
+			}
+			if tc.commit {
+				runSelectionGit(t, "commit", "--quiet", "-m", "add exclusion")
+			}
+
+			// Both the inspection command (repo root) and harness (acceptance/) use FromGit.
+			for _, cwd := range []string{repo, root} {
+				t.Chdir(cwd)
+				result, err := selection.FromGit(root, map[string]bool{dir: true}, 10)
+				require.NoError(t, err)
+				want := map[string][]string{}
+				if tc.wantDir {
+					want[dir] = nil
+				}
+				assert.Equal(t, want, result.Tests())
+			}
+		})
+	}
+}
+
+// runSelectionGit runs git with a fixed identity and returns its output.
+func runSelectionGit(t *testing.T, args ...string) string {
+	t.Helper()
+	args = append([]string{"-c", "user.name=Test", "-c", "user.email=test@example.test", "-c", "commit.gpgsign=false"}, args...)
+	out, err := exec.Command("git", args...).CombinedOutput()
+	require.NoError(t, err, "git %v: %s", args, out)
+	return string(out)
 }

@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -82,8 +83,17 @@ func (p permission) principal() string {
 	return ""
 }
 
-func processPermissions(currentUser, resourceType string, permissions []permission) []permission {
-	return useMaximumLevel(ensureCurrentUserMgmtPermissions(permissions, currentUser, resourceType))
+// processPermissions returns the processed permissions and, for each of them, the index of
+// the input entry it keeps as is (with its locations), or -1 for a new entry.
+func processPermissions(currentUser, resourceType string, permissions []permission) ([]permission, []int) {
+	original := slices.Clone(permissions)
+	processed, sources := useMaximumLevel(ensureCurrentUserMgmtPermissions(permissions, currentUser, resourceType))
+	for i, k := range sources {
+		if k >= len(original) || original[k] != processed[i] {
+			sources[i] = -1
+		}
+	}
+	return processed, sources
 }
 
 func ensureCurrentUserMgmtPermissions(permissions []permission, currentUser, resourceType string) []permission {
@@ -129,12 +139,14 @@ func ensureCurrentUserMgmtPermissions(permissions []permission, currentUser, res
 	return permissions
 }
 
-func useMaximumLevel(permissions []permission) []permission {
+// useMaximumLevel keeps one entry per principal, with the maximum level. For each entry it
+// also returns the index of the input entry that sets the level.
+func useMaximumLevel(permissions []permission) ([]permission, []int) {
 	levelPerPrincipal := make(map[string]string)
-	seen := make(map[string]bool)
+	maxIndex := make(map[string]int)
 	var principals []string
 
-	for _, p := range permissions {
+	for i, p := range permissions {
 		if p.level == "" {
 			continue
 		}
@@ -143,19 +155,24 @@ func useMaximumLevel(permissions []permission) []permission {
 		if principal == "" {
 			continue
 		}
-		if !seen[principal] {
-			seen[principal] = true
+		if _, ok := maxIndex[principal]; !ok {
 			principals = append(principals, principal)
 		}
-		levelPerPrincipal[principal] = resources.GetMaxLevel(levelPerPrincipal[principal], p.level)
+		maxLevel := resources.GetMaxLevel(levelPerPrincipal[principal], p.level)
+		if maxLevel != levelPerPrincipal[principal] {
+			maxIndex[principal] = i
+		}
+		levelPerPrincipal[principal] = maxLevel
 	}
 
 	var newPermissions []permission
+	var sources []int
 	for _, principal := range principals {
 		newPermissions = append(newPermissions, createPermissionFromPrincipal(principal, levelPerPrincipal[principal]))
+		sources = append(sources, maxIndex[principal])
 	}
 
-	return newPermissions
+	return newPermissions, sources
 }
 
 func createPermission(user, level string) permission {
@@ -207,7 +224,7 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			})
 		}
 
-		processed := processPermissions(currentUser, typ, permissions)
+		processed, sources := processPermissions(currentUser, typ, permissions)
 		out := make([]resources.Permission, 0, len(processed))
 		for _, p := range processed {
 			out = append(out, resources.Permission{
@@ -219,8 +236,14 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		}
 		perms.Set(out)
 
-		// The permissions are rebuilt without locations.
-		b.Config.SetLocations(structpath.NewPath(nil, "resources", typ, name, "permissions"), nil)
+		// Keep the locations of an entry that is kept as is: config-remote-sync writes it back there.
+		seq := make([][]int, len(sources))
+		for i, k := range sources {
+			if k >= 0 {
+				seq[i] = []int{k}
+			}
+		}
+		b.Config.UpdateSequence(structpath.NewPath(nil, "resources", typ, name, "permissions"), seq)
 		return true
 	})
 

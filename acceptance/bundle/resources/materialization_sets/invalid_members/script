@@ -1,0 +1,8 @@
+# Both rejections are read off the config, so neither reaches the server.
+render() {
+    cp "$1" databricks.yml
+}
+
+title "Two members differing only outside the member key are the same member declared twice"
+render duplicate.yml
+trace musterr $CLI bundle validate

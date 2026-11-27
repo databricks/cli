@@ -1,0 +1,25 @@
+bundle:
+  name: apps-config-env-no-drift
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      resources:
+        - name: my-secret
+          secret:
+            scope: my-scope
+            key: my-key
+            permission: READ
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: GREETING
+            value: hello
+          - name: API_TOKEN
+            value_from: my-secret
+      lifecycle:
+        started: true

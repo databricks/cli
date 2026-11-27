@@ -9,3 +9,7 @@ resources:
       parent_path: PARENT_PATH_PLACEHOLDER
       serialized_space:
         version: 1
+        # The backend rejects a space with no data sources.
+        data_sources:
+          tables:
+            - identifier: samples.nyctaxi.trips

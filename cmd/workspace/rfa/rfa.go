@@ -3,6 +3,7 @@
 package rfa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,24 +19,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "rfa",
-		Short: `*Public Preview* Request for Access enables users to request access for Unity Catalog securables.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "rfa",
+	Short:   `*Public Preview* Request for Access enables users to request access for Unity Catalog securables.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Request for Access enables users to request access for Unity Catalog
   securables.
 
   These APIs provide a standardized way for securable owners (or users with
-  MANAGE privileges) to manage access request destinations.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  MANAGE privileges) to manage access request destinations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newBatchCreateAccessRequests())
@@ -46,8 +51,6 @@ Request for Access enables users to request access for Unity Catalog
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start batch-create-access-requests command
@@ -162,8 +165,10 @@ Get Access Request Destinations.
   "registered_model", and "volume".
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable.
-    FULL_NAME: The full name of the securable.`
+    SECURABLE_TYPE: The type of the securable. Matching is case-insensitive, and hyphens may
+      replace underscores in multi-word types.
+    FULL_NAME: The full name of the securable: the names of its parents followed by its
+      own name, separated by dots, for example main.sales.orders for a table.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -222,6 +227,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 
 	// TODO: complex arg: destination_source_securable
 	// TODO: array: destinations
+	// TODO: complex arg: url_configuration
 
 	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"
 	cmd.Short = `*Public Preview* Update Access Request Destinations.`
@@ -233,26 +239,26 @@ Update Access Request Destinations.
   must be a metastore admin, the owner of the securable, or a user that has the
   **MANAGE** privilege on the securable in order to assign destinations. A
   maximum of 5 emails and 5 external notification destinations (Slack, Microsoft
-  Teams, Generic Webhook, and Databricks App Slack/Teams destinations) can be
-  assigned to a securable. If a URL destination is assigned, no other
-  destinations can be set.
+  Teams, Generic Webhook, Databricks App Slack/Teams, Asana, ServiceNow, and
+  EventBridge destinations) can be assigned to a securable. If a URL destination
+  is assigned, no other destinations can be set. An update replaces every
+  destination assigned directly to the securable in this workspace. An empty
+  list removes them all.
 
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".
 
-  Arguments:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
+  On a metastore that has a **url_configuration**, its URLs are shared by every
+  workspace, while emails and webhooks are still saved per workspace. There, a
+  URL destination replaces the configuration's **redirect_url** and clears its
+  **dynamic_url**, so requests that used the **dynamic_url** go to the new URL.
+  An update that has no URL destination and does not set **url_configuration**
+  clears both URLs, in every workspace.
 
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.
+  Arguments:
+    UPDATE_MASK: The paths of the field mask are not evaluated, because an update always
+      replaces the full list of destinations.
     SECURABLE: The securable for which the access request destinations are being modified
       or read.`
 

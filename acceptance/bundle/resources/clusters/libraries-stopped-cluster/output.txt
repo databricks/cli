@@ -1,8 +1,10 @@
 
 === Deploy libraries on a started=false cluster
+
 OK: created on stopped cluster
 
 === Change the libraries and redeploy the stopped cluster
+
 OK: libraries changed on stopped cluster
 
 >>> [CLI] bundle destroy --auto-approve

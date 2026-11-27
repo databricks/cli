@@ -1,0 +1,15 @@
+bundle:
+  name: deploy-feature-spec-grants-$UNIQUE_NAME
+
+resources:
+  feature_specs:
+    my_feature_spec:
+      name: $SCHEMA_FULL_NAME.myspec
+      features:
+        - feature_lookup:
+            table: $SCHEMA_FULL_NAME.user_features
+            lookup_keys: [user_id]
+            feature_names: [age, country]
+      grants:
+        - principal: account users
+          privileges: ["EXECUTE"]

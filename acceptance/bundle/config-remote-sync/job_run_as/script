@@ -1,0 +1,63 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Remove run_as from config and deploy"
+update_file.py databricks.yml "      name: removed-run-as-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+" "      name: removed-run-as-$UNIQUE_NAME
+"
+trace $CLI bundle deploy
+trace $CLI jobs get "$(read_id.py removed_run_as)" | jq .settings.run_as
+
+title "Add run_as to config without deploying"
+update_file.py databricks.yml "      name: pending-add-$UNIQUE_NAME
+" "      name: pending-add-$UNIQUE_NAME
+      run_as:
+        user_name: local-user@example.com
+"
+
+title "Change run_as remotely"
+edit_resource.py jobs "$(read_id.py no_run_as)" <<'PY'
+r["run_as"] = {"service_principal_name": "11111111-2222-3333-4444-555555555555"}
+PY
+edit_resource.py jobs "$(read_id.py run_as_to_owner)" <<PY
+r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
+PY
+# The sync also imports the new owner into the config as permissions, which the plan then creates.
+trace $CLI jobs set-permissions "$(read_id.py transferred_owner)" --json '{"access_control_list": [{"user_name": "new-owner@example.com", "permission_level": "IS_OWNER"}]}' > /dev/null
+edit_resource.py jobs "$(read_id.py transferred_owner)" <<'PY'
+r["run_as"] = {"user_name": "new-owner@example.com"}
+PY
+edit_resource.py jobs "$(read_id.py pending_add)" <<'PY'
+r["run_as"] = {"user_name": "remote-user@example.com"}
+PY
+edit_resource.py jobs "$(read_id.py user_to_user)" <<'PY'
+r["run_as"] = {"user_name": "second-user@example.com"}
+PY
+edit_resource.py jobs "$(read_id.py user_to_creator)" <<PY
+r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
+PY
+edit_resource.py jobs "$(read_id.py user_to_sp)" <<'PY'
+r["run_as"] = {"service_principal_name": "11111111-2222-3333-4444-555555555555"}
+PY
+
+# A run_as the config does not set is synced unless it names the job's owner:
+# no_run_as and removed_run_as get one, run_as_to_owner and transferred_owner do not.
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Second sync is a no-op"
+trace $CLI bundle config-remote-sync
+
+title "Plan after sync"
+trace $CLI bundle plan

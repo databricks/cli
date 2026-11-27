@@ -361,3 +361,30 @@ func TestCaptureDirtyDiff_IncludePaths(t *testing.T) {
 }
 
 var fixedNow = time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)
+
+func TestCountFilesAtCommit(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "README.md", "repo root")
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	writeRepoFile(t, repo, "subpkg/nested/util.py", "pass")
+	sha := commitAll(t, repo, "init")
+
+	count, err := newGitRepo(repo).countFilesAtCommit(ctx, sha, "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, 3, count)
+
+	// root_path below the repo root: git runs from the subfolder, and the count
+	// must still cover the whole subtree, as `git archive` does.
+	subGit := newGitRepo(filepath.Join(repo, "subpkg"))
+	prefix, err := subGit.repoRelativePrefix(ctx)
+	require.NoError(t, err)
+
+	count, err = subGit.countFilesAtCommit(ctx, sha, prefix, nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+
+	count, err = subGit.countFilesAtCommit(ctx, sha, prefix, []string{"nested"})
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
+}

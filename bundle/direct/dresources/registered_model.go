@@ -2,13 +2,20 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// registeredModelAliasesPath is the state path of the aliases slice, used to detect alias changes.
+var registeredModelAliasesPath = structpath.MustParsePath("aliases")
 
 type ResourceRegisteredModel struct {
 	client *databricks.WorkspaceClient
@@ -51,40 +58,87 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
 		FullName:        id,
-		IncludeAliases:  false,
+		IncludeAliases:  true,
 		IncludeBrowse:   false,
 		ForceSendFields: nil,
 	})
 }
 
+func registeredModelAliasKey(alias catalog.RegisteredModelAlias) (string, string) {
+	return "alias_name", alias.AliasName
+}
+
+// KeyedSlices compares aliases by name, so the order the backend lists them in does not produce phantom diffs.
+func (*ResourceRegisteredModel) KeyedSlices() map[string]any {
+	return map[string]any{"aliases": registeredModelAliasKey}
+}
+
 func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
-	response, err := r.client.RegisteredModels.Create(ctx, *config)
+	create := func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+		return r.client.RegisteredModels.Create(ctx, *config)
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := config.CatalogName + "." + config.SchemaName + "." + config.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.RegisteredModelInfo, *catalog.RegisteredModelInfo]{
+			name:  "registered model " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+				return r.client.RegisteredModels.GetByFullName(ctx, fullName)
+			},
+			createTime:    func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.RegisteredModelInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.RegisteredModelInfo],
+			create: repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	return response.FullName, response, nil
 }
 
+// WaitAfterCreate sets the configured aliases through the alias API. It is not a wait, but unlike
+// DoCreate it runs after the model is saved to state: an alias can only point at a registered version,
+// so a failure here leaves the model tracked and the next deploy plans the alias again.
+func (r *ResourceRegisteredModel) WaitAfterCreate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest) (*catalog.RegisteredModelInfo, error) {
+	return nil, r.syncAliases(ctx, id, config.Aliases, nil)
+}
+
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 var registeredModelForceSend = []string{"Comment"}
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
-	updateRequest := catalog.UpdateRegisteredModelRequest{
-		FullName:        id,
+func makeUpdateRegisteredModel(fullName, newName string, config *catalog.CreateRegisteredModelRequest) catalog.UpdateRegisteredModelRequest {
+	// UC rejects an update that sets both name and new_name, even an empty name: a config read back
+	// from a saved plan force-sends it.
+	name := config.Name
+	notSent := []string{"Owner", "NewName"}
+	if newName != "" {
+		name = ""
+		notSent = append(notSent, "Name")
+	}
+	return catalog.UpdateRegisteredModelRequest{
+		FullName:        fullName,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), notSent...),
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
 		// change to it is silently dropped rather than applied.
 		Owner: "",
 
-		// Name updates are not supported yet without recreating. Can be added as a follow-up.
-		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
-		NewName: "",
+		// Set by DoUpdateWithID when the name changes.
+		NewName: newName,
 
-		Aliases:         config.Aliases,
+		// The update API ignores aliases; syncAliases applies them through the alias API.
+		Aliases: nil,
+
 		BrowseOnly:      config.BrowseOnly,
 		CreatedAt:       config.CreatedAt,
 		CreatedBy:       config.CreatedBy,
@@ -93,16 +147,117 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		UpdatedBy:       config.UpdatedBy,
 		SchemaName:      config.SchemaName,
 		StorageLocation: config.StorageLocation,
-		Name:            config.Name,
+		Name:            name,
 		CatalogName:     config.CatalogName,
 	}
+}
 
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
+	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(id, "", config))
 	if err != nil {
 		return nil, err
 	}
+	return response, r.syncChangedAliases(ctx, id, config, entry)
+}
 
-	return response, nil
+// DoUpdateWithID renames the model in place when the name changes, keeping its versions; the ID is
+// the full name, so it changes too.
+func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (string, *catalog.RegisteredModelInfo, error) {
+	nameFromID, err := getNameFromID(id)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// The catalog and schema come from config: a renamed parent moves the model with it (see
+	// followsParentRename).
+	current := config.CatalogName + "." + config.SchemaName + "." + nameFromID
+
+	// Aliases go first, under the current name: if they fail, the model is not renamed yet, so the
+	// state still points at it.
+	err = r.syncChangedAliases(ctx, current, config, entry)
+	if err != nil {
+		return "", nil, err
+	}
+
+	newName := ""
+	if config.Name != nameFromID {
+		newName = config.Name
+	}
+
+	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(current, newName, config))
+	if err != nil {
+		return "", nil, err
+	}
+	return response.FullName, response, nil
+}
+
+// syncChangedAliases applies the configured aliases when the plan changes them.
+func (r *ResourceRegisteredModel) syncChangedAliases(ctx context.Context, fullName string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) error {
+	if !entry.Changes.HasChange(registeredModelAliasesPath) {
+		return nil
+	}
+	remote, ok := entry.RemoteState.(*catalog.RegisteredModelInfo)
+	if !ok {
+		return fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
+	}
+	return r.syncAliases(ctx, fullName, config.Aliases, remote.Aliases)
+}
+
+// syncAliases makes the model's aliases match desired, given the ones it has remotely. The alias API
+// sets or deletes one alias per call. Sets go first, so no alias is deleted unless every set succeeded.
+func (r *ResourceRegisteredModel) syncAliases(ctx context.Context, fullName string, desired, remote []catalog.RegisteredModelAlias) error {
+	remoteVersions := make(map[string]int, len(remote))
+	for _, alias := range remote {
+		remoteVersions[alias.AliasName] = alias.VersionNum
+	}
+
+	desiredNames := make(map[string]bool, len(desired))
+	for _, alias := range desired {
+		desiredNames[alias.AliasName] = true
+		if version, ok := remoteVersions[alias.AliasName]; ok && version == alias.VersionNum {
+			continue
+		}
+		_, err := r.client.RegisteredModels.SetAlias(ctx, catalog.SetRegisteredModelAliasRequest{
+			FullName:   fullName,
+			Alias:      alias.AliasName,
+			VersionNum: alias.VersionNum,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, alias := range remote {
+		if desiredNames[alias.AliasName] {
+			continue
+		}
+		err := r.client.RegisteredModels.DeleteAlias(ctx, catalog.DeleteAliasRequest{
+			FullName: fullName,
+			Alias:    alias.AliasName,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// OverrideChangeDesc leaves aliases unmanaged when the config has no aliases section. MLflow clients
+// commonly assign aliases to the versions they register (e.g. a "champion" picked by an evaluation
+// job), so without a section what the model reports is not drift. The difference then arrives as a
+// single whole-field change with New nil; `aliases: []` keeps New non-nil, so it stays managed.
+func (*ResourceRegisteredModel) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.RegisteredModelInfo) error {
+	if change.Action == deployplan.Update && change.New == nil && path.String() == "aliases" {
+		change.Action = deployplan.Skip
+		change.Reason = deployplan.ReasonUnmanaged
+	}
+	return nil
+}
+
+// IDFromState returns the full name, which is the ID.
+func (*ResourceRegisteredModel) IDFromState(state *catalog.CreateRegisteredModelRequest) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
 }
 
 func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) error {

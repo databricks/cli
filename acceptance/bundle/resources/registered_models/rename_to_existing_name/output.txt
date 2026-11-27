@@ -1,0 +1,62 @@
+
+=== Deploy a schema with two registered models
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created registered_models.model1
+Created registered_models.model2
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the first model to the second one's name: UC rejects the rename
+
+>>> update_file.py databricks.yml name: model_a name: model_b
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Error: cannot update_id resources.registered_models.model1: updating id=main.test-schema-[UNIQUE_NAME].model_a: Routine or Model 'model_b' already exists (400 RESOURCE_ALREADY_EXISTS)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].model_a
+HTTP Status: 400 Bad Request
+API error_code: RESOURCE_ALREADY_EXISTS
+API message: Routine or Model 'model_b' already exists
+
+Files: 2 uploaded, 0 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].model_a",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "new_name": "model_b",
+    "schema_name": "test-schema-[UNIQUE_NAME]"
+  }
+}
+
+=== Both models are still there under their names
+
+>>> [CLI] registered-models get main.test-schema-[UNIQUE_NAME].model_a
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].model_a"
+}
+
+>>> [CLI] registered-models get main.test-schema-[UNIQUE_NAME].model_b
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].model_b"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+  delete resources.registered_models.model2
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

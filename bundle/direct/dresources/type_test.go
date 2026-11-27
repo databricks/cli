@@ -16,6 +16,10 @@ import (
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
 var knownMissingInRemoteType = map[string][]string{
+	"apps": {
+		// The Apps API can't return the thumbnail image, only its thumbnail_url.
+		"thumbnail",
+	},
 	"external_locations": {
 		"skip_validation",
 	},
@@ -83,6 +87,8 @@ var knownMissingInStateType = map[string][]string{
 	"apps": {
 		"lifecycle.prevent_destroy",
 		"lifecycle.depends_on",
+		// The image read from thumbnail_path is kept in state as thumbnail.
+		"thumbnail_path",
 	},
 	"clusters": {
 		"lifecycle.prevent_destroy",

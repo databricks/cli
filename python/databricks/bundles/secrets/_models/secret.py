@@ -11,10 +11,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.secrets._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.secrets._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.secrets._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,
@@ -74,8 +71,8 @@ class Secret(Resource):
 
     owner: VariableOrOptional[str] = None
     """
-    The owner of the secret. Defaults to the creating principal on creation. Can be updated to
-    transfer ownership of the secret to another principal.
+    The owner of the secret. It cannot be set when creating a secret and defaults to the creating
+    principal. Set it in UpdateSecret to transfer ownership of the secret to another principal.
     """
 
     @classmethod
@@ -131,8 +128,8 @@ class SecretDict(TypedDict, total=False):
 
     owner: VariableOrOptional[str]
     """
-    The owner of the secret. Defaults to the creating principal on creation. Can be updated to
-    transfer ownership of the secret to another principal.
+    The owner of the secret. It cannot be set when creating a secret and defaults to the creating
+    principal. Set it in UpdateSecret to transfer ownership of the secret to another principal.
     """
 
 

@@ -11,12 +11,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // Box titles, rendered into the top border of each box.
@@ -74,6 +75,9 @@ func newPalette(r *lipgloss.Renderer) palette {
 type runView struct {
 	runID        string
 	dashboardURL string
+	// task is the selected AI runtime task's key, shown only when the run has
+	// several AI runtime tasks to tell apart.
+	task         string
 	status       string
 	submitted    string
 	retries      int
@@ -99,18 +103,20 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
-	// The serverless environment version lives on the run's environments[].spec,
-	// which the typed SDK Run drops, so read it with a raw request. Empty (a run
-	// with no serverless environment) stays "N/A".
-	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, run.RunId))
+	// The list detail pane (list_detail.go) renders through here without going
+	// through `air get`, which resolves these up front.
+	if !data.detailsResolved {
+		enrichRunDetails(ctx, w, run, data, ids, true)
+	}
 
 	view := runView{
 		runID:        data.RunID,
 		dashboardURL: data.DashboardURL,
+		task:         data.TaskDisplay,
 		status:       data.Status,
 		submitted:    data.SubmittedDisplay,
 		retries:      data.AttemptNumber,
-		maxRetries:   data.MaxRetriesDisplay,
+		maxRetries:   maxRetriesDisplay(data.MaxRetries),
 		duration:     data.DurationDisplay,
 		progress:     data.ProgressDisplay,
 		experiment:   data.ExperimentDisplay,
@@ -124,12 +130,17 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	if ids != nil {
-		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID)
+		name := ""
+		if data.MLflowRunName != nil {
+			name = *data.MLflowRunName
+		}
+		// The box grows to fit its fields, so the label is shown whole.
+		view.mlflowLabel = mlflowRunLabel(name, ids.RunID, 0) + ids.retryNote()
 		view.mlflowURL = mlflowRunURL(w.Config.Host, ids)
 	}
 
 	var sections []string
-	if body := colorizeConfig(p, resolveConfigYAML(ctx, w, run, data)); body != "" {
+	if body := colorizeConfig(p, data.configBody); body != "" {
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
@@ -155,30 +166,34 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 }
 
-// genAIComputeTask returns the run's first GenAI-compute task, or nil.
+// genAIComputeTask returns the run's first AI runtime task's GenAI-compute
+// task, or nil.
 func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	return run.Tasks[0].GenAiComputeTask
+	return t.GenAiComputeTask
 }
 
-// aiRuntimeEnvironmentVersion returns the serverless environment version an
-// ai_runtime run used (e.g. "4"), read from the Jobs GetRun response's
-// environments[] entry keyed by aiRuntimeEnvironmentKey. The typed SDK Run has
-// no environments field, so the value is fetched with a raw request. Best-effort:
-// returns "" (logged) on any error or when the run declares no environment.
-func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+// aiRuntimeEnvironment returns the serverless environment an ai_runtime task
+// used, read from the Jobs GetRun response's environments[] entry keyed by
+// envKey (see taskEnvironmentKey): a version (e.g. "4") or, for Databricks AI
+// runtimes, a base environment. The typed SDK Run has no environments field, so the value is
+// fetched with a raw request. Best-effort: returns empty strings (logged) on any
+// error or when the run declares no environment.
+func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, runID int64, envKey string) (version, baseEnvironment string) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
-		log.Warnf(ctx, "air get: could not create client to read environment: %v", err)
-		return ""
+		enrichmentWarnf(ctx, "air get: could not create client to read environment: %v", err)
+		return "", ""
 	}
 	var resp struct {
 		Environments []struct {
 			EnvironmentKey string `json:"environment_key"`
 			Spec           struct {
 				EnvironmentVersion string `json:"environment_version"`
+				BaseEnvironment    string `json:"base_environment"`
 			} `json:"spec"`
 		} `json:"environments"`
 	}
@@ -186,59 +201,122 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 	// run_id is passed as the request, mirroring the other raw calls in this package.
 	query := map[string]any{"run_id": runID}
 	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp); err != nil {
-		log.Warnf(ctx, "air get: could not read environment for run %d: %v", runID, err)
-		return ""
+		enrichmentWarnf(ctx, "air get: could not read environment for run %d: %v", runID, err)
+		return "", ""
 	}
 	for _, e := range resp.Environments {
-		if e.EnvironmentKey == aiRuntimeEnvironmentKey {
-			return e.Spec.EnvironmentVersion
+		if e.EnvironmentKey == envKey {
+			return e.Spec.EnvironmentVersion, e.Spec.BaseEnvironment
 		}
+	}
+	return "", ""
+}
+
+// taskEnvironmentKey returns the environment key of the run's lead task (the
+// selected AI runtime task once the run is narrowed, see taskRun; a sweep's
+// iterated task, see firstTask). It falls back to aiRuntimeEnvironmentKey, the
+// key `air run` submits, when the task names none.
+func taskEnvironmentKey(run *jobs.Run) string {
+	if t := firstTask(run); t != nil && t.EnvironmentKey != "" {
+		return t.EnvironmentKey
+	}
+	return aiRuntimeEnvironmentKey
+}
+
+// environmentLabel is the text shown for the Environment cell: the environment
+// version, else the ID of a workspace base environment, or "" for neither.
+// buildRunEnvironment submits a databricks_ai_v* image as a base environment
+// instead of an environment_version. Any other workspace base environment, such
+// as a custom dbe_<uuid>, shows its ID too.
+func environmentLabel(version, baseEnvironment string) string {
+	if version != "" {
+		return version
+	}
+	if id, ok := strings.CutPrefix(baseEnvironment, workspaceBaseEnvironmentPrefix); ok {
+		return id
 	}
 	return ""
 }
 
 // resolveConfigYAML returns the config box body: from the downloaded config file
-// when we have its path, else from the legacy task.
-func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) string {
+// when we have its path, else from the legacy task. It also returns the raw
+// config the body came from, or nil when the body is synthesized or empty.
+func resolveConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData) (string, []byte) {
 	if data.TrainingConfigPath != "" {
 		if raw := downloadConfig(ctx, w, data.TrainingConfigPath); len(raw) > 0 {
-			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
+			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 		}
 	}
 	if task := genAIComputeTask(run); task != nil {
 		return configYAML(ctx, w, task)
 	}
-	return ""
+	return "", nil
 }
 
 // configYAML returns the run's resolved training config as YAML for the box. The
 // full config (including the command/script) lives in the run's parameters, not
 // the structured task fields, so we prefer the inline parameters, then the
 // parameters file, and only synthesize a minimal config as a last resort.
-func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.GenAiComputeTask) string {
+func configYAML(ctx context.Context, w *databricks.WorkspaceClient, task *jobs.GenAiComputeTask) (string, []byte) {
 	if task.YamlParameters != "" {
-		return strings.TrimRight(reformatYAMLForDisplay([]byte(task.YamlParameters)), "\n")
+		raw := []byte(task.YamlParameters)
+		return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 	}
 	if task.YamlParametersFilePath != "" {
 		if raw := downloadConfig(ctx, w, task.YamlParametersFilePath); len(raw) > 0 {
-			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n")
+			return strings.TrimRight(reformatYAMLForDisplay(raw), "\n"), raw
 		}
 	}
-	return synthConfigYAML(task)
+	return synthConfigYAML(task), nil
 }
 
-// downloadConfig fetches the run's training-config file, returning nil on
-// failure (logged as a warning). Best-effort, like the rest of the enrichment.
-func downloadConfig(ctx context.Context, w *databricks.WorkspaceClient, path string) []byte {
-	r, err := w.Workspace.Download(ctx, path)
+// configDownloadTransport limits the body before SDK response handling, which
+// otherwise buffers JSON responses and Workspace.Download buffers every response.
+type configDownloadTransport struct{ base http.RoundTripper }
+
+func (t configDownloadTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
 	if err != nil {
-		log.Warnf(ctx, "air get: could not download training config %s: %v", path, err)
+		return resp, err
+	}
+	resp.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.LimitReader(resp.Body, maxConfigYAMLBytes+1), resp.Body}
+	return resp, nil
+}
+
+// downloadConfig fetches at most 1 MiB; oversized and unreadable configs are omitted.
+func downloadConfig(ctx context.Context, w *databricks.WorkspaceClient, path string) []byte {
+	cfg, err := config.HTTPClientConfigFromConfig(w.Config)
+	if err != nil {
+		enrichmentWarnf(ctx, "air get: could not create client to download config: %v", err)
+		return nil
+	}
+	transport := cfg.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	cfg.Transport = configDownloadTransport{base: transport}
+	apiClient := httpclient.NewApiClient(cfg)
+	var r io.ReadCloser
+	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/export",
+		httpclient.WithRequestHeaders(auth.WorkspaceIDHeaders(w.Config)),
+		httpclient.WithRequestHeader("Content-Type", "application/json"),
+		httpclient.WithRequestData(map[string]any{"path": path, "direct_download": true}),
+		httpclient.WithResponseUnmarshal(&r))
+	if err != nil {
+		enrichmentWarnf(ctx, "air get: could not download training config %s: %v", path, err)
 		return nil
 	}
 	defer r.Close()
 	content, err := io.ReadAll(r)
 	if err != nil {
-		log.Warnf(ctx, "air get: could not read training config %s: %v", path, err)
+		enrichmentWarnf(ctx, "air get: could not read training config %s: %v", path, err)
+		return nil
+	}
+	if len(content) > maxConfigYAMLBytes {
+		enrichmentWarnf(ctx, "air get: training config %s exceeds the %d-byte limit", path, maxConfigYAMLBytes)
 		return nil
 	}
 	return content
@@ -375,17 +453,28 @@ func renderBox(p palette, title, body string) string {
 
 // renderFields draws the two-column summary: muted labels right-padded to the
 // longest one, neutral values, a status-colored Status, and blue Run ID / MLflow
-// Run hyperlinks.
+// Run hyperlinks. The experiment, MLflow run, user and environment values are
+// server-supplied, so they are stripped of control characters before they reach
+// the terminal.
 func renderFields(p palette, colorOn bool, v runView) string {
+	v.experiment = stripControl(v.experiment)
+	v.mlflowLabel = stripControl(v.mlflowLabel)
+	v.user = stripControl(v.user)
+	v.environment = stripControl(v.environment)
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),
+	}
+	if v.task != "" {
+		rows = append(rows, field(p, "Task", p.n12.Render(stripControl(v.task))))
+	}
+	rows = append(rows,
 		field(p, "Status", status),
 		field(p, "Submitted", p.n12.Render(v.submitted)),
 		field(p, "Retries", p.n12.Render(strconv.Itoa(v.retries))),
 		field(p, "Max Retries", p.n12.Render(v.maxRetries)),
 		field(p, "Duration", p.n12.Render(v.duration)),
-	}
+	)
 	// Progress is shown only for a running run we could estimate; amber marks it
 	// as live, in-progress information.
 	if v.progress != "" {

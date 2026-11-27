@@ -3,6 +3,7 @@
 package entity_tag_assignments
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "entity-tag-assignments",
-		Short: `Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.`,
-		Long: `Tags are attributes that include keys and optional values that you can use to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "entity-tag-assignments",
+	Short:   `Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Tags are attributes that include keys and optional values that you can use to
   organize and categorize entities in Unity Catalog. Entity tagging is supported
   on catalogs, schemas, tables (including views), columns, and volumes. With
   these APIs, you can create, update, delete, and list tag assignments across
-  Unity Catalog entities.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  Unity Catalog entities.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

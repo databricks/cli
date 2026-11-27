@@ -3,22 +3,22 @@ sethome "./home"
 # Two profiles without a [__settings__] section.
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "Switch to profile-a\n"
+title "Switch to profile-a"
 trace $CLI auth switch --profile profile-a
 
-title "Settings after first switch\n"
+title "Settings after first switch"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
-title "Profiles after first switch\n"
+title "Profiles after first switch"
 trace $CLI auth profiles --skip-validate
 
-title "Switch to profile-b\n"
+title "Switch to profile-b"
 trace $CLI auth switch --profile profile-b
 
-title "Settings after second switch\n"
+title "Settings after second switch"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
-title "Profiles after second switch\n"
+title "Profiles after second switch"
 trace $CLI auth profiles --skip-validate
 
 # Track the final .databrickscfg to surface changes.

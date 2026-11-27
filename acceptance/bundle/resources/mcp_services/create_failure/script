@@ -1,0 +1,21 @@
+title "The create request times out but the service was created: deploy uses the service"
+fault.py --after-handler "POST /api/2.1/unity-catalog/mcp-services" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //mcp-services | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"
+
+title "The create request is cancelled and the service was not created: deploy repeats the create"
+fault.py "POST /api/2.1/unity-catalog/mcp-services" 499 0 1 CANCELLED
+trace $CLI bundle deploy
+trace print_requests.py --get //mcp-services | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"
+
+title "The create request times out after creating the service and the lookup misses it: the repeated create gets ALREADY_EXISTS and the next lookup finds the service"
+fault.py --after-handler "POST /api/2.1/unity-catalog/mcp-services" 504 0 1 DEADLINE_EXCEEDED
+fault.py "GET /api/2.1/unity-catalog/mcp-services/*" 404 0 1 NOT_FOUND
+trace $CLI bundle deploy
+trace print_requests.py --get //mcp-services | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"

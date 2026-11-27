@@ -5,5 +5,5 @@ sethome "./home"
 # serves account APIs (https://github.com/databricks/cli/issues/5479).
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "Describe falls back to the account endpoint when the workspace check fails\n"
+title "Describe falls back to the account endpoint when the workspace check fails"
 trace $CLI auth describe --profile acct-with-ws

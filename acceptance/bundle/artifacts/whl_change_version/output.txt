@@ -11,6 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 dist/my_test_code-0.1.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
@@ -29,6 +30,7 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 ]
 
 === Expecting 1 wheel to be uploaded
+
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.gitignore"
@@ -58,10 +60,12 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks [OUTPUT_DIR]/out.requests.txt
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
+
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl"
@@ -72,6 +76,7 @@ json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/defa
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME"
 
 === Restore config to target old wheel
+
 >>> update_file.py databricks.yml ./dist/*.whl ./dist/my*0.1.0*.whl
 
 >>> [CLI] bundle deploy
@@ -88,10 +93,12 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks [OUTPUT_DIR]/out.requests.txt
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
+
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"

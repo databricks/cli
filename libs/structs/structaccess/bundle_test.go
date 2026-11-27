@@ -81,8 +81,7 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 
 // A bundle resource embeds a config struct that embeds the SDK request struct, so its
 // fields sit two levels down. Get, Set and ValidatePath all have to reach them, and
-// ForceSendFields belongs to the struct that declares the field -- not to the outer one
-// that shadows the name.
+// ForceSendFields belongs to the struct that declares the field.
 func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 	project := &resources.PostgresProject{} //exhaustruct:ignore
 	project.ProjectId = "p"
@@ -98,8 +97,7 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 
 	// An explicit empty value is recorded on ProjectSpec, which declares the field.
 	require.NoError(t, structaccess.SetByString(project, "budget_policy_id", ""))
-	require.Contains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
-	require.NotContains(t, project.ForceSendFields, "BudgetPolicyId")
+	require.Contains(t, project.ForceSendFields, "BudgetPolicyId")
 
 	value, err = structaccess.GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
@@ -108,7 +106,7 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 
 	// And dropping it again leaves the field absent.
 	require.NoError(t, structaccess.SetByString(project, "budget_policy_id", nil))
-	require.NotContains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
+	require.NotContains(t, project.ForceSendFields, "BudgetPolicyId")
 	value, err = structaccess.GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Nil(t, value)

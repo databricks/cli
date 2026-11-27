@@ -10,7 +10,8 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/structs/structvar"
-	"go.yaml.in/yaml/v3"
+	"github.com/databricks/cli/libs/yamlutil"
+	"go.yaml.in/yaml/v4"
 )
 
 // Pair is an entry of a [Map].
@@ -181,7 +182,5 @@ func Save(path string, v any, force bool, styles map[string]yaml.Style) error {
 	}
 	defer file.Close()
 
-	enc := yaml.NewEncoder(file)
-	enc.SetIndent(2)
-	return enc.Encode(Node(v, styles))
+	return yamlutil.Encode(file, Node(v, styles))
 }

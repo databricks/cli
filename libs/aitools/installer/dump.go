@@ -8,15 +8,17 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // DumpSkillsToPath writes resolved skill files into destDir and returns the
-// number of skills written. It is a dumb dump: no agents, no .state.json, no
+// number of skills written. It returns ErrNoSkillsResolved, writing nothing,
+// when every skill is filtered out. It is a dumb dump: no agents, no .state.json, no
 // lifecycle (update/list/uninstall ignore it). It honors DATABRICKS_SKILLS_REF,
 // the cli-compat version pin, --skills cherry-picks, and --experimental exactly
 // as the agent install path does, since it reuses resolveSkills.
 func DumpSkillsToPath(ctx context.Context, src ManifestSource, destDir string, opts InstallOptions) (int, error) {
-	ref, explicit, err := getSkillsRef(ctx, true)
+	ref, explicit, err := skills.ResolveSkillsRef(ctx, true)
 	if err != nil {
 		return 0, err
 	}
@@ -30,6 +32,9 @@ func DumpSkillsToPath(ctx context.Context, src ManifestSource, destDir string, o
 	targetSkills, err := resolveSkills(ctx, manifest.Skills, opts)
 	if err != nil {
 		return 0, err
+	}
+	if len(targetSkills) == 0 {
+		return 0, ErrNoSkillsResolved
 	}
 
 	names := slices.Sorted(maps.Keys(targetSkills))

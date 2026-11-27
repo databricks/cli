@@ -38,8 +38,9 @@ const migrationFailedHint = `
 The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migration of your bundle failed. Install Databricks CLI v1.19.x to deploy on Terraform, and please report this to dabs-feedback@databricks.com`
 
 // Migrate converts the bundle's terraform state to a direct-engine state and opens
-// b.DeploymentBundle.StateDB with it in memory. Returns false when there is no terraform state
-// to migrate (the caller then opens the direct state normally).
+// b.DeploymentBundle.StateDB with it in memory. It is only called when the pulled state is a
+// terraform state, which the pull leaves on disk, so a missing local terraform state means it
+// changed after the pull (e.g. a concurrent deploy migrated it) and is an error.
 //
 // Migrate is reversible: nothing is written to the local state file or the workspace, so a
 // command that does not commit - plan, run, or a declined deploy - just drops the in-memory
@@ -49,15 +50,16 @@ The Terraform deployment engine was removed in Databricks CLI v1.20.0. Auto-migr
 // The terraform engine was removed in v1.20.0, so any failure (parsing, conversion, the plan
 // check) is fatal: there is no engine to fall back to. An empty terraform state is not a failure -
 // the converter writes an empty base state file, so there is no special case here.
-func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func Migrate(ctx context.Context, b *bundle.Bundle) error {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
-		return false, fmt.Errorf("parsing terraform state: %w%s", err, migrationFailedHint)
+		return fmt.Errorf("parsing terraform state: %w%s", err, migrationFailedHint)
 	}
 	if tfState == nil {
-		return false, nil
+		b.Metrics.SetBoolValue(metrics.DirectMigrateStateMissing, true)
+		return fmt.Errorf("terraform state %s was removed after it was pulled; if another deploy is running, wait for it to finish and run this command again", localTerraformPath)
 	}
 
 	_, localDirectPath := b.StateFilenameDirect(ctx)
@@ -76,7 +78,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	}
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
-		return false, fmt.Errorf("converting terraform state to the direct engine: %w%s", err, migrationFailedHint)
+		return fmt.Errorf("converting terraform state to the direct engine: %w%s", err, migrationFailedHint)
 	}
 
 	// Plan-check the converted state: validate it can be planned before committing to it, and
@@ -84,7 +86,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	plan, err := checkPlanOnTempState(ctx, b, tempStatePath, cfg)
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
-		return false, fmt.Errorf("the migrated state failed its plan check: %w%s", err, migrationFailedHint)
+		return fmt.Errorf("the migrated state failed its plan check: %w%s", err, migrationFailedHint)
 	}
 
 	// Record when the migrated state's first plan would recreate a resource, but still migrate:
@@ -101,18 +103,21 @@ func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	// that once the command is approved.
 	raw, err := os.ReadFile(tempStatePath)
 	if err != nil {
-		return false, fmt.Errorf("reading migrated state: %w", err)
+		return fmt.Errorf("reading migrated state: %w", err)
 	}
 	var data dstate.Database
 	if err := json.Unmarshal(raw, &data); err != nil {
-		return false, fmt.Errorf("parsing migrated state: %w", err)
+		return fmt.Errorf("parsing migrated state: %w", err)
+	}
+	// The terraform state has schema_id but no volume_id (see BuildStateFromTF); the plan check read it.
+	if err := direct.RecordMissingInternalIDs(plan, &data); err != nil {
+		return fmt.Errorf("recording internal ids in migrated state: %w", err)
 	}
 	b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
 
-	// Announce the migration only once the conversion and plan check succeeded, so a run with no
-	// terraform state to migrate says nothing misleading.
+	// Announce the migration only once the conversion and plan check succeeded.
 	cmdio.LogString(ctx, "Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).")
-	return true, nil
+	return nil
 }
 
 // CleanupTerraformStateAfterMigration backs up the now-superseded terraform state, remote and

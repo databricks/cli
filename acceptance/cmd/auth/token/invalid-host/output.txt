@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] auth token --host ?o=123
+Error: invalid host "?o=123". Expected a URL like https://<databricks-instance>.cloud.databricks.com
+
+>>> musterr [CLI] auth token --host https://
+Error: invalid host "https://". Expected a URL like https://<databricks-instance>.cloud.databricks.com

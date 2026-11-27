@@ -31,7 +31,7 @@ func (m *artifactsUseDynamicVersion) Apply(ctx context.Context, b *bundle.Bundle
 			// This has no effect since we only apply DynamicVersion if type is "whl" but it makes output cleaner.
 			continue
 		}
-		a.DynamicVersion = true
+		a.DynamicVersion = new(true)
 	}
 
 	return nil

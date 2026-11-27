@@ -1,1 +1,1 @@
-Badness = "Fails to merge resources because targets are resolved before variables"
+Badness = "Overriding tasks of a job whose tasks come from a complex variable fails with 'cannot merge string with sequence': targets are merged before ${var.job_tasks} is resolved. The target override should merge into the variable's tasks."

@@ -1,0 +1,11 @@
+Cloud = false
+RecordRequests = true
+Timeout = '120s'
+EnvMatrix.DMS = ['true']
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = '0'
+Ignore = ['work']
+SortLines.deploy_actions = '^  (Created|Updated|Deleted|Recreated|Resized) \S+$'
+
+[[Repls]]
+Old = 'recording operation for resources\.[^:]+:'
+New = 'recording operation for [RESOURCE_KEY]:'

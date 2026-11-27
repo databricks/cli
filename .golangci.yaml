@@ -61,6 +61,56 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
+        # aitools layers: cmd/aitools (cobra commands) -> libs/aitools -> shared
+        # libs. Lower layers must not reach up. The aitools rules anchor their
+        # files patterns at ${config-path} (the repository root) so that a
+        # libs or cmd directory above the checkout does not match.
+        aitools-libs-no-commands:
+          files:
+            - "${config-path}/libs/aitools/**"
+          deny:
+            - pkg: "github.com/databricks/cli/cmd$"
+              desc: "libs/aitools must not import command packages; pass what it needs in from cmd/aitools"
+            - pkg: "github.com/databricks/cli/cmd/"
+              desc: "libs/aitools must not import command packages; pass what it needs in from cmd/aitools"
+        aitools-commands-only-root:
+          # lax: allow everything except cmd and cmd/*; the longer allow entries
+          # win over the cmd/ deny.
+          list-mode: lax
+          files:
+            - "${config-path}/cmd/aitools/**"
+          allow:
+            - "github.com/databricks/cli/cmd/root$"
+            - "github.com/databricks/cli/cmd/root/"
+            - "github.com/databricks/cli/cmd/aitools$"
+            - "github.com/databricks/cli/cmd/aitools/"
+          deny:
+            - pkg: "github.com/databricks/cli/cmd$"
+              desc: "cmd/aitools may import only cmd/root and itself; share code through libs/aitools instead of another command group"
+            - pkg: "github.com/databricks/cli/cmd/"
+              desc: "cmd/aitools may import only cmd/root and itself; share code through libs/aitools instead of another command group"
+        libs-no-aitools:
+          files:
+            - "${config-path}/libs/**"
+            - "!${config-path}/libs/aitools/**"
+          deny:
+            - pkg: "github.com/databricks/cli/libs/aitools$"
+              desc: "shared libs must not depend on the aitools feature packages"
+            - pkg: "github.com/databricks/cli/libs/aitools/"
+              desc: "shared libs must not depend on the aitools feature packages"
+        # cmd/root/root.go calls the aitools user-agent and hint hooks from the
+        # root pre-run and the auto-install hook from the root post-run; keep
+        # those calls in that one file. Tests may import aitools to stub them.
+        root-aitools-hooks-in-root-go:
+          files:
+            - "${config-path}/cmd/root/**"
+            - "!${config-path}/cmd/root/root.go"
+            - "!$test"
+          deny:
+            - pkg: "github.com/databricks/cli/libs/aitools$"
+              desc: "aitools hooks belong in cmd/root/root.go only"
+            - pkg: "github.com/databricks/cli/libs/aitools/"
+              desc: "aitools hooks belong in cmd/root/root.go only"
         no-legacy-rand:
           deny:
             - pkg: "math/rand$"
@@ -106,6 +156,9 @@ linters:
           msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
         - pattern: 'errors\.As\b'
           msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+).'
+        - pattern: '^yaml\.NewEncoder$'
+          pkg: '^go\.yaml\.in/yaml/v4$'
+          msg: Use yamlutil.Encode from libs/yamlutil instead; yaml.NewEncoder wraps lines at 80 columns in go-yaml v4 (yaml/go-yaml#525).
       analyze-types: true
     recvcheck:
       # recvcheck v0.3 switched its built-in exclusions from Marshal* to

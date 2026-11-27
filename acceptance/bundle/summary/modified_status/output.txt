@@ -1,5 +1,6 @@
 
 === Initial view of resources without id and modified_status=created
+
 >>> [CLI] bundle summary -o json
 {
   "alerts": {
@@ -77,6 +78,7 @@ Files: 4 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Post-deployment view of resources with id and without modified_status
+
 >>> [CLI] bundle summary -o json
 {
   "alerts": {
@@ -93,14 +95,14 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
           }
         }
       },
-      "id": "[UUID]",
+      "id": "[UUID][0]",
       "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
       "query_text": "select 2",
       "schedule": {
         "quartz_cron_schedule": "44 19 */1 * * ?",
         "timezone_id": "Europe/Amsterdam"
       },
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[WORKSPACE_ID]",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID][0]?w=[WORKSPACE_ID]",
       "warehouse_id": "aaaaaaaaaaaaaaaa"
     }
   },
@@ -112,7 +114,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
       "edition": "ADVANCED",
-      "id": "[UUID]",
+      "id": "[UUID][1]",
       "libraries": [
         {
           "file": {
@@ -121,7 +123,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
         }
       ],
       "name": "test-pipeline",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID][1]?w=[WORKSPACE_ID]"
     }
   },
   "schemas": {
@@ -139,30 +141,31 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
       "cluster_size": "X-Large",
       "enable_photon": true,
       "enable_serverless_compute": true,
-      "id": "[UUID]",
+      "id": "[UUID][2]",
       "max_num_clusters": 1,
       "name": "test-sql-warehouse",
       "spot_instance_policy": "COST_OPTIMIZED",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID][2]?w=[WORKSPACE_ID]"
     }
   }
 }
 
 === Expecting all resources to have modified_status=deleted
+
 >>> [CLI] bundle summary -o json
 {
   "alerts": {
     "my_alert": {
-      "id": "[UUID]",
+      "id": "[UUID][0]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[WORKSPACE_ID]"
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID][0]?w=[WORKSPACE_ID]"
     }
   },
   "pipelines": {
     "my_pipeline": {
-      "id": "[UUID]",
+      "id": "[UUID][1]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID][1]?w=[WORKSPACE_ID]"
     }
   },
   "schemas": {
@@ -174,9 +177,9 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
-      "id": "[UUID]",
+      "id": "[UUID][2]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[WORKSPACE_ID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID][2]?w=[WORKSPACE_ID]"
     }
   }
 }

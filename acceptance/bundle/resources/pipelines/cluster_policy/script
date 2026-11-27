@@ -7,5 +7,5 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 
-title "A pipeline cluster with policy_id converges: the Pipelines API does not expand the policy\n"
+title "A pipeline cluster with policy_id converges: the Pipelines API does not expand the policy"
 trace $CLI bundle plan

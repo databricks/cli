@@ -24,11 +24,14 @@ func newDockerConfigureCommand() *cobra.Command {
 This command installs docker-credential-databricks and configures Docker to use
 it for the selected workspace's Artifact Registry host. If the selected profile
 does not already include a workspace_id, the command resolves and saves it so
-the Docker helper can map the registry host back to the profile. The registry
-region is inferred from the workspace's metastore. Select the workspace with
-[PROFILE] or --profile; --host, --account-id, and --workspace-id are not
-supported. The deprecated --region flag is retained for compatibility; omit it
-because it will be fully removed in the next release.`,
+the Docker helper can map the registry host back to the profile. The command
+also records the profile for the registry host in the [__settings__] section of
+the configuration file, so the helper uses it when other profiles match the same
+workspace; run the command with another profile to switch. The registry region
+is inferred from the workspace's metastore. Select the workspace with [PROFILE]
+or --profile; --host, --account-id, and --workspace-id are not supported. The
+deprecated --region flag is retained for compatibility; omit it because it will
+be fully removed in the next release.`,
 		Args: cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			return errorOnUnsupportedDockerFlags(cmd, "[PROFILE] or --profile")
@@ -66,16 +69,14 @@ func configureDockerTarget(cmd *cobra.Command, args []string, region string) (*d
 	if err != nil {
 		return nil, err
 	}
-	if err := dockercredentials.EnsureUniqueProfile(ctx, profile.DefaultProfiler, w.profile, w.id); err != nil {
-		return nil, err
-	}
 	return w.target(ctx, explicitRegion)
 }
 
 func (t *dockerTarget) configure(ctx context.Context) (dockercredentials.Configuration, error) {
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	if t.profile.WorkspaceID == "" || t.profile.WorkspaceID == profile.WorkspaceIDNone {
 		err := databrickscfg.SaveToProfile(ctx, &config.Config{
-			ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+			ConfigFile:  configFile,
 			Profile:     t.profile.Name,
 			WorkspaceID: t.workspaceID,
 		})
@@ -83,7 +84,18 @@ func (t *dockerTarget) configure(ctx context.Context) (dockercredentials.Configu
 			return dockercredentials.Configuration{}, fmt.Errorf("save workspace ID to profile %q: %w", t.profile.Name, err)
 		}
 	}
-	return dockercredentials.Configure(ctx, t.executable, t.registryHost)
+	result, err := dockercredentials.Configure(ctx, t.executable, t.registryHost)
+	if err != nil {
+		return dockercredentials.Configuration{}, err
+	}
+	previous, err := databrickscfg.SetDockerProfile(ctx, t.registryHost, t.profile.Name, configFile)
+	if err != nil {
+		return dockercredentials.Configuration{}, fmt.Errorf("configured Docker for %s, but could not save profile %q as its credential helper profile: %w", t.registryHost, t.profile.Name, err)
+	}
+	if previous != "" && previous != t.profile.Name {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: Docker credential helper for %s switched from profile %s to %s", t.registryHost, previous, t.profile.Name))
+	}
+	return result, nil
 }
 
 func (t *dockerTarget) logConfigured(ctx context.Context, result dockercredentials.Configuration) {

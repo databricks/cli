@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -17,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"golang.org/x/sync/errgroup"
 )
 
 // librariesWaitTimeout bounds how long we poll for libraries to finish installing.
@@ -153,19 +153,30 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	var libraries []compute.Library
 
 	// The cluster GET and the library-status GET are independent, so run them concurrently.
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		var err error
-		details, err = r.client.Clusters.GetByClusterId(ctx, id)
-		return err
+	// The cluster GET error takes precedence: for a deleted cluster both endpoints fail with
+	// 400 INVALID_PARAMETER_VALUE, but the SDK maps only the cluster GET one to
+	// ErrResourceDoesNotExist, so a library-status error that came first would make a missing
+	// cluster look like a read failure.
+	librariesCtx, cancelLibraries := context.WithCancel(ctx)
+	defer cancelLibraries()
+	var detailsErr, librariesErr error
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		details, detailsErr = r.client.Clusters.GetByClusterId(ctx, id)
+		if detailsErr != nil {
+			// The library status is not needed once the cluster GET failed.
+			cancelLibraries()
+		}
 	})
-	g.Go(func() error {
-		var err error
-		libraries, err = r.readLibraries(ctx, id)
-		return err
+	wg.Go(func() {
+		libraries, librariesErr = r.readLibraries(librariesCtx, id)
 	})
-	if err := g.Wait(); err != nil {
-		return nil, err
+	wg.Wait()
+	if detailsErr != nil {
+		return nil, detailsErr
+	}
+	if librariesErr != nil {
+		return nil, librariesErr
 	}
 
 	remote := &ClusterRemote{
@@ -634,6 +645,7 @@ func libraryWaitKey(l compute.Library) (string, string) {
 		return "whl", l.Whl
 	case l.Jar != "":
 		return "jar", l.Jar
+	//nolint:staticcheck // SA1019: egg libraries are deprecated in the SDK but remain a supported bundle config field
 	case l.Egg != "":
 		return "egg", l.Egg
 	case l.Requirements != "":

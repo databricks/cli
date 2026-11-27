@@ -1,5 +1,6 @@
 
 === Deploy bundle with catalog and schema
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created catalogs.test_catalog
@@ -8,6 +9,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the catalog is created
+
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
 {
   "name": "test_catalog_[UNIQUE_NAME]",
@@ -18,6 +20,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Assert schema is created in the custom catalog
+
 >>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
 {
   "full_name": "test_catalog_[UNIQUE_NAME].schema1",
@@ -26,8 +29,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify schema belongs to the test catalog
+
 === Update catalog comment
+
 === Redeploy with updated catalog
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated catalogs.test_catalog
@@ -35,6 +41,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === Assert catalog comment is updated
+
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
 {
   "name": "test_catalog_[UNIQUE_NAME]",
@@ -42,12 +49,14 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Assert schema still exists after catalog update
+
 >>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
 {
   "full_name": "test_catalog_[UNIQUE_NAME].schema1"
 }
 
 === Test cleanup
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.catalogs.test_catalog
@@ -61,4 +70,5 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert schema is deleted
+
 === Assert the catalog is deleted

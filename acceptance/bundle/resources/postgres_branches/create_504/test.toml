@@ -1,0 +1,6 @@
+Cloud = false
+RecordRequests = true
+EnvMatrix.READPLAN = []
+Env.DATABRICKS_BUNDLE_ENGINE = "direct"
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+SuppressLines.warn_retry = ""

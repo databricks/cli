@@ -3,6 +3,7 @@ package configsync
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -85,4 +86,26 @@ func TestSaveFiles_EmptyList(t *testing.T) {
 
 	err := SaveFiles(ctx, &bundle.Bundle{}, []FileChange{})
 	require.NoError(t, err)
+}
+
+func TestWriteResultTextReportsSkippedResources(t *testing.T) {
+	skipped := []SkippedChange{
+		{ResourceKey: "resources.jobs.a", Reason: SkipReasonClusterPolicyNotFound, PolicyID: "p1"},
+		{ResourceKey: "resources.jobs.b", Reason: SkipReasonClusterPolicyPermissionDenied, PolicyID: "p2", Error: "denied"},
+		{ResourceKey: "resources.jobs.c", Reason: SkipReasonClusterPolicyReadFailed, PolicyID: "p3", Error: "boom"},
+	}
+	var out strings.Builder
+	require.NoError(t, WriteResult(&out, false, &Stats{}, nil, nil, skipped, nil))
+	assert.Equal(t, `Sync is incomplete: some remote changes were skipped.
+Left resources.jobs.a unchanged: cluster policy p1 was not found.
+Left resources.jobs.b unchanged: no permission to read cluster policy p2.
+Left resources.jobs.c unchanged: cluster policy p3 could not be read: boom
+No changes could be synced.
+`, out.String())
+
+	out.Reset()
+	require.NoError(t, WriteResult(&out, true, &Stats{}, nil, nil, skipped[:1], nil))
+	assert.Contains(t, out.String(), `"status": "partial"`)
+	assert.Contains(t, out.String(), `"reason": "cluster_policy_not_found"`)
+	assert.NotContains(t, out.String(), `"error"`)
 }

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "other": {
+      "command": "npx",
+      "args": ["-y", "other-mcp"],
+      "disabled": false
+    }
+  }
+}

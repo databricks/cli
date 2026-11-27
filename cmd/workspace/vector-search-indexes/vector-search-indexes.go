@@ -3,6 +3,7 @@
 package vector_search_indexes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "vector-search-indexes",
-		Short: `**Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.`,
-		Long: `**Index**: An efficient representation of your embedding vectors that supports
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "vector-search-indexes",
+	Short:   `**Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.`,
+	GroupID: "vectorsearch",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `**Index**: An efficient representation of your embedding vectors that supports
   real-time and efficient approximate nearest neighbor (ANN) search queries.
 
   There are 2 types of AI Search indexes: - **Delta Sync Index**: An index that
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   updating the index as the underlying data in the Delta Table changes. -
   **Direct Vector Access Index**: An index that supports direct read and write
   of vectors and metadata through our REST and SDK APIs. With this model, the
-  user manages index updates.`,
-		GroupID: "vectorsearch",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  user manages index updates.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateIndex())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-index command
@@ -84,13 +87,18 @@ func newCreateIndex() *cobra.Command {
 	cmd.Short = `Create an index.`
 	cmd.Long = `Create an index.
 
-  Create a new index.
+  Create a new index on an endpoint. Creating a Delta Sync index also creates
+  the pipeline that populates it from the source table; a Direct Vector Access
+  index starts empty and is populated through Upsert data into an index.
 
   Arguments:
-    NAME: Name of the index
+    NAME: Three-level Unity Catalog name of the index to create.
     ENDPOINT_NAME: Name of the endpoint to be used for serving the index
-    PRIMARY_KEY: Primary key of the index
-    INDEX_TYPE:
+    PRIMARY_KEY: Name of the column that uniquely identifies each row. For a Delta Sync
+      index it is a column of the source table; for a Direct Vector Access index
+      it must be declared in schema_json. It cannot be the embedding source or
+      embedding vector column.
+    INDEX_TYPE: Type of index to create, which determines which spec field is required.
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
@@ -184,7 +192,9 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.Short = `Delete data from index.`
 	cmd.Long = `Delete data from index.
 
-  Handles the deletion of data from a specified vector index.
+  Delete rows from a Direct Vector Access index by primary key. The response
+  reports how many rows were deleted and the primary keys of the rows that
+  failed.
 
   Arguments:
     INDEX_NAME: Name of the vector index where data is to be deleted. Must be a Direct
@@ -258,8 +268,11 @@ func newDeleteIndex() *cobra.Command {
 	cmd.Short = `Delete an index.`
 	cmd.Long = `Delete an index.
 
+  Delete an index and the data it holds. The source table of a Delta Sync index
+  is not affected.
+
   Arguments:
-    INDEX_NAME: Name of the index`
+    INDEX_NAME: Three-level Unity Catalog name of the index.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -317,7 +330,7 @@ func newGetIndex() *cobra.Command {
 	cmd.Long = `Get an index.
 
   Arguments:
-    INDEX_NAME: Name of the index`
+    INDEX_NAME: Three-level Unity Catalog name of the index.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -387,7 +400,7 @@ func newListIndexes() *cobra.Command {
   List all indexes in the given endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the endpoint`
+    ENDPOINT_NAME: Name of the endpoint whose indexes to list.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -447,10 +460,10 @@ func newQueryIndex() *cobra.Command {
 
 	// TODO: array: columns_to_rerank
 	// TODO: array: facets
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
-	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
+	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `Filters to apply to the results, as a JSON object serialized to a string.`)
+	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Maximum number of results to return.`)
 	// TODO: array: query_columns
-	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Text to search for.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
@@ -461,7 +474,8 @@ func newQueryIndex() *cobra.Command {
 	cmd.Short = `Query an index.`
 	cmd.Long = `Query an index.
 
-  Query the specified vector index.
+  Query an index with a vector, text, or both, and return the requested columns
+  of the best-matching rows.
 
   Arguments:
     INDEX_NAME: Name of the vector index to query.`
@@ -533,7 +547,7 @@ func newQueryNextPage() *cobra.Command {
 
 	cmd.Flags().Var(&queryNextPageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint.`)
+	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint that serves the index.`)
 	cmd.Flags().StringVar(&queryNextPageReq.PageToken, "page-token", queryNextPageReq.PageToken, `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.`)
 
 	cmd.Use = "query-next-page INDEX_NAME"
@@ -618,8 +632,9 @@ func newScanIndex() *cobra.Command {
 	cmd.Short = `Scan an index.`
 	cmd.Long = `Scan an index.
 
-  Scan the specified vector index and return the first num_results entries
-  after the exclusive primary_key.
+  Scan an index and return the first num_results rows after the exclusive
+  last_primary_key. Repeat the call with the returned last_primary_key to
+  read the whole index.
 
   Arguments:
     INDEX_NAME: Name of the vector index to scan.`
@@ -690,7 +705,9 @@ func newSyncIndex() *cobra.Command {
 	cmd.Short = `Synchronize an index.`
 	cmd.Long = `Synchronize an index.
 
-  Triggers a synchronization process for a specified vector index.
+  Start a sync of a Delta Sync index with a TRIGGERED pipeline from its source
+  table. An index with a CONTINUOUS pipeline syncs automatically and rejects
+  manual syncs.
 
   Arguments:
     INDEX_NAME: Name of the vector index to synchronize. Must be a Delta Sync Index.`
@@ -751,12 +768,17 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	cmd.Short = `Upsert data into an index.`
 	cmd.Long = `Upsert data into an index.
 
-  Handles the upserting of data into a specified vector index.
+  Insert rows into a Direct Vector Access index, replacing existing rows that
+  have the same primary key. The response reports how many rows succeeded and
+  the primary keys of the rows that failed.
 
   Arguments:
     INDEX_NAME: Name of the vector index where data is to be upserted. Must be a Direct
       Vector Access Index.
-    INPUTS_JSON: JSON string representing the data to be upserted.`
+    INPUTS_JSON: Rows to upsert, as a JSON array of objects serialized to a string. Each
+      object maps column names from schema_json to values and must include the
+      primary key. A row whose primary key already exists in the index is
+      replaced.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

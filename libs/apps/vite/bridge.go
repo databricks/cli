@@ -981,6 +981,8 @@ func (vb *Bridge) Start() error {
 	})
 
 	if !vb.autoApprove {
+		// Stop does not end the read, so it can outlive the command.
+		cmdio.MarkStdinReadInBackground()
 		go vb.readStdinLines(os.Stdin)
 	}
 

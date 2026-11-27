@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -141,6 +142,17 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		dashboard.Path = dashboard.ParentPath + "/" + dashboard.DisplayName + ".lvdash.json"
 	}
 
+	workspacePath := path.Join("/Workspace", dashboard.Path)
+	if _, exists := s.files[workspacePath]; exists {
+		return Response{
+			StatusCode: http.StatusConflict,
+			Body: map[string]string{
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("A node with name '%s' already exists under the specified parent", dashboard.DisplayName),
+			},
+		}
+	}
+
 	dashboard.CreateTime = nextTimestamp()
 	dashboard.UpdateTime = dashboard.CreateTime
 
@@ -163,7 +175,6 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		InputSerializedDashboard: inputSerializedDashboard,
 	})
 
-	workspacePath := path.Join("/Workspace", dashboard.Path)
 	s.files[workspacePath] = FileEntry{
 		Info: workspace.ObjectInfo{
 			ObjectType: "DASHBOARD",
@@ -220,6 +231,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		updated.DisplayName = updateReq.DisplayName
 		dir := path.Dir(updated.Path)
 		base := updateReq.DisplayName + ".lvdash.json"
+		s.moveDashboardFile(updated.Path, path.Join(dir, base), dashboardId)
 		updated.Path = path.Join(dir, base)
 	}
 	if updateReq.SerializedDashboard != "" {
@@ -298,7 +310,8 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 		}
 	}
 
-	// The dashboard is marked as trashed and moved to the trash.
+	// The dashboard is marked as trashed and moved to the trash, which frees its path.
+	s.moveDashboardFile(dashboard.Path, "", dashboardId)
 	s.Dashboards.Put(dashboardId, &fakeDashboard{
 		Etag:           dashboard.Etag,
 		DashboardId:    dashboardId,
@@ -348,5 +361,20 @@ func (s *FakeWorkspace) DashboardGetPublished(req Request) Response {
 
 	return Response{
 		Body: publishedDashboard,
+	}
+}
+
+// moveDashboardFile moves the workspace file of dashboard dashboardId from oldPath to newPath, or
+// removes it if newPath is empty. Paths are as in Dashboard.Path, without the /Workspace prefix.
+func (s *FakeWorkspace) moveDashboardFile(oldPath, newPath, dashboardId string) {
+	oldWorkspacePath := path.Join("/Workspace", oldPath)
+	entry, ok := s.files[oldWorkspacePath]
+	if !ok || entry.Info.ResourceId != dashboardId {
+		return
+	}
+	delete(s.files, oldWorkspacePath)
+	if newPath != "" {
+		entry.Info.Path = path.Join("/Workspace", newPath)
+		s.files[entry.Info.Path] = entry
 	}
 }

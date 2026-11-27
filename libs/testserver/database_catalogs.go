@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
@@ -34,10 +35,37 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 		}
 	}
 
+	// The catalog name is unique in the metastore, whichever API created the catalog.
+	_, dbExists := s.DatabaseCatalogs[databaseCatalog.Name]
+	_, ucExists := s.Catalogs[databaseCatalog.Name]
+	if dbExists || ucExists {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "CATALOG_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Catalog '%s' already exists", databaseCatalog.Name),
+			},
+		}
+	}
+
 	// Assign uid like the real backend does
 	databaseCatalog.Uid = nextUUID()
 
 	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
+
+	// The catalog is registered in Unity Catalog, which is the only place its create time shows.
+	now := nowMilli()
+	s.Catalogs[databaseCatalog.Name] = catalog.CatalogInfo{
+		Name:        databaseCatalog.Name,
+		FullName:    databaseCatalog.Name,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		CreatedBy:   s.CurrentUser().UserName,
+		UpdatedBy:   s.CurrentUser().UserName,
+		Owner:       s.CurrentUser().UserName,
+		MetastoreId: nextUUID(),
+		CatalogType: catalog.CatalogTypeManagedOnlineCatalog,
+	}
 
 	return Response{
 		Body: databaseCatalog,
@@ -50,8 +78,11 @@ func (s *FakeWorkspace) DatabaseCatalogGet(name string) Response {
 	catalog, ok := s.DatabaseCatalogs[name]
 	if !ok {
 		return Response{
-			Body:       fmt.Sprintf("database catalog with name '%s' not found", name),
 			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "CATALOG_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Catalog '%s' does not exist.", name),
+			},
 		}
 	}
 
@@ -74,4 +105,15 @@ func (s *FakeWorkspace) DatabaseCatalogUpdate(req Request, name string) Response
 			"message":    "Update Database Catalog is not yet implemented",
 		},
 	}
+}
+
+func (s *FakeWorkspace) DatabaseCatalogDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.DatabaseCatalogs[name]; !ok {
+		return Response{StatusCode: 404}
+	}
+	delete(s.DatabaseCatalogs, name)
+	delete(s.Catalogs, name)
+	return Response{}
 }

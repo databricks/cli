@@ -1,0 +1,109 @@
+
+=== first run of 1.30.0 installs skills release 0.3.0
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-dropped
+databricks-edited
+databricks-kept
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+=== upgrade to 1.31.0 with release 0.4.0: updates like aitools update, keeping the edited skills
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 DATABRICKS_CLI_GITHUB_API_URL=[DATABRICKS_URL]/newer [CLI] jobs list
+Updated Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-dropped
+databricks-edited
+databricks-kept
+
+>>> skill_file databricks-kept
+kept 2.0.0
+
+>>> skill_file databricks-dropped
+dropped 1.0.0
+my notes
+
+>>> skill_file databricks-edited
+edited 1.0.0
+my notes
+
+>>> auto_install_state
+{
+  "last_version": "1.31.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+=== upgrade to 1.32.0 while the latest release is 0.2.0: no downgrade, nothing printed, not retried
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.0 DATABRICKS_CLI_GITHUB_API_URL=[DATABRICKS_URL]/older [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"KEPT","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> skill_file databricks-kept
+kept 2.0.0
+
+>>> auto_install_state
+{
+  "last_version": "1.32.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+=== an older CLI on the same machine (e.g. one an IDE ships) does nothing
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 [CLI] jobs list
+
+>>> print_telemetry
+
+>>> auto_install_state
+{
+  "last_version": "1.32.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+>>> DATABRICKS_SKILLS_REF=v0.4.0 [CLI] aitools install --skills-only --scope=global --agents=cursor
+Installing Databricks skills for Cursor...
+Using skills version 0.4.0
+Fetching skills manifest...
+Installed 2 skills in [TEST_TMP_DIR]/pinned-home/.databricks/aitools/skills.
+
+=== upgrade to 1.33.0 pinned to 0.3.0 over an explicit 0.4.0 install: no downgrade, nothing printed, not retried
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0 [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"KEPT","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-edited
+databricks-kept
+
+>>> skill_file databricks-kept
+kept 2.0.0
+
+>>> auto_install_state
+{
+  "last_version": "1.33.0",
+  "consented": true,
+  "id": "treatment-machine"
+}

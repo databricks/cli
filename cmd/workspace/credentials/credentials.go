@@ -3,6 +3,7 @@
 package credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,25 +19,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "credentials",
-		Short: `A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.`,
-		Long: `A credential represents an authentication and authorization mechanism for
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "credentials",
+	Short:   `A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A credential represents an authentication and authorization mechanism for
   accessing services on your cloud tenant. Each credential is subject to Unity
   Catalog access-control policies that control which users and groups can access
   the credential.
 
   To create credentials, you must be a Databricks account admin or have the
   CREATE SERVICE CREDENTIAL privilege. The user who creates the credential can
-  delegate ownership to another user or group to manage permissions on it.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  delegate ownership to another user or group to manage permissions on it.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateCredential())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-credential command
@@ -167,7 +170,7 @@ func newDeleteCredential() *cobra.Command {
 
 	var deleteCredentialReq catalog.DeleteCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
+	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force deletion even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 
 	cmd.Use = "delete-credential NAME_ARG"
 	cmd.Short = `Delete a credential.`
@@ -239,8 +242,8 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd.Long = `Generate a temporary service credential.
 
   Returns a set of temporary credentials generated using the specified service
-  credential. The caller must be a metastore admin or have the metastore
-  privilege **ACCESS** on the service credential.
+  credential. The caller must be a metastore admin or have the **ACCESS**
+  privilege on the service credential.
 
   Arguments:
     CREDENTIAL_NAME: The name of the service credential used to generate a temporary credential`
@@ -567,15 +570,11 @@ func newValidateCredential() *cobra.Command {
 
   Validates a credential.
 
-  For service credentials (purpose is **SERVICE**), either the
-  __credential_name__ or the cloud-specific credential must be provided.
-
   For storage credentials (purpose is **STORAGE**), at least one of
   __external_location_name__ and __url__ need to be provided. If only one of
   them is provided, it will be used for validation. And if both are provided,
   the __url__ will be used for validation, and __external_location_name__ will
-  be ignored when checking overlapping urls. Either the __credential_name__ or
-  the cloud-specific credential must be provided.
+  be ignored when checking overlapping urls.
 
   The caller must be a metastore admin or the credential owner or have the
   required permission on the metastore and the credential (e.g.,

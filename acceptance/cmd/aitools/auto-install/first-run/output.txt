@@ -1,0 +1,75 @@
+
+=== first run of a new version: installs for the detected agents, one stderr line
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Claude Code, Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"CLI_NOT_ON_PATH"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-test
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+=== second run of the same version: nothing
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+
+=== uninstall turns it off: the next version installs nothing
+
+>>> [CLI] aitools uninstall
+Uninstalled 1 skill.
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 [CLI] jobs list
+
+>>> print_telemetry
+{"command":"aitools_uninstall","exit_code":0,"aitools_command_event":{"command":"UNINSTALL","stage":"STARTED","interactive":false}}
+{"command":"aitools_uninstall","exit_code":0,"aitools_command_event":{"command":"UNINSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"scope":"GLOBAL"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"SKIPPED_OPTOUT","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+(no skills)
+
+=== first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried for this version
+
+>>> [CLI] jobs list
+
+>>> auto_install_outcome
+KEPT
+
+>>> cursor_skills
+databricks-test
+
+>>> hand_placed_files
+NOTES.md
+SKILL.md
+
+>>> cat [TEST_TMP_DIR]/hand-placed-home/.cursor/skills/databricks-test/SKILL.md
+my own skill
+
+>>> settled_version
+{"last_version":"1.30.0","installed_without_consent":true}
+
+=== first run with the user's own skill under another name in an agent's skills directory: installs
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> auto_install_outcome
+INSTALLED
+
+>>> cursor_skills
+databricks-team-conventions
+databricks-test
+
+>>> cat [TEST_TMP_DIR]/own-skill-home/.cursor/skills/databricks-team-conventions/SKILL.md
+my own skill

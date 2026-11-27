@@ -1,5 +1,6 @@
 
 === validate from the bundle root
+
 >>> [CLI] bundle validate -o json
 {
   "custom_summary": "My alert from file",
@@ -33,6 +34,7 @@
 }
 
 === validate from a subdirectory of the bundle
+
 >>> [CLI] bundle validate -o json
 {
   "custom_summary": "My alert from file",

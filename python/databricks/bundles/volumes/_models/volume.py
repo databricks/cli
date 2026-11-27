@@ -11,10 +11,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.volumes._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.volumes._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.volumes._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,
@@ -61,7 +58,10 @@ class Volume(Resource):
 
     storage_location: VariableOrOptional[str] = None
     """
-    The storage location on the cloud
+    The cloud storage URL where the files of the volume are stored.
+    For an external volume, it must be set on creation to a path within an existing external location.
+    For a managed volume, it must be omitted on creation; the volume is placed under the managed storage
+    location of the parent schema, catalog, or metastore, and the assigned path is returned in this field.
     """
 
     volume_type: VariableOrOptional[VolumeType] = None
@@ -114,7 +114,10 @@ class VolumeDict(TypedDict, total=False):
 
     storage_location: VariableOrOptional[str]
     """
-    The storage location on the cloud
+    The cloud storage URL where the files of the volume are stored.
+    For an external volume, it must be set on creation to a path within an existing external location.
+    For a managed volume, it must be omitted on creation; the volume is placed under the managed storage
+    location of the parent schema, catalog, or metastore, and the assigned path is returned in this field.
     """
 
     volume_type: VariableOrOptional[VolumeTypeParam]

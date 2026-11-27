@@ -6,10 +6,12 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan right after deploy -- published is current, no change:
+
 >>> [CLI] bundle plan -o json
 null
 
 === Plan after out-of-band draft update -- a republish is owed:
+
 >>> [CLI] bundle plan -o json
 Warning: dashboard "dashboard1" has been modified remotely
   at resources.dashboards.dashboard1

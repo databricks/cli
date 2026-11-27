@@ -3,6 +3,7 @@
 package quality_monitors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "quality-monitors",
-		Short: `Deprecated: Please use the Data Quality Monitors API instead (REST: /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly Detection.`,
-		Long: `Deprecated: Please use the Data Quality Monitors API instead (REST:
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "quality-monitors",
+	Short:   `Deprecated: Please use the Data Quality Monitors API instead (REST: /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly Detection.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Deprecated: Please use the Data Quality Monitors API instead (REST:
   /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly
   Detection.
 
@@ -32,14 +38,13 @@ func New() *cobra.Command {
   owner of the table (or its parent schema or parent catalog). Viewing the
   dashboard, computed metrics, or monitor configuration only requires the user
   to have **SELECT** privileges on the table (along with **USE_SCHEMA** and
-  **USE_CATALOG**).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  **USE_CATALOG**).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelRefresh())
@@ -56,8 +61,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-refresh command

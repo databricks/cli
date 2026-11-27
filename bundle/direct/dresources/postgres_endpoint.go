@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
@@ -71,17 +72,17 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 		Parent:     remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		EndpointSpec: remote.EndpointSpec,
 	}
 }
 
 // makePostgresEndpointRemote converts the SDK Endpoint into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_endpoints.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_endpoints.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
 	var spec postgres.EndpointSpec
 	if endpoint.Spec != nil {
@@ -138,7 +139,7 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 }
 
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
-	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
+	req := postgres.CreateEndpointRequest{
 		EndpointId: config.EndpointId,
 		Parent:     config.Parent,
 		Endpoint: postgres.Endpoint{
@@ -154,25 +155,75 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateEndpoint(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
-	// Wait for the operation to complete
-	result, err := waiter.Wait(ctx)
+// waitCreated waits for the create operation of an endpoint that a create request returned, then
+// for the endpoint's reconciliation.
+func (r *ResourcePostgresEndpoint) waitCreated(ctx context.Context, waiter postgres.CreateEndpointOperationInterface) (*PostgresEndpointRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return r.waitForReconciliation(ctx, result.Name)
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
+func (r *ResourcePostgresEndpoint) recoverFailedCreate(ctx context.Context, req postgres.CreateEndpointRequest, start time.Time, createErr error) (string, *PostgresEndpointRemote, error) {
+	if req.EndpointId == "" {
+		return "", nil, createErr
+	}
+	// An endpoint found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
+	}
+
+	name := req.Parent + "/endpoints/" + req.EndpointId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Endpoint, *PostgresEndpointRemote]{
+		name:  "endpoint " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Endpoint, error) {
+			return r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
+		use: func(ctx context.Context, found *postgres.Endpoint) (*PostgresEndpointRemote, error) {
+			// The endpoint is ours either way, so a wait that ends early only warns: state still
+			// records the endpoint, and the next deploy does not fail with "already exists".
+			remote, err := r.waitForReconciliation(ctx, found.Name)
+			if err != nil {
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+				log.Warnf(ctx, "waiting for endpoint %s to reconcile: %s", found.Name, err)
+				return makePostgresEndpointRemote(found), nil
+			}
+			return remote, nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresEndpointRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateEndpoint(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresEndpointRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
 	if err != nil {
 		return "", nil, err
 	}
-
-	// Wait for reconciliation to complete
-	remote, err := r.waitForReconciliation(ctx, result.Name)
-	if err != nil {
-		return "", nil, err
-	}
-
 	return remote.Name, remote, nil
 }
 

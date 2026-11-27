@@ -1,0 +1,42 @@
+# Isolate HOME so the real machine's agents and skills are not seen. The
+# committed home/.claude is what agent detection finds.
+sethome home
+
+title "install resolves auth in the background: its install event is uploaded"
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code
+trace print_telemetry
+
+# A databricks-cli profile whose token comes from the CLI's token cache.
+cat > "$HOME/.databrickscfg" <<ENDCFG
+[test-profile]
+host = $DATABRICKS_HOST
+auth_type = databricks-cli
+ENDCFG
+unset DATABRICKS_HOST DATABRICKS_TOKEN
+write_token_cache() {
+    mkdir -p "$HOME/.databricks"
+    cat > "$HOME/.databricks/token-cache.json" <<ENDCACHE
+{
+  "version": 1,
+  "tokens": {
+    "test-profile": {
+      "access_token": "$1",
+      "token_type": "Bearer",
+      "refresh_token": "test-refresh-token",
+      "expiry": "$2"
+    }
+  }
+}
+ENDCACHE
+}
+
+title "databricks-cli auth with a valid cached token: the event is uploaded"
+write_token_cache valid-access-token 2099-01-01T00:00:00Z
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code --profile test-profile
+trace print_telemetry
+
+title "databricks-cli auth with an expired cached token: no refresh, nothing is uploaded"
+write_token_cache expired-access-token 2000-01-01T00:00:00Z
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code --profile test-profile
+trace print_requests.py //oidc/v1/token //telemetry-ext
+trace gron.py "$HOME/.databricks/token-cache.json" | grep access_token

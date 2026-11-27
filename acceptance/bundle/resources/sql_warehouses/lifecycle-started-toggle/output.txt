@@ -1,5 +1,6 @@
 
 === Deploy with started=false: warehouse created and then stopped
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created sql_warehouses.mywarehouse
@@ -29,6 +30,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "STOPPED"
 
 === Toggle started=false -> started=true: only Start should be called, no Edit
+
 >>> update_file.py databricks.yml started: false started: true
 
 >>> errcode [CLI] bundle deploy
@@ -48,6 +50,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "RUNNING"
 
 === Toggle started=true -> started=false: only Stop should be called, no Edit
+
 >>> update_file.py databricks.yml started: true started: false
 
 >>> errcode [CLI] bundle deploy

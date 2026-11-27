@@ -185,8 +185,8 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.Equal(t, "Claude Code", byName["claude-code"].DisplayName)
 	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
-	// SupportsProjectScope is wired straight from the registry: claude-code allows
-	// project scope, whereas the managed/skills-only global-only agents below do not.
+	// SupportsProjectScope follows the default delivery: claude-code's plugin allows
+	// project scope, whereas codex's plugin and cursor's skills do not.
 	assert.True(t, byName["claude-code"].SupportsProjectScope)
 
 	require.Contains(t, byName, "codex")
@@ -201,6 +201,10 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.False(t, byName["cursor"].Managed)
 	assert.Empty(t, byName["cursor"].Installed)
 	assert.False(t, byName["cursor"].SupportsProjectScope)
+
+	// A skills-only agent with project skills supports project scope.
+	require.Contains(t, byName, "pi")
+	assert.True(t, byName["pi"].SupportsProjectScope)
 
 	require.Contains(t, byName, "copilot")
 	assert.True(t, byName["copilot"].Managed)
@@ -346,6 +350,17 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 	// The renderer collapses the scopes and surfaces the stale one, rather than
 	// hiding it behind the up-to-date scope.
 	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
+}
+
+func TestAgentStatusLabelKeepsUnknownStaleScope(t *testing.T) {
+	// The project record has no version (its last install could not refresh the
+	// marketplace), the global one is current. The unknown scope is stale and
+	// must not be hidden behind the up-to-date version.
+	a := agentEntry{Installed: map[string]installInfo{
+		installer.ScopeProject: {Delivery: deliveryPlugin.String(), Version: ""},
+		installer.ScopeGlobal:  {Delivery: deliveryPlugin.String(), Version: "0.2.7"},
+	}}
+	assert.Equal(t, "databricks plugin · version unknown · update available", agentStatusLabel(a, "0.2.7"))
 }
 
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
@@ -567,6 +582,7 @@ func TestRenderListTextShowsPluginInstallsBeforeRawSkills(t *testing.T) {
 }
 
 func TestListScopeFlag(t *testing.T) {
+	noTelemetryAuth(t)
 	tests := []struct {
 		name      string
 		args      []string
@@ -611,4 +627,30 @@ func TestListScopeFlag(t *testing.T) {
 			assert.Equal(t, tt.wantScope, gotScope)
 		})
 	}
+}
+
+// TestLoadStateForScopeIgnoresMCPOnlyState checks that a state file holding only MCP records is not an
+// install of skills or plugins, so the scope is not reported as loaded.
+func TestLoadStateForScopeIgnoresMCPOnlyState(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveMCPState(dir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	state := loadStateForScope(ctx, "", installer.ScopeProject, installer.GlobalSkillsDir, "global")
+	assert.Nil(t, state)
+}
+
+// TestLoadStateForScopeKeepsSkillsState checks that a state file with skills is loaded, with or without
+// MCP records next to them.
+func TestLoadStateForScopeKeepsSkillsState(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{SchemaVersion: installer.CurrentSchemaVersion, Skills: map[string]string{"databricks": "1.0.0"}}))
+	require.NoError(t, installer.SaveMCPState(dir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	state := loadStateForScope(ctx, "", installer.ScopeProject, installer.GlobalSkillsDir, "global")
+	require.NotNil(t, state)
+	assert.Equal(t, "1.0.0", state.Skills["databricks"])
 }

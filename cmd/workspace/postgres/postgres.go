@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,11 +26,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "postgres",
-		Short: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
-		Long: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "postgres",
+	Short:   `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
+	GroupID: "postgres",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
   infrastructure, including projects, branches, compute endpoints, and roles.
 
   This API manages database infrastructure only. To query or modify data, use
@@ -40,22 +46,24 @@ func New() *cobra.Command {
   Resources are identified by hierarchical resource names like
   projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
   name field on each resource contains this full path and is output-only. Note
-  that name refers to this resource path, not the user-visible display_name.`,
-		GroupID: "postgres",
-		RunE:    root.ReportUnknownSubcommand,
+  that name refers to this resource path, not the user-visible display_name.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
-
 	// Add methods
+	cmd.AddCommand(newAcknowledgeAssessmentWarnings())
+	cmd.AddCommand(newAssessMigration())
 	cmd.AddCommand(newCreateBranch())
 	cmd.AddCommand(newCreateCatalog())
 	cmd.AddCommand(newCreateCdfConfig())
 	cmd.AddCommand(newCreateDataApi())
 	cmd.AddCommand(newCreateDatabase())
 	cmd.AddCommand(newCreateEndpoint())
+	cmd.AddCommand(newCreateMigration())
 	cmd.AddCommand(newCreateProject())
 	cmd.AddCommand(newCreateRole())
 	cmd.AddCommand(newCreateSnapshot())
@@ -66,11 +74,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteDataApi())
 	cmd.AddCommand(newDeleteDatabase())
 	cmd.AddCommand(newDeleteEndpoint())
+	cmd.AddCommand(newDeleteMigration())
 	cmd.AddCommand(newDeleteProject())
 	cmd.AddCommand(newDeleteRole())
 	cmd.AddCommand(newDeleteSnapshot())
 	cmd.AddCommand(newDeleteSyncedTable())
 	cmd.AddCommand(newGenerateDatabaseCredential())
+	cmd.AddCommand(newGetAssessment())
 	cmd.AddCommand(newGetBranch())
 	cmd.AddCommand(newGetCatalog())
 	cmd.AddCommand(newGetCdfConfig())
@@ -78,27 +88,33 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetDataApi())
 	cmd.AddCommand(newGetDatabase())
 	cmd.AddCommand(newGetEndpoint())
+	cmd.AddCommand(newGetMigration())
 	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetProject())
 	cmd.AddCommand(newGetRole())
 	cmd.AddCommand(newGetSnapshot())
 	cmd.AddCommand(newGetSnapshotSchedule())
 	cmd.AddCommand(newGetSyncedTable())
+	cmd.AddCommand(newListAssessments())
 	cmd.AddCommand(newListBranches())
 	cmd.AddCommand(newListCdfConfigs())
 	cmd.AddCommand(newListCdfStatuses())
 	cmd.AddCommand(newListDatabases())
 	cmd.AddCommand(newListEndpoints())
+	cmd.AddCommand(newListMigrations())
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
 	cmd.AddCommand(newListSnapshots())
 	cmd.AddCommand(newRevealRolePassword())
+	cmd.AddCommand(newStartMigration())
 	cmd.AddCommand(newUndeleteBranch())
+	cmd.AddCommand(newUndeleteMigration())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
 	cmd.AddCommand(newUpdateDataApi())
 	cmd.AddCommand(newUpdateDatabase())
 	cmd.AddCommand(newUpdateEndpoint())
+	cmd.AddCommand(newUpdateMigration())
 	cmd.AddCommand(newUpdateProject())
 	cmd.AddCommand(newUpdateRole())
 	cmd.AddCommand(newUpdateSnapshotSchedule())
@@ -106,6 +122,211 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+}
+
+// start acknowledge-assessment-warnings command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var acknowledgeAssessmentWarningsOverrides []func(
+	*cobra.Command,
+	*postgres.AcknowledgeAssessmentWarningsRequest,
+)
+
+func newAcknowledgeAssessmentWarnings() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var acknowledgeAssessmentWarningsReq postgres.AcknowledgeAssessmentWarningsRequest
+
+	var acknowledgeAssessmentWarningsSkipWait bool
+	var acknowledgeAssessmentWarningsTimeout time.Duration
+
+	cmd.Flags().BoolVar(&acknowledgeAssessmentWarningsSkipWait, "no-wait", acknowledgeAssessmentWarningsSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&acknowledgeAssessmentWarningsTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "acknowledge-assessment-warnings NAME"
+	cmd.Short = `*Beta* Acknowledge assessment warnings.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Acknowledge assessment warnings.
+
+  Acknowledges non-blocking warnings on a specific assessment.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Required. The assessment resource name, in the format
+      migrations/{migration}/assessments/{assessment}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		acknowledgeAssessmentWarningsReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case acknowledgeAssessmentWarningsSkipWait:
+			wait, err := w.Postgres.AcknowledgeAssessmentWarnings(ctx, acknowledgeAssessmentWarningsReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.AcknowledgeAssessmentWarnings(ctx, acknowledgeAssessmentWarningsReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for acknowledge-assessment-warnings to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(acknowledgeAssessmentWarningsTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range acknowledgeAssessmentWarningsOverrides {
+		fn(cmd, &acknowledgeAssessmentWarningsReq)
+	}
+
+	return cmd
+}
+
+// start assess-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var assessMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.AssessMigrationRequest,
+)
+
+func newAssessMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var assessMigrationReq postgres.AssessMigrationRequest
+
+	var assessMigrationSkipWait bool
+	var assessMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&assessMigrationSkipWait, "no-wait", assessMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&assessMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "assess-migration NAME"
+	cmd.Short = `*Beta* Assess a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Assess a migration.
+
+  Creates an immutable assessment run for the migration's current source
+  configuration.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Required. The migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		assessMigrationReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case assessMigrationSkipWait:
+			wait, err := w.Postgres.AssessMigration(ctx, assessMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.AssessMigration(ctx, assessMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for assess-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(assessMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range assessMigrationOverrides {
+		fn(cmd, &assessMigrationReq)
 	}
 
 	return cmd
@@ -271,7 +492,12 @@ func newCreateCatalog() *cobra.Command {
 	cmd.Short = `Register a Database in UC.`
 	cmd.Long = `Register a Database in UC.
 
-  Register a Postgres database in the Unity Catalog.
+  Registers a Postgres database from a Lakebase project branch as a catalog in
+  Unity Catalog, so that its schemas, tables and views are governed and
+  discoverable through Unity Catalog. The catalog is read-only; the data stays
+  managed through Postgres. Returns a long-running operation. Poll it until done
+  is true; its response holds the new catalog. For an overview, see
+  https://docs.databricks.com/aws/en/oltp/projects/register-uc.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -279,8 +505,9 @@ func newCreateCatalog() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    CATALOG_ID: The ID in the Unity Catalog. It becomes the full resource name, for
-      example "my_catalog" becomes "catalogs/my_catalog".`
+    CATALOG_ID: The ID of the catalog to create, which is also its name in Unity Catalog.
+      It becomes the last segment of the catalog's resource name,
+      catalogs/{catalog_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -386,6 +613,7 @@ func newCreateCdfConfig() *cobra.Command {
 
 	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfigId, "cdf-config-id", createCdfConfigReq.CdfConfigId, `The user-specified id for the CdfConfig, forming the final segment of its resource name.`)
 	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfig.Name, "name", createCdfConfigReq.CdfConfig.Name, `Output only.`)
+	cmd.Flags().StringVar(&createCdfConfigReq.CdfConfig.ServicePrincipal, "service-principal", createCdfConfigReq.CdfConfig.ServicePrincipal, `The service principal (application id) whose identity authorizes this change data feed's ongoing writes to Unity Catalog.`)
 
 	cmd.Use = "create-cdf-config PARENT CATALOG SCHEMA POSTGRES_SCHEMA"
 	cmd.Short = `*Beta* Create a change data feed configuration.`
@@ -653,7 +881,7 @@ func newCreateDatabase() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID used to identify and manage the Database resource through the API.`)
 	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
@@ -788,7 +1016,10 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Short = `Create an Endpoint.`
 	cmd.Long = `Create an Endpoint.
 
-  Creates a new compute endpoint in the branch.
+  Creates a compute endpoint in the branch. Each branch gets its read-write
+  endpoint when the branch is created, so use this method to add read-only
+  endpoints (read replicas) or, with replace_existing, to reconfigure the
+  existing read-write endpoint.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -798,11 +1029,12 @@ func newCreateEndpoint() *cobra.Command {
   Arguments:
     PARENT: The Branch where this Endpoint will be created. Format:
       projects/{project_id}/branches/{branch_id}
-    ENDPOINT_ID: The ID to use for the Endpoint. This becomes the final component of the
-      endpoint's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, primary becomes
-      projects/my-app/branches/development/endpoints/primary.`
+    ENDPOINT_ID: The ID to use for the endpoint. It becomes the final segment of the
+      endpoint's resource name,
+      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
+      ID must be 3 to 63 characters long, start with a lowercase letter, end
+      with a lowercase letter or digit, and contain only lowercase letters,
+      digits, and hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -883,6 +1115,162 @@ func newCreateEndpoint() *cobra.Command {
 	return cmd
 }
 
+// start create-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.CreateMigrationRequest,
+)
+
+func newCreateMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMigrationReq postgres.CreateMigrationRequest
+	createMigrationReq.Migration = postgres.Migration{}
+	var createMigrationJson flags.JsonFlag
+
+	var createMigrationSkipWait bool
+	var createMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createMigrationSkipWait, "no-wait", createMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createMigrationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: error
+	cmd.Flags().StringVar(&createMigrationReq.Migration.Name, "name", createMigrationReq.Migration.Name, `The migration resource name, in the format migrations/{migration}.`)
+	cmd.Flags().StringVar(&createMigrationReq.Migration.TargetBranch, "target-branch", createMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
+
+	cmd.Use = "create-migration MIGRATION_ID SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
+	cmd.Short = `*Beta* Create a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a migration.
+
+  Creates a migration.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    MIGRATION_ID: Required. The ID to use for the migration. It becomes the final component
+      of the resource name (migrations/{migration_id}). It must be 1-63
+      characters long, start with a lowercase letter, and contain only lowercase
+      letters, numbers, and hyphens.
+    SOURCE_CONNECTION: Required. The name of the Unity Catalog connection (a UC securable name,
+      such as my_postgres_connection) used to connect to the source PostgreSQL
+      server.
+    DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
+    MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
+      migration is created.
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only MIGRATION_ID as positional arguments. Provide 'source_connection', 'database_mappings', 'migration_type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMigrationJson.Unmarshal(&createMigrationReq.Migration)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createMigrationReq.MigrationId = args[0]
+		if !cmd.Flags().Changed("json") {
+			createMigrationReq.Migration.SourceConnection = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createMigrationReq.Migration.DatabaseMappings)
+			if err != nil {
+				return fmt.Errorf("invalid DATABASE_MAPPINGS: %s", args[2])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createMigrationReq.Migration.MigrationType)
+			if err != nil {
+				return fmt.Errorf("invalid MIGRATION_TYPE: %s", args[3])
+			}
+
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createMigrationSkipWait:
+			wait, err := w.Postgres.CreateMigration(ctx, createMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateMigration(ctx, createMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMigrationOverrides {
+		fn(cmd, &createMigrationReq)
+	}
+
+	return cmd
+}
+
 // start create-project command
 
 // Slice with functions to override default command behavior.
@@ -918,7 +1306,9 @@ func newCreateProject() *cobra.Command {
 	cmd.Long = `Create a Project.
 
   Creates a new Lakebase Autoscaling Postgres database project, which contains
-  branches and compute endpoints.
+  branches and compute endpoints. The new project starts with a single branch, a
+  read-write compute endpoint on that branch, a Postgres database named
+  databricks_postgres, and a Postgres role for the calling identity.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -926,10 +1316,12 @@ func newCreateProject() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    PROJECT_ID: The ID to use for the Project. This becomes the final component of the
-      project's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, my-app becomes projects/my-app.`
+    PROJECT_ID: The ID to use for the project. It becomes the final segment of the
+      project's resource name, projects/{project_id}. The ID must be 3 to 63
+      characters long, start with a lowercase letter, end with a lowercase
+      letter or digit, and contain only lowercase letters, digits, and hyphens.
+      The ID of a soft-deleted project stays reserved until that project is
+      permanently deleted.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1034,7 +1426,7 @@ func newCreateRole() *cobra.Command {
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createRoleReq.ReplaceExisting, "replace-existing", createRoleReq.ReplaceExisting, `If true, update the role if it already exists instead of returning an error.`)
-	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
+	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID used to identify and manage the Role resource through the API.`)
 	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -1165,7 +1557,8 @@ func newCreateSnapshot() *cobra.Command {
 	cmd.Long = `Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
-  the project.
+  the project. Returns a long-running operation. Poll it until done is true; its
+  response holds the new snapshot.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1175,7 +1568,10 @@ func newCreateSnapshot() *cobra.Command {
   Arguments:
     PARENT: The project in which to create the snapshot. Format: projects/{project_id}
     SNAPSHOT_ID: Client-chosen ID for the snapshot. It becomes the final segment of the
-      snapshot resource name and cannot be changed after creation.`
+      snapshot resource name and cannot be changed after creation. The ID must
+      be 3 to 63 characters long, start with a lowercase letter, end with a
+      lowercase letter or digit, and contain only lowercase letters, digits, and
+      hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1280,7 +1676,7 @@ func newCreateSyncedTable() *cobra.Command {
 
 	cmd.Flags().Var(&createSyncedTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
+	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `The full resource name of the synced table, where (catalog, schema, table) are the Unity Catalog names of the synced table.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1288,7 +1684,9 @@ func newCreateSyncedTable() *cobra.Command {
 	cmd.Short = `Create a Synced Database Table.`
 	cmd.Long = `Create a Synced Database Table.
 
-  Create a Synced Table.
+  Create a Synced Table. Creates the synced table in Unity Catalog and the
+  Postgres table on the branch, and starts the pipeline that loads the initial
+  data from the source table.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1514,6 +1912,10 @@ func newDeleteCatalog() *cobra.Command {
 	cmd.Use = "delete-catalog NAME"
 	cmd.Short = `Delete a Database Catalog.`
 	cmd.Long = `Delete a Database Catalog.
+
+  Deletes the catalog from Unity Catalog. The Postgres database and its tables
+  remain in the branch, and the database can be registered again afterwards.
+  Returns a long-running operation. Poll it until done is true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1827,6 +2229,8 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Short = `Delete a Database.`
 	cmd.Long = `Delete a Database.
 
+  Deletes the specified Postgres database.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -1927,7 +2331,10 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Short = `Delete an Endpoint.`
 	cmd.Long = `Delete an Endpoint.
 
-  Deletes the specified compute endpoint.
+  Deletes the specified compute endpoint. Deletion is permanent. Only read-only
+  endpoints can be deleted this way, because a branch's read-write endpoint is
+  deleted together with the branch. To stop the compute costs of a read-write
+  endpoint without deleting the branch, set spec.disabled to true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2005,6 +2412,109 @@ func newDeleteEndpoint() *cobra.Command {
 	return cmd
 }
 
+// start delete-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteMigrationRequest,
+)
+
+func newDeleteMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteMigrationReq postgres.DeleteMigrationRequest
+
+	var deleteMigrationSkipWait bool
+	var deleteMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteMigrationSkipWait, "no-wait", deleteMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-migration NAME"
+	cmd.Short = `*Beta* Delete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a migration.
+
+  Soft-deletes a migration.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Required. The migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteMigrationReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteMigrationSkipWait:
+			wait, err := w.Postgres.DeleteMigration(ctx, deleteMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteMigration(ctx, deleteMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteMigrationOverrides {
+		fn(cmd, &deleteMigrationReq)
+	}
+
+	return cmd
+}
+
 // start delete-project command
 
 // Slice with functions to override default command behavior.
@@ -2025,13 +2535,15 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectSkipWait, "no-wait", deleteProjectSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
+	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project and all of its data immediately.`)
 
 	cmd.Use = "delete-project NAME"
 	cmd.Short = `Delete a Project.`
 	cmd.Long = `Delete a Project.
 
-  Deletes the specified database project.
+  Deletes the specified database project. By default the project is soft-deleted
+  and can be restored with Undelete during its retention period; set purge to
+  delete it permanently.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2237,7 +2749,8 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Short = `Delete a Snapshot.`
 	cmd.Long = `Delete a Snapshot.
 
-  Deletes the specified snapshot.
+  Deletes the specified snapshot. A deleted snapshot cannot be recovered.
+  Returns a long-running operation. Poll it until done is true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2339,7 +2852,9 @@ func newDeleteSyncedTable() *cobra.Command {
 	cmd.Short = `Delete a Synced Database Table.`
 	cmd.Long = `Delete a Synced Database Table.
 
-  Delete a Synced Table.
+  Delete a Synced Table. Drops the Postgres table, removes the synced table from
+  its pipeline, and deletes it from Unity Catalog. The pipeline itself is
+  deleted when no other synced table uses it.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2438,6 +2953,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	// TODO: array: claims
 	var expireTimeParam string
 	cmd.Flags().StringVar(&expireTimeParam, "expire-time", expireTimeParam, `Timestamp in UTC of when this credential should expire.`)
+	cmd.Flags().StringVar(&generateDatabaseCredentialReq.GroupName, "group-name", generateDatabaseCredentialReq.GroupName, `The display name of a Databricks workspace group.`)
 	var ttlParam string
 	cmd.Flags().StringVar(&ttlParam, "ttl", ttlParam, `The requested time-to-live for the generated credential token.`)
 
@@ -2526,6 +3042,68 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	return cmd
 }
 
+// start get-assessment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getAssessmentOverrides []func(
+	*cobra.Command,
+	*postgres.GetAssessmentRequest,
+)
+
+func newGetAssessment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getAssessmentReq postgres.GetAssessmentRequest
+
+	cmd.Use = "get-assessment NAME"
+	cmd.Short = `*Beta* Get a migration assessment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration assessment.
+
+  Gets a migration assessment run.
+
+  Arguments:
+    NAME: Required. The assessment resource name, in the format
+      migrations/{migration}/assessments/{assessment}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getAssessmentReq.Name = args[0]
+
+		response, err := w.Postgres.GetAssessment(ctx, getAssessmentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getAssessmentOverrides {
+		fn(cmd, &getAssessmentReq)
+	}
+
+	return cmd
+}
+
 // start get-branch command
 
 // Slice with functions to override default command behavior.
@@ -2603,6 +3181,9 @@ func newGetCatalog() *cobra.Command {
 	cmd.Use = "get-catalog NAME"
 	cmd.Short = `Get a Database Catalog.`
 	cmd.Long = `Get a Database Catalog.
+
+  Gets the catalog with the given name. The status reports the Postgres
+  database, project and branch that the catalog registers.
 
   Arguments:
     NAME: The full resource path of the catalog to retrieve.
@@ -2852,6 +3433,8 @@ func newGetDatabase() *cobra.Command {
 	cmd.Short = `Get a Database.`
 	cmd.Long = `Get a Database.
 
+  Retrieves information about the specified Postgres database.
+
   Arguments:
     NAME: The name of the Database to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
@@ -2948,6 +3531,68 @@ func newGetEndpoint() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getEndpointOverrides {
 		fn(cmd, &getEndpointReq)
+	}
+
+	return cmd
+}
+
+// start get-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.GetMigrationRequest,
+)
+
+func newGetMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMigrationReq postgres.GetMigrationRequest
+
+	cmd.Use = "get-migration NAME"
+	cmd.Short = `*Beta* Get a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration.
+
+  Gets a migration.
+
+  Arguments:
+    NAME: Required. The migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMigrationReq.Name = args[0]
+
+		response, err := w.Postgres.GetMigration(ctx, getMigrationReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMigrationOverrides {
+		fn(cmd, &getMigrationReq)
 	}
 
 	return cmd
@@ -3315,6 +3960,84 @@ func newGetSyncedTable() *cobra.Command {
 	return cmd
 }
 
+// start list-assessments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listAssessmentsOverrides []func(
+	*cobra.Command,
+	*postgres.ListAssessmentsRequest,
+)
+
+func newListAssessments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listAssessmentsReq postgres.ListAssessmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAssessmentsLimit int
+
+	cmd.Flags().IntVar(&listAssessmentsReq.PageSize, "page-size", listAssessmentsReq.PageSize, `The maximum number of assessments to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAssessmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAssessmentsReq.PageToken, "page-token", listAssessmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-assessments PARENT"
+	cmd.Short = `*Beta* List migration assessments.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migration assessments.
+
+  Lists assessment runs for a migration.
+
+  Arguments:
+    PARENT: Required. The parent migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listAssessmentsReq.Parent = args[0]
+
+		response := w.Postgres.ListAssessments(ctx, listAssessmentsReq)
+		if listAssessmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAssessmentsLimit)
+		}
+		if listAssessmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAssessmentsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listAssessmentsOverrides {
+		fn(cmd, &listAssessmentsReq)
+	}
+
+	return cmd
+}
+
 // start list-branches command
 
 // Slice with functions to override default command behavior.
@@ -3583,7 +4306,7 @@ func newListDatabases() *cobra.Command {
 	cmd.Short = `List postgres databases in a branch.`
 	cmd.Long = `List postgres databases in a branch.
 
-  List Databases.
+  Returns a list of Postgres databases in the branch.
 
   Arguments:
     PARENT: The Branch that owns this collection of databases. Format:
@@ -3646,7 +4369,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for the number of endpoints returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -3659,7 +4382,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Short = `List Endpoints.`
 	cmd.Long = `List Endpoints.
 
-  Returns a paginated list of compute endpoints in the branch.
+  Lists the compute endpoints in the branch, including its read-write endpoint
+  and any read-only endpoints.
 
   Arguments:
     PARENT: The Branch that owns this collection of endpoints. Format:
@@ -3704,6 +4428,79 @@ func newListEndpoints() *cobra.Command {
 	return cmd
 }
 
+// start list-migrations command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listMigrationsOverrides []func(
+	*cobra.Command,
+	*postgres.ListMigrationsRequest,
+)
+
+func newListMigrations() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listMigrationsReq postgres.ListMigrationsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listMigrationsLimit int
+
+	cmd.Flags().IntVar(&listMigrationsReq.PageSize, "page-size", listMigrationsReq.PageSize, `The maximum number of migrations to return.`)
+	cmd.Flags().BoolVar(&listMigrationsReq.ShowDeleted, "show-deleted", listMigrationsReq.ShowDeleted, `Whether to include soft-deleted migrations in the response.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listMigrationsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listMigrationsReq.PageToken, "page-token", listMigrationsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-migrations"
+	cmd.Short = `*Beta* List migrations.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migrations.
+
+  Lists migrations in the workspace.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.Postgres.ListMigrations(ctx, listMigrationsReq)
+		if listMigrationsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMigrationsLimit)
+		}
+		if listMigrationsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listMigrationsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listMigrationsOverrides {
+		fn(cmd, &listMigrationsReq)
+	}
+
+	return cmd
+}
+
 // start list-projects command
 
 // Slice with functions to override default command behavior.
@@ -3722,7 +4519,7 @@ func newListProjects() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listProjectsLimit int
 
-	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for the number of projects returned.`)
 	cmd.Flags().BoolVar(&listProjectsReq.ShowDeleted, "show-deleted", listProjectsReq.ShowDeleted, `Whether to include soft-deleted projects in the response.`)
 
 	// Limit flag for total result capping.
@@ -3990,6 +4787,112 @@ func newRevealRolePassword() *cobra.Command {
 	return cmd
 }
 
+// start start-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var startMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.StartMigrationRequest,
+)
+
+func newStartMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var startMigrationReq postgres.StartMigrationRequest
+
+	var startMigrationSkipWait bool
+	var startMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&startMigrationSkipWait, "no-wait", startMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&startMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "start-migration NAME"
+	cmd.Short = `*Beta* Start a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Start a migration.
+
+  Starts the assessed migration named in the request, moving it from
+  READY_TO_START into execution. Its first phase, SCHEMA_LOAD, creates the
+  target databases, roles, and schema on the migration's target Lakebase branch
+  without copying any table data, ahead of INITIAL_DATA_LOAD.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Required. The migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		startMigrationReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case startMigrationSkipWait:
+			wait, err := w.Postgres.StartMigration(ctx, startMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.StartMigration(ctx, startMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for start-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(startMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range startMigrationOverrides {
+		fn(cmd, &startMigrationReq)
+	}
+
+	return cmd
+}
+
 // start undelete-branch command
 
 // Slice with functions to override default command behavior.
@@ -4095,6 +4998,109 @@ func newUndeleteBranch() *cobra.Command {
 	return cmd
 }
 
+// start undelete-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var undeleteMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.UndeleteMigrationRequest,
+)
+
+func newUndeleteMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var undeleteMigrationReq postgres.UndeleteMigrationRequest
+
+	var undeleteMigrationSkipWait bool
+	var undeleteMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&undeleteMigrationSkipWait, "no-wait", undeleteMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&undeleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "undelete-migration NAME"
+	cmd.Short = `*Beta* Undelete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Undelete a migration.
+
+  Restores a soft-deleted migration before it is permanently purged.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Required. The migration resource name, in the format
+      migrations/{migration}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		undeleteMigrationReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case undeleteMigrationSkipWait:
+			wait, err := w.Postgres.UndeleteMigration(ctx, undeleteMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UndeleteMigration(ctx, undeleteMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for undelete-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(undeleteMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range undeleteMigrationOverrides {
+		fn(cmd, &undeleteMigrationReq)
+	}
+
+	return cmd
+}
+
 // start undelete-project command
 
 // Slice with functions to override default command behavior.
@@ -4121,7 +5127,10 @@ func newUndeleteProject() *cobra.Command {
 
 Undelete a Project.
 
-  Undeletes a soft-deleted project.
+  Restores a soft-deleted project together with its branches and their data,
+  compute endpoints, Postgres databases and roles, project settings, and
+  permissions. A project can be restored until its purge_time; after that it
+  is permanently deleted and cannot be recovered.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4487,6 +5496,9 @@ func newUpdateDatabase() *cobra.Command {
 	cmd.Short = `Update a Database.`
 	cmd.Long = `Update a Database.
 
+  Updates the specified Postgres database. Only the fields named in
+  update_mask change.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -4495,7 +5507,8 @@ func newUpdateDatabase() *cobra.Command {
   Arguments:
     NAME: The resource name of the database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. The updatable fields are spec.role and
+      spec.postgres_database.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -4611,8 +5624,10 @@ func newUpdateEndpoint() *cobra.Command {
 	cmd.Short = `Update an Endpoint.`
 	cmd.Long = `Update an Endpoint.
 
-  Updates the specified compute endpoint. You can update autoscaling limits,
-  suspend timeout, or enable/disable the compute endpoint.
+  Updates the configuration of the specified compute endpoint. Only the spec
+  fields named in update_mask change, and spec.endpoint_type cannot be
+  changed. The endpoint keeps its hostnames across updates, so existing
+  connection strings stay valid.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4622,7 +5637,11 @@ func newUpdateEndpoint() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the endpoint. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the endpoint, for example
+      spec.autoscaling_limit_max_cu. Pass spec to update every field that is
+      set in spec. Only fields under spec can be updated. To change the
+      suspension setting, include spec.suspension or the specific suspension
+      field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -4706,6 +5725,164 @@ func newUpdateEndpoint() *cobra.Command {
 	return cmd
 }
 
+// start update-migration command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateMigrationOverrides []func(
+	*cobra.Command,
+	*postgres.UpdateMigrationRequest,
+)
+
+func newUpdateMigration() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateMigrationReq postgres.UpdateMigrationRequest
+	updateMigrationReq.Migration = postgres.Migration{}
+	var updateMigrationJson flags.JsonFlag
+
+	var updateMigrationSkipWait bool
+	var updateMigrationTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateMigrationSkipWait, "no-wait", updateMigrationSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateMigrationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: error
+	cmd.Flags().StringVar(&updateMigrationReq.Migration.Name, "name", updateMigrationReq.Migration.Name, `The migration resource name, in the format migrations/{migration}.`)
+	cmd.Flags().StringVar(&updateMigrationReq.Migration.TargetBranch, "target-branch", updateMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
+
+	cmd.Use = "update-migration NAME UPDATE_MASK SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
+	cmd.Short = `*Beta* Update a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a migration.
+
+  Updates user-owned migration configuration.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The migration resource name, in the format migrations/{migration}.
+    UPDATE_MASK: Required. The fields to update.
+    SOURCE_CONNECTION: Required. The name of the Unity Catalog connection (a UC securable name,
+      such as my_postgres_connection) used to connect to the source PostgreSQL
+      server.
+    DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
+    MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
+      migration is created.
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'source_connection', 'database_mappings', 'migration_type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(5)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateMigrationJson.Unmarshal(&updateMigrationReq.Migration)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateMigrationReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateMigrationReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+		if !cmd.Flags().Changed("json") {
+			updateMigrationReq.Migration.SourceConnection = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &updateMigrationReq.Migration.DatabaseMappings)
+			if err != nil {
+				return fmt.Errorf("invalid DATABASE_MAPPINGS: %s", args[3])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[4], &updateMigrationReq.Migration.MigrationType)
+			if err != nil {
+				return fmt.Errorf("invalid MIGRATION_TYPE: %s", args[4])
+			}
+
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateMigrationSkipWait:
+			wait, err := w.Postgres.UpdateMigration(ctx, updateMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UpdateMigration(ctx, updateMigrationReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-migration to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateMigrationTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateMigrationOverrides {
+		fn(cmd, &updateMigrationReq)
+	}
+
+	return cmd
+}
+
 // start update-project command
 
 // Slice with functions to override default command behavior.
@@ -4740,7 +5917,8 @@ func newUpdateProject() *cobra.Command {
 	cmd.Short = `Update a Project.`
 	cmd.Long = `Update a Project.
 
-  Updates the specified database project.
+  Updates the configuration of the specified database project. Only the fields
+  named in update_mask change.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4750,7 +5928,9 @@ func newUpdateProject() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the project. Format:
       projects/{project_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the project, for example
+      spec.display_name. Pass * to update every field that is set in the
+      request. Only fields under spec can be updated.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -4866,7 +6046,13 @@ func newUpdateRole() *cobra.Command {
 	cmd.Short = `Update a Postgres Role for a Branch.`
 	cmd.Long = `Update a Postgres Role for a Branch.
 
-  Update a role for a branch.
+  Updates the mutable fields of a Postgres role for a branch.
+
+  The fields spec.identity_type, spec.auth_method, and spec.postgres_role
+  are fixed when the role is created. UpdateRole ignores values supplied for
+  these fields in the request body and retains their existing values. Explicitly
+  naming one of these fields in update_mask returns an INVALID_PARAMETER_VALUE
+  error.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4876,7 +6062,19 @@ func newUpdateRole() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the role. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. Supported fields are
+      spec.membership_roles, spec.attributes.createdb,
+      spec.attributes.createrole, and spec.attributes.bypassrls.
+
+      spec.identity_type, spec.auth_method, and spec.postgres_role cannot
+      be changed. Including an immutable field as an explicit path in
+      update_mask returns INVALID_PARAMETER_VALUE. With * or masks containing
+      only mutable fields, supplied values for these immutable fields are
+      ignored. * by itself selects all supported mutable fields. For this
+      mask, all three attributes (createdb, createrole, and bypassrls)
+      must be supplied; omitting any returns an INVALID_PARAMETER_VALUE error.
+      The * mask replaces membership_roles. Omitting it or supplying an
+      empty list clears all memberships, including DATABRICKS_SUPERUSER.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

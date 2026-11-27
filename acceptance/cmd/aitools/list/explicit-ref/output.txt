@@ -24,7 +24,7 @@
 
 === Only the skills manifest reaches the mock server: no latest-release lookup
 
->>> print_requests.py --get
+>>> print_requests.py --get ^//telemetry-ext ^//.well-known
 {
   "method": "GET",
   "path": "/test-ref/manifest.json"

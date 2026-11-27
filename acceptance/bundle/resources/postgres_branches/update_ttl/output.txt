@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-ttl-[UNIQUE_NAME]/default/files...
 Created postgres_branches.dev_branch
@@ -8,6 +9,7 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change ttl and re-deploy
+
 >>> update_file.py databricks.yml ttl: 604800s ttl: 259200s
 
 >>> [CLI] bundle plan

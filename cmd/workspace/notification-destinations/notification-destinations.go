@@ -3,6 +3,7 @@
 package notification_destinations
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,22 +18,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "notification-destinations",
-		Short: `The notification destinations API lets you programmatically manage a workspace's notification destinations.`,
-		Long: `The notification destinations API lets you programmatically manage a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "notification-destinations",
+	Short:   `The notification destinations API lets you programmatically manage a workspace's notification destinations.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The notification destinations API lets you programmatically manage a
   workspace's notification destinations. Notification destinations are used to
   send notifications for query alerts and jobs to destinations outside of
   Databricks. Only workspace admins can create, update, and delete notification
-  destinations.`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  destinations.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -140,7 +143,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a notification destination.`
 	cmd.Long = `Delete a notification destination.
 
-  Deletes a notification destination. Requires workspace admin permissions.`
+  Deletes a notification destination. Requires workspace admin permissions.
+
+  Arguments:
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -195,7 +201,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a notification destination.`
 	cmd.Long = `Get a notification destination.
 
-  Gets a notification destination.`
+  Gets a notification destination by ID. Workspace admins also receive its
+  config.
+
+  Arguments:
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -251,7 +261,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of notification destinations to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -264,7 +274,8 @@ func newList() *cobra.Command {
 	cmd.Short = `List notification destinations.`
 	cmd.Long = `List notification destinations.
 
-  Lists notification destinations.`
+  Lists the notification destinations in the workspace. Results never include a
+  destination's config; workspace admins can retrieve it with Get.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -328,10 +339,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a notification destination.
 
   Updates a notification destination. Requires workspace admin permissions. At
-  least one field is required in the request body.
+  least one field is required in the request body. A config provided in the
+  request replaces the existing one.
 
   Arguments:
-    ID: UUID identifying notification destination.`
+    ID: A UUID identifying the notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

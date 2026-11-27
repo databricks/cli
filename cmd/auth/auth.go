@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/databricks/cli/cmd/root"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -12,18 +15,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Authentication related commands",
-		Long: `Authentication related commands. For more information regarding how
+// Spec declares the auth command.
+var Spec = root.CommandSpec{
+	Use:   "auth",
+	Short: "Authentication related commands",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Authentication related commands. For more information regarding how
 authentication for the Databricks CLI and SDKs work please refer to the documentation
 linked below.
 
 AWS: https://docs.databricks.com/dev-tools/auth/index.html
 Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
-GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
-	}
+GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`
 
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
@@ -38,7 +44,6 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	cmd.AddCommand(newDockerCommand())
 	cmd.AddCommand(newDescribeCommand())
 	cmd.AddCommand(newSwitchCommand())
-	return cmd
 }
 
 func promptForHost(ctx context.Context) (string, error) {
@@ -50,10 +55,20 @@ func promptForHost(ctx context.Context) (string, error) {
 	// promptui's screenbuf does not account for terminal line wrapping, and a
 	// long "label + value" line that wraps causes each keystroke to leave a
 	// stale render on screen instead of overwriting the previous one.
-	cmdio.LogString(ctx, "Example: https://<databricks-instance>.cloud.databricks.com")
-	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+	cmdio.LogString(ctx, "Example: "+exampleHost)
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
 		Label: "Databricks host",
+		Validate: func(input string) error {
+			if strings.TrimSpace(input) == "" {
+				return errors.New("host is required")
+			}
+			// Reject hosts that setHostAndAccountId would reject after the prompt,
+			// e.g. "/" or "?o=123", while the user can still edit them.
+			_, err := parseLoginHost(input)
+			return err
+		},
 	})
+	return strings.TrimSpace(result), err
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {

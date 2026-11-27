@@ -2,7 +2,7 @@ trace $CLI bundle deploy
 rm "$OUT_REQUESTS"
 
 title "Running pipeline with --refresh flag and specific tables"
-trace $CLI bundle run my_pipeline --refresh table1,table2
+trace $CLI bundle run my_pipeline --refresh "table1 table2"
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh-all flag"
@@ -10,9 +10,25 @@ trace $CLI bundle run my_pipeline --full-refresh-all
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh flag and specific tables"
-trace $CLI bundle run my_pipeline --full-refresh table1,table2
+trace $CLI bundle run my_pipeline --full-refresh "table1 table2"
 trace print_requests.py //pipelines
 
 title "Running pipeline with --full-refresh flag and --refresh flag"
-trace $CLI bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
+trace $CLI bundle run my_pipeline --full-refresh "table1 table2" --refresh "table3 table4"
+trace print_requests.py //pipelines
+
+title "Repeated refresh flags"
+trace $CLI bundle run my_pipeline --refresh table1 --refresh table:table2
+trace print_requests.py //pipelines
+
+title "Quoted table selectors"
+trace $CLI bundle run my_pipeline --refresh 'table:`table1` `table2`'
+trace print_requests.py //pipelines
+
+title "Invalid refresh syntax is rejected before restart"
+trace musterr $CLI bundle run my_pipeline --refresh table1,table2 --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI bundle run my_pipeline --full-refresh table1,table2 --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI bundle run my_pipeline --refresh 'table:`table1' --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+trace musterr $CLI bundle run my_pipeline --refresh '' --restart --no-wait 2>&1 | grep -E '^(>>> |Error:)'
+touch "$OUT_REQUESTS"
 trace print_requests.py //pipelines

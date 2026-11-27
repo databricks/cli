@@ -1,0 +1,108 @@
+name: CLI PR review
+
+# Review ready, same-repository PRs targeting any branch. Comment /review
+# to request another review, including on a draft. Author and requester need write
+# access, checked through the GitHub API before the backend is dispatched.
+# The job summary links the backend run. Feedback is advisory and posted inline.
+# Run only trusted workflow code; never check out or execute the PR here.
+on:
+  # This event uses the default branch's workflow, including for release-branch PRs.
+  # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request_target
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  validate:
+    # Python checks the exact command after trimming surrounding whitespace.
+    if: |
+      github.repository == 'databricks/cli' && (
+        (github.event_name == 'pull_request_target' &&
+         !github.event.pull_request.draft &&
+         github.event.pull_request.head.repo.full_name == github.repository &&
+         !github.event.pull_request.head.repo.fork) ||
+        (github.event_name == 'issue_comment' &&
+         github.event.issue.pull_request &&
+         github.event.comment.user.type == 'User' &&
+         contains(github.event.comment.body, '/review'))
+      )
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      eligible: ${{ steps.request.outputs.eligible }}
+      pr_number: ${{ steps.request.outputs.pr_number }}
+
+    steps:
+      # Pin the validator to the trusted workflow revision, not the PR head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Validate review request
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/cli_pr_review.py
+
+  review:
+    needs: validate
+    if: needs.validate.outputs.eligible == 'true' && github.ref == 'refs/heads/main'
+    # Only authorized requests can cancel an older review job.
+    concurrency:
+      group: cli-pr-review-${{ needs.validate.outputs.pr_number }}
+      cancel-in-progress: true
+    # Cross-org dispatch needs the same approved network as integration tests.
+    runs-on:
+      group: databricks-release-runner-group-emu-access
+      labels: linux-ubuntu-latest-emu-access
+    timeout-minutes: 20
+    permissions: {}
+    environment:
+      name: test-trigger-is
+      deployment: false
+    steps:
+      - name: Generate backend dispatch token
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: databricks-eng
+          repositories: eng-dev-ecosystem
+          permission-actions: write
+
+      - name: Dispatch and wait for this review
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          PR_NUMBER: ${{ needs.validate.outputs.pr_number }}
+          COMMENT_ID: ${{ github.event_name == 'issue_comment' && github.event.comment.id || '' }}
+        run: |-
+          set -euo pipefail
+          # This API version returns the exact run, even when other PRs trigger reviews.
+          # https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event
+          gh api --method POST \
+            repos/databricks-eng/eng-dev-ecosystem/actions/workflows/cli-pr-review.yml/dispatches \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            -f ref=main -f "inputs[pull_request_number]=$PR_NUMBER" \
+            -f "inputs[comment_id]=$COMMENT_ID" > "$RUNNER_TEMP/review-run.json"
+          run_id=$(jq -er '.workflow_run_id | select(type == "number")' "$RUNNER_TEMP/review-run.json")
+          echo "[Review run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'To request another review, comment `/review` on the PR.' >> "$GITHUB_STEP_SUMMARY"
+          # A newly dispatched run can briefly return 404 before GitHub indexes it.
+          for attempt in {1..12}; do
+            if gh run view "$run_id" --repo databricks-eng/eng-dev-ecosystem --json databaseId >/dev/null 2>&1; then
+              gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Dispatched review $run_id did not become visible within one minute."
+          exit 1

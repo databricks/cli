@@ -1,5 +1,6 @@
 
 === Deploy with 'python'
+
 >>> uv run [UV_ARGS] -q [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
 Created jobs.python_job
@@ -36,6 +37,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Deploy with 'experimental/python'
+
 >>> update_file.py databricks.yml python: {resources: ["resources:load_resources"], mutators: ["mutators:update_job"]} experimental: {python: {resources: ["resources:load_resources"], mutators: ["mutators:update_job"]}}
 
 >>> uv run [UV_ARGS] -q [CLI] bundle deploy

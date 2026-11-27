@@ -1,0 +1,49 @@
+# Disable the on-disk run cache so --all-status output is deterministic across runs.
+Env.DATABRICKS_CACHE_ENABLED = "false"
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The AiTrainingService index is unavailable, so --all-status falls back to
+# scanning Jobs runs/list.
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/workflows"
+Response.StatusCode = 500
+Response.Body = '{"error_code": "INTERNAL_ERROR", "message": "index unavailable"}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/list"
+Response.Body = '''
+{
+  "runs": [
+    {
+      "run_id": 334747067049496,
+      "run_name": "qwen-train",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608759000,
+      "end_time": 1717608771000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "tasks": [{
+        "run_id": 334747067049497,
+        "ai_runtime_task": {
+          "experiment": "/Users/tester@databricks.com/qwen-train",
+          "deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}]
+        }
+      }]
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "qwen-train-001"}}}
+'''

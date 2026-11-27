@@ -36,7 +36,7 @@ deploy_registered_model
 export NAME="my-registered-model-updated-$UNIQUE_NAME"
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "update the name, this should recreate"
+title "update the name, this renames the model in place"
 deploy_registered_model
 
 title "update the catalog name, this should recreate"

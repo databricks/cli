@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+experimental:
+  scripts:
+    # Simulates a concurrent deploy migrating the state: postbuild runs after the state pull and
+    # before the auto-migration, so the migration finds no local terraform state.
+    postbuild: rm -f .databricks/bundle/default/terraform/terraform.tfstate
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Auto-Migrate Plan Failure"

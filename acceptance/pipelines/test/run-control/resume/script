@@ -1,0 +1,2 @@
+title "--resume reads the results of an existing update"
+trace $CLI pipelines test --pipeline-id $pipeline_id --resume 00000000-0000-0000-0000-0000000000a1

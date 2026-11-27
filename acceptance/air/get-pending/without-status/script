@@ -1,0 +1,5 @@
+title "Text fallback"
+trace $CLI air get 123 | contains.py "Waiting for the latest workload status..."
+
+title "JSON contract"
+trace $CLI air get 123 -o json | contains.py '"status": "PENDING"' '!status_message'

@@ -4,7 +4,6 @@ import (
 	"context"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
@@ -43,20 +42,28 @@ func (c *completer) SetIsLocalPath(i bool) {
 func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, error) {
 	trailingSeparator := "/"
 	joinFunc := path.Join
+	splitFunc := path.Split
 
-	// Use filepath functions if we are in a local path.
+	// Use filepath functions if we are in a local path. On Windows,
+	// filepath.Split splits on both '/' and '\'.
 	if c.isLocalPath {
 		joinFunc = filepath.Join
+		splitFunc = filepath.Split
 		trailingSeparator = string(filepath.Separator)
 	}
 
-	// If the user is TAB-ing their way through a path and the
-	// path ends in a trailing slash, we should list nested directories.
-	// If the path is incomplete, however, then we should list adjacent
-	// directories.
-	dirPath := p
-	if !strings.HasSuffix(p, trailingSeparator) {
-		dirPath = path.Dir(p)
+	// Shells only offer completions that start with the word being completed,
+	// so keep the directory part of p as typed. Joining it with the entry name
+	// would clean it and turn "./sr" into "src", which the shell then discards.
+	typedDir, _ := splitFunc(p)
+
+	// List the directory part of p: nested entries after a trailing separator,
+	// adjacent ones for a partial name. Split it the same way as typedDir;
+	// path.Dir only splits on '/', so on Windows it would list the current
+	// directory for ".\src\s" and pair its entries with the typed ".\src\".
+	dirPath := typedDir
+	if dirPath == "" {
+		dirPath = "."
 	}
 
 	entries, err := c.filer.ReadDir(c.ctx, dirPath)
@@ -70,8 +77,7 @@ func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, 
 			continue
 		}
 
-		// Join directory path and entry name
-		completion := joinFunc(dirPath, entry.Name())
+		completion := typedDir + entry.Name()
 
 		// Prepend prefix if it has been set
 		if c.prefix != "" {

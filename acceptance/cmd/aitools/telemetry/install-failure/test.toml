@@ -1,0 +1,7 @@
+[[Server]]
+Pattern = "GET /missing-ref/manifest.json"
+Response.StatusCode = 404
+
+[[Server]]
+Pattern = "GET /broken-ref/manifest.json"
+Response.StatusCode = 500

@@ -2,9 +2,13 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -55,7 +59,6 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 		ReplaceExisting: input.ReplaceExisting,
 		PurgeOnDelete:   input.PurgeOnDelete,
 		BranchSpec:      input.BranchSpec,
-		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -65,22 +68,21 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 		Parent:   remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 
 		BranchSpec: remote.BranchSpec,
 	}
 }
 
 // makePostgresBranchRemote converts the SDK Branch into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_branches.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_branches.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	var spec postgres.BranchSpec
 	if branch.Spec != nil {
@@ -107,7 +109,7 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 }
 
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
-	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+	req := postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
 		Branch: postgres.Branch{
@@ -123,21 +125,130 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateBranch(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
-
-	// Wait for the branch to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
-	if err != nil {
-		return "", nil, err
-	}
-
-	remote := makePostgresBranchRemote(result)
 	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a branch that a create request returned.
+func (r *ResourcePostgresBranch) waitCreated(ctx context.Context, waiter postgres.CreateBranchOperationInterface) (*PostgresBranchRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresBranchRemote(result), nil
+}
+
+// Tuning for waitBranchReady, variables so that tests can shorten them.
+var (
+	// branchReadyTimeout bounds the wait for a recovered branch that is still in INIT.
+	branchReadyTimeout = 10 * time.Minute
+	// branchReadyPollInterval is the pause between reads of a recovered branch in INIT.
+	branchReadyPollInterval = 5 * time.Second
+)
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
+func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req postgres.CreateBranchRequest, start time.Time, createErr error) (string, *PostgresBranchRemote, error) {
+	// A branch found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
+	}
+
+	name := req.Parent + "/branches/" + req.BranchId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Branch, *PostgresBranchRemote]{
+		name:  "branch " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Branch, error) {
+			return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(ctx context.Context, branch *postgres.Branch) (*PostgresBranchRemote, error) {
+			return r.useRecoveredBranch(ctx, branch, createErr)
+		},
+		create: func(ctx context.Context) (func() (*PostgresBranchRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateBranch(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresBranchRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
+	return remote.Name, remote, nil
+}
+
+func readBranch(ctx context.Context, client *databricks.WorkspaceClient, name string) (*postgres.Branch, error) {
+	return retry.With(ctx, retry.IsTransientRead, func() (*postgres.Branch, error) {
+		return client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+	})
+}
+
+// useRecoveredBranch returns the branch recoverFailedCreate found, once it is READY.
+//
+// The wait is inline rather than in WaitAfterCreate, like the wait for the create operation on the
+// success path: a WaitAfterCreate would read every created branch once more. Once the branch is
+// known to be ours, it is returned even when the wait ends early, so that state records it and the
+// next deploy does not fail with ALREADY_EXISTS.
+func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch *postgres.Branch, createErr error) (*PostgresBranchRemote, error) {
+	branch, err := waitBranchReady(ctx, r.client, branch)
+	if err != nil {
+		return nil, err
+	}
+
+	// Other states, such as DELETED or ARCHIVED, will not become READY.
+	if state := branchState(branch); state != postgres.BranchStatusStateReady && state != postgres.BranchStatusStateInit {
+		return nil, fmt.Errorf("%w; branch %s exists in state %q", createErr, branch.Name, state)
+	}
+	return makePostgresBranchRemote(branch), nil
+}
+
+// waitBranchReady polls branch while it is in INIT, up to branchReadyTimeout, and returns the last
+// branch it read. A timeout or a failed read ends the wait early with a warning; only a done
+// context is returned as an error.
+func waitBranchReady(ctx context.Context, client *databricks.WorkspaceClient, branch *postgres.Branch) (*postgres.Branch, error) {
+	deadline := time.Now().Add(branchReadyTimeout)
+	for branchState(branch) == postgres.BranchStatusStateInit {
+		if !time.Now().Before(deadline) {
+			log.Warnf(ctx, "branch %s is still initializing after %s", branch.Name, branchReadyTimeout)
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(branchReadyPollInterval):
+		}
+		next, err := readBranch(ctx, client, branch.Name)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			log.Warnf(ctx, "waiting for branch %s to become ready: %s", branch.Name, err)
+			break
+		}
+		branch = next
+	}
+	return branch, nil
+}
+
+func branchState(branch *postgres.Branch) postgres.BranchStatusState {
+	if branch.Status == nil {
+		return ""
+	}
+	return branch.Status.CurrentState
 }
 
 // expire_time, no_expiry and ttl are three sides of one oneof, and the API accepts them
@@ -203,7 +314,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
 		Name:            id,
-		Purge:           state.PurgeOnDelete,
+		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

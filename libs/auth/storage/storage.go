@@ -22,10 +22,38 @@ var ErrNotFound = errors.New("token not found")
 // Entry is the value held in the CLI token store. It wraps the credential so
 // the schema can grow additive metadata (e.g. a config fingerprint, scopes)
 // without changing the Store interface. Backends persist it verbatim and never
-// interpret its contents.
+// interpret its contents. The exception is the keyring store, which keeps an
+// access token too large for one item in separate items.
 type Entry struct {
-	// Token is the cached OAuth token. Always set for stored entries.
+	// Token is the cached OAuth token. Set for every stored entry except a
+	// pending login.
 	Token *oauth2.Token
+
+	// PendingLogin is set instead of Token for a login that one CLI
+	// invocation started and a later one completes.
+	PendingLogin *PendingLogin
+}
+
+// PendingLogin is a device code login that is waiting for the user's
+// confirmation code. Keeping the device code in the store means it never
+// leaves the machine that started the login.
+type PendingLogin struct {
+	// DeviceCode is exchanged together with the confirmation code for a token.
+	DeviceCode string `json:"device_code"`
+
+	// UserCode is the code the user enters in the browser. It identifies the
+	// login when a newer one replaced it under the same key.
+	UserCode string `json:"user_code"`
+
+	// Host, AccountID, ClientID and Scopes are the settings the login was
+	// started with. The device code only works with the same host, account
+	// and client, and the token gets the scopes of the device authorization,
+	// so the login can only be completed with the same settings. AccountID is
+	// empty for workspace hosts, which do not log in with account endpoints.
+	Host      string   `json:"host"`
+	AccountID string   `json:"account_id,omitempty"`
+	ClientID  string   `json:"client_id,omitempty"`
+	Scopes    []string `json:"scopes,omitempty"`
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no
@@ -34,9 +62,16 @@ type Entry struct {
 // metadata without changing the Store interface.
 type Store interface {
 	// Put writes e under key, replacing any existing entry.
+	//
+	// The keyring store can fail with ErrAccessTokenNotStored after it stored
+	// everything but the access token.
 	Put(key string, e Entry) error
 
 	// Lookup returns the entry stored under key, or ErrNotFound.
+	//
+	// The keyring store returns a token without its access token when the
+	// items that hold the access token are missing or stale. Such a token is
+	// not valid, so the caller refreshes it.
 	Lookup(key string) (Entry, error)
 
 	// Delete removes the entry under key. Deleting a missing entry is not an

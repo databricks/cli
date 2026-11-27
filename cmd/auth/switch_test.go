@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
+
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -30,7 +32,7 @@ func TestSwitchCommand_WithProfileFlag(t *testing.T) {
 
 	ctx = cmdio.MockDiscard(ctx)
 
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"switch", "--profile", "my-workspace"})
@@ -60,7 +62,7 @@ func TestSwitchCommand_ProfileNotFound(t *testing.T) {
 
 	ctx = cmdio.MockDiscard(ctx)
 
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"switch", "--profile", "nonexistent"})
@@ -86,7 +88,7 @@ func TestSwitchCommand_NonInteractiveNoProfile(t *testing.T) {
 
 	ctx = cmdio.MockDiscard(ctx)
 
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"switch"})
@@ -114,7 +116,7 @@ func TestSwitchCommand_WritesSettingsSection(t *testing.T) {
 
 	ctx = cmdio.MockDiscard(ctx)
 
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"switch", "--profile", "profile-a"})
@@ -129,7 +131,7 @@ func TestSwitchCommand_WritesSettingsSection(t *testing.T) {
 	assert.Contains(t, string(contents), "default_profile = profile-a")
 
 	// Switch to another profile.
-	cmd = New()
+	cmd = root.NewCommand(t.Context(), Spec)
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"switch", "--profile", "profile-b"})

@@ -1,0 +1,3 @@
+# The server and its signal handling run inside Linux sandboxes.
+GOOS.windows = false
+GOOS.darwin = false

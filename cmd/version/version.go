@@ -3,9 +3,14 @@
 package version
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/spf13/cobra"
 )
@@ -30,14 +35,31 @@ Download the latest release: https://github.com/databricks/cli/releases
 {{- end}}
 `
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "version",
-		Args:  root.NoArgs,
-		Short: "Retrieve information about the current version of this CLI",
-		Annotations: map[string]string{
-			"template": "Databricks CLI v{{.Version}}\n",
-		},
+// renderUpdateCheck renders result and, in text mode, follows it with the
+// aitools install tip on stderr (agents.MaybeVersionCheckTip), so stdout keeps
+// only the update-check result.
+func renderUpdateCheck(ctx context.Context, result *versioncheck.Result, output flags.Output) error {
+	err := cmdio.RenderWithTemplate(ctx, result, "", updateCheckTemplate)
+	if err != nil {
+		return err
+	}
+	if output == flags.OutputText {
+		agents.MaybeVersionCheckTip(ctx, installer.InstalledPluginAgents)
+	}
+	return nil
+}
+
+// Spec declares the version command.
+var Spec = root.CommandSpec{
+	Use:   "version",
+	Short: "Retrieve information about the current version of this CLI",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Args = root.NoArgs
+	cmd.Annotations = map[string]string{
+		"template": "Databricks CLI v{{.Version}}\n",
 	}
 
 	var check bool
@@ -46,10 +68,8 @@ func New() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		if check {
-			return cmdio.RenderWithTemplate(ctx, versioncheck.Check(ctx), "", updateCheckTemplate)
+			return renderUpdateCheck(ctx, versioncheck.Check(ctx), root.OutputType(cmd))
 		}
 		return cmdio.Render(ctx, build.GetInfo())
 	}
-
-	return cmd
 }

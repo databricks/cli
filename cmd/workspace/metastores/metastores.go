@@ -3,6 +3,7 @@
 package metastores
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "metastores",
-		Short: `A metastore is the top-level container of objects in Unity Catalog.`,
-		Long: `A metastore is the top-level container of objects in Unity Catalog. It stores
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "metastores",
+	Short:   `A metastore is the top-level container of objects in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A metastore is the top-level container of objects in Unity Catalog. It stores
   data assets (tables and views) and the permissions that govern access to them.
   Databricks account admins can create metastores and assign them to Databricks
   workspaces to control which workloads use each metastore. For a workspace to
@@ -34,14 +40,13 @@ func New() *cobra.Command {
   NOTE: This metastore is distinct from the metastore included in Databricks
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
-  catalog named hive_metastore.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  catalog named hive_metastore.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAssign())
@@ -52,6 +57,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newSummary())
 	cmd.AddCommand(newUnassign())
+	cmd.AddCommand(newUndropMetastoreById())
 	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdateAssignment())
 
@@ -59,8 +65,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start assign command
@@ -600,6 +604,94 @@ func newUnassign() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range unassignOverrides {
 		fn(cmd, &unassignReq)
+	}
+
+	return cmd
+}
+
+// start undrop-metastore-by-id command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var undropMetastoreByIdOverrides []func(
+	*cobra.Command,
+	*catalog.UndropMetastoreByIdRequest,
+)
+
+func newUndropMetastoreById() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var undropMetastoreByIdReq catalog.UndropMetastoreByIdRequest
+	var undropMetastoreByIdJson flags.JsonFlag
+
+	cmd.Flags().Var(&undropMetastoreByIdJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "undrop-metastore-by-id ID"
+	cmd.Short = `*Public Preview* Restore a metastore.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Restore a metastore.
+
+  Restores a soft-deleted metastore identified by its ID. The caller must be an
+  account admin. A metastore may be eligible for restoration for up to five days
+  after deletion. Restoration may become unavailable earlier once permanent
+  deletion begins. Returns the restored metastore.
+
+  Arguments:
+    ID: Required. Id of the metastore to undrop.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := undropMetastoreByIdJson.Unmarshal(&undropMetastoreByIdReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			undropMetastoreByIdReq.Id = args[0]
+		}
+
+		response, err := w.Metastores.UndropMetastoreById(ctx, undropMetastoreByIdReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range undropMetastoreByIdOverrides {
+		fn(cmd, &undropMetastoreByIdReq)
 	}
 
 	return cmd

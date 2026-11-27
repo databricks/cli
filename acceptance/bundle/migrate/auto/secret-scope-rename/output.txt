@@ -1,0 +1,51 @@
+
+=== Replay the prior terraform deployment (captured from a real terraform run)
+
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Rename the secret scope (a provided id field) and plan: the plan migrates in memory only
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Warn: migration to direct: secret_scopes.foo: name differs between config ("test-scope-[UNIQUE_NAME]-renamed") and terraform state ("test-scope-[UNIQUE_NAME]"); this resource will be recreated.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+recreate secret_scopes.foo
+update secret_scopes.foo.permissions
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
+
+=== Deploy on direct without --auto-approve
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: migration to direct: secret_scopes.foo: name differs between config ("test-scope-[UNIQUE_NAME]-renamed") and terraform state ("test-scope-[UNIQUE_NAME]"); this resource will be recreated.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Migrated 2 resources to direct deployment engine.
+Recreated secret_scopes.foo
+Updated secret_scopes.foo.permissions
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+
+=== Secret scopes in the workspace after the deploy
+
+>>> [CLI] secrets list-scopes -o json
+test-scope-[UNIQUE_NAME]-renamed
+
+=== Plan again on direct: the scope now matches config, so the plan is a clean no-op
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== The state after the deploy records the scope's name and id
+
+>>> read_state.py secret_scopes foo id scope
+secret_scopes foo id='test-scope-[UNIQUE_NAME]-renamed' scope='test-scope-[UNIQUE_NAME]-renamed'
+
+=== Cleanup
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.secret_scopes.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

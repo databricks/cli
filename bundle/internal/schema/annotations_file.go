@@ -14,7 +14,8 @@ import (
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"go.yaml.in/yaml/v3"
+	"github.com/databricks/cli/libs/yamlutil"
+	"go.yaml.in/yaml/v4"
 )
 
 // fieldsKey nests a type's block of field nodes inside the node of a field
@@ -339,9 +340,7 @@ func writeYAML(path string, node *yaml.Node) error {
 	if err != nil {
 		return err
 	}
-	enc := yaml.NewEncoder(f)
-	enc.SetIndent(2)
-	return errors.Join(enc.Encode(node), f.Close())
+	return errors.Join(yamlutil.Encode(f, node), f.Close())
 }
 
 type edgeKey struct {

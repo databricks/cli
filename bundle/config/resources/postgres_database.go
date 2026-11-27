@@ -24,7 +24,7 @@ type PostgresDatabaseConfig struct {
 	// ReplaceExisting, when true, takes over an existing database with the same ID
 	// instead of returning ALREADY_EXISTS. Used to manage a database that already
 	// exists on the branch. Input-only: not returned by the GET API.
-	ReplaceExisting bool `json:"replace_existing,omitempty"`
+	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 func (c *PostgresDatabaseConfig) UnmarshalJSON(b []byte) error {

@@ -1,0 +1,115 @@
+
+>>> musterr [CLI] bundle config-remote-sync
+Error: no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or .databricks/bundle/<target>/variable-overrides.json
+
+
+>>> print_requests.py //telemetry-ext
+{
+  "error_message": "no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using \"--var\", the BUNDLE_VAR_myvar environment variable, or [REDACTED_REL_PATH](json)",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> print_requests.py //telemetry-ext
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+
+>>> musterr [CLI] bundle config-remote-sync -t bad
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t own-host -p myprofile
+Error: failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t profile-workspace -p workspace2222
+Error: failed to perform target override for target=profile-workspace: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> print_requests.py //telemetry-ext
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=profile-workspace: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+
+>>> musterr [CLI] bundle config-remote-sync -p myprofile
+Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="missing": stat missing: no such file or directory
+
+The DATABRICKS_BUNDLE_ROOT environment variable must point to an existing directory that contains a bundle configuration file.
+
+
+>>> print_requests.py //telemetry-ext
+{
+  "error_message": "Invalid bundle root DATABRICKS_BUNDLE_ROOT=\"missing\": stat missing: no such file or directory",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+
+>>> musterr [CLI] bundle config-remote-sync -t bad
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p missing
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p workspace2222
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t other -p myprofile
+Error: failed to perform target override for target=other: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -p myprofile
+Error: failed to perform target override for target=other: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t auth-error -p myprofile
+Error: cannot resolve bundle auth configuration: validate: more than one authorization method configured: oauth and pat. Config: host=[DATABRICKS_URL], token=***, profile=myprofile, config_file=[TEST_TMP_DIR]/.databrickscfg, client_id=x, databricks_cli_path=[CLI]. Env: DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+
+>>> errcode print_requests.py //telemetry-ext
+File [OUTPUT_DIR]/out.requests.txt not found
+
+Exit code: 1

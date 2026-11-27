@@ -1,0 +1,11 @@
+{
+  "banner": "never",
+  "mcpServers": {
+    "other": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "other-mcp"],
+      "tools": ["*"]
+    }
+  }
+}

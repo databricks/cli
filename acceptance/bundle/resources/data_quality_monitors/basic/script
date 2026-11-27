@@ -1,0 +1,27 @@
+trace $CLI bundle deploy
+trace print_requests.py //data-quality
+
+title "Summary shows the composite id"
+trace $CLI bundle summary -o json | jq '.resources.data_quality_monitors.schema_monitor | {id, object_type}'
+
+title "Verify deployment"
+SCHEMA_ID=$($CLI schemas get main.myschema | jq -r .schema_id)
+trace $CLI data-quality get-monitor schema $SCHEMA_ID | jq .anomaly_detection_config
+
+title "A second plan has no changes"
+trace $CLI bundle plan
+
+title "Update the config (should update in place, not recreate)"
+trace update_file.py databricks.yml main.myschema.table1 main.myschema.table2
+trace $CLI bundle deploy
+trace print_requests.py //data-quality
+trace $CLI data-quality get-monitor schema $SCHEMA_ID | jq .anomaly_detection_config
+
+title "Change an identity field (should plan a recreate)"
+trace update_file.py databricks.yml '${resources.schemas.myschema.schema_id}' 00000000-0000-0000-0000-000000000000
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //data-quality
+
+rm -f out.requests.txt

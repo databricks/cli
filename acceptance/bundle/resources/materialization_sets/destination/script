@@ -1,0 +1,32 @@
+trace $CLI bundle deploy
+
+destination_changes() {
+    jq '.plan["resources.materialization_sets.set1"]
+        | {action, store_config_changes: (.changes
+            | with_entries(select(.key | test("store_config")))
+            | map_values({action, reason}))}' out.plan.json
+}
+
+title "A destination the read never returns is not drift: the config holds a value the server"
+title "never echoes, and with no persisted value to compare it to the suppression lives in"
+title "OverrideChangeDesc"
+trace $CLI bundle plan -o json > out.plan.json
+trace destination_changes
+
+title "Repointing the online destination is a real change the config asked for, so it keeps its"
+title "persisted value and still recreates"
+trace update_file.py databricks.yml '            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: destfeat_on' '            catalog_name: other
+            schema_name: myschema
+            table_name_prefix: destfeat_on'
+trace $CLI bundle plan -o json > out.plan.json
+trace destination_changes
+trace update_file.py databricks.yml '            catalog_name: other' '            catalog_name: main'
+
+title "The offline block is input-only whole, and repointing it recreates the same way"
+trace update_file.py databricks.yml 'table_name_prefix: destfeat_off' 'table_name_prefix: destfeat_moved'
+trace $CLI bundle plan -o json > out.plan.json
+trace destination_changes
+
+rm -f out.requests.txt out.plan.json

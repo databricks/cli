@@ -9,6 +9,10 @@ import (
 func Groups() []cobra.Group {
 	return []cobra.Group{
 		{
+			ID:    "lakewatch",
+			Title: "Lakewatch",
+		},
+		{
 			ID:    "workspace",
 			Title: "Databricks Workspace",
 		},
@@ -127,6 +131,10 @@ func Groups() []cobra.Group {
 		{
 			ID:    "domains",
 			Title: "Domains",
+		},
+		{
+			ID:    "migration",
+			Title: "Migration",
 		},
 	}
 }

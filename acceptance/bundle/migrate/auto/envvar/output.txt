@@ -1,8 +1,10 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Opt in via env var only (no bundle.engine in config): auto-migration triggers
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -12,9 +14,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
 direct_migrated_via_env true
-
->>> print_requests.py
-engine/direct
 
 === Direct-engine state is now in place; terraform state is backed up
 

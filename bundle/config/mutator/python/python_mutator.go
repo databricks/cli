@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -128,7 +129,7 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	}
 
 	// using reflect.DeepEquals in case we add more fields
-	pydabsEnabled := !reflect.DeepEqual(experimental.PyDABs, config.PyDABs{})
+	pydabsEnabled := config.IsExplicitlyEnabled(experimental.PyDABs.Enabled)
 	experimentalPythonEnabled := !reflect.DeepEqual(experimental.Python, config.Python{})
 	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
 
@@ -251,6 +252,14 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	b.Metrics.PythonAddedResources = addResourceCounts(b.Metrics.PythonAddedResources, result.AddedResources)
 
 	if diags.HasError() {
+		return diags
+	}
+
+	// Resources added or updated by Python were not loaded when the initialize phase
+	// checked sensitive variable references. Check them on the full config: normalization
+	// below only merges resources back, so a marker inferred inside it would be lost.
+	bundle.ApplyContext(ctx, b, validate.SensitiveVariableReferences())
+	if logdiag.HasError(ctx) {
 		return diags
 	}
 

@@ -1,0 +1,28 @@
+title "The create request times out but the catalog was created: deploy uses the catalog"
+fault.py --after-handler "POST /api/2.0/database/catalogs" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //database/catalogs //unity-catalog/catalogs | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve &> LOG.destroy
+rm -f "$OUT_REQUESTS"
+
+title "The create request times out and the catalog was not created: deploy repeats the create"
+fault.py "POST /api/2.0/database/catalogs" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //database/catalogs //unity-catalog/catalogs | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve &> LOG.destroy
+rm -f "$OUT_REQUESTS"
+
+title "The create request times out, the catalog shows up only after the create is repeated: deploy uses the catalog"
+fault.py --after-handler "POST /api/2.0/database/catalogs" 504 0 1 DEADLINE_EXCEEDED
+fault.py "GET /api/2.0/database/catalogs/my_catalog" 404 0 1 CATALOG_DOES_NOT_EXIST
+trace $CLI bundle deploy
+trace print_requests.py --get //database/catalogs //unity-catalog/catalogs | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve &> LOG.destroy
+rm -f "$OUT_REQUESTS"
+
+title "The catalog cannot be read after the create request times out: deploy fails with the create error"
+fault.py "POST /api/2.0/database/catalogs" 504 0 1 DEADLINE_EXCEEDED
+fault.py "GET /api/2.0/database/catalogs/my_catalog" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle deploy
+trace print_requests.py --get //database/catalogs //unity-catalog/catalogs | jq -r '.method + " " + .path'
+$CLI bundle destroy --auto-approve &> LOG.destroy

@@ -22,8 +22,14 @@ class AppResourceGenieSpace:
     name: VariableOr[str]
 
     permission: VariableOr[AppResourceGenieSpaceGenieSpacePermission]
+    """
+    Permission to grant the app on the Genie space.
+    """
 
     space_id: VariableOr[str]
+    """
+    ID of the Genie space.
+    """
 
     @classmethod
     def from_dict(cls, value: "AppResourceGenieSpaceDict") -> "Self":
@@ -39,8 +45,14 @@ class AppResourceGenieSpaceDict(TypedDict, total=False):
     name: VariableOr[str]
 
     permission: VariableOr[AppResourceGenieSpaceGenieSpacePermissionParam]
+    """
+    Permission to grant the app on the Genie space.
+    """
 
     space_id: VariableOr[str]
+    """
+    ID of the Genie space.
+    """
 
 
 AppResourceGenieSpaceParam = AppResourceGenieSpaceDict | AppResourceGenieSpace

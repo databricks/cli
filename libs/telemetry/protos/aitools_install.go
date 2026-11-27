@@ -45,6 +45,54 @@ const (
 	AitoolsErrorCategoryUnsupportedScope    AitoolsErrorCategory = "UNSUPPORTED_SCOPE"
 	AitoolsErrorCategoryExperimentalSkill   AitoolsErrorCategory = "EXPERIMENTAL_SKILL"
 	AitoolsErrorCategoryUncategorized       AitoolsErrorCategory = "UNCATEGORIZED"
+
+	// Failures before any agent is touched.
+	AitoolsErrorCategoryInvalidFlags AitoolsErrorCategory = "INVALID_FLAGS"
+	AitoolsErrorCategoryUnknownAgent AitoolsErrorCategory = "UNKNOWN_AGENT"
+	AitoolsErrorCategoryPromptFailed AitoolsErrorCategory = "PROMPT_FAILED"
+	// The user aborted a prompt (Ctrl-C / Esc).
+	AitoolsErrorCategoryUserAborted AitoolsErrorCategory = "USER_ABORTED"
+
+	// Fetching skills. A fetch that fails on the transport (no response, or a
+	// timeout or reset while reading the body) reports NETWORK or TIMEOUT; the
+	// other categories apply once a response arrived.
+	AitoolsErrorCategoryReleaseLookupFailed AitoolsErrorCategory = "RELEASE_LOOKUP_FAILED"
+	AitoolsErrorCategoryRateLimited         AitoolsErrorCategory = "RATE_LIMITED"
+	AitoolsErrorCategorySkillsFetchFailed   AitoolsErrorCategory = "SKILLS_FETCH_FAILED"
+	AitoolsErrorCategoryManifestNotFound    AitoolsErrorCategory = "MANIFEST_NOT_FOUND"
+	AitoolsErrorCategoryManifestInvalid     AitoolsErrorCategory = "MANIFEST_INVALID"
+	AitoolsErrorCategoryNetwork             AitoolsErrorCategory = "NETWORK"
+	AitoolsErrorCategoryTimeout             AitoolsErrorCategory = "TIMEOUT"
+
+	// Local state and filesystem.
+	AitoolsErrorCategoryStateInvalid     AitoolsErrorCategory = "STATE_INVALID"
+	AitoolsErrorCategoryPermissionDenied AitoolsErrorCategory = "PERMISSION_DENIED"
+	AitoolsErrorCategoryFilesystem       AitoolsErrorCategory = "FILESYSTEM"
+
+	// The agent's plugin CLI did not answer in time.
+	AitoolsErrorCategoryPluginCLITimeout AitoolsErrorCategory = "PLUGIN_CLI_TIMEOUT"
+	// The command's context was cancelled. SIGINT outside a prompt is not
+	// counted here: it ends the process before telemetry is uploaded.
+	AitoolsErrorCategoryCommandInterrupted AitoolsErrorCategory = "COMMAND_INTERRUPTED"
+
+	// `aitools mcp`: profiles and sign-in. Bind failures send their category by value (mcp.BindCategory). PROFILE_NOT_FOUND
+	// and PROFILE_HOST_CHANGED mirror the schema, and no CLI command names them.
+	AitoolsErrorCategoryNoProfile          AitoolsErrorCategory = "NO_PROFILE"
+	AitoolsErrorCategoryProfileRequired    AitoolsErrorCategory = "PROFILE_REQUIRED"
+	AitoolsErrorCategoryProfileNotFound    AitoolsErrorCategory = "PROFILE_NOT_FOUND"
+	AitoolsErrorCategoryProfileHostChanged AitoolsErrorCategory = "PROFILE_HOST_CHANGED"
+	AitoolsErrorCategoryAuthFailed         AitoolsErrorCategory = "AUTH_FAILED"
+	AitoolsErrorCategorySignInRequired     AitoolsErrorCategory = "SIGN_IN_REQUIRED"
+	AitoolsErrorCategorySignInTimeout      AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
+
+	// `aitools mcp`: the service list, agent configs and the proxy. MCP_UPSTREAM_ERROR mirrors the schema, and no CLI
+	// command sends it yet: the proxy does not log upstream errors in v1.
+	AitoolsErrorCategoryMCPServiceNotFound  AitoolsErrorCategory = "MCP_SERVICE_NOT_FOUND"
+	AitoolsErrorCategoryMCPPermissionDenied AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
+	AitoolsErrorCategoryMCPLocationNotFound AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
+	AitoolsErrorCategoryMCPNameConflict     AitoolsErrorCategory = "MCP_NAME_CONFLICT"
+	AitoolsErrorCategoryMCPUpstreamError    AitoolsErrorCategory = "MCP_UPSTREAM_ERROR"
+	AitoolsErrorCategoryAgentConfigInvalid  AitoolsErrorCategory = "AGENT_CONFIG_INVALID"
 )
 
 // AitoolsAgentResult records one agent's failed or skipped outcome within an
@@ -55,8 +103,21 @@ type AitoolsAgentResult struct {
 	ErrorCategory AitoolsErrorCategory `json:"error_category"`
 }
 
+// AitoolsInstallTrigger mirrors AitoolsInstallTrigger.Type in the
+// databricks_cli lumberjack proto: what started an install other than the
+// `databricks aitools install` command. The command's own installs leave it
+// unset.
+type AitoolsInstallTrigger string
+
+const (
+	AitoolsInstallTriggerUnspecified AitoolsInstallTrigger = "TYPE_UNSPECIFIED"
+	// The install the CLI runs on its own on the first run of a new version.
+	AitoolsInstallTriggerAutoFirstRun AitoolsInstallTrigger = "AUTO_FIRST_RUN"
+)
+
 // AitoolsInstallEvent is emitted on every execution of the `databricks aitools
-// install` command.
+// install` command, and for the install the CLI runs on the first run of a new
+// version (Trigger AUTO_FIRST_RUN).
 type AitoolsInstallEvent struct {
 	// Agents the user targeted, deduplicated and sorted for stable output.
 	Agents []AitoolsAgentType `json:"agents,omitempty"`
@@ -76,4 +137,7 @@ type AitoolsInstallEvent struct {
 	// AgentResults records the per-agent failure/skip categories, one entry per
 	// non-successful agent. Empty when every targeted agent succeeded.
 	AgentResults []AitoolsAgentResult `json:"agent_results,omitempty"`
+
+	// Trigger is set when the install did not come from the command.
+	Trigger AitoolsInstallTrigger `json:"trigger,omitempty"`
 }

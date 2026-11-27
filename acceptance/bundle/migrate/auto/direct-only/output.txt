@@ -1,14 +1,17 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Add a direct-only resource and opt in to the direct engine via config
+
 >>> update_file.py databricks.yml #instance_pools instance_pools
 
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle
   engine: direct
 
 === Plan runs on the direct engine (state migrated in memory), so the direct-only resource is planned
+
 >>> [CLI] bundle plan
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 create instance_pools.pool
@@ -23,6 +26,7 @@ json.plan.resources.instance_pools.pool.new_state.value.instance_pool_name = "My
 json.plan.resources.instance_pools.pool.new_state.value.node_type_id = "Standard_DS3_v2";
 
 === Plan does not commit state change, terraform stays
+
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
 
@@ -31,6 +35,7 @@ ID                   Type  Language  Path
 [OBJECT_ID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Deploy commits the migration and creates the direct-only resource
+
 >>> [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -43,6 +48,7 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 direct_migrated_via_config true
 
 === Redeploy is a no-op: state is already on the direct engine
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
@@ -54,5 +60,6 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> print_requests.py //instance-pools/create
 
 === No further actions planned
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

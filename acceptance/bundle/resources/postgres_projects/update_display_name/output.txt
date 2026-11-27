@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle validate
 Name: update-postgres-project-[UNIQUE_NAME]
 Target: default
@@ -24,7 +25,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
@@ -48,6 +49,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify no changes
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
@@ -61,6 +63,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Update display_name and re-deploy
+
 >>> update_file.py databricks.yml Original Name Updated Name
 
 >>> cat databricks.yml
@@ -97,7 +100,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
@@ -121,6 +124,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Restore display_name to original value
+
 >>> update_file.py databricks.yml Updated Name Original Name
 
 >>> [CLI] bundle plan
@@ -138,7 +142,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",

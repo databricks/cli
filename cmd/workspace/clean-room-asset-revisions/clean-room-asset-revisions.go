@@ -3,6 +3,7 @@
 package clean_room_asset_revisions
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -16,21 +17,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clean-room-asset-revisions",
-		Short: `*Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clean-room-asset-revisions",
+	Short:   `*Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
+	GroupID: "cleanrooms",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
-  notebooks) in the clean room.`,
-		GroupID: "cleanrooms",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  notebooks) in the clean room.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -40,8 +45,6 @@ Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

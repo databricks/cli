@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 type JsonFlag struct {

@@ -2,6 +2,7 @@ package fileset
 
 import (
 	"errors"
+	iofs "io/fs"
 	"slices"
 	"testing"
 
@@ -138,4 +139,35 @@ func (t testIgnorer) IgnoreFile(path string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// vanishingDirPath simulates a directory that is removed after its parent was listed.
+type vanishingDirPath struct {
+	vfs.Path
+	dir string
+}
+
+func (p vanishingDirPath) ReadDir(name string) ([]iofs.DirEntry, error) {
+	if name == p.dir {
+		return nil, &iofs.PathError{Op: "open", Path: name, Err: iofs.ErrNotExist}
+	}
+	return p.Path.ReadDir(name)
+}
+
+func TestFileSet_SkipsEntryRemovedDuringListing(t *testing.T) {
+	fs := New(vanishingDirPath{Path: vfs.MustNew("testdata"), dir: "dir1"})
+	files, err := fs.Files()
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	assert.Len(t, files, 2)
+	assert.Equal(t, "dir2/a", files[0].Relative)
+	assert.Equal(t, "dir2/b", files[1].Relative)
+}
+
+func TestFileSet_MissingRootPathIsAnError(t *testing.T) {
+	fs := New(vfs.MustNew("testdata"), []string{"does-not-exist"})
+	_, err := fs.Files()
+	assert.ErrorIs(t, err, iofs.ErrNotExist)
 }

@@ -182,8 +182,12 @@ func Run[T any](t *testing.T, fn func(ctx context.Context) (T, error)) *Term[T] 
 	ctx := cmdio.InContext(t.Context(), io)
 	go func() {
 		v, err := fn(ctx)
-		_ = inR.Close()
 		tt.done <- resultMsg[T]{value: v, err: err}
+		// Deliver the result before closing inR: on Windows bubbletea cannot
+		// cancel a read on a pipe, so its read loop can stay blocked in
+		// ReadFile on inR and inR.Close waits for that read until Close
+		// closes inW.
+		_ = inR.Close()
 		close(tt.finished)
 	}()
 	t.Cleanup(tt.Close)

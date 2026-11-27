@@ -6,6 +6,7 @@ Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check that test file is in workspace
+
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
 {
   "object_type": "FILE",
@@ -19,6 +20,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Check that notebook is in workspace
+
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
 {
   "object_type": "NOTEBOOK",
@@ -27,6 +29,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Check that deployment.json is synced correctly
+
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json
 {
   "object_type": "FILE",
@@ -34,6 +37,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Remove .databricks directory to simulate a fresh deployment like in CI/CD environment
+
 >>> rm -rf .databricks
 
 >>> rm test.py
@@ -48,6 +52,7 @@ Files: 4 uploaded, 2 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Check that removed files are not in the workspace anymore
+
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py) doesn't exist.
 
@@ -59,6 +64,7 @@ Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook) d
 Exit code: 1
 
 === Check the content of modified file
+
 >>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
 print('Modified!')
 

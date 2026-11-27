@@ -1,0 +1,4 @@
+# The argv log is not JSON, so on Windows a path in it keeps one native separator after the test directory.
+[[Repls]]
+Old = '(\[TEST_TMP_DIR\])\\'
+New = '$1/'

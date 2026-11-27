@@ -42,8 +42,9 @@ func pathString(p *structpath.PathNode) string {
 }
 
 // gatherLocations returns the locations of the top level fields, the resource groups
-// ("resources.jobs"), the resources ("resources.jobs.my_job"), and job tasks
-// ("resources.jobs.my_job.tasks", "resources.jobs.my_job.tasks[2]"). Resources and tasks
+// ("resources.jobs"), the resources ("resources.jobs.my_job"), job tasks
+// ("resources.jobs.my_job.tasks", "resources.jobs.my_job.tasks[2]"), variable definitions
+// ("variables.my_var") and resolved variable values ("variables.my_var.value"). Resources and tasks
 // come from the configuration, their locations from the locations tree (values without
 // locations have no entry).
 func gatherLocations(r *config.Root) map[string][]diag.Location {
@@ -51,6 +52,11 @@ func gatherLocations(r *config.Root) map[string][]diag.Location {
 	tree := r.LocationTree()
 	for k, top := range tree.KeyItems() {
 		addLocations(out, structpath.NewPath(nil, k), top)
+	}
+	for name, v := range tree.Key("variables").KeyItems() {
+		vp := structpath.NewPath(nil, "variables", name)
+		addLocations(out, vp, v)
+		addLocations(out, structpath.NewPath(vp, "value"), v.Key("value"))
 	}
 	groups := tree.Key("resources")
 	for group, g := range groups.KeyItems() {

@@ -1,0 +1,4 @@
+for target in no_preset paused unpaused dev; do
+  title "Target: $target"
+  trace $CLI bundle validate -t $target -o json | jq '.resources.jobs | map_values([.triggers[].pause_status])'
+done

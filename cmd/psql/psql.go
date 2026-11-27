@@ -18,16 +18,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
-	return newLakebaseConnectCommand()
+// Spec declares the psql command.
+var Spec = root.CommandSpec{
+	Use:     "psql [TARGET] [flags] [-- PSQL_ARGS...]",
+	Short:   "Connect to a Lakebase Postgres database",
+	GroupID: "database",
+	Build:   buildCommand,
 }
 
-func newLakebaseConnectCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "psql [TARGET] [flags] [-- PSQL_ARGS...]",
-		Short:   "Connect to a Lakebase Postgres database",
-		GroupID: "database",
-		Long: `Connect to a Lakebase Postgres database.
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Connect to a Lakebase Postgres database.
 
 Requires psql to be installed.
 
@@ -51,8 +51,7 @@ Examples:
   databricks psql --project my-project -- -d mydb
 
 For more information, see: https://docs.databricks.com/aws/en/oltp/
-`,
-	}
+`
 
 	var maxRetries int
 	var provisionedFlag, autoscalingFlag bool
@@ -196,8 +195,6 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 
 		return names, cobra.ShellCompDirectiveNoFileComp
 	}
-
-	return cmd
 }
 
 // parseResourcePath extracts project, branch, and endpoint IDs from a resource path.

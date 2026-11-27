@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -13,16 +13,16 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.191.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.204.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.2.0 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.2.0 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.9.0 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.3.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
-	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
+	github.com/gorilla/websocket v1.5.4-0.20240701034025-d67f41855da4 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/jackc/pgx/v5 v5.11.0 // MIT
-	github.com/klauspost/pgzip v1.2.7 // MIT
+	github.com/jackc/pgx/v5 v5.13.0 // MIT
+	github.com/klauspost/pgzip v1.3.0 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
@@ -30,19 +30,21 @@ require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD-3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
-	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
+	github.com/spf13/pflag v1.1.0 // BSD-3-Clause
 	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
-	go.yaml.in/yaml/v3 v3.0.5 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.58.0 // BSD-3-Clause
+	go.yaml.in/yaml/v4 v4.0.0 // MIT AND Apache-2.0
+	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2 // BSD-3-Clause
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
 	golang.org/x/net v0.62.0 // BSD-3-Clause
-	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
-	golang.org/x/sync v0.24.0 // BSD-3-Clause
-	golang.org/x/sys v0.49.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.38.0 // BSD-3-Clause
+	golang.org/x/sync v0.25.0 // BSD-3-Clause
+	golang.org/x/sys v0.50.0 // BSD-3-Clause
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause
+	google.golang.org/grpc v1.83.2 // Apache-2.0
+	google.golang.org/protobuf v1.36.12 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
@@ -64,7 +66,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
@@ -75,10 +77,11 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.27 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -88,14 +91,14 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	go.opentelemetry.io/otel/metric v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.83.2 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

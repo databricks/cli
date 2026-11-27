@@ -13,19 +13,19 @@ Usage:
   databricks bundle deploy [flags]
 
 Flags:
-      --auto-approve          Skip interactive approvals that might be required for deployment.
-  -c, --cluster-id string     Override cluster in the deployment with the given cluster ID.
-      --fail-on-active-runs   Fail if there are running jobs or pipelines in the deployment.
-      --force                 Force-override Git branch validation.
-      --force-lock            Force acquisition of deployment lock.
-  -h, --help                  help for deploy
-      --plan string           Path to a JSON plan file to apply instead of planning.
-  -q, --quiet count           Reduce output: -q prints only the summary, -qq prints only warnings and errors.
-      --select strings        Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
+      --auto-approve[=true|false]          Skip interactive approvals that might be required for deployment.
+  -c, --cluster-id string                  Override cluster in the deployment with the given cluster ID.
+      --fail-on-active-runs[=true|false]   Fail if there are running jobs or pipelines in the deployment.
+      --force[=true|false]                 Force-override Git branch validation.
+      --force-lock[=true|false]            Force acquisition of deployment lock.
+  -h, --help[=true|false]                  help for deploy
+      --plan string                        Path to a JSON plan file to apply instead of planning.
+  -q, --quiet count                        Reduce output: -q prints only the summary, -qq prints only warnings and errors.
+      --select strings                     Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in bundle config. Example: --var="foo=bar"

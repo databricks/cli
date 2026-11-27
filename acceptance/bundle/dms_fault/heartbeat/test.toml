@@ -1,0 +1,3 @@
+# Beat as often as possible so the faulted heartbeat endpoint is actually called: at the
+# default 30s interval a local deploy never sends one. Also checks that the override reaches the CLI.
+Env.DATABRICKS_BUNDLE_DMS_HEARTBEAT_INTERVAL_MS = "1"

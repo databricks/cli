@@ -133,7 +133,7 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, cfg *config.
 // hasID reports whether resources of group can hold the deployed id and status. Groups
 // that are not part of the configuration, and internal snapshots, cannot.
 func hasID(group string) bool {
-	typ, ok := config.ResourcesTypes[group]
+	typ, ok := config.ResourcesTypes()[group]
 	if !ok {
 		return false
 	}

@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -77,5 +78,8 @@ func TestBuildSweepInfo(t *testing.T) {
 		info := buildSweepInfo(ctx, m.WorkspaceClient, sweepTaskFixture())
 		assert.Equal(t, 4, info.Total)
 		assert.Empty(t, info.Tasks)
+		encoded, err := json.Marshal(info)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"total":4,"succeeded":1,"failed":1,"active":2,"completed":2,"tasks":[]}`, string(encoded))
 	})
 }

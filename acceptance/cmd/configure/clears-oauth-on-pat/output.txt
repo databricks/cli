@@ -9,6 +9,7 @@ account_id                   = acc-123
 workspace_id                 = ws-456
 
 === Run configure with PAT token
+
 >>> [CLI] configure --token --host https://host
 
 === Profile after PAT configure

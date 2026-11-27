@@ -1,0 +1,28 @@
+
+=== The create request times out but the endpoint was created: deploy uses the endpoint
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created model_serving_endpoints.my_endpoint
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //serving-endpoints
+POST /api/2.0/serving-endpoints
+GET /api/2.0/serving-endpoints/test-endpoint
+GET /api/2.0/serving-endpoints/test-endpoint
+
+=== The create request times out and the endpoint was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_serving_endpoints.my_endpoint: retrying after 504 Gateway Timeout from POST /api/2.0/serving-endpoints
+Created model_serving_endpoints.my_endpoint
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //serving-endpoints
+POST /api/2.0/serving-endpoints
+GET /api/2.0/serving-endpoints/test-endpoint
+POST /api/2.0/serving-endpoints
+GET /api/2.0/serving-endpoints/test-endpoint

@@ -2,6 +2,9 @@
 # requires booking a cluster on Spark 12.2.x-scala2.12. The AWS test workspaces
 # have legacy access disabled, so 12.2.x is rejected with INVALID_PARAMETER_VALUE
 # ("legacy access is disabled in your workspace. Please use Databricks Runtime
-# 13.3 LTS or above"). GCP was previously disabled due to a DBR release breakage.
+# 13.3 LTS or above").
 CloudEnvs.aws = false
+
+# On GCP, installing the wheel on the 12.2.x cluster fails:
+#   CalledProcessError: Command 'pip --disable-pip-version-check install --force-reinstall /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl' returned non-zero exit status 1.
 CloudEnvs.gcp = false

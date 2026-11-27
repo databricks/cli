@@ -11,6 +11,9 @@
 # diverges across the engine matrix only in state_engine; it is captured per-engine.
 Cloud = false
 
+# The lock create fails with a 500, which the CLI retries; keep the pauses between attempts short.
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+
 [[Server]]
 Pattern = "POST /api/2.0/workspace-files/import-file/{path...}"
 Response.StatusCode = 500

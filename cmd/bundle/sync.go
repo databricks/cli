@@ -23,14 +23,16 @@ type syncFlags struct {
 	dryRun   bool
 }
 
-func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	opts, err := files.GetSyncOptions(cmd.Context(), b)
+// syncOptionsFromBundle returns the options to sync the bundle, writing
+// progress in the output format to stdout.
+func (f *syncFlags) syncOptionsFromBundle(ctx context.Context, output flags.Output, stdout io.Writer, b *bundle.Bundle) (*sync.SyncOptions, error) {
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
 	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-	switch root.OutputType(cmd) {
+	switch output {
 	case flags.OutputText:
 		outputFunc = sync.TextOutput
 	case flags.OutputJSON:
@@ -38,7 +40,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 	}
 	if outputFunc != nil {
 		opts.OutputHandler = func(ctx context.Context, c <-chan sync.Event) {
-			outputFunc(ctx, c, cmd.OutOrStdout())
+			outputFunc(ctx, c, stdout)
 		}
 	}
 
@@ -78,7 +80,7 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 		}
 		ctx := cmd.Context()
 
-		opts, err := f.syncOptionsFromBundle(cmd, b)
+		opts, err := f.syncOptionsFromBundle(ctx, root.OutputType(cmd), cmd.OutOrStdout(), b)
 		if err != nil {
 			return err
 		}

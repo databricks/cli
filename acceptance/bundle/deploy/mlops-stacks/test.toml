@@ -4,7 +4,7 @@ Cloud=true
 # (which also has serverless jobs). Gate on UC so it skips on the non-UC cloud
 # envs instead of failing with METASTORE_DOES_NOT_EXIST.
 
-Badness = "the newly initialized bundle from the 'mlops-stacks' template contains two validation warnings in the configuration"
+Badness = "A freshly initialized mlops-stacks bundle warns on every command: 'expected a string value, found null' at targets.dev.workspace.host and 'unknown field: description' at resources.experiments.experiment. A new bundle from the template should validate without warnings."
 
 Ignore = [
     "config.json"

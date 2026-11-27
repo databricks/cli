@@ -1,0 +1,17 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.fspec_[UNIQUE_NAME].myspec",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "EXECUTE"
+        ],
+        "principal": "account users",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

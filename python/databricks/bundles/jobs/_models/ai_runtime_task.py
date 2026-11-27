@@ -104,7 +104,7 @@ class AiRuntimeTask:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Scheduling priority class for the workload. May only be set together with
-    a pre-provisioned capacity reservation (a deployment's
+    a GPU Pool (a deployment's `compute.accelerator_pool_id` or legacy
     `compute.provisioned_capacity_id`); it is rejected on a workload that runs
     on on-demand capacity.
     """
@@ -198,7 +198,7 @@ class AiRuntimeTaskDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Scheduling priority class for the workload. May only be set together with
-    a pre-provisioned capacity reservation (a deployment's
+    a GPU Pool (a deployment's `compute.accelerator_pool_id` or legacy
     `compute.provisioned_capacity_id`); it is rejected on a workload that runs
     on on-demand capacity.
     """

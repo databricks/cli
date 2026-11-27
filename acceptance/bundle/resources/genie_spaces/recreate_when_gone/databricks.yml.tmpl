@@ -8,3 +8,7 @@ resources:
       warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
       serialized_space:
         version: 1
+        # The backend rejects a space with no data sources.
+        data_sources:
+          tables:
+            - identifier: samples.nyctaxi.trips

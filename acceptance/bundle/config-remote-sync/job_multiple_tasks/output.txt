@@ -6,6 +6,7 @@ Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify c_task, remove d_task, add e_task
+
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -77,6 +78,7 @@ Resource: resources.jobs.no_tasks_job
 >>> [CLI] bundle deploy -qq
 
 === Rename b_task, replace a_task notebook_path, add synced_task
+
 === Detect task key rename
 Detected changes in 1 resource(s):
 

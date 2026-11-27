@@ -47,6 +47,9 @@ func newCancelCommand() *cobra.Command {
 		Long: `Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
 
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
+
 --all prompts for confirmation. Use --yes to skip the prompt.`,
 	}
 
@@ -100,12 +103,15 @@ all active runs submitted by the current user.
 			// Fetch every active run (up to the scan bound) so --all cancels all
 			// of them, not just the first page.
 			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
-			rows, err := fetcher.next(maxListScan)
+			runs, err := fetcher.nextRuns(maxListScan)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to list active runs: %w", err))
 			}
 
+			// A job with several AI runtime tasks lists one row per task; the
+			// run is cancelled (and previewed) once, naming all its tasks.
+			rows, taskKeys := cancelPreviewRows(runs)
 			runIDs = make([]string, 0, len(rows))
 			for i := range rows {
 				if rows[i].RunID != "" {
@@ -123,7 +129,7 @@ all active runs submitted by the current user.
 			}
 
 			if !yes {
-				displayCancelPreview(ctx, rows, host)
+				displayCancelPreview(ctx, rows, taskKeys, host)
 				confirmed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nCancel %d run(s) in %s?", len(runIDs), host))
 				if err != nil {
 					return err
@@ -136,7 +142,8 @@ all active runs submitted by the current user.
 		}
 
 		for _, rid := range runIDs {
-			err := cancelRun(ctx, w, rid)
+			// --all only lists AIR runs, so they don't need re-checking.
+			err := cancelRun(ctx, w, rid, all)
 			if err != nil {
 				data.Failed = append(data.Failed, cancelFailure{RunID: rid, Error: err.Error()})
 				if !jsonOut {
@@ -192,32 +199,60 @@ func runNotFound(err error) bool {
 	return false
 }
 
-// cancelRun requests cancellation of a single job run. The cancel is async, so
-// the returned waiter is ignored.
-func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string) error {
+// cancelRun requests cancellation of a single job run. Unless skipAirCheck is
+// set, it first verifies the run is an AI Runtime run, so a mistyped but valid
+// ID can't cancel an unrelated Jobs run. The cancel is async, so the returned
+// waiter is ignored.
+func cancelRun(ctx context.Context, w *databricks.WorkspaceClient, rid string, skipAirCheck bool) error {
 	runID, err := strconv.ParseInt(rid, 10, 64)
 	if err != nil || runID <= 0 {
 		return fmt.Errorf("invalid run ID %q: must be a positive integer", rid)
+	}
+	if !skipAirCheck {
+		run, err := fetchJobRun(ctx, w, runID)
+		if err != nil {
+			return err
+		}
+		if !isAirRun(run) {
+			return fmt.Errorf("run %d is not an AI Runtime run; use \"databricks jobs cancel-run %d\" to cancel other Jobs runs", runID, runID)
+		}
 	}
 	_, err = w.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
 	return err
 }
 
+// cancelPreviewRows returns the first row of each run, for the preview and the
+// cancel, and the AI runtime task keys of each run by run id.
+func cancelPreviewRows(runs [][]listRow) ([]listRow, map[string][]string) {
+	rows := make([]listRow, 0, len(runs))
+	taskKeys := make(map[string][]string, len(runs))
+	for _, run := range runs {
+		rows = append(rows, run[0])
+		for _, r := range run {
+			if k := r.taskKey(); k != "" {
+				taskKeys[r.RunID] = append(taskKeys[r.RunID], k)
+			}
+		}
+	}
+	return rows, taskKeys
+}
+
 // displayCancelPreview shows the runs that `cancel --all` is about to terminate.
-func displayCancelPreview(ctx context.Context, rows []listRow, host string) {
+func displayCancelPreview(ctx context.Context, rows []listRow, taskKeys map[string][]string, host string) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "\nWorkspace: %s\n", host)
 	fmt.Fprintf(&sb, "Found %d active run(s) to cancel:\n\n", len(rows))
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "Run ID\tExperiment\tStarted")
+	fmt.Fprintln(tw, "Run ID\tExperiment\tAI Runtime tasks\tStarted")
 	for i := range rows {
 		experiment := orNA(rows[i].Experiment)
 		started := na
 		if rows[i].StartedAt != nil {
 			started = *rows[i].StartedAt
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", rows[i].RunID, experiment, started)
+		tasks := orNA(strings.Join(taskKeys[rows[i].RunID], ", "))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", rows[i].RunID, experiment, tasks, started)
 	}
 	tw.Flush()
 

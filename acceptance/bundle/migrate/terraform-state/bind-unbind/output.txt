@@ -1,0 +1,33 @@
+
+=== Replay a prior terraform deployment
+
+>>> replay_tfstate.py [TESTROOT]/bundle/migrate/terraform-state/bind-unbind/../terraform-requests.json [TESTROOT]/bundle/migrate/terraform-state/bind-unbind/../terraform.tfstate
+
+=== bind on a terraform state
+
+>>> musterr [CLI] bundle deployment bind test_job [TEST_JOB_ID] --auto-approve
+Error: this deployment's state uses the Terraform engine, which has been removed in Databricks CLI v1.20.0
+
+Run "databricks bundle deploy" to migrate the state to the direct engine, or install Databricks CLI v1.19.x
+
+
+>>> print_request_paths
+4 GET /api/2.0/workspace/export
+3 GET /api/2.0/workspace/get-status
+1 GET /api/2.2/jobs/get
+1 POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+1 POST /api/2.0/workspace/delete
+
+=== unbind on a terraform state
+
+>>> musterr [CLI] bundle deployment unbind test_job
+Error: this deployment's state uses the Terraform engine, which has been removed in Databricks CLI v1.20.0
+
+Run "databricks bundle deploy" to migrate the state to the direct engine, or install Databricks CLI v1.19.x
+
+
+>>> print_request_paths
+4 GET /api/2.0/workspace/export
+3 GET /api/2.0/workspace/get-status
+1 POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+1 POST /api/2.0/workspace/delete

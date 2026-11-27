@@ -4,6 +4,10 @@ This Software includes software developed at Databricks (https://www.databricks.
 
 This Software contains code from the following open source projects, licensed under the Apache 2.0 license:
 
+grpc/grpc-go - https://github.com/grpc/grpc-go
+Copyright The gRPC Authors
+License - https://github.com/grpc/grpc-go/blob/master/LICENSE
+
 spf13/cobra - https://github.com/spf13/cobra
 Copyright cobra authors
 License - https://github.com/spf13/cobra/blob/main/LICENSE.txt
@@ -14,8 +18,8 @@ License - https://github.com/go-ini/ini/blob/main/LICENSE
 
 go-yaml/yaml - https://github.com/yaml/go-yaml
 Copyright (c) 2011-2019 Canonical Ltd
-Copyright (c) 2006-2011 Kirill Simonov
-License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
+Copyright (c) 2025 The go-yaml Project Contributors
+License - https://github.com/yaml/go-yaml/blob/main/LICENSE
 
 ---
 
@@ -32,6 +36,10 @@ License - https://github.com/gorilla/websocket/blob/main/LICENSE
 ---
 
 This Software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+
+protocolbuffers/protobuf-go - https://github.com/protocolbuffers/protobuf-go
+Copyright The Go Authors
+License - https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE
 
 spf13/pflag - https://github.com/spf13/pflag
 Copyright (c) 2012 Alex Ogier. All rights reserved.
@@ -152,9 +160,8 @@ Copyright (c) 2013 TOML authors
 License - https://github.com/BurntSushi/toml/blob/master/COPYING
 
 go-yaml/yaml - https://github.com/yaml/go-yaml
-Copyright (c) 2011-2019 Canonical Ltd
-Copyright (c) 2006-2011 Kirill Simonov
-License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
+Copyright (c) 2006-2010 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/main/NOTICE
 
 zalando/go-keyring - https://github.com/zalando/go-keyring
 Copyright (c) 2016 Zalando SE

@@ -13,11 +13,9 @@ for task in r["tasks"]:
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 title "Both copies must be gone, else the next deploy pushes the value back"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 errcode trace grep -c "max_retries" databricks.yml
 rm databricks.yml.backup

@@ -1,0 +1,2 @@
+title "get (json): the run's TIMEDOUT state and message, not its task's SUCCESS"
+trace $CLI air get 123 -o json

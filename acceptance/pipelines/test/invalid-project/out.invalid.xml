@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="my_pipeline" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="reference does not exist: ${var.missing}">reference does not exist: ${var.missing}</error>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -13,11 +13,9 @@ for task in r["tasks"]:
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync --save
 title "aaa keeps its own variable reference"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 errcode trace grep -c 'var.aaa_dir' databricks.yml
 rm databricks.yml.backup

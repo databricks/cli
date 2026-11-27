@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
 	agent_kit "github.com/databricks/cli/cmd/workspace/agent-kit"
@@ -15,6 +16,7 @@ import (
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	apps_settings "github.com/databricks/cli/cmd/workspace/apps-settings"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
+	assume_group "github.com/databricks/cli/cmd/workspace/assume-group"
 	bundle_deployments "github.com/databricks/cli/cmd/workspace/bundle-deployments"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_room_asset_revisions "github.com/databricks/cli/cmd/workspace/clean-room-asset-revisions"
@@ -24,6 +26,7 @@ import (
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
+	compute_migrations "github.com/databricks/cli/cmd/workspace/compute-migrations"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
 	consumer_fulfillments "github.com/databricks/cli/cmd/workspace/consumer-fulfillments"
 	consumer_installations "github.com/databricks/cli/cmd/workspace/consumer-installations"
@@ -51,6 +54,8 @@ import (
 	forecasting "github.com/databricks/cli/cmd/workspace/forecasting"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
+	genie_agents "github.com/databricks/cli/cmd/workspace/genie-agents"
+	genie_migrate "github.com/databricks/cli/cmd/workspace/genie-migrate"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -62,6 +67,7 @@ import (
 	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
+	lakewatch "github.com/databricks/cli/cmd/workspace/lakewatch"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	materialized_features "github.com/databricks/cli/cmd/workspace/materialized-features"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -104,11 +110,14 @@ import (
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
+	serverless_compute_service "github.com/databricks/cli/cmd/workspace/serverless-compute-service"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
+	software_artifacts "github.com/databricks/cli/cmd/workspace/software-artifacts"
+	statement_execution_v2 "github.com/databricks/cli/cmd/workspace/statement-execution-v2"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	supervisor_agents "github.com/databricks/cli/cmd/workspace/supervisor-agents"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -131,148 +140,156 @@ import (
 	workspace_entity_tag_assignments "github.com/databricks/cli/cmd/workspace/workspace-entity-tag-assignments"
 	workspace_iam_v2 "github.com/databricks/cli/cmd/workspace/workspace-iam-v2"
 	workspace_settings_v2 "github.com/databricks/cli/cmd/workspace/workspace-settings-v2"
-	"github.com/spf13/cobra"
 
 	groups "github.com/databricks/cli/cmd/workspace/groups"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	users "github.com/databricks/cli/cmd/workspace/users"
 )
 
-func All() []*cobra.Command {
-	var out []*cobra.Command
+// All returns the specs of the workspace commands.
+func All() []root.CommandSpec {
+	var out []root.CommandSpec
 
-	out = append(out, access_control.New())
-	out = append(out, agent_bricks.New())
-	out = append(out, agent_kit.New())
-	out = append(out, ai_functions.New())
-	out = append(out, ai_gateway.New())
-	out = append(out, ai_search.New())
-	out = append(out, alerts.New())
-	out = append(out, alerts_legacy.New())
-	out = append(out, alerts_v2.New())
-	out = append(out, apps.New())
-	out = append(out, apps_settings.New())
-	out = append(out, artifact_allowlists.New())
-	out = append(out, bundle_deployments.New())
-	out = append(out, catalogs.New())
-	out = append(out, clean_room_asset_revisions.New())
-	out = append(out, clean_room_assets.New())
-	out = append(out, clean_room_auto_approval_rules.New())
-	out = append(out, clean_room_task_runs.New())
-	out = append(out, clean_rooms.New())
-	out = append(out, cluster_policies.New())
-	out = append(out, clusters.New())
-	out = append(out, connections.New())
-	out = append(out, consumer_fulfillments.New())
-	out = append(out, consumer_installations.New())
-	out = append(out, consumer_listings.New())
-	out = append(out, consumer_personalization_requests.New())
-	out = append(out, consumer_providers.New())
-	out = append(out, credentials.New())
-	out = append(out, credentials_manager.New())
-	out = append(out, current_user.New())
-	out = append(out, dashboard_widgets.New())
-	out = append(out, dashboards.New())
-	out = append(out, data_classification.New())
-	out = append(out, data_quality.New())
-	out = append(out, data_sources.New())
-	out = append(out, database.New())
-	out = append(out, domains.New())
-	out = append(out, entity_tag_assignments.New())
-	out = append(out, environments.New())
-	out = append(out, experiments.New())
-	out = append(out, external_lineage.New())
-	out = append(out, external_locations.New())
-	out = append(out, external_metadata.New())
-	out = append(out, feature_engineering.New())
-	out = append(out, feature_store.New())
-	out = append(out, forecasting.New())
-	out = append(out, functions.New())
-	out = append(out, genie.New())
-	out = append(out, git_credentials.New())
-	out = append(out, global_init_scripts.New())
-	out = append(out, grants.New())
-	out = append(out, groups_v2.New())
-	out = append(out, instance_pools.New())
-	out = append(out, instance_profiles.New())
-	out = append(out, ip_access_lists.New())
-	out = append(out, jobs.New())
-	out = append(out, knowledge_assistants.New())
-	out = append(out, lakeview.New())
-	out = append(out, lakeview_embedded.New())
-	out = append(out, libraries.New())
-	out = append(out, materialized_features.New())
-	out = append(out, metastores.New())
-	out = append(out, model_registry.New())
-	out = append(out, model_versions.New())
-	out = append(out, notification_destinations.New())
-	out = append(out, online_tables.New())
-	out = append(out, permission_migration.New())
-	out = append(out, permissions.New())
-	out = append(out, pipelines.New())
-	out = append(out, policies.New())
-	out = append(out, policy_compliance_for_clusters.New())
-	out = append(out, policy_compliance_for_jobs.New())
-	out = append(out, policy_families.New())
-	out = append(out, postgres.New())
-	out = append(out, provider_exchange_filters.New())
-	out = append(out, provider_exchanges.New())
-	out = append(out, provider_files.New())
-	out = append(out, provider_listings.New())
-	out = append(out, provider_personalization_requests.New())
-	out = append(out, provider_provider_analytics_dashboards.New())
-	out = append(out, provider_providers.New())
-	out = append(out, providers.New())
-	out = append(out, quality_monitor_v2.New())
-	out = append(out, quality_monitors.New())
-	out = append(out, queries.New())
-	out = append(out, queries_legacy.New())
-	out = append(out, query_history.New())
-	out = append(out, query_visualizations.New())
-	out = append(out, query_visualizations_legacy.New())
-	out = append(out, recipient_activation.New())
-	out = append(out, recipient_federation_policies.New())
-	out = append(out, recipients.New())
-	out = append(out, redash_config.New())
-	out = append(out, registered_models.New())
-	out = append(out, repos.New())
-	out = append(out, resource_quotas.New())
-	out = append(out, rfa.New())
-	out = append(out, sandbox.New())
-	out = append(out, schemas.New())
-	out = append(out, secrets.New())
-	out = append(out, secrets_uc.New())
-	out = append(out, service_principal_secrets_proxy.New())
-	out = append(out, service_principals_v2.New())
-	out = append(out, serving_endpoints.New())
-	out = append(out, settings.New())
-	out = append(out, shares.New())
-	out = append(out, storage_credentials.New())
-	out = append(out, supervisor_agents.New())
-	out = append(out, system_schemas.New())
-	out = append(out, table_constraints.New())
-	out = append(out, tables.New())
-	out = append(out, tag_policies.New())
-	out = append(out, temporary_path_credentials.New())
-	out = append(out, temporary_table_credentials.New())
-	out = append(out, temporary_volume_credentials.New())
-	out = append(out, token_management.New())
-	out = append(out, tokens.New())
-	out = append(out, users_v2.New())
-	out = append(out, vector_search_endpoints.New())
-	out = append(out, vector_search_indexes.New())
-	out = append(out, volumes.New())
-	out = append(out, warehouses.New())
-	out = append(out, workspace.New())
-	out = append(out, workspace_bindings.New())
-	out = append(out, workspace_conf.New())
-	out = append(out, workspace_entity_tag_assignments.New())
-	out = append(out, workspace_iam_v2.New())
-	out = append(out, workspace_settings_v2.New())
+	out = append(out, access_control.Spec)
+	out = append(out, agent_bricks.Spec)
+	out = append(out, agent_kit.Spec)
+	out = append(out, ai_functions.Spec)
+	out = append(out, ai_gateway.Spec)
+	out = append(out, ai_search.Spec)
+	out = append(out, alerts.Spec)
+	out = append(out, alerts_legacy.Spec)
+	out = append(out, alerts_v2.Spec)
+	out = append(out, apps.Spec)
+	out = append(out, apps_settings.Spec)
+	out = append(out, artifact_allowlists.Spec)
+	out = append(out, assume_group.Spec)
+	out = append(out, bundle_deployments.Spec)
+	out = append(out, catalogs.Spec)
+	out = append(out, clean_room_asset_revisions.Spec)
+	out = append(out, clean_room_assets.Spec)
+	out = append(out, clean_room_auto_approval_rules.Spec)
+	out = append(out, clean_room_task_runs.Spec)
+	out = append(out, clean_rooms.Spec)
+	out = append(out, cluster_policies.Spec)
+	out = append(out, clusters.Spec)
+	out = append(out, compute_migrations.Spec)
+	out = append(out, connections.Spec)
+	out = append(out, consumer_fulfillments.Spec)
+	out = append(out, consumer_installations.Spec)
+	out = append(out, consumer_listings.Spec)
+	out = append(out, consumer_personalization_requests.Spec)
+	out = append(out, consumer_providers.Spec)
+	out = append(out, credentials.Spec)
+	out = append(out, credentials_manager.Spec)
+	out = append(out, current_user.Spec)
+	out = append(out, dashboard_widgets.Spec)
+	out = append(out, dashboards.Spec)
+	out = append(out, data_classification.Spec)
+	out = append(out, data_quality.Spec)
+	out = append(out, data_sources.Spec)
+	out = append(out, database.Spec)
+	out = append(out, domains.Spec)
+	out = append(out, entity_tag_assignments.Spec)
+	out = append(out, environments.Spec)
+	out = append(out, experiments.Spec)
+	out = append(out, external_lineage.Spec)
+	out = append(out, external_locations.Spec)
+	out = append(out, external_metadata.Spec)
+	out = append(out, feature_engineering.Spec)
+	out = append(out, feature_store.Spec)
+	out = append(out, forecasting.Spec)
+	out = append(out, functions.Spec)
+	out = append(out, genie.Spec)
+	out = append(out, genie_agents.Spec)
+	out = append(out, genie_migrate.Spec)
+	out = append(out, git_credentials.Spec)
+	out = append(out, global_init_scripts.Spec)
+	out = append(out, grants.Spec)
+	out = append(out, groups_v2.Spec)
+	out = append(out, instance_pools.Spec)
+	out = append(out, instance_profiles.Spec)
+	out = append(out, ip_access_lists.Spec)
+	out = append(out, jobs.Spec)
+	out = append(out, knowledge_assistants.Spec)
+	out = append(out, lakeview.Spec)
+	out = append(out, lakeview_embedded.Spec)
+	out = append(out, lakewatch.Spec)
+	out = append(out, libraries.Spec)
+	out = append(out, materialized_features.Spec)
+	out = append(out, metastores.Spec)
+	out = append(out, model_registry.Spec)
+	out = append(out, model_versions.Spec)
+	out = append(out, notification_destinations.Spec)
+	out = append(out, online_tables.Spec)
+	out = append(out, permission_migration.Spec)
+	out = append(out, permissions.Spec)
+	out = append(out, pipelines.Spec)
+	out = append(out, policies.Spec)
+	out = append(out, policy_compliance_for_clusters.Spec)
+	out = append(out, policy_compliance_for_jobs.Spec)
+	out = append(out, policy_families.Spec)
+	out = append(out, postgres.Spec)
+	out = append(out, provider_exchange_filters.Spec)
+	out = append(out, provider_exchanges.Spec)
+	out = append(out, provider_files.Spec)
+	out = append(out, provider_listings.Spec)
+	out = append(out, provider_personalization_requests.Spec)
+	out = append(out, provider_provider_analytics_dashboards.Spec)
+	out = append(out, provider_providers.Spec)
+	out = append(out, providers.Spec)
+	out = append(out, quality_monitor_v2.Spec)
+	out = append(out, quality_monitors.Spec)
+	out = append(out, queries.Spec)
+	out = append(out, queries_legacy.Spec)
+	out = append(out, query_history.Spec)
+	out = append(out, query_visualizations.Spec)
+	out = append(out, query_visualizations_legacy.Spec)
+	out = append(out, recipient_activation.Spec)
+	out = append(out, recipient_federation_policies.Spec)
+	out = append(out, recipients.Spec)
+	out = append(out, redash_config.Spec)
+	out = append(out, registered_models.Spec)
+	out = append(out, repos.Spec)
+	out = append(out, resource_quotas.Spec)
+	out = append(out, rfa.Spec)
+	out = append(out, sandbox.Spec)
+	out = append(out, schemas.Spec)
+	out = append(out, secrets.Spec)
+	out = append(out, secrets_uc.Spec)
+	out = append(out, serverless_compute_service.Spec)
+	out = append(out, service_principal_secrets_proxy.Spec)
+	out = append(out, service_principals_v2.Spec)
+	out = append(out, serving_endpoints.Spec)
+	out = append(out, settings.Spec)
+	out = append(out, shares.Spec)
+	out = append(out, software_artifacts.Spec)
+	out = append(out, statement_execution_v2.Spec)
+	out = append(out, storage_credentials.Spec)
+	out = append(out, supervisor_agents.Spec)
+	out = append(out, system_schemas.Spec)
+	out = append(out, table_constraints.Spec)
+	out = append(out, tables.Spec)
+	out = append(out, tag_policies.Spec)
+	out = append(out, temporary_path_credentials.Spec)
+	out = append(out, temporary_table_credentials.Spec)
+	out = append(out, temporary_volume_credentials.Spec)
+	out = append(out, token_management.Spec)
+	out = append(out, tokens.Spec)
+	out = append(out, users_v2.Spec)
+	out = append(out, vector_search_endpoints.Spec)
+	out = append(out, vector_search_indexes.Spec)
+	out = append(out, volumes.Spec)
+	out = append(out, warehouses.Spec)
+	out = append(out, workspace.Spec)
+	out = append(out, workspace_bindings.Spec)
+	out = append(out, workspace_conf.Spec)
+	out = append(out, workspace_entity_tag_assignments.Spec)
+	out = append(out, workspace_iam_v2.Spec)
+	out = append(out, workspace_settings_v2.Spec)
 
-	out = append(out, groups.New())
-	out = append(out, service_principals.New())
-	out = append(out, users.New())
+	out = append(out, groups.Spec)
+	out = append(out, service_principals.Spec)
+	out = append(out, users.Spec)
 
 	return out
 }

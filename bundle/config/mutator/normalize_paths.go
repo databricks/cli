@@ -95,13 +95,9 @@ func normalizePath(path string, location diag.Location, bundleRootPath string) (
 		}
 	}
 
-	pathAsUrl, err := url.Parse(path)
-	if err != nil {
-		return "", err
-	}
-
-	// if path has scheme, it's a full path and doesn't need to be relativized
-	if pathAsUrl.Scheme != "" {
+	// if path has scheme, it's a full path and doesn't need to be relativized.
+	// A path that is not a valid URL, such as "New Notebook 12:17:43.ipynb", is a local path.
+	if pathAsUrl, err := url.Parse(path); err == nil && pathAsUrl.Scheme != "" {
 		return path, nil
 	}
 

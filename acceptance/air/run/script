@@ -16,8 +16,48 @@ errcode trace $CLI air run -f valid.yaml --dry-run --override compute.num_accele
 title "watch is ignored with dry-run (nothing is submitted)"
 trace $CLI air run -f valid.yaml --dry-run --watch
 
-title "code_source config passes validation"
+title "code_source config passes validation and reports the selected files"
+# The dry run resolves git.branch and include_paths locally, so it needs a repo.
+git init -qb main
+git config user.name "Tester"
+git config user.email "tester@databricks.com"
+git config core.hooksPath no-hooks
+git add src
+git commit -qm 'Add src'
 trace $CLI air run -f with-code-source.yaml --dry-run
+
+title "include_paths entry that selects no files is rejected"
+musterr trace $CLI air run -f include-unmatched.yaml --dry-run
+
+title "include_paths entry that selects no files is rejected (json)"
+musterr trace $CLI air run -f include-unmatched.yaml --dry-run -o json
+
+title "include_paths pathspec that selects files outside root_path is rejected"
+# :(top) resolves against the repository root, so from root_path src it selects ../valid.yaml.
+musterr trace $CLI air run -f include-outside-root.yaml --dry-run
+
+title "git-ignored root_path is rejected instead of selecting no files"
+echo '.scratch/' > .gitignore
+mkdir -p .scratch/proj
+echo 'print(1)' > .scratch/proj/main.py
+errcode trace $CLI air run -f ignored-root.yaml --dry-run
+rm -fr .git .gitignore .scratch
+
+title "a non-git root_path selects the same files when run from its subdirectory"
+# sub/main.py shadows main.py; a listing relative to the working directory would pick 1 file.
+mkdir -p proj/sub proj/data
+echo 'print(1)' > proj/main.py
+echo 'print(2)' > proj/sub/main.py
+echo 'a,b' > proj/data/x.csv
+cp non-git-subdir.yaml proj/sub/workload.yaml
+(cd proj/sub && trace $CLI air run -f workload.yaml --dry-run)
+rm -fr proj
+
+title "torch import on the Standard environment warns before submitting"
+trace $CLI air run -f torch-standard.yaml --dry-run
+
+title "the Databricks AI environment provides torch, so no warning"
+trace $CLI air run -f torch-databricks-ai.yaml --dry-run
 
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run
@@ -25,8 +65,46 @@ errcode trace $CLI air run -f git-remote.yaml --dry-run
 title "invalid config is rejected"
 errcode trace $CLI air run -f invalid.yaml --dry-run
 
+title "invalid config is rejected (json)"
+musterr trace $CLI air run -f invalid.yaml --dry-run -o json
+
+title "dry-run without credentials reports an authentication error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run -o json
+
+title "dry-run without credentials keeps the original error in text mode"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run
+
+title "submit without credentials reports an authentication error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml -o json
+
+title "dry-run reports an over-long idempotency key before missing credentials (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+title "dry-run with an unknown profile is a permanent config error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=profiles.databrickscfg $CLI air run -f valid.yaml --dry-run -o json -p does-not-exist
+
+title "bundle diagnostics are reported once (json)"
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml -o json
+
+title "bundle diagnostics come before the idempotency key error"
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+title "unknown field suggests the near match"
+errcode trace $CLI air run -f unknown-field.yaml --dry-run
+
 title "missing --file"
 errcode trace $CLI air run --dry-run
 
 title "experimental path directs users to the top-level command"
 errcode trace $CLI experimental air run -f valid.yaml --dry-run
+
+title "removed pool field is rejected"
+musterr trace $CLI air run -f removed-pool.yaml --dry-run
+
+title "unsupported priority is rejected"
+musterr trace $CLI air run -f invalid-priority.yaml --dry-run
+
+title "priority without a pool is rejected"
+musterr trace $CLI air run -f priority-without-pool.yaml --dry-run

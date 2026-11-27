@@ -14,20 +14,20 @@
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/clusters/[UUID]",
+  "path": "/api/2.0/permissions/clusters/[UUID][0]",
   "body": {
     "access_control_list": [
       {
         "permission_level": "CAN_ATTACH_TO",
-        "service_principal_name": "[UUID]"
+        "service_principal_name": "[UUID][1]"
       },
       {
         "permission_level": "CAN_RESTART",
-        "service_principal_name": "[UUID]"
+        "service_principal_name": "[UUID][2]"
       },
       {
         "permission_level": "CAN_MANAGE",
-        "service_principal_name": "[UUID]"
+        "service_principal_name": "[UUID][3]"
       },
       {
         "permission_level": "CAN_MANAGE",

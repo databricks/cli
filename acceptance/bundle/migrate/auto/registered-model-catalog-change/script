@@ -1,10 +1,10 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 # catalog_name is an immutable provided id field on registered models; moving the model to
-# another catalog recreates it. Create the destination catalog out of band (it auto-provisions
-# a "default" schema, which the moved model reuses).
+# another catalog recreates it. The destination catalog is created out of band (it
+# auto-provisions a "default" schema, which the moved model reuses); the captured run did that
+# before the terraform deploy, so the replay below creates it.
 TARGET_CATALOG="othercat_$UNIQUE_NAME"
-trace $CLI catalogs create "$TARGET_CATALOG" -o json | jq '{name: (.name // .full_name)}'
 
 cleanup() {
   title "Cleanup"

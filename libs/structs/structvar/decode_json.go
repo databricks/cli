@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/diag"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // ParseJSON parses data into a YAML node tree that carries the positions of the values

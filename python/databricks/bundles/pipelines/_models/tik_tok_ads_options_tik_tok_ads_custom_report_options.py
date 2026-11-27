@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     User-defined custom report for the TikTok Ads connector. Groups the
     dimensions + metrics + report type + data level that define a TikTok Ads
     custom report request.
@@ -33,7 +31,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Data level for the report.
+    [Beta] (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
@@ -41,7 +39,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Dimensions to include in the report (e.g. "campaign_id",
+    [Beta] (Optional) Dimensions to include in the report (e.g. "campaign_id",
     "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour").
     """
 
@@ -49,7 +47,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Metrics to include in the report (e.g. "spend", "impressions",
+    [Beta] (Optional) Metrics to include in the report (e.g. "spend", "impressions",
     "clicks", "conversion", "cpc").
     """
 
@@ -57,7 +55,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).
+    [Beta] (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
     """
@@ -66,7 +64,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Report type for the TikTok Ads API.
+    [Beta] (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 
@@ -87,7 +85,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Data level for the report.
+    [Beta] (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
@@ -95,7 +93,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Dimensions to include in the report (e.g. "campaign_id",
+    [Beta] (Optional) Dimensions to include in the report (e.g. "campaign_id",
     "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour").
     """
 
@@ -103,7 +101,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Metrics to include in the report (e.g. "spend", "impressions",
+    [Beta] (Optional) Metrics to include in the report (e.g. "spend", "impressions",
     "clicks", "conversion", "cpc").
     """
 
@@ -111,7 +109,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).
+    [Beta] (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
     """
@@ -120,7 +118,7 @@ class TikTokAdsOptionsTikTokAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Report type for the TikTok Ads API.
+    [Beta] (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 

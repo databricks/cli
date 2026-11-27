@@ -63,7 +63,7 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, id strin
 func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string, _ *database.DatabaseInstance) error {
 	return d.client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
 		Name:            name,
-		Purge:           true,
+		Purge:           true, //nolint:staticcheck // SA1019: purge is deprecated in the SDK; keep sending purge=true so the recorded delete request stays unchanged
 		Force:           false,
 		ForceSendFields: nil,
 	})

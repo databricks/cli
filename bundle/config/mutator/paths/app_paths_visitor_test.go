@@ -18,13 +18,17 @@ func TestAppPathsVisitor(t *testing.T) {
 					App: apps.App{
 						SourceCodePath: "foo",
 					},
+					ThumbnailPath: "thumbnail.png",
 				},
 			},
 		},
 	}
 
 	actual := collectVisitedPaths(t, root, VisitAppPaths)
-	expected := structpath.NewPathSlice("resources", "apps", "app0", "source_code_path")
+	expected := structpath.MustParsePaths(
+		"resources.apps.app0.source_code_path",
+		"resources.apps.app0.thumbnail_path",
+	)
 
 	assert.ElementsMatch(t, expected, actual)
 }

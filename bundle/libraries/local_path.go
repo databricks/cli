@@ -81,6 +81,7 @@ func IsLibraryLocal(dep string) bool {
 var PipFlagsWithLocalPaths = []string{
 	"-r",
 	"-e",
+	"--editable",
 }
 
 func IsLocalPathInPipFlag(dep string) (string, string, bool) {

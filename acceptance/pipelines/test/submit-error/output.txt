@@ -1,0 +1,16 @@
+
+=== A submit error from the service is shown as is, no update ID is printed, and an older report is replaced
+
+>>> musterr [CLI] pipelines test --pipeline-id [UUID][0] --junit-xml out.start-failed.xml
+Error: An active update '[UUID][1]' already exists for pipeline '[UUID][2]'.
+Wait for it to finish, or pass its update ID to --resume to read its results
+
+>>> print_requests.py //updates
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID][0]/updates",
+  "body": {
+    "test_only": true,
+    "test_options": {}
+  }
+}

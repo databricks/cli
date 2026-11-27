@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
@@ -74,7 +75,7 @@ func NewVersionCmd() *cobra.Command {
 		},
 	}
 
-	return cmd
+	return instrumentCommand(cmd, protos.AitoolsCommandVersion)
 }
 
 // printPluginLines prints one line per plugin recorded in the scope's state,

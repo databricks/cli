@@ -1,0 +1,4 @@
+provided_id_fields:
+  # UC lowercases the name; remote returns "main.ml.myspec" for config "main.ml.MySpec".
+  - field: name
+    reason: id_field

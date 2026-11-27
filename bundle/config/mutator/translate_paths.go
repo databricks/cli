@@ -12,10 +12,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -131,13 +131,9 @@ func (t *translateContext) rewritePath(
 		return "", nil
 	}
 
-	url, err := url.Parse(input)
-	if err != nil {
-		return "", err
-	}
-
-	// If the file path has scheme, it's a full path and we don't need to transform it
-	if url.Scheme != "" {
+	// If the file path has scheme, it's a full path and we don't need to transform it.
+	// A path that is not a valid URL, such as "New Notebook 12:17:43.ipynb", is a local path.
+	if u, err := url.Parse(input); err == nil && u.Scheme != "" {
 		return "", nil
 	}
 
@@ -161,6 +157,15 @@ func (t *translateContext) rewritePath(
 	// Normalize paths to separated by forward slashes.
 	localPath = filepath.ToSlash(localPath)
 	localRelPath = filepath.ToSlash(localRelPath)
+
+	// The path after -e or --editable can also be a project folder, with optional extras such as ./project[test].
+	// The result is not cached: the cache key has no flag, so a later "-r ./project" would get the
+	// "-e" result instead of its error.
+	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && (flag == "-e" || flag == "--editable") {
+		if interp, ok := t.translateEditableFolder(flag, localRelPath); ok {
+			return interp, nil
+		}
+	}
 
 	// Convert local path into workspace path via specified function.
 	var interp string
@@ -251,6 +256,20 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 	return path.Join(t.remoteRoot, localRelPath), nil
 }
 
+// translateEditableFolder maps a project folder after flag (-e or --editable), with optional extras
+// such as [test], to its deployed folder. It reports false if the path is not a folder in the sync root.
+func (t *translateContext) translateEditableFolder(flag, localRelPath string) (string, bool) {
+	folder, extras := localRelPath, ""
+	if i := strings.LastIndex(localRelPath, "["); i > 0 && strings.HasSuffix(localRelPath, "]") {
+		folder, extras = localRelPath[:i], localRelPath[i:]
+	}
+	info, err := t.b.SyncRoot.Stat(folder)
+	if err != nil || !info.IsDir() {
+		return "", false
+	}
+	return flag + " " + path.Join(t.remoteRoot, folder) + extras, true
+}
+
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	if t.skipLocalFileValidation {
 		return path.Join(t.remoteRoot, localRelPath), nil
@@ -334,8 +353,7 @@ func (t *translateContext) rewriteAt(ctx context.Context, p *structpath.PathNode
 }
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []translateFunc) diag.Diagnostics {
-	switch {
-	case b.IsImmutableFolder():
+	if b.IsImmutableFolder() {
 		// Reject an explicit workspace.file_path: immutable bundles set it
 		// automatically to the content-addressed snapshot location. A user-supplied
 		// value would be silently discarded during path translation, so we error early.
@@ -349,12 +367,8 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 				Locations: b.Config.GetLocations("workspace.file_path"),
 			}}
 		}
-		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
-	case t.b.IsSourceLinkedDeployment():
-		t.remoteRoot = t.b.SyncRootPath
-	default:
-		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
+	t.remoteRoot = b.RemoteFilePath()
 
 	for _, fn := range translations {
 		if err := fn(ctx, &b.Config); err != nil {

@@ -1,0 +1,8 @@
+Badness = "Destroy does not look for a schema renamed outside the bundle: it reads the recorded name, finds nothing and drops the state entry ('Destroy: 0 deleted'), so the renamed schema and its volume are left behind. Destroy should find the schema by its recorded schema_id, as deploy's plan does, and delete it."
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

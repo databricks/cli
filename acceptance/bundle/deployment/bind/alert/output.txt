@@ -30,3 +30,5 @@ Resources:
     my_alert:
       Name: test-alert
       URL:  (not deployed)
+
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID] --purge

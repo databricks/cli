@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -275,6 +276,23 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("default config file with match on the default port", func(t *testing.T) {
+		setupWorkspaceTest(t)
+
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+			Profile: "abc",
+			Host:    "https://abc.test",
+		})
+		require.NoError(t, err)
+
+		w := Workspace{
+			Host:    "https://abc.test:443",
+			Profile: "abc",
+		}
+		_, err = w.Client(t.Context())
+		assert.NoError(t, err)
+	})
+
 	t.Run("default config file with mismatch", func(t *testing.T) {
 		setupWorkspaceTest(t)
 
@@ -320,4 +338,33 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		_, err = w.Client(t.Context())
 		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
+}
+
+func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "secure",
+		Host:    "https://secure.cloud.databricks.test",
+		Token:   "token",
+	})
+	require.NoError(t, err)
+	// skip_verify comes from the profile, so it is only known after the config is resolved.
+	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:            "insecure",
+		Host:               "https://insecure.cloud.databricks.test",
+		Token:              "token",
+		InsecureSkipVerify: true,
+	})
+	require.NoError(t, err)
+
+	w := Workspace{Profile: "secure"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, httptransport.HealthChecked(false), client.Config.HTTPTransport)
+
+	w = Workspace{Profile: "insecure"}
+	client, err = w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, httptransport.HealthChecked(true), client.Config.HTTPTransport)
 }

@@ -1,0 +1,23 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy a started app with config.env entries set via value and value_from"
+trace $CLI bundle deploy
+
+title "The Apps API returns deployment env vars with their name only"
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.apps.myapp".remote_state.config.env'
+
+title "Re-plan is clean: value and value_from are input-only and must not drift"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.apps.myapp".changes // {} | with_entries(select(.key | startswith("config.env")))'
+
+title "A local change to an env value still plans an update"
+trace update_file.py databricks.yml "value: hello" "value: goodbye"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.apps.myapp".changes // {} | with_entries(select(.key | startswith("config.env")))'
+
+title "Deploy applies the change and the plan is clean again"
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

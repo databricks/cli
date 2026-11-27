@@ -9,3 +9,17 @@ Ignore = [
 ]
 
 # The command is unrelated to bundle deployment, so run it once rather than per engine.
+
+# Ports are allocated per run. Mask them by context: a bare-number replacement would also hit
+# a matching run of digits inside the debugger's UUID and break its [UUID] masking.
+[[Repls]]
+Old = 'http://127\.0\.0\.1:\d+'
+New = 'http://127.0.0.1:[PROXY_PORT]'
+
+[[Repls]]
+Old = 'ws://127\.0\.0\.1:\d+'
+New = 'ws://127.0.0.1:[DEBUG_PORT]'
+
+[[Repls]]
+Old = 'attach a debugger to port \d+'
+New = 'attach a debugger to port [DEBUG_PORT]'

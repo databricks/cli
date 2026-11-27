@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // source is a configuration tree to decode from (a parsed YAML document or a view).

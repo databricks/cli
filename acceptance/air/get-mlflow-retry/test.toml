@@ -1,0 +1,29 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A failed run whose second and third attempts failed before they started, so
+# neither ever logged an MLflow run of its own.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Out of capacity"},
+  "tasks": [
+    {"task_key": "train", "run_id": 456, "attempt_number": 0},
+    {"task_key": "train", "run_id": 457, "attempt_number": 1},
+    {"task_key": "train", "run_id": 458, "attempt_number": 2}
+  ]
+}
+'''
+
+# No attempt has MLflow output, so the JSON envelope must not invent an MLflow
+# link or report an mlflow_retry.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '{}'

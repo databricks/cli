@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -58,6 +59,14 @@ func TestFilerRewindsToInitialReaderPosition(t *testing.T) {
 	_, err := r.Seek(2, io.SeekStart)
 	require.NoError(t, err)
 	err = Filer(f).Write(testContext(t), "a", r, filer.OverwriteIfExists)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
+}
+
+func TestFilerRetriesWriteOnUnexpectedEOF(t *testing.T) {
+	eof := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: io.ErrUnexpectedEOF}
+	f := &flakyFiler{failures: 1, err: eof}
+	err := Filer(f).Write(testContext(t), "a", strings.NewReader("hello"), filer.OverwriteIfExists)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"hello", "hello"}, f.bodies)
 }
@@ -165,4 +174,24 @@ func (f *sequenceFiler) Delete(ctx context.Context, path string, mode ...filer.D
 	err := f.errs[0]
 	f.errs = f.errs[1:]
 	return err
+}
+
+func TestFilerExceptWritesRetriesReads(t *testing.T) {
+	f := &readFiler{failures: 1, err: errTransient}
+	_, err := FilerExceptWrites(f).Stat(testContext(t), "a")
+	require.NoError(t, err)
+	assert.Equal(t, 2, f.calls)
+}
+
+func TestFilerExceptWritesDoesNotRetryWrites(t *testing.T) {
+	f := &flakyFiler{failures: 100, err: errTransient}
+	err := FilerExceptWrites(f).Write(testContext(t), "a", strings.NewReader("x"), filer.OverwriteIfExists)
+	require.Error(t, err)
+	assert.Len(t, f.bodies, 1)
+}
+
+func TestFilerExceptWritesRetriesDelete(t *testing.T) {
+	f := &readFiler{failures: 1, err: errTransient}
+	require.NoError(t, FilerExceptWrites(f).Delete(testContext(t), "a"))
+	assert.Equal(t, 2, f.calls)
 }

@@ -13,6 +13,7 @@ import json
 import os
 import posixpath
 import subprocess
+import sys
 
 from nostamp import scrub
 
@@ -152,11 +153,45 @@ def get_resources(target):
             return result
 
 
+def get_file_resources(target):
+    """resources.json's resources in get_resources' shape, or {} without a direct-engine state file."""
+    # Not get_state_file: it prefers a leftover terraform.tfstate, and recording is direct-only.
+    filename = next((x for x in get_state_files(target, False) or [] if x.endswith("resources.json")), None)
+    if not filename or not os.path.exists(filename):
+        return {}
+    result = {}
+    for key, value in (json.loads(open(filename).read()).get("state") or {}).items():
+        result[key.removeprefix("resources.")] = {
+            "id": value.get("__id__"),
+            "state": value.get("state") or {},
+            "depends_on": value.get("depends_on") or [],
+        }
+    return result
+
+
+def get_resources_for_lookup(target):
+    """get_resources, falling back to resources.json when no deployment is recorded at all.
+
+    Recording is best effort: when the deployment create fails (a quota rejection, a dropped
+    connection), the deploy still succeeds with resources.json as the authoritative state. Without
+    the fallback every later state read comes back empty and the failure cascades into commands
+    run with empty IDs, including cleanups that then leak resources. The note stays in the test
+    output, so a run that recorded nothing still fails, on one line, rather than passing on file
+    state.
+    """
+    if get_deployment_id(target):
+        return get_resources(target)
+    file_resources = get_file_resources(target)
+    if file_resources:
+        print("Note: no deployment recorded in deployment history, reading resources.json", file=sys.stderr)
+    return file_resources
+
+
 def get_recorded_state(target):
     """The recorded resources in the on-disk state file's `state` shape (resources.<key> ->
     {__id__, state, depends_on}), so a recording run prints the same shape as a non-recording one."""
     state = {}
-    for key, value in sorted(get_resources(target).items()):
+    for key, value in sorted(get_resources_for_lookup(target).items()):
         entry = {"__id__": value["id"], "state": value["state"]}
         if value["depends_on"]:
             entry["depends_on"] = value["depends_on"]
@@ -187,6 +222,9 @@ def print_recorded_state(filename, target):
     # Pair DMS resources with the DMS version. The file serial can advance independently.
     last_version_id = get_last_version_id(target)
     serial = int(last_version_id) if last_version_id else 0
+    if not get_deployment_id(target) and data["state"]:
+        # Nothing recorded, so the state above came from the file (get_resources_for_lookup).
+        serial = data.get("serial", 0)
 
     # Recording itself is not what these tests assert, so drop the feature that marks it.
     features = {

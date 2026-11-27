@@ -1,0 +1,20 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The services of system.ai, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+# The fake keeps one workspace per token, so the second profile needs its own copy.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile dogfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-dogfood
+
+title "The same service for a second profile adds an entry and renames nothing"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code --output json | jq '{profile, servers: [.servers[] | {name, agents: [.agents[] | {name, status}]}]}'
+
+title "Both entries are in the Claude Code config"
+trace jq '.mcpServers | keys' home/.claude.json
+
+title "State holds one entry per profile"
+trace jq '.mcp | [.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json

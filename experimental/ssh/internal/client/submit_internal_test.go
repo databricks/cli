@@ -33,6 +33,37 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Nil(t, got.Tasks[0].Compute)
 	})
 
+	t.Run("serverless environment version", func(t *testing.T) {
+		for _, tt := range []struct {
+			name        string
+			accelerator string
+			version     int
+			proxyMode   bool
+			want        string
+		}{
+			{name: "CPU default", want: "5"},
+			{name: "CPU explicit", version: 4, want: "4"},
+			{name: "GPU default", accelerator: "GPU_1xA10", want: "4"},
+			{name: "GPU explicit", accelerator: "GPU_1xA10", version: 5, want: "5"},
+			// A persisted IDE ProxyCommand carries --accelerator but no --environment-version.
+			{name: "GPU default in proxy mode", accelerator: "GPU_1xA10", proxyMode: true, want: "4"},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				opts := ClientOptions{
+					ConnectionName:     "conn",
+					Accelerator:        tt.accelerator,
+					ProxyMode:          tt.proxyMode,
+					ServerTimeout:      time.Hour,
+					EnvironmentVersion: tt.version,
+				}
+				got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+
+				require.Len(t, got.Environments, 1)
+				assert.Equal(t, tt.want, got.Environments[0].Spec.EnvironmentVersion)
+			})
+		}
+	})
+
 	t.Run("serverless with accelerator", func(t *testing.T) {
 		opts := ClientOptions{
 			ConnectionName: "conn",

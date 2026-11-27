@@ -62,10 +62,45 @@ func TestRenderRegressionReport(t *testing.T) {
 	}}
 
 	report := renderRegressionReport("Selected 2", []regrColumn{branch, main})
-	assert.Contains(t, report, "| test | branch | main (abc) |")
+	assert.Contains(t, report, "<details>\n<summary>2 tests: regression=1 unreleased=0 coverage=0 failing=1</summary>\n\n| test | branch | main (abc) |")
 	assert.Contains(t, report, "| TestAccept/bundle/a | ❌ | ❌ |")
+	assert.Contains(t, report, "| TestAccept/bundle/inv/DMS=true/INPUT_CONFIG=x.yml.tmpl | ✅ | ➖ |\n\n</details>\n")
 	assert.Contains(t, report, "**main (abc):**\n````\nmain failure\n````")
 	assert.Contains(t, report, "failing=1")
+}
+
+func TestRenderRegressionReportHeading(t *testing.T) {
+	testCases := []struct {
+		name         string
+		branchStatus string
+		mainStatus   string
+		want         string
+	}{
+		{"passed", statusPass, statusPass, "✅"},
+		{"main failed", statusPass, statusFail, "✅"},
+		{"skipped", statusSkip, statusPass, "✅"},
+		{"branch failed", statusFail, statusPass, "❌"},
+		{"both failed", statusFail, statusFail, "❌"},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			columns := []regrColumn{
+				{Title: "branch", Results: map[string]*testResult{
+					"TestAccept/bundle/a": {Status: statusPass},
+					"TestAccept/bundle/b": {Status: testCase.branchStatus},
+				}},
+				{Title: "main", Category: catRegression, Results: map[string]*testResult{
+					"TestAccept/bundle/a": {Status: statusPass},
+					"TestAccept/bundle/b": {Status: testCase.mainStatus},
+				}},
+			}
+
+			report := renderRegressionReport("Selected 2", columns)
+			// The workflow that posts the report adds its links at the first blank line.
+			heading, _, _ := strings.Cut(report, "\n\n")
+			assert.Equal(t, "## Regression test report "+testCase.want, heading)
+		})
+	}
 }
 
 func TestRenderRegressionReportDedupesIdenticalFailures(t *testing.T) {

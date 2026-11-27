@@ -4,13 +4,14 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Two identical tasks, one in each block; DELETE one (remote), RENAME the other
+
 === Sync
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.two_removes_job
-  tasks[task_key='task_renamed']: add
-  tasks[task_key='task_target']: remove
-  tasks[task_key='task_toplevel']: remove
+  tasks[task_key='task_renamed']: skip (several elements with the same contents were renamed at once, in different blocks)
+  tasks[task_key='task_target']: skip (several elements with the same contents were renamed at once, in different blocks)
+  tasks[task_key='task_toplevel']: skip (several elements with the same contents were renamed at once, in different blocks)
 
 
 
@@ -20,6 +21,7 @@ Resource: resources.jobs.two_removes_job
 
 
 === Both tasks keep their original keys, and no new key was written
+
 >>> grep -c task_key: task_toplevel databricks.yml
 1
 

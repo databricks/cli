@@ -25,16 +25,20 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class Library:
-    """"""
+    """
+    A library to install on a cluster. Exactly one of the library-type fields must be set.
+    """
 
     cran: VariableOrOptional[RCranLibrary] = None
     """
-    Specification of a CRAN library to be installed as part of the library
+    Specification of a CRAN library to be installed.
     """
 
     egg: VariableOrOptional[str] = None
     """
-    [DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.
+    [DEPRECATED] Deprecated: Installing Python egg files is not supported in Databricks Runtime 14.0 and above.
+    Use a wheel (`whl`) or a PyPI package (`pypi`) instead. The value is the URI of the egg file
+    to install.
     """
 
     jar: VariableOrOptional[str] = None
@@ -54,14 +58,15 @@ class Library:
 
     pypi: VariableOrOptional[PythonPyPiLibrary] = None
     """
-    Specification of a PyPi library to be installed. For example:
+    Specification of a PyPI library to be installed. For example:
     `{ "package": "simplejson" }`
     """
 
     requirements: VariableOrOptional[str] = None
     """
     URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
-    For example: `{ "requirements": "/Workspace/path/to/requirements.txt" }` or `{ "requirements" : "/Volumes/path/to/requirements.txt" }`
+    For example: `{ "requirements": "/Workspace/path/to/requirements.txt" }` or `{ "requirements" : "/Volumes/path/to/requirements.txt" }`.
+    Installing a requirements file requires Databricks Runtime 15.0 or above.
     """
 
     whl: VariableOrOptional[str] = None
@@ -86,12 +91,14 @@ class LibraryDict(TypedDict, total=False):
 
     cran: VariableOrOptional[RCranLibraryParam]
     """
-    Specification of a CRAN library to be installed as part of the library
+    Specification of a CRAN library to be installed.
     """
 
     egg: VariableOrOptional[str]
     """
-    [DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.
+    [DEPRECATED] Deprecated: Installing Python egg files is not supported in Databricks Runtime 14.0 and above.
+    Use a wheel (`whl`) or a PyPI package (`pypi`) instead. The value is the URI of the egg file
+    to install.
     """
 
     jar: VariableOrOptional[str]
@@ -111,14 +118,15 @@ class LibraryDict(TypedDict, total=False):
 
     pypi: VariableOrOptional[PythonPyPiLibraryParam]
     """
-    Specification of a PyPi library to be installed. For example:
+    Specification of a PyPI library to be installed. For example:
     `{ "package": "simplejson" }`
     """
 
     requirements: VariableOrOptional[str]
     """
     URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
-    For example: `{ "requirements": "/Workspace/path/to/requirements.txt" }` or `{ "requirements" : "/Volumes/path/to/requirements.txt" }`
+    For example: `{ "requirements": "/Workspace/path/to/requirements.txt" }` or `{ "requirements" : "/Volumes/path/to/requirements.txt" }`.
+    Installing a requirements file requires Databricks Runtime 15.0 or above.
     """
 
     whl: VariableOrOptional[str]

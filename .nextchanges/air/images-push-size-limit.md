@@ -1,0 +1,1 @@
+* Print the source image size in `databricks air images push`, and after the push the compressed size and layer count from the pushed manifest, with a link to the Databricks Artifact Registry image limits. ([#7868](https://github.com/databricks/cli/pull/7868))

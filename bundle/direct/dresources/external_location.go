@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -46,7 +47,28 @@ func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*cata
 }
 
 func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog.CreateExternalLocation) (string, *catalog.ExternalLocationInfo, error) {
-	response, err := r.client.ExternalLocations.Create(ctx, *config)
+	create := func(ctx context.Context) (*catalog.ExternalLocationInfo, error) {
+		return r.client.ExternalLocations.Create(ctx, *config)
+	}
+	start := time.Now()
+	response, err := create(ctx)
+	if err != nil {
+		// The name is chosen by the bundle and unique in the metastore.
+		response, err = recoverCreate(ctx, createRecovery[catalog.ExternalLocationInfo, *catalog.ExternalLocationInfo]{
+			name:  "external location " + config.Name,
+			start: start,
+			get: func(ctx context.Context) (*catalog.ExternalLocationInfo, error) {
+				return r.client.ExternalLocations.GetByName(ctx, config.Name)
+			},
+			createTime:    func(found *catalog.ExternalLocationInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.ExternalLocationInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.ExternalLocationInfo],
+			create: repeatCreate(create),
+		}, err)
+	}
 	if err != nil || response == nil {
 		return "", nil, err
 	}

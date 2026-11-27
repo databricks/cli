@@ -18,7 +18,7 @@ func TestLibraryPath(t *testing.T) {
 	assert.Equal(t, path, p)
 	assert.NoError(t, err)
 
-	p, err = libraryPath(&compute.Library{Egg: path})
+	p, err = libraryPath(&compute.Library{Egg: path}) //nolint:staticcheck // SA1019: egg libraries are deprecated in the SDK but remain a supported bundle config field
 	assert.Equal(t, path, p)
 	assert.NoError(t, err)
 

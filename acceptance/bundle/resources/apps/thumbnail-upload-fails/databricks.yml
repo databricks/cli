@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    mykey:
+      name: myappname
+      source_code_path: .
+      thumbnail_path: ./thumbnail.png

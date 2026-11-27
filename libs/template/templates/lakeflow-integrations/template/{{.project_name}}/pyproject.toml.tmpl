@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     # Any dependencies for jobs and pipelines in this project can be added here
     # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
-    "databricks-lakeflow-integrations>=0.0.3,<0.1",
+    "databricks-lakeflow-integrations>=0.0.6,<0.1",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -17,7 +17,6 @@ packages = [
 [dependency-groups]
 dev = [
     # libraries part of serverless environment
-    "requests",
     "databricks-sdk"
 ]
 

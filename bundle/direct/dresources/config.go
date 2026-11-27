@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // FieldRule represents a field path with its reason for inclusion.
@@ -49,6 +52,44 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// ProvidedIDRules returns the provided ID fields, the parent ID fields among them.
+func (c *ResourceLifecycleConfig) ProvidedIDRules() []FieldRule {
+	return append(slices.Clone(c.ProvidedIDFields), c.ParentIDFields...)
+}
+
+// IsBackendDefault reports whether remote, the remote value at path, matches any of
+// the backend-default rules (and the rule's allowed values, if specified).
+func (c *ResourceLifecycleConfig) IsBackendDefault(path *structpath.PathNode, remote any) bool {
+	for _, rule := range c.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return true
+		}
+		if matchesAllowedValue(remote, rule.Values) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
+}
+
 // RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
 // object's WhenSet field is set. Inside such an object, a field the config never declared
 // coming back set from the remote is an addition by the backend, not drift.
@@ -68,6 +109,13 @@ type ResourceLifecycleConfig struct {
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
 
+	// InternalIDField: the state field holding the backend's own ID for the resource, which a rename
+	// keeps (a volume's volume_id). Config never sets it: the framework records it from the remote
+	// state on every save and skips its changes in the plan. When the resource is missing from its
+	// recorded ID, the plan looks for it at the ID IDFromState gives it and takes what it finds only
+	// if this field matches. Requires IDFromState and DoUpdateWithID.
+	InternalIDField string `yaml:"internal_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -77,7 +125,8 @@ type ResourceLifecycleConfig struct {
 	// these config fields directly. So a remote-only difference on them can only be
 	// the backend normalizing what we sent: the resource was found at its ID, and a
 	// real out-of-band rename would change the ID and 404 (handled as resource-gone).
-	// A local change recreates (delete + create).
+	// A local change recreates (delete + create). ParentIDFields are provided ID fields
+	// too; read both through ProvidedIDRules.
 	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
 
 	// UpdatableIDFields: like ProvidedIDFields these compose the resource's
@@ -86,6 +135,15 @@ type ResourceLifecycleConfig struct {
 	// remote-only difference is still skipped (see classifyIDField) — DoRead found
 	// the resource by its recorded ID, so it can only be backend normalization.
 	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
+
+	// ParentIDFields: the ID fields that name the resource's parent (a volume's catalog_name and
+	// schema_name). They are provided ID fields too, so they are not listed again under
+	// provided_id_fields (see ProvidedIDRules). The backend moves the resource along with a
+	// renamed parent, so a change to one of these that only follows the parent's rename re-keys
+	// the resource instead of recreating it at its old ID (see followsParentRename and
+	// addParentMoves). Any other field, such as a name that references the parent's name, is the
+	// resource's own and never follows it. Requires IDFromState.
+	ParentIDFields []FieldRule `yaml:"parent_id_fields,omitempty"`
 
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
@@ -111,7 +169,9 @@ type ResourceLifecycleConfig struct {
 	// from the remote cache during a keeps-ID update instead of being delayed
 	// until after apply. Without this, a dependent that treats the reference as
 	// part of its own immutable identity (a hierarchical parent/branch name)
-	// recreates spuriously on every in-place update of the target. See
+	// recreates spuriously on every in-place update of the target. The same
+	// applies to a backend-assigned ID that permissions use as their object_id
+	// (permissionIDFields): delaying it plans a no-op permissions update. See
 	// LookupReferencePreDeploy.
 	//
 	// This category only gates reference resolution; it never classifies a change,
@@ -138,6 +198,8 @@ type Config struct {
 // hand-written rules and <resource_type>.generated.yml the ones derived from the
 // OpenAPI spec. A resource type without rules has no file. The file name is the
 // resource type, so each file holds the rules directly with no enclosing keys.
+// A file named after a sub-resource (grants.yml) applies to that sub-resource of
+// every parent (catalogs.grants, schemas.grants, ...) that has no file of its own.
 //
 //go:embed configs/*.yml
 var configFS embed.FS
@@ -153,9 +215,11 @@ const (
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
+	InternalIDField:       "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
+	ParentIDFields:        nil,
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,
@@ -191,11 +255,33 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
 
-		dst.Resources[resourceType] = rc
+		_, isResourceType := SupportedResources[resourceType]
+		for _, rt := range configResourceTypes(resourceType) {
+			// A resource type's own file replaces the shared one, whichever is read first.
+			if _, ok := dst.Resources[rt]; ok && !isResourceType {
+				continue
+			}
+			dst.Resources[rt] = rc
+		}
 	}
 
 	return handWritten, generated
 })
+
+// configResourceTypes returns the resource types a config file named name applies to: the
+// resource type itself, or for a sub-resource name like "grants" every "<parent>.grants".
+func configResourceTypes(name string) []string {
+	if _, ok := SupportedResources[name]; ok {
+		return []string{name}
+	}
+	var result []string
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, "."+name) {
+			result = append(result, resourceType)
+		}
+	}
+	return result
+}
 
 // MustLoadConfig returns the configuration parsed from the configs/<resource_type>.yml files.
 func MustLoadConfig() *Config {

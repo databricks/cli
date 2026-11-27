@@ -1,5 +1,6 @@
 
 === Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessible
+
 >>> errcode [CLI] bundle deploy
 Executing 'preinit' script
 preinit value_from_env
@@ -18,6 +19,7 @@ Executing 'postdeploy' script
 postdeploy value_from_env
 
 === With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
+
 >>> DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1 errcode [CLI] bundle deploy
 Error: failed to execute script: running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
 

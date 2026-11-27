@@ -45,7 +45,7 @@ func deployCommand() *cobra.Command {
 				b.Quiet = bundle.QuietLevel(quiet)
 
 				if cmd.Flag("fail-on-active-runs").Changed {
-					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+					b.Config.Bundle.Deployment.FailOnActiveRuns = new(failOnActiveRuns)
 				}
 			},
 			Verbose:         verbose,

@@ -15,4 +15,4 @@ test ! -f src/my_notebook.py && echo "src/my_notebook.py removed" || echo "src/m
 test ! -f src/other_notebook.py && echo "src/other_notebook.py removed" || echo "src/other_notebook.py still exists"
 
 echo "=== new nested files ==="
-find src -type f | sort
+find.py '^src/'

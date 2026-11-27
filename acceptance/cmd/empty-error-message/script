@@ -1,0 +1,4 @@
+trace errcode $CLI lakeview create --display-name test
+trace errcode $CLI lakeview get 1234
+# A non-empty message is printed as is.
+trace errcode $CLI secrets list-scopes

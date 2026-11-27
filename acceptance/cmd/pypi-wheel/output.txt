@@ -1,0 +1,114 @@
+
+>>> python3 make_archives.py [CLI] archives
+
+>>> ls archives
+databricks_cli_1.2.3_SHA256SUMS
+databricks_cli_1.2.3_darwin_amd64.tar.gz
+databricks_cli_1.2.3_darwin_arm64.tar.gz
+databricks_cli_1.2.3_linux_amd64.tar.gz
+databricks_cli_1.2.3_linux_arm64.tar.gz
+databricks_cli_1.2.3_windows_amd64.zip
+databricks_cli_1.2.3_windows_arm64.zip
+
+>>> python3 [TESTROOT]/../tools/build_cli_wheels.py archives wheels [TESTROOT]/../LICENSE
+wheels/databricks-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl
+wheels/databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
+wheels/databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
+wheels/databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
+wheels/databricks-1.2.3-py3-none-win_amd64.whl
+wheels/databricks-1.2.3-py3-none-win_arm64.whl
+
+>>> uv run -q --no-project --with packaging python [TESTROOT]/../tools/validate_cli_wheels.py wheels
+valid: wheels/databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
+valid: wheels/databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
+valid: wheels/databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
+valid: wheels/databricks-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl
+valid: wheels/databricks-1.2.3-py3-none-win_amd64.whl
+valid: wheels/databricks-1.2.3-py3-none-win_arm64.whl
+
+>>> python3 show_wheels.py wheels
+== databricks-1.2.3-py3-none-macosx_13_0_arm64.whl
+100755 databricks-1.2.3.data/scripts/databricks
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-macosx_13_0_arm64
+== databricks-1.2.3-py3-none-macosx_13_0_x86_64.whl
+100755 databricks-1.2.3.data/scripts/databricks
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-macosx_13_0_x86_64
+== databricks-1.2.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl
+100755 databricks-1.2.3.data/scripts/databricks
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-manylinux_2_17_aarch64
+Tag: py3-none-manylinux2014_aarch64
+Tag: py3-none-musllinux_1_1_aarch64
+== databricks-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl
+100755 databricks-1.2.3.data/scripts/databricks
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-manylinux_2_17_x86_64
+Tag: py3-none-manylinux2014_x86_64
+Tag: py3-none-musllinux_1_1_x86_64
+== databricks-1.2.3-py3-none-win_amd64.whl
+100755 databricks-1.2.3.data/scripts/databricks.exe
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-win_amd64
+== databricks-1.2.3-py3-none-win_arm64.whl
+100755 databricks-1.2.3.data/scripts/databricks.exe
+100644 databricks-1.2.3.dist-info/METADATA
+100644 databricks-1.2.3.dist-info/WHEEL
+100644 databricks-1.2.3.dist-info/licenses/LICENSE
+100644 databricks-1.2.3.dist-info/RECORD
+Wheel-Version: 1.0
+Generator: databricks-cli build_cli_wheels.py
+Root-Is-Purelib: false
+Tag: py3-none-win_arm64
+== METADATA (same in every wheel)
+Metadata-Version: 2.4
+Name: databricks
+Version: 1.2.3
+Summary: Databricks CLI
+Project-URL: Source, https://github.com/databricks/cli
+Project-URL: Documentation, https://docs.databricks.com/dev-tools/cli/
+License-File: LICENSE
+Description-Content-Type: text/markdown
+
+# Databricks CLI
+
+Command-line interface for Databricks. This package installs the prebuilt `databricks` binary.
+
+Run it with `uvx databricks` or `pipx run databricks`, or install it with `uv tool install databricks`.
+
+Documentation: https://docs.databricks.com/dev-tools/cli/
+Source: https://github.com/databricks/cli
+
+>>> uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
+Databricks CLI v[CLI_VERSION]

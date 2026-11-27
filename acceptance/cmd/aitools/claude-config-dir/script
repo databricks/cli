@@ -1,18 +1,44 @@
 export CLAUDECODE=1
+# Claude Code sets CLAUDE_CODE_CHILD_SESSION in the commands it runs, which
+# enables the native <claude-code-hint> line; CI suppresses it.
+export CLAUDE_CODE_CHILD_SESSION=1
 unset CLAUDE_CODE_SESSION_ID
+unset_ci_env
 
-# aitools commands skip the install hint; version exercises it without auth or network.
+# Hint-exempt commands (aitools, auth, one-shot lookups such as version and current-user me,
+# completion) skip the install hint; clusters list exercises it against the fake server.
 sethome ./empty-home
-title "Plugin installed only in the custom config directory\n"
-trace CLAUDE_CONFIG_DIR=custom $CLI version
+title "Plugin installed only in the custom config directory"
+trace CLAUDE_CONFIG_DIR=custom $CLI clusters list
 
 sethome ./installed-home
-title "Custom directory takes precedence over the default installation\n"
-trace CLAUDE_CONFIG_DIR=missing $CLI version
+title "Custom directory takes precedence over the default installation"
+trace CLAUDE_CONFIG_DIR=missing $CLI clusters list
 
-title "Empty override uses the default installation\n"
-trace CLAUDE_CONFIG_DIR= $CLI version
+title "Exempt commands never hint, even without the tooling"
+trace CLAUDE_CONFIG_DIR=missing $CLI current-user me | gron.py | grep userName
 
-title "Unset override uses the default installation\n"
+title "Empty override uses the default installation"
+trace CLAUDE_CONFIG_DIR= $CLI clusters list
+
+title "Unset override uses the default installation"
 unset CLAUDE_CONFIG_DIR
-trace $CLI version
+trace $CLI clusters list
+
+sethome ./empty-home
+title "Outside a Claude Code subprocess only the text hint prints"
+trace CLAUDE_CODE_CHILD_SESSION= $CLI clusters list
+
+# The session throttle lives in the file cache, which a host could disable.
+export DATABRICKS_CACHE_ENABLED=true
+title "Within one session the text line prints at most once per hour and the native line at most once per 10 minutes, so a 2>&1 pipeline on the next command sees neither"
+export CLAUDE_CODE_SESSION_ID=session-1
+trace $CLI clusters list
+trace $CLI clusters list
+unset CLAUDE_CODE_SESSION_ID
+
+title "A command outside a Claude Code subprocess leaves the native line due, so the next Claude Code command prints only that line"
+export CLAUDE_CODE_SESSION_ID=session-2
+trace CLAUDE_CODE_CHILD_SESSION= $CLI clusters list
+trace $CLI clusters list
+unset CLAUDE_CODE_SESSION_ID

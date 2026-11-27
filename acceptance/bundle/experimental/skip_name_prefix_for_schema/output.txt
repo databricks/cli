@@ -1,5 +1,6 @@
 
 === experimental.skip_name_prefix_for_schema is false
+
 >>> [CLI] bundle validate -o json
 "dev_[USERNAME]_my_schema"
 
@@ -10,6 +11,7 @@
 "my_schema"
 
 === experimental.skip_name_prefix_for_schema is true
+
 >>> [CLI] bundle validate -o json -t one
 "my_schema"
 

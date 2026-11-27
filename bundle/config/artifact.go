@@ -59,7 +59,7 @@ type Artifact struct {
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
 
-	DynamicVersion bool `json:"dynamic_version,omitempty"`
+	DynamicVersion *bool `json:"dynamic_version,omitempty"`
 
 	// Include narrows a `tgz` artifact to these subpaths of `path`, relative to it;
 	// empty packs the whole `path`. .gitignore is honored; the bundle-wide

@@ -20,17 +20,17 @@ Examples:
   databricks environments setup-local --serverless-version 5 --dry-run
 
 Flags:
-      --cluster-id string           cluster ID to use as the compute target
-      --cluster-name string         cluster name to use as the compute target (resolved to an ID via the Clusters API)
-      --dry-run                     compute the plan without writing files or provisioning
-  -h, --help                        help for setup-local
-      --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
-      --no-constraints              skip writing the remote Python version and dependency constraints
-      --no-dbconnect                skip adding the databricks-connect dependency
-      --serverless-version string   serverless version to use as the compute target (e.g. 5)
+      --cluster-id string             cluster ID to use as the compute target
+      --cluster-name string           cluster name to use as the compute target (resolved to an ID via the Clusters API)
+      --dry-run[=true|false]          compute the plan without writing files or provisioning
+  -h, --help[=true|false]             help for setup-local
+      --job-task string               job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
+      --no-constraints[=true|false]   skip writing the remote Python version and dependency constraints
+      --no-dbconnect[=true|false]     skip adding the databricks-connect dependency
+      --serverless-version string     serverless version to use as the compute target (e.g. 5)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)

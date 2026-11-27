@@ -1,6 +1,8 @@
 package deployment
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/migrate"
@@ -169,6 +172,10 @@ New bundles use the direct engine automatically, no migration is needed.`)
 			return root.ErrAlreadyPrinted
 		}
 
+		if err := readMissingInternalIDs(ctx, b, tempStatePath); err != nil {
+			return fmt.Errorf("recording internal ids: %w", err)
+		}
+
 		if err := os.Rename(tempStatePath, localPath); err != nil {
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
 		}
@@ -194,4 +201,23 @@ To undo the migration, remove %s and rename %s to %s
 	}
 
 	return cmd
+}
+
+// readMissingInternalIDs reads the resources whose migrated state at path lacks their internal ID,
+// and records it there: the terraform state has no volume_id.
+func readMissingInternalIDs(ctx context.Context, b *bundle.Bundle, path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var data dstate.Database
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return fmt.Errorf("parsing %s: %w", path, err)
+	}
+	if err := direct.ReadMissingInternalIDs(ctx, b.WorkspaceClient(ctx), &data); err != nil {
+		return err
+	}
+	var db dstate.DeploymentState
+	db.OpenWithData(path, data)
+	return db.Persist()
 }

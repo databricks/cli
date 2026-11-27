@@ -1,0 +1,22 @@
+VOLUME="fs-rm-${UNIQUE_NAME}"
+DIR="dbfs:/Volumes/main/default/${VOLUME}/dir"
+$CLI volumes create main default "${VOLUME}" MANAGED > LOG.volume
+$CLI fs mkdir ${DIR}/sub
+$CLI fs mkdir ${DIR}/empty
+$CLI fs cp hello.txt ${DIR}/one.txt >> LOG.cp
+$CLI fs cp hello.txt ${DIR}/sub/two.txt >> LOG.cp
+
+title "rm of a file whose DELETE is applied but answered with a 504"
+fault.py --after-handler "DELETE /api/2.0/fs/files/**" 504 0 1
+trace $CLI fs rm ${DIR}/one.txt
+trace $CLI fs ls ${DIR}
+
+title "rm of an empty directory whose DELETE is applied but answered with a 504"
+fault.py --after-handler "DELETE /api/2.0/fs/directories/**" 504 0 1
+trace $CLI fs rm ${DIR}/empty
+trace $CLI fs ls ${DIR}
+
+title "rm -r of a directory where the file DELETE is applied but answered with a 504"
+fault.py --after-handler "DELETE /api/2.0/fs/files/**" 504 0 1
+trace $CLI fs rm -r ${DIR}
+musterr trace $CLI fs ls ${DIR}

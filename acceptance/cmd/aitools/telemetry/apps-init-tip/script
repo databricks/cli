@@ -1,0 +1,32 @@
+# Isolate HOME so the real machine's agents and skills are not seen. The
+# committed home/.claude, a Claude Code config dir without Databricks skills, is
+# what makes apps init print its tip.
+sethome home
+export CLAUDECODE=1
+unset CLAUDE_CODE_SESSION_ID
+# Agent detection reads these config-dir overrides besides HOME; unset them so
+# the host's agent dirs can't add a detected agent.
+unset CLAUDE_CONFIG_DIR XDG_CONFIG_HOME GEMINI_CLI_HOME PI_CODING_AGENT_DIR GOOSE_PATH_ROOT APPDATA
+
+title "apps init with flags prints the tip: one hint-shown event per hint printed"
+trace $CLI apps init --template ./template --skip-install --name app-tip > LOG.apps-init
+trace print_telemetry
+rm -rf app-tip
+
+title "plugin installed: no hint, no tip, no event"
+sethome ./plugin-home
+trace $CLI apps init --template ./template --skip-install --name app-plugin > LOG.apps-init-plugin
+trace print_telemetry
+rm -rf app-plugin
+
+title "codex and copilot plugins recorded by aitools install: no tip, no event"
+# Codex and Copilot have no plugin manifest the CLI can read, so the plugin
+# record in the committed recorded-plugin-home/.databricks/aitools/skills/.state.json
+# is what counts for them.
+sethome ./recorded-plugin-home
+# CLAUDECODE from the first case would make the calling-agent install hint
+# fire, since this home has no Claude Code plugin.
+unset CLAUDECODE
+trace $CLI apps init --template ./template --skip-install --name app-recorded > LOG.apps-init-recorded
+trace print_telemetry
+rm -rf app-recorded

@@ -44,7 +44,7 @@ type statePullOpts struct {
 }
 
 func testStatePull(t *testing.T, opts statePullOpts) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
@@ -249,7 +249,7 @@ func TestStatePullSnapshotExists(t *testing.T) {
 }
 
 func TestStatePullNoState(t *testing.T) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(nil, os.ErrNotExist)
@@ -422,7 +422,7 @@ func TestStatePullAndNotebookIsRemovedLocally(t *testing.T) {
 }
 
 func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
@@ -461,4 +461,33 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	diags := bundle.Apply(ctx, b, s)
 	require.True(t, diags.HasError())
 	require.ErrorContains(t, diags.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
+}
+
+func TestWithoutInternalFiles(t *testing.T) {
+	fl := Filelist{
+		{LocalPath: "a.py"},
+		// Default cache directory.
+		{LocalPath: ".databricks/bundle/dev/.internal/notebook_3_job_task.py", IsNotebook: true},
+		// DATABRICKS_BUNDLE_TMP inside the sync root.
+		{LocalPath: "cache/dev/.internal/notebook_3_job_task.py", IsNotebook: true},
+		// Sync root above the bundle root.
+		{LocalPath: "project/.databricks/bundle/dev/.internal/w.py"},
+		// Another target's internal directory, and look-alike names.
+		{LocalPath: ".databricks/bundle/prod/.internal/w.py"},
+		{LocalPath: "src/dev/.internal-other/w.py"},
+		{LocalPath: "src/notdev/.internal/w.py"},
+	}
+
+	got := withoutInternalFiles("dev", fl)
+
+	var paths []string
+	for _, f := range got {
+		paths = append(paths, f.LocalPath)
+	}
+	require.Equal(t, []string{
+		"a.py",
+		".databricks/bundle/prod/.internal/w.py",
+		"src/dev/.internal-other/w.py",
+		"src/notdev/.internal/w.py",
+	}, paths)
 }

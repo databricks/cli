@@ -23,7 +23,7 @@ type Lifecycle struct {
 
 // DependsOn is a single lifecycle.depends_on entry.
 type DependsOn struct {
-	// Key of the resource to depend on: "foo" or "jobs.foo".
+	// Key of the resource to depend on, "foo" or "jobs.foo", or of its grants or permissions, "schemas.foo.grants".
 	Resource string `json:"resource"`
 }
 

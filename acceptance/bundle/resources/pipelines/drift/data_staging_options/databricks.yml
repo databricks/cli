@@ -1,0 +1,39 @@
+bundle:
+  name: pipeline-data-staging-options
+
+resources:
+  pipelines:
+    implicit_staging:
+      name: cdc-implicit-staging
+      catalog: my_catalog
+      schema: my_schema
+      continuous: true
+      ingestion_definition:
+        connection_name: my_sqlserver_connection
+        connector_type: CDC
+        objects:
+          - table:
+              source_catalog: src_db
+              source_schema: dbo
+              source_table: my_table
+              destination_catalog: my_catalog
+              destination_schema: my_schema
+
+    explicit_staging:
+      name: cdc-explicit-staging
+      catalog: my_catalog
+      schema: my_schema
+      ingestion_definition:
+        connection_name: my_sqlserver_connection
+        connector_type: CDC
+        data_staging_options:
+          catalog_name: staging_catalog
+          schema_name: staging_schema
+          volume_name: staging_volume
+        objects:
+          - table:
+              source_catalog: src_db
+              source_schema: dbo
+              source_table: my_table
+              destination_catalog: my_catalog
+              destination_schema: my_schema

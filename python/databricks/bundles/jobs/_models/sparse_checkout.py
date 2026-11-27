@@ -17,7 +17,7 @@ class SparseCheckout:
 
     patterns: VariableOrList[str] = field(default_factory=list)
     """
-    List of patterns to include for sparse checkout.
+    List of patterns to include for sparse checkout. Each pattern is the path of a directory relative to the repository root.
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class SparseCheckoutDict(TypedDict, total=False):
 
     patterns: VariableOrList[str]
     """
-    List of patterns to include for sparse checkout.
+    List of patterns to include for sparse checkout. Each pattern is the path of a directory relative to the repository root.
     """
 
 

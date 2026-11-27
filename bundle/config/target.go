@@ -13,7 +13,7 @@ type Mode string
 type Target struct {
 	// Default marks that this target must be used if one isn't specified
 	// by the user (through target variable or command line argument).
-	Default bool `json:"default,omitempty"`
+	Default *bool `json:"default,omitempty"`
 
 	// Determines the mode of the target.
 	// For example, 'mode: development' can be used for deployments for

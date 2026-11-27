@@ -1,0 +1,28 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The services of system.ai, created in the fake workspace. The fake serves what the scripts create, as in add-text.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' &> LOG.create-github-logfood
+
+title "Install a service that needs no sign-in and one that does"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code
+
+title "list --check: the token mints, and GitHub needs sign-in"
+trace $CLI aitools mcp list --check
+
+title "Once the sign-in completes, GitHub is signed in"
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.1/unity-catalog/mcp-services/system.ai.github/user-credentials --profile logfood --json '{}' > /dev/null
+trace $CLI aitools mcp list --check
+
+title "A recorded binary that is gone is reported as missing"
+# The state records the binary that add was started with, which is $CLI, as JSON writes it. Both servers record it.
+update_file.py home/.databricks/aitools/skills/.state.json "$(python3 -I -c 'import json,sys; print(json.dumps(sys.argv[1])[1:-1])' "$CLI")" /nonexistent/databricks
+trace $CLI aitools mcp list --check --output json
+
+title "logout ends the sign-in; list --check shows it needed again"
+trace $CLI aitools mcp logout system.ai.github --profile logfood
+trace $CLI aitools mcp list --check

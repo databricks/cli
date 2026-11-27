@@ -1,2 +1,2 @@
-Badness = "Error message in direct is developer-focussed, includes struct names that were checked; could be made more user friendly and point to the right doc and maybe even give a list of allowed fields"
+Badness = "Setting url on job foo is accepted silently. The error for the reference to it calls url a 'Terraform-only field' unsupported 'by the direct engine', which is confusing now that direct is the only engine; it should say the field cannot be referenced and list the fields that can."
 RecordRequests = true

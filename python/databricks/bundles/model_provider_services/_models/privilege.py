@@ -56,7 +56,20 @@ class Privilege(Enum):
     EXECUTE_CLEAN_ROOM_TASK = "EXECUTE_CLEAN_ROOM_TASK"
     EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
     READ_METADATA = "READ_METADATA"
+    CREATE_FEATURE = "CREATE_FEATURE"
+    READ_FEATURE = "READ_FEATURE"
     EXTERNAL_USE_LOCATION = "EXTERNAL_USE_LOCATION"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "Privilege | None":
+        if not isinstance(value, str):
+            return None
+
+        member = object.__new__(cls)
+        member._name_ = value
+        member._value_ = value
+
+        return cls._value2member_map_.setdefault(value, member)  # type:ignore
 
 
 PrivilegeParam = (
@@ -112,7 +125,10 @@ PrivilegeParam = (
         "EXECUTE_CLEAN_ROOM_TASK",
         "EXTERNAL_USE_SCHEMA",
         "READ_METADATA",
+        "CREATE_FEATURE",
+        "READ_FEATURE",
         "EXTERNAL_USE_LOCATION",
     ]
     | Privilege
+    | str
 )

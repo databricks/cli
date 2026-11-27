@@ -73,7 +73,8 @@ type resolveVariableReferences struct {
 	// outside of 'resources'.
 	includeResources bool
 
-	artifactsReferenceUsed bool
+	artifactsReferenceUsed   bool
+	validateVolumeSchemaRefs bool
 
 	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
 	// resolution should be skipped. References to these paths remain unresolved so a
@@ -117,18 +118,20 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 // ResolveVolumePathReferencesOnlyResources resolves only references to resources.volumes.*.volume_path.
 func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
 	return &resolveVariableReferences{
-		prefixes:         []string{"resources"},
-		lookupFn:         lookup,
-		allowPathFn:      isVolumePathReferencePath,
-		extraRounds:      maxResolutionRounds - 1,
-		includeResources: true,
+		prefixes:                 []string{"resources"},
+		lookupFn:                 lookup,
+		allowPathFn:              isVolumePathReferencePath,
+		extraRounds:              maxResolutionRounds - 1,
+		includeResources:         true,
+		validateVolumeSchemaRefs: true,
 	}
 }
 
 func lookup(v structvar.View, path *structpath.PathNode, b *bundle.Bundle) (structvar.View, error) {
 	if b.IsSourceLinkedDeployment() {
 		if path.String() == "workspace.file_path" {
-			return structvar.NewView(&b.SyncRootPath, nil, nil), nil
+			remoteFilePath := b.RemoteFilePath()
+			return structvar.NewView(&remoteFilePath, nil, nil), nil
 		}
 	}
 	// Future opportunity: if we lookup this path in both the given root
@@ -190,16 +193,22 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := structpath.NewPath(nil, "var")
 
+	var diags diag.Diagnostics
+	if m.validateVolumeSchemaRefs {
+		diags = diags.Extend(validateVolumeSchemaReferences(b))
+		if diags.HasError() {
+			return diags
+		}
+	}
+
 	// Resolution converts the whole configuration on every round; skip it if no
 	// reference would be resolved.
 	if !m.hasReferencesToResolve(b, prefixes, varPath) {
 		if m.artifactsReferenceUsed {
 			b.Metrics.SetBoolValue("artifacts_reference_used", true)
 		}
-		return nil
+		return diags
 	}
-
-	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
@@ -307,6 +316,39 @@ func (m *resolveVariableReferences) inScope(path *structpath.PathNode) bool {
 	default:
 		return m.includeResources || path.KeyAt(0) != "resources"
 	}
+}
+
+func validateVolumeSchemaReferences(b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	for _, volumeName := range slices.Sorted(maps.Keys(b.Config.Resources.Volumes)) {
+		volume := b.Config.Resources.Volumes[volumeName]
+		if volume == nil {
+			continue
+		}
+		for _, field := range []struct{ name, value string }{
+			{"schema_name", volume.SchemaName},
+			{"catalog_name", volume.CatalogName},
+		} {
+			ref, ok := structvar.NewRef(field.value)
+			if !ok {
+				continue
+			}
+			fieldPath := structpath.NewPath(nil, "resources", "volumes", volumeName, field.name)
+			for _, r := range ref.References() {
+				if r != "schemas" && !strings.HasPrefix(r, "schemas.") {
+					continue
+				}
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("volume %q field %q: reference does not exist: ${%s}", volumeName, field.name, r),
+					Detail:    fmt.Sprintf("did you mean:\n  ${resources.%s}", r),
+					Locations: b.Config.GetLocationsOf(fieldPath),
+					Paths:     []*structpath.PathNode{fieldPath},
+				})
+			}
+		}
+	}
+	return diags
 }
 
 func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []*structpath.PathNode, varPath *structpath.PathNode) (bool, diag.Diagnostics) {

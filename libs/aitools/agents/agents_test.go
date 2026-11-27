@@ -1,7 +1,12 @@
 package agents
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -43,6 +48,156 @@ func TestSupportedNamesMatchesRegistry(t *testing.T) {
 	}
 }
 
+func TestMCPAgents(t *testing.T) {
+	var names []string
+	for _, a := range MCPAgents() {
+		names = append(names, a.Name)
+	}
+	assert.Equal(t, []string{
+		NameClaudeCode, NameCursor, NameCodex, NameOpenCode, NameCopilot, NameAntigravity, NameGemini,
+	}, names)
+	for _, name := range []string{NamePi, NameGoose, NameKiro} {
+		assert.False(t, ByName(name).SupportsMCP(), name)
+	}
+}
+
+// clearMCPOverrides returns ctx with a home dir and no override variables, so
+// the path tests do not depend on the developer's shell.
+func clearMCPOverrides(t *testing.T) (context.Context, string) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	for _, key := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_HOME", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME", "APPDATA"} {
+		ctx = env.Set(ctx, key, "") //nolint:fatcontext // each key is set on the same context
+	}
+	return ctx, home
+}
+
+func TestMCPPaths(t *testing.T) {
+	ctx, home := clearMCPOverrides(t)
+	custom := t.TempDir()
+	for _, tc := range []struct {
+		name     string
+		agent    string
+		override map[string]string
+		want     string
+	}{
+		{"claude default", NameClaudeCode, nil, filepath.Join(home, ".claude.json")},
+		{"claude config dir", NameClaudeCode, map[string]string{"CLAUDE_CONFIG_DIR": custom}, filepath.Join(custom, ".claude.json")},
+		{"cursor", NameCursor, nil, filepath.Join(home, ".cursor", "mcp.json")},
+		{"codex default", NameCodex, nil, filepath.Join(home, ".codex", "config.toml")},
+		{"codex home", NameCodex, map[string]string{"CODEX_HOME": custom}, filepath.Join(custom, "config.toml")},
+		{"opencode default", NameOpenCode, nil, filepath.Join(home, ".config", "opencode", "opencode.json")},
+		{"opencode xdg", NameOpenCode, map[string]string{"XDG_CONFIG_HOME": custom}, filepath.Join(custom, "opencode", "opencode.json")},
+		{"copilot default", NameCopilot, nil, filepath.Join(home, ".copilot", "mcp-config.json")},
+		{"copilot home", NameCopilot, map[string]string{"COPILOT_HOME": custom}, filepath.Join(custom, "mcp-config.json")},
+		{"gemini default", NameGemini, nil, filepath.Join(home, ".gemini", "settings.json")},
+		{"gemini cli home", NameGemini, map[string]string{"GEMINI_CLI_HOME": custom}, filepath.Join(custom, ".gemini", "settings.json")},
+		// The MCP file is the one from the Antigravity docs, not the skills directory.
+		{"antigravity", NameAntigravity, nil, filepath.Join(home, ".gemini", "config", "mcp_config.json")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tctx := ctx
+			for k, v := range tc.override {
+				tctx = env.Set(tctx, k, v) //nolint:fatcontext // each override is set on the same context
+			}
+			got, err := ByName(tc.agent).MCP.Path(tctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestClaudeMCPPathFollowsLegacyConfig checks that Claude's MCP path is the legacy
+// .config.json when Claude Code reads that file, and the global file otherwise.
+// The legacy file is read when it is non-empty. An empty one that can be written
+// is read only when the global file is missing.
+func TestClaudeMCPPathFollowsLegacyConfig(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+		want  string
+	}{
+		{"no files", nil, "global"},
+		{"legacy only, non-empty", map[string]string{"legacy": "{}"}, "legacy"},
+		{"legacy and global, non-empty", map[string]string{"legacy": "{}", "global": "{}"}, "legacy"},
+		{"legacy empty, global non-empty", map[string]string{"legacy": "", "global": "{}"}, "global"},
+		{"legacy empty, global empty", map[string]string{"legacy": "", "global": ""}, "global"},
+		{"legacy empty, global missing", map[string]string{"legacy": ""}, "legacy"},
+		{"global only", map[string]string{"global": "{}"}, "global"},
+	}
+	for _, tc := range tests {
+		for _, override := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s override=%t", tc.name, override), func(t *testing.T) {
+				ctx, home := clearMCPOverrides(t)
+				configDir, globalDir := filepath.Join(home, ".claude"), home
+				if override {
+					custom := t.TempDir()
+					ctx = env.Set(ctx, "CLAUDE_CONFIG_DIR", custom)
+					configDir, globalDir = custom, custom
+				}
+				paths := map[string]string{
+					"legacy": filepath.Join(configDir, ".config.json"),
+					"global": filepath.Join(globalDir, ".claude.json"),
+				}
+				for kind, body := range tc.files {
+					require.NoError(t, os.MkdirAll(filepath.Dir(paths[kind]), 0o755))
+					require.NoError(t, os.WriteFile(paths[kind], []byte(body), 0o600))
+				}
+
+				got, err := ByName(NameClaudeCode).MCP.Path(ctx)
+				require.NoError(t, err)
+				assert.Equal(t, paths[tc.want], got)
+			})
+		}
+	}
+}
+
+// TestOpenCodeMCPPathPrefersJSONC checks that OpenCode reads opencode.json or
+// opencode.jsonc, and that an existing .jsonc is the file to edit, so a second
+// file is not created beside it.
+func TestOpenCodeMCPPathPrefersJSONC(t *testing.T) {
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	path, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "opencode.json"), path)
+
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode.jsonc"), []byte("{}"), 0o600))
+	path, err = ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "opencode.jsonc"), path)
+}
+
+func TestMCPEntries(t *testing.T) {
+	args := []string{"aitools", "mcp", "serve"}
+	pinned := map[string]string{"DATABRICKS_CONFIG_FILE": "/home/u/.databrickscfg"}
+
+	claude := ByName(NameClaudeCode).MCP.Entry("/bin/databricks", args, nil)
+	assert.Equal(t, map[string]any{"type": "stdio", "command": "/bin/databricks", "args": args, "env": map[string]string{}}, claude)
+
+	codex := ByName(NameCodex).MCP.Entry("/bin/databricks", args, nil)
+	assert.Equal(t, map[string]any{"command": "/bin/databricks", "args": args}, codex, "env is omitted when empty")
+	assert.Equal(t, map[string]any{"command": "/bin/databricks", "args": args, "env": pinned},
+		ByName(NameCodex).MCP.Entry("/bin/databricks", args, pinned))
+
+	copilot := ByName(NameCopilot).MCP.Entry("/bin/databricks", args, nil)
+	assert.Equal(t, "local", copilot["type"])
+	assert.Equal(t, []string{"*"}, copilot["tools"])
+
+	// OpenCode uses one command array, the "environment" key and no "enabled" key.
+	opencode := ByName(NameOpenCode).MCP.Entry("/bin/databricks", args, pinned)
+	assert.Equal(t, map[string]any{
+		"type":        "local",
+		"command":     []string{"/bin/databricks", "aitools", "mcp", "serve"},
+		"environment": pinned,
+	}, opencode)
+
+	// Antigravity's "disabled" key is optional and defaults to false, so the entry does not write it.
+	antigravity := ByName(NameAntigravity).MCP.Entry("/bin/databricks", args, nil)
+	assert.Equal(t, map[string]any{"command": "/bin/databricks", "args": args}, antigravity)
+}
+
 func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 	names := SkillsOnlyNames()
 	// Skills-only agents (Plugin nil) are listed; plugin agents are not.
@@ -55,5 +210,291 @@ func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 		if a.Plugin != nil {
 			assert.NotContains(t, names, a.DisplayName)
 		}
+	}
+}
+
+// TestOpenCodeMCPPathReturnsStatError checks that a config path that cannot be
+// inspected is an error, not a missing file. Creating opencode.json beside it
+// would leave the user's file unread.
+func TestOpenCodeMCPPathReturnsStatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the blocking file has a different error on Windows")
+	}
+	ctx, home := clearMCPOverrides(t)
+	// A regular file where the OpenCode directory should be makes the lookup fail with ENOTDIR.
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".config", "opencode"), []byte("x"), 0o600))
+
+	_, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.Error(t, err)
+}
+
+// TestOpenCodeMCPPathRefusesBothFiles checks that the CLI does not pick between
+// opencode.json and opencode.jsonc when both exist, and names both files.
+func TestOpenCodeMCPPathRefusesBothFiles(t *testing.T) {
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	jsonPath := filepath.ToSlash(filepath.Join(dir, "opencode.json"))
+	jsoncPath := filepath.ToSlash(filepath.Join(dir, "opencode.jsonc"))
+	require.NoError(t, os.WriteFile(jsonPath, []byte("{}"), 0o600))
+	require.NoError(t, os.WriteFile(jsoncPath, []byte("{}"), 0o600))
+
+	_, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, jsonPath+" and "+jsoncPath)
+}
+
+// TestOpenCodeMCPPathDanglingJSONCLink checks that a dangling opencode.jsonc link
+// counts as the file, so the write refuses it instead of creating opencode.json.
+func TestOpenCodeMCPPathDanglingJSONCLink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	ctx, home := clearMCPOverrides(t)
+	dir := filepath.Join(home, ".config", "opencode")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	jsonc := filepath.Join(dir, "opencode.jsonc")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "missing.jsonc"), jsonc))
+
+	path, err := ByName(NameOpenCode).MCP.Path(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, jsonc, path)
+}
+
+// mcpHomeSetup points HOME at a temporary directory with the agent home variables cleared, and hides the agent
+// binaries, so that only the case's own files count.
+func mcpHomeSetup(t *testing.T) string {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	for _, name := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "COPILOT_HOME", "GEMINI_CLI_HOME", "XDG_CONFIG_HOME", "APPDATA"} {
+		t.Setenv(name, "")
+	}
+	stubLookPath(t)
+	return home
+}
+
+// installedForMCP reports whether the agent named name is installed for MCP servers.
+func installedForMCP(t *testing.T, name string) bool {
+	t.Helper()
+	a := ByName(name)
+	require.NotNil(t, a, name)
+	got, err := a.InstalledForMCP(t.Context())
+	require.NoError(t, err)
+	return got
+}
+
+// TestInstalledForMCP covers the signals that make an agent installed for MCP servers, with the
+// agent's own paths under a temporary home and no agent binary on PATH unless a case says so.
+func TestInstalledForMCP(t *testing.T) {
+	t.Run("nothing present is not installed", func(t *testing.T) {
+		mcpHomeSetup(t)
+		for _, a := range MCPAgents() {
+			assert.False(t, installedForMCP(t, a.Name), a.Name)
+		}
+	})
+
+	t.Run("config dir is installed", func(t *testing.T) {
+		home := mcpHomeSetup(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".cursor"), 0o755))
+		assert.True(t, installedForMCP(t, NameCursor))
+	})
+
+	t.Run("CLI on PATH alone is installed", func(t *testing.T) {
+		mcpHomeSetup(t)
+		stubLookPath(t, "codex")
+		assert.True(t, installedForMCP(t, NameCodex))
+		assert.False(t, installedForMCP(t, NameCopilot))
+	})
+
+	t.Run("MCP config file alone is installed", func(t *testing.T) {
+		home := mcpHomeSetup(t)
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".claude.json"), []byte("{}"), 0o600))
+		assert.True(t, installedForMCP(t, NameClaudeCode))
+	})
+
+	t.Run("CODEX_HOME that exists counts for Codex", func(t *testing.T) {
+		mcpHomeSetup(t)
+		codexHome := t.TempDir()
+		t.Setenv("CODEX_HOME", codexHome)
+		assert.True(t, installedForMCP(t, NameCodex))
+
+		t.Setenv("CODEX_HOME", filepath.Join(t.TempDir(), "missing"))
+		assert.False(t, installedForMCP(t, NameCodex))
+	})
+
+	t.Run("CODEX_HOME that is missing is not installed although ~/.codex exists", func(t *testing.T) {
+		home := mcpHomeSetup(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+		t.Setenv("CODEX_HOME", filepath.Join(home, "codex-home"))
+		assert.False(t, installedForMCP(t, NameCodex))
+		assert.NoDirExists(t, filepath.Join(home, "codex-home"))
+	})
+
+	t.Run("COPILOT_HOME that exists counts for Copilot", func(t *testing.T) {
+		mcpHomeSetup(t)
+		t.Setenv("COPILOT_HOME", t.TempDir())
+		assert.True(t, installedForMCP(t, NameCopilot))
+	})
+
+	t.Run("CLAUDE_CONFIG_DIR that is missing is not installed although the CLI is on PATH", func(t *testing.T) {
+		mcpHomeSetup(t)
+		stubLookPath(t, "claude")
+		t.Setenv("CLAUDE_CONFIG_DIR", filepath.Join(t.TempDir(), "missing"))
+		assert.False(t, installedForMCP(t, NameClaudeCode))
+
+		t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
+		assert.True(t, installedForMCP(t, NameClaudeCode))
+	})
+
+	t.Run("GEMINI_CLI_HOME without its .gemini directory is not installed although the CLI is on PATH", func(t *testing.T) {
+		mcpHomeSetup(t)
+		stubLookPath(t, "gemini")
+		geminiHome := t.TempDir()
+		t.Setenv("GEMINI_CLI_HOME", geminiHome)
+		assert.False(t, installedForMCP(t, NameGemini))
+
+		// The directory alone is not enough: Gemini's mandatory file must be there, as Detected requires.
+		require.NoError(t, os.MkdirAll(filepath.Join(geminiHome, ".gemini", "antigravity"), 0o755))
+		assert.False(t, installedForMCP(t, NameGemini))
+
+		require.NoError(t, os.WriteFile(filepath.Join(geminiHome, ".gemini", "projects.json"), []byte("{}"), 0o600))
+		assert.True(t, installedForMCP(t, NameGemini))
+	})
+
+	t.Run("XDG_CONFIG_HOME without its opencode directory is not installed although the CLI is on PATH", func(t *testing.T) {
+		mcpHomeSetup(t)
+		stubLookPath(t, "opencode")
+		xdg := t.TempDir()
+		t.Setenv("XDG_CONFIG_HOME", xdg)
+		assert.False(t, installedForMCP(t, NameOpenCode))
+
+		require.NoError(t, os.MkdirAll(filepath.Join(xdg, "opencode"), 0o755))
+		assert.True(t, installedForMCP(t, NameOpenCode))
+	})
+
+	t.Run("MCP home variables set to their defaults count as unset", func(t *testing.T) {
+		for _, tc := range []struct {
+			agent, binary, variable, dir string
+		}{
+			{NameClaudeCode, "claude", "CLAUDE_CONFIG_DIR", ".claude"},
+			{NameCodex, "codex", "CODEX_HOME", ".codex"},
+			{NameCopilot, "copilot", "COPILOT_HOME", ".copilot"},
+			{NameGemini, "gemini", "GEMINI_CLI_HOME", ""},
+			{NameOpenCode, "opencode", "XDG_CONFIG_HOME", ".config"},
+		} {
+			t.Run(tc.variable, func(t *testing.T) {
+				home := mcpHomeSetup(t)
+				stubLookPath(t, tc.binary)
+				// The default directory does not exist, so only the CLI on PATH makes the agent installed.
+				t.Setenv(tc.variable, filepath.Join(home, tc.dir))
+				assert.True(t, installedForMCP(t, tc.agent))
+			})
+		}
+	})
+
+	t.Run("Gemini is not installed because Antigravity made ~/.gemini", func(t *testing.T) {
+		home := mcpHomeSetup(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o755))
+		assert.False(t, installedForMCP(t, NameGemini))
+		assert.True(t, installedForMCP(t, NameAntigravity))
+
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("{}"), 0o644))
+		assert.True(t, installedForMCP(t, NameGemini))
+	})
+
+	t.Run("Antigravity is installed from its own directory, without ~/.gemini/config", func(t *testing.T) {
+		home := mcpHomeSetup(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o755))
+		assert.NoDirExists(t, filepath.Join(home, ".gemini", "config"))
+		assert.True(t, installedForMCP(t, NameAntigravity))
+	})
+}
+
+// Each command gets the Windows path of the databricks binary as one argument, with spaces, and the server arguments
+// with a space inside one of them. The argv must pass each value through as one element.
+var (
+	testMCPCmd  = `C:\Program Files\Databricks\databricks.exe`
+	testMCPArgs = []string{"aitools", "mcp", "serve", "--profile", "my profile", "--service", "system.ai.github", "--agent", "codex"}
+)
+
+func TestMCPAddArgsPerAgent(t *testing.T) {
+	pin := map[string]string{"DATABRICKS_CONFIG_FILE": `C:\Users\me\.databrickscfg`}
+	tests := []struct {
+		name  string
+		agent string
+		env   map[string]string
+		want  []string
+	}{
+		{
+			name:  "copilot without env",
+			agent: NameCopilot,
+			want:  append([]string{"mcp", "add", "github", "--tools", "*", "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "copilot pins the config file as --env",
+			agent: NameCopilot,
+			env:   pin,
+			want:  append([]string{"mcp", "add", "github", "--tools", "*", "--env", `DATABRICKS_CONFIG_FILE=C:\Users\me\.databrickscfg`, "--", testMCPCmd}, testMCPArgs...),
+		},
+		{
+			name:  "gemini without env",
+			agent: NameGemini,
+			want:  append([]string{"mcp", "add", "--scope", "user", "github", testMCPCmd, "--"}, testMCPArgs...),
+		},
+		{
+			name:  "gemini pins the config file as -e",
+			agent: NameGemini,
+			env:   pin,
+			want:  append([]string{"mcp", "add", "--scope", "user", "-e", `DATABRICKS_CONFIG_FILE=C:\Users\me\.databrickscfg`, "github", testMCPCmd, "--"}, testMCPArgs...),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ByName(tt.agent).MCP.AddArgs("github", testMCPCmd, testMCPArgs, tt.env)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGeminiMCPAddArgsRefusesEnvValueWithEquals(t *testing.T) {
+	// Gemini's -e keeps only the first two parts of KEY=VALUE, so the direct writer makes this change.
+	got := ByName(NameGemini).MCP.AddArgs("github", testMCPCmd, testMCPArgs, map[string]string{"DATABRICKS_CONFIG_FILE": "C:\\a=b"})
+	assert.Nil(t, got)
+}
+
+func TestClaudeMCPAddArgsPassesTheEntryAsJSON(t *testing.T) {
+	pin := map[string]string{"DATABRICKS_CONFIG_FILE": `C:\Users\me\.databrickscfg`}
+	got := ByName(NameClaudeCode).MCP.AddArgs("github", testMCPCmd, testMCPArgs, pin)
+	require.Len(t, got, 6)
+	assert.Equal(t, []string{"mcp", "add-json", "--scope", "user", "github"}, got[:5])
+
+	want, err := json.Marshal(claudeMCPEntry(testMCPCmd, testMCPArgs, pin))
+	require.NoError(t, err)
+	assert.JSONEq(t, string(want), got[5])
+}
+
+func TestMCPRemoveArgsPerAgent(t *testing.T) {
+	tests := []struct {
+		agent string
+		want  []string
+	}{
+		{NameClaudeCode, []string{"mcp", "remove", "--scope", "user", "github"}},
+		{NameGemini, []string{"mcp", "remove", "--scope", "user", "github"}},
+		{NameCopilot, []string{"mcp", "remove", "github"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.agent, func(t *testing.T) {
+			assert.Equal(t, tt.want, ByName(tt.agent).MCP.RemoveArgs("github"))
+		})
+	}
+}
+
+func TestOtherAgentsHaveNoCLIArgs(t *testing.T) {
+	for _, name := range []string{NameCursor, NameOpenCode, NameAntigravity, NameCodex} {
+		spec := ByName(name).MCP
+		assert.Nil(t, spec.AddArgs, name)
+		assert.Nil(t, spec.RemoveArgs, name)
 	}
 }

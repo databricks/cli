@@ -1,0 +1,52 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME/${bundle.target}
+
+variables:
+  environment:
+    default: dev
+
+resources:
+  cluster_policies:
+    policy:
+      name: test-policy-$UNIQUE_NAME-${bundle.target}
+      definition:
+        custom_tags.workspace:
+          type: fixed
+          value: ${var.environment}
+        spark_env_vars.ENVIRONMENT:
+          type: fixed
+          value: ${var.environment}
+        workload_type.clients.jobs:
+          type: fixed
+          value: true
+        workload_type.clients.notebooks:
+          type: fixed
+          value: false
+  jobs:
+    policy_sync:
+      name: test-job-$UNIQUE_NAME-${bundle.target}
+      description: Before UI edit
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            policy_id: ${resources.cluster_policies.policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              owner: bundle-author
+      tasks:
+        - task_key: main
+          job_cluster_key: main
+          spark_python_task:
+            python_file: ./hello.py
+
+targets:
+  dev:
+    default: true
+  prod:
+    variables:
+      environment: prod

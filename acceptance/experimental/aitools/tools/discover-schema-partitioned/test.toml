@@ -1,0 +1,22 @@
+RecordRequests = true
+
+# Every statement gets the same canned response: the DESCRIBE TABLE output of a
+# table partitioned by `region`. Real DESCRIBE TABLE lists partition columns in
+# the main column section and then again under "# Partition Information".
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements"
+Response.Body = '''
+{
+  "statement_id": "s1",
+  "status": {"state": "SUCCEEDED"},
+  "manifest": {"schema": {"columns": [{"name": "col_name"}, {"name": "data_type"}, {"name": "comment"}]}, "total_chunk_count": 1},
+  "result": {"data_array": [
+    ["id", "bigint", null],
+    ["#tag", "string", null],
+    ["region", "string", null],
+    ["# Partition Information", "", ""],
+    ["# col_name", "data_type", "comment"],
+    ["region", "string", null]
+  ]}
+}
+'''

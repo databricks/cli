@@ -1,5 +1,6 @@
 
 === Apps create with correct input
+
 >>> [CLI] apps create --json @input.json
 {
   "active_deployment": {
@@ -35,13 +36,14 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][0]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with correct input
+
 >>> [CLI] apps update test-name --json @input.json
 {
   "active_deployment": {
@@ -77,13 +79,14 @@
       }
     }
   ],
-  "service_principal_client_id": "[UUID]",
+  "service_principal_client_id": "[UUID][1]",
   "service_principal_id": [SERVICE_PRINCIPAL_ID],
   "service_principal_name": "app-test-name",
   "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with missing parameter
+
 >>> [CLI] apps update --json @input.json
 Error: accepts 1 arg(s), received 0
 
@@ -91,31 +94,31 @@ Usage:
   databricks apps update NAME [flags]
 
 Flags:
-      --budget-policy-id string       
-      --compute-max-instances int     Maximum number of app instances the app is configured to run.
-      --compute-min-instances int     Minimum number of app instances the app is configured to run.
-      --compute-size ComputeSize      Supported values: [LARGE, MEDIUM, XLARGE]
-      --description string            The description of the app.
-      --forward-user-access-token     Forward the user's access token to the app.
-      --git-auto-deploy               Automatically redeploy the app on pushes to the configured Git branch. Requires --git-url and --git-provider.
-      --git-branch string             Git branch to deploy from.
-      --git-commit string             Git commit SHA to deploy from.
-      --git-provider string           Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
-      --git-source-code-path string   Relative path to the app source code within the Git repository. Defaults to the repository root.
-      --git-tag string                Git tag to deploy from.
-      --git-url string                URL of the Git repository the app deploys from.
-  -h, --help                          help for update
-      --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-      --source-code-path string       
-      --space string                  Name of the space this app belongs to.
-      --usage-policy-id string
+      --budget-policy-id string                  ID of the serverless budget policy that the app's compute usage is attributed to.
+      --compute-max-instances int                Maximum number of app instances the app is configured to run.
+      --compute-min-instances int                Minimum number of app instances the app is configured to run.
+      --compute-size ComputeSize                 Size of the compute instances the app runs on. Supported values: [LARGE, MEDIUM, XLARGE]
+      --description string                       The description of the app.
+      --forward-user-access-token[=true|false]   Forward the user's access token to the app.
+      --git-auto-deploy[=true|false]             Automatically redeploy the app on pushes to the configured Git branch. Requires --git-url and --git-provider.
+      --git-branch string                        Git branch to deploy from.
+      --git-commit string                        Git commit SHA to deploy from.
+      --git-provider string                      Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
+      --git-source-code-path string              Relative path to the app source code within the Git repository. Defaults to the repository root.
+      --git-tag string                           Git tag to deploy from.
+      --git-url string                           URL of the Git repository the app deploys from.
+  -h, --help[=true|false]                        help for update
+      --json JSON                                either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --source-code-path string                  Workspace file system path of the app source code.
+      --space string                             Name of the space this app belongs to.
+      --usage-policy-id string                   ID of the usage policy that the app's compute usage is attributed to.
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in bundle config. Example: --var="key=value"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in bundle config. Example: --var="key=value"
 
 
 Exit code: 1

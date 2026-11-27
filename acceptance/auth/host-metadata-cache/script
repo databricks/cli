@@ -6,11 +6,11 @@ export DATABRICKS_CACHE_DIR="$TEST_TMP_DIR/cache"
 # never fetch or populate the cache.
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "First invocation populates the cache\n"
+title "First invocation populates the cache"
 $CLI auth profiles --output json
 
-title "Second invocation should read from the cache\n"
+title "Second invocation should read from the cache"
 $CLI auth profiles --output json
 
-title "Only one /.well-known/databricks-config request recorded\n"
+title "Only one /.well-known/databricks-config request recorded"
 print_requests.py //.well-known/databricks-config --get --sort

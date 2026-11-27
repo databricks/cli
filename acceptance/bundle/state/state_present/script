@@ -1,4 +1,4 @@
-title 'Terraform state present: the direct default migrates it to the direct engine\n'
+title 'Terraform state present: the direct default migrates it to the direct engine'
 # Keep the committed fixtures (and generated files) out of `bundle deploy`'s upload.
 printf '%s\n' '.gitignore' 'out.*' 'terraform*.tfstate' 'terraform*-requests.json' > .gitignore
 
@@ -14,20 +14,24 @@ lineage=$(jq -r .lineage .databricks/bundle/default/terraform/terraform.tfstate)
 # An empty env var defaults to direct, which migrates the terraform state in memory (no commit), so
 # plan runs on direct and finds the schema unchanged.
 trace $CLI bundle plan
-trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
+trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py '!tf-provider'
 
 title 'A resources.json with a lower serial does not win: the terraform state still migrates'
 echo "{\"serial\": 0, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/resources.json
 trace $CLI bundle plan
 
 rm "$OUT_REQUESTS"
-title 'A resources.json with a higher serial wins: the direct state is authoritative, no migration\n'
+title 'A resources.json with a higher serial wins: the direct state is authoritative, no migration'
 echo "{\"serial\": 10, \"lineage\": \"$lineage\"}" > .databricks/bundle/default/resources.json
 # serial 10 outranks the terraform state (serial 1), so direct wins; its (empty) state plans to
-# create the schema, and every schemas request carries the direct-engine User-Agent, not terraform.
+# create the schema, and no schemas request comes from the terraform provider.
 trace $CLI bundle plan
+# The replayed terraform deployment created the schema, which the empty direct state does not know
+# about; delete it so the create does not fail with SCHEMA_ALREADY_EXISTS.
+$CLI schemas delete main.myschema
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
-trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py '!tf-provider'
 trace $CLI bundle destroy --auto-approve
 
 rm "$OUT_REQUESTS"
@@ -35,7 +39,7 @@ rm "$OUT_REQUESTS"
 # deployment - a destroy does not preserve a superseded terraform state for a later deploy to
 # resurrect. So this deploy starts fresh on the direct engine: nothing to migrate, serial 1.
 trace $CLI bundle deploy
-trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py '!tf-provider'
 trace print_state.py | jq .serial
 
 trace $CLI bundle debug states

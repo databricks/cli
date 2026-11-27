@@ -1,4 +1,4 @@
-Badness = "Relative paths in variable-overrides.json resolve inconsistently: task files are resolved against the bundle root (with an error), libraries relative to the overrides file."
+Badness = "Relative paths in variable-overrides.json resolve against the overrides file's directory, not the bundle root: './src/main.py' becomes '.databricks/bundle/default/src/main.py' and fails with 'file ... not found', and './src/lib.whl' is rewritten the same way without any error. They should resolve against the bundle root, and a missing library should be reported too."
 
 [[Repls]]
 Old = '\\'

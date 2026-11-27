@@ -1,0 +1,3 @@
+title "list and remove help show their examples"
+trace $CLI aitools mcp list --help
+trace $CLI aitools mcp remove --help

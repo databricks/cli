@@ -9,8 +9,8 @@ trace create_table.py "$TABLE_NAME"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
-    $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true
+    errcode $CLI schemas delete "$SCHEMA_NAME" --force &> LOG.schema-delete
+    errcode $CLI schemas delete "main.qm_test_${UNIQUE_NAME}_2" --force &> LOG.schema2-delete
     rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
@@ -27,7 +27,7 @@ trace errcode $CLI bundle plan &> out.plan.txt
 # Untraced: with &> the trace header lands in the file, leaving it unfilterable. Capture the raw
 # plan aside and stamp it out into the golden instead.
 errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
-nostamp < .databricks/tmp.plan.json > out.plan.json
+plan_monitor_fields < .databricks/tmp.plan.json | nostamp > out.plan.json
 
 rm "$OUT_REQUESTS"
 trace errcode $CLI bundle deploy &> out.deploy.txt

@@ -8,6 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 package/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body [OUTPUT_DIR]/out.requests.txt
 {
   "deployment": {
@@ -39,6 +40,7 @@ package/my_test_code-0.0.1-py3-none-any.whl
 }
 
 === Expecting 1 wheel to be uploaded
+
 >>> jq .path
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/package/my_test_code-0.0.1-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl"

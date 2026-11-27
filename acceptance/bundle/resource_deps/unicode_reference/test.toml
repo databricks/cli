@@ -1,2 +1,4 @@
-Badness = "Unicode job names resolve in resources references"
+# Checks that a unicode resource key passes validate, plan and deploy. RecordRequests = false, so the
+# resolved id of ${resources.jobs.变量.id} is not recorded.
+Badness = "After deploy, bundle summary prints job foo's name unresolved, as '${resources.jobs.变量.id}'. This is not specific to unicode keys: synced_database_tables/basic shows the same for ASCII keys. It should print the resolved value."
 RecordRequests = false

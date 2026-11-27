@@ -26,7 +26,7 @@ job_id="$(read_id.py job_with_permissions)"
 $CLI permissions get jobs "$job_id" | gron.py --sort-arrays access_control_list | grep -v display_name > out.permissions_create.txt
 rm -f "$OUT_REQUESTS"
 
-title "Delete one permission and deploy again\n"
+title "Delete one permission and deploy again"
 grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle deploy
 print_requests.py --nostamp //jobs/ | gron.py --sort-arrays access_control_list > out.requests_update.txt

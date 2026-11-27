@@ -1,1 +1,3 @@
+# Expected: development mode always pauses triggers, so presets.trigger_pause_status: UNPAUSED
+# is rejected on purpose (validate_target_mode.go).
 $CLI bundle validate

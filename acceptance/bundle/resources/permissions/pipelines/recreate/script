@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //permissions &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a pipeline with permissions"
+trace $CLI bundle deploy
+add_repl.py "$($CLI bundle summary -o json | jq -r .resources.pipelines.foo.id)" OLD_PIPELINE_ID
+trace print_requests.py //permissions
+trace read_state.py pipelines foo.permissions id
+
+title "Switch from catalog to storage: the pipeline is recreated with a new ID"
+trace update_file.py databricks.yml "catalog: main" "storage: dbfs:/my-storage"
+trace update_file.py databricks.yml 'target: ${resources.schemas.bar.name}' '#target: ${resources.schemas.bar.name}'
+trace $CLI bundle plan --output json | jq '.plan["resources.pipelines.foo.permissions"].changes'
+
+title "Deploy recreates the pipeline and applies the permissions to the new one"
+trace $CLI bundle deploy --auto-approve
+add_repl.py "$($CLI bundle summary -o json | jq -r .resources.pipelines.foo.id)" NEW_PIPELINE_ID
+trace print_requests.py //permissions
+
+title "The permissions are recorded under the new ID, so the next plan is a no-op"
+trace read_state.py pipelines foo.permissions id
+trace $CLI bundle plan

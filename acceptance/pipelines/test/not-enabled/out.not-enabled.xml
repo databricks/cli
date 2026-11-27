@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="[UUID]" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="Pipeline testing is not enabled for this pipeline. Contact your Databricks account team to join the preview.">Pipeline testing is not enabled for this pipeline. Contact your Databricks account team to join the preview.</error>
+    </testcase>
+  </testsuite>
+</testsuites>

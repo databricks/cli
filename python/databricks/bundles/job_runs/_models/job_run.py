@@ -54,7 +54,7 @@ class JobRun(Resource):
 
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
     """
-    Job-level parameters used in the run. for example `"param": "overriding_val"`
+    Job-level parameters used in the run, for example `"param": "overriding_val"`.
     """
 
     lifecycle: VariableOrOptional[JobRunLifecycle] = None
@@ -118,7 +118,7 @@ class JobRunDict(TypedDict, total=False):
 
     job_parameters: VariableOrDict[str]
     """
-    Job-level parameters used in the run. for example `"param": "overriding_val"`
+    Job-level parameters used in the run, for example `"param": "overriding_val"`.
     """
 
     lifecycle: VariableOrOptional[JobRunLifecycleParam]

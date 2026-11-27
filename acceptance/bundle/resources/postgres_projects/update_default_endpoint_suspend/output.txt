@@ -1,12 +1,13 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-default-suspend-[UNIQUE_NAME]/default/files...
 Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
@@ -30,6 +31,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Change default_endpoint_settings.suspend_timeout_duration and re-deploy
+
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
 >>> [CLI] bundle plan
@@ -47,7 +49,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",

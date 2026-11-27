@@ -10,11 +10,13 @@ import (
 )
 
 // Glyphs drawn into the prompt's rendered output. cursorBlock stands in for
-// the (hidden) OS cursor at the current edit position.
+// the (hidden) OS cursor at the current edit position. The glyphs must all be
+// one column wide so the label does not shift when the glyph changes.
 const (
 	cursorBlock  = "█"
 	glyphValid   = "✔"
 	glyphInvalid = "✗"
+	glyphBlank   = " "
 )
 
 // PromptOptions configures a single-line text prompt shown by [RunPrompt].
@@ -33,7 +35,9 @@ type PromptOptions struct {
 	// Validate, when set, is called on every keystroke. While it returns a
 	// non-nil error the leading glyph flips from "✔" to "✗" and Enter is
 	// inert; pressing Enter while invalid surfaces the returned error
-	// below the prompt until the next edit.
+	// below the prompt until the next edit. Until the first edit or Enter,
+	// an invalid input shows a blank glyph instead, so an empty prompt does
+	// not open as an error.
 	Validate func(input string) error
 }
 
@@ -44,7 +48,7 @@ func RunPrompt(ctx context.Context, opts PromptOptions) (string, error) {
 	if !c.capabilities.SupportsPrompt() {
 		return "", fmt.Errorf("expected to have %s", opts.Label)
 	}
-	return c.runPromptModel(newPromptModel(opts))
+	return c.runPromptModel(newPromptModel(opts, c.capabilities.SupportsStderrColor()))
 }
 
 // Secret prompts the user for a value while masking input with '*' and
@@ -59,6 +63,7 @@ func Secret(ctx context.Context, label string) (string, error) {
 }
 
 type promptModel struct {
+	color       bool // emit color codes (bold etc. apply regardless)
 	label       string
 	mask        rune
 	hideEntered bool
@@ -73,13 +78,18 @@ type promptModel struct {
 	deleted   bool
 	submitted bool
 
+	// touched is set by the first edit or Enter. Until then an invalid input
+	// shows a blank glyph, so a required field does not open as an error.
+	touched bool
+
 	// submitErr is the error from the last failed Enter attempt. Rendered
 	// below the prompt and cleared on the next edit.
 	submitErr error
 }
 
-func newPromptModel(opts PromptOptions) *promptModel {
+func newPromptModel(opts PromptOptions, color bool) *promptModel {
 	return &promptModel{
+		color:       color,
 		label:       opts.Label,
 		mask:        opts.Mask,
 		hideEntered: opts.HideEntered,
@@ -92,12 +102,16 @@ func (m *promptModel) value() string {
 }
 
 // glyph returns the leading status indicator: bold-green ✔ when valid,
-// bold-red ✗ when validate rejects the buffer.
+// bold-red ✗ when validate rejects the buffer after an edit or Enter, and a
+// blank before that.
 func (m *promptModel) glyph() string {
-	if m.validate != nil && m.validate(m.value()) != nil {
-		return ansiBold + ansiRed + glyphInvalid + ansiReset
+	if m.validate == nil || m.validate(m.value()) == nil {
+		return ansiBold + colorCode(m.color, ansiGreen) + glyphValid + ansiReset
 	}
-	return ansiBold + ansiGreen + glyphValid + ansiReset
+	if !m.touched {
+		return glyphBlank
+	}
+	return ansiBold + colorCode(m.color, ansiRed) + glyphInvalid + ansiReset
 }
 
 func (m *promptModel) Init() tea.Cmd { return nil }
@@ -115,6 +129,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyEnter, tea.KeyCtrlJ:
 		// Enter sends CR, Ctrl+J sends LF; treat both as submit.
+		m.touched = true
 		if m.validate != nil {
 			if err := m.validate(m.value()); err != nil {
 				m.submitErr = err
@@ -168,10 +183,17 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key.Type == tea.KeySpace {
 			typed = []rune{' '}
 		}
+		// Some terminals send an empty bracketed paste when the clipboard is
+		// empty. Nothing changes, so it must not count as an edit or clear the
+		// error line.
+		if len(typed) == 0 {
+			return m, nil
+		}
 		tail := append([]rune{}, m.runes[m.cursor:]...)
 		m.runes = append(m.runes[:m.cursor], typed...)
 		m.runes = append(m.runes, tail...)
 		m.cursor += len(typed)
+		m.touched = true
 		m.submitErr = nil
 
 	default:
@@ -226,7 +248,7 @@ func (m *promptModel) View() string {
 	if m.submitErr != nil {
 		// Validation error line captured at the failed Enter; cleared on
 		// the next edit.
-		line += "\n" + ansiRed + ">> " + m.submitErr.Error() + ansiReset
+		line += "\n" + colorCode(m.color, ansiRed) + ">> " + m.submitErr.Error() + ansiReset
 	}
 	return line
 }
@@ -239,7 +261,7 @@ func (c *cmdIO) runPromptModel(m *promptModel) (string, error) {
 	pm := final.(*promptModel)
 	switch {
 	case pm.cancelled:
-		return "", errCtrlC
+		return "", ErrCtrlC
 	case pm.deleted:
 		return "", io.EOF
 	}

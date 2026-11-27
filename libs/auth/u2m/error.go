@@ -13,6 +13,10 @@ import (
 // cached OAuth token does not include a refresh token.
 var ErrMissingRefreshToken = errors.New("cached token has no refresh token")
 
+// ErrRefreshDisabled is returned from PersistentAuth's Token() when the cached
+// access token is expired and [WithoutRefresh] forbids refreshing it.
+var ErrRefreshDisabled = errors.New("cached token is expired and refresh is disabled")
+
 // InvalidRefreshTokenError is returned from PersistentAuth's Token() and
 // ForceRefreshToken() methods when a token refresh is attempted and the cached
 // refresh token is invalid.

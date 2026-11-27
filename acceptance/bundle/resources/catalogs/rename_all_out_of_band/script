@@ -1,0 +1,44 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_CATALOG="test_catalog_${UNIQUE_NAME}"
+NEW_CATALOG="test_catalog_renamed_${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # The renamed catalog is not where the state looks for it, so destroy cannot remove it.
+    trace $CLI catalogs delete "$NEW_CATALOG" --force
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+# Drop the remote_state fields that differ between clouds or from the test server.
+plan() {
+    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag enable_predictive_optimization isolation_mode securable_type storage_location
+}
+
+title "Deploy a catalog with a schema and a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "$OLD_CATALOG.myschema" | jq -r .schema_id)" SCHEMA_ID
+add_repl "$($CLI volumes read "$OLD_CATALOG.myschema.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Rename the volume, the schema and the catalog out of band"
+trace $CLI volumes update "$OLD_CATALOG.myschema.myvolume" --new-name myvolume2 | jq "{full_name}"
+trace $CLI schemas update "$OLD_CATALOG.myschema" --new-name myschema2 | jq "{full_name}"
+trace $CLI catalogs update "$OLD_CATALOG" --new-name "$NEW_CATALOG" | jq "{name}"
+print_requests.py //unity-catalog &> LOG.rename_requests
+
+title "Rename all three in the config to match"
+trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+trace update_file.py databricks.yml "name: myschema" "name: myschema2"
+trace update_file.py databricks.yml "name: myvolume" "name: myvolume2"
+NEW_SCHEMA="$NEW_CATALOG.myschema2"
+NEW_VOLUME="$NEW_SCHEMA.myvolume2"
+
+title "The plan finds the schema and the volume at their new names by their ids. A catalog has no such id, so it is created again"
+plan
+
+title "The catalog's create fails because the renamed catalog has its name"
+trace musterr $CLI bundle deploy

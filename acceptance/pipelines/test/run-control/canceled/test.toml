@@ -1,0 +1,10 @@
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '{"update": {"update_id": "00000000-0000-0000-0000-0000000000a1", "state": "CANCELED", "test_only": true}}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{"events": [
+  {"id": "e1", "event_type": "test_case_progress", "timestamp": "2026-01-01T00:00:00.000Z", "origin": {"test_case_id": "/Workspace/Users/someone@example.com/orders/tests/test_orders.py::test_slow"}, "details": {"test_case_progress": {"status": "PENDING"}}}]}
+'''

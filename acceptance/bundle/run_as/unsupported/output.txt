@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle validate
+Error: model_serving_endpoints do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:36:5
+
+Error: quality_monitors do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:30:5
+
+Error: data_quality_monitors do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:25:5
+
+Error: dashboards with embed_credentials set to true do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:16:7
+
+Error: apps do not support a setting a run_as user that is different from the owner.
+Current identity: [USERNAME]. Run as identity: my_service_principal.
+See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
+  in databricks.yml:10:5
+
+Name: run_as
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/default
+
+Found 5 errors

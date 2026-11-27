@@ -1,0 +1,9 @@
+Ignore = [
+    ".databricks",
+]
+
+# Azure and GCP hosts carry the workspace ID, so their summary URLs have no ?w=<id>.
+[[Repls]]
+Old = '\?[ow]=\[WORKSPACE_ID\]'
+New = ''
+Order = 1000

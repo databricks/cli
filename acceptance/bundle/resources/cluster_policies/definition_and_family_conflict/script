@@ -5,5 +5,5 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploying a policy with both definition and policy_family_id must fail\n"
+title "Deploying a policy with both definition and policy_family_id must fail"
 musterr $CLI bundle deploy

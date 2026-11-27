@@ -3,6 +3,8 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -103,8 +105,119 @@ func TestLogsFlagValidation(t *testing.T) {
 	}
 }
 
-// completedRunLogsServer serves the auth probe, a terminal runs/get, and a
-// single page of Bricklens logs (newest-first, as the tail fetch requests).
+func invalidNodeLogsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{
+				"run_id": 5,
+				"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+				"tasks": [{
+					"run_id": 456,
+					"ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}]}
+				}]
+			}`))
+		case strings.Contains(r.URL.Path, "/logs"):
+			t.Errorf("logs endpoint called for an invalid node index")
+		default:
+			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestLogsRejectsOutOfRangeNode(t *testing.T) {
+	srv := invalidNodeLogsServer(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 1, nodeSet: true, attempt: -1, tailLines: -1})
+	require.Error(t, err)
+	assert.Equal(t, "invalid --node 1: run has 1 node(s), indexed 0 to 0", err.Error())
+}
+
+func TestLogsRejectsOutOfRangeNodeJSON(t *testing.T) {
+	srv := invalidNodeLogsServer(t)
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputJSON)
+	cmd.SetContext(ctx)
+
+	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 1, nodeSet: true, attempt: -1, tailLines: -1, jsonOutput: true})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, jsonError{
+		Code:    "INVALID_ARGS",
+		Kind:    "PERMANENT",
+		Message: "invalid --node 1: run has 1 node(s), indexed 0 to 0",
+	}, got.Error)
+}
+
+func TestLogsSkipsNodeValidationWhenNodeCountCannotBeResolved(t *testing.T) {
+	tests := []struct {
+		name string
+		task string
+	}{
+		{
+			name: "legacy GenAI accelerator type",
+			task: `"gen_ai_compute_task": {"compute": {"gpu_type": "h100_80gb", "num_gpus": 8}}`,
+		},
+		{
+			name: "unknown accelerator type",
+			task: `"ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_8xFuture", "accelerator_count": 8}}]}`,
+		},
+		{
+			name: "zero accelerator count",
+			task: `"ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 0}}]}`,
+		},
+		{
+			name: "partial node accelerator count",
+			task: `"ai_runtime_task": {"deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 4}}]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.URL.Path == "/api/2.2/jobs/runs/get":
+					_, _ = fmt.Fprintf(w, `{
+						"run_id": 5,
+						"start_time": 1000,
+						"end_time": 2000,
+						"state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+						"tasks": [{"run_id": 456, %s}]
+					}`, tt.task)
+				case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+					_, _ = w.Write([]byte(`{"log_records": [{"time_unix_nano": 1000000000, "body": "node log", "node_index": 0}]}`))
+				default:
+					_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			var out bytes.Buffer
+			ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+			cmd := withOutput(&cobra.Command{}, flags.OutputText)
+			cmd.SetContext(ctx)
+			cmd.SetOut(&out)
+
+			err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, nodeSet: true, attempt: -1, tailLines: -1})
+			require.NoError(t, err)
+			assert.Equal(t, "node log\n", out.String())
+		})
+	}
+}
+
+// completedRunLogsServer serves a terminal runs/get and a single page of
+// Bricklens logs (newest-first, as the tail fetch requests). A successful fetch
+// never needs the Me() credential probe, so the server fails the test on one.
 func completedRunLogsServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,9 +236,12 @@ func completedRunLogsServer(t *testing.T) *httptest.Server {
 				{"time_unix_nano": 2000000000, "body": "line two", "node_index": 0},
 				{"time_unix_nano": 1000000000, "body": "line one", "node_index": 0}
 			]}`))
+		case strings.HasSuffix(r.URL.Path, "/scim/v2/Me"):
+			t.Errorf("unexpected Me() probe on a successful logs fetch")
+			w.WriteHeader(http.StatusInternalServerError)
 		default:
-			// Me() probe and SDK config discovery.
-			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+			// SDK config discovery.
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	t.Cleanup(srv.Close)
@@ -278,17 +394,19 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 	var buf bytes.Buffer
 	client := newTestWorkspaceClient(t, srv.URL)
 	client.Config.Profile = "team profile"
+	client.Config.WorkspaceID = "42"
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", ""))
 	ctx = cmdctx.SetWorkspaceClient(ctx, client)
 	cmd := withOutput(newLogsCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 	cmd.SetOut(&buf)
+	require.NoError(t, cmd.Flags().Set("follow", "true"))
 
 	err := cmd.RunE(cmd, []string{"5"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	assert.Contains(t, buf.String(), "Streaming logs interrupted.")
+	assert.Contains(t, buf.String(), "View job run at: "+srv.URL+"/jobs/runs/5?o=42\n\nStreaming logs interrupted.")
 	assert.Contains(t, buf.String(), "To check status:\ndatabricks air get 5 -p 'team profile'")
-	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks air logs 5 -p 'team profile'")
+	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks air logs 5 --follow -p 'team profile'")
 }
 
 // activeRunPastRetryServer serves a still-RUNNING run with two attempts and a
@@ -319,6 +437,43 @@ func activeRunPastRetryServer(t *testing.T, getRunHits *int) *httptest.Server {
 	return srv
 }
 
+func TestLogsPrintsActiveRunOnceByDefault(t *testing.T) {
+	var runGets, logReads int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets++
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			logReads++
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"epoch 1"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	// Without --follow an active run prints what is there and exits 0, with no
+	// run link (that only frames a stream).
+	assert.Equal(t, "epoch 1\n", runLogsCommand(t, srv.URL, "1", "--tail", "50"))
+	assert.Equal(t, 1, runGets, "no status polling after the initial resolve")
+	assert.Equal(t, 1, logReads)
+}
+
+func TestLogsRejectsFollowWithDownload(t *testing.T) {
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newLogsCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	require.NoError(t, cmd.ParseFlags([]string{"--follow", "--download-to", t.TempDir()}))
+
+	err := cmd.RunE(cmd, []string{"1"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error()+buf.String(), "cannot be combined with --follow")
+}
+
 func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	var getRunHits int
 	srv := activeRunPastRetryServer(t, &getRunHits)
@@ -339,4 +494,173 @@ func TestLogsPastRetryOfActiveRunIsStatic(t *testing.T) {
 	// Exactly one runs/get: the initial status resolve in runLogs. The static
 	// streamer must not re-poll (that is the loop this test guards against).
 	assert.Equal(t, 1, getRunHits)
+}
+
+func TestLogsCommandRepeatsRunLinkAfterStreaming(t *testing.T) {
+	for _, result := range []string{"SUCCESS", "FAILED"} {
+		for _, output := range []flags.Output{flags.OutputText, flags.OutputJSON} {
+			t.Run(result+"/"+string(output), func(t *testing.T) {
+				srv := watchServer(t, result)
+				var buf bytes.Buffer
+				ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &buf, &buf, "", ""))
+				ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+				cmd := withOutput(newLogsCommand(), output)
+				cmd.SetContext(ctx)
+				cmd.SetOut(&buf)
+				require.NoError(t, cmd.Flags().Set("follow", "true"))
+
+				err := cmd.RunE(cmd, []string{"777"})
+				if result == "FAILED" {
+					require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+				} else {
+					require.NoError(t, err)
+				}
+				if output == flags.OutputJSON {
+					assert.Contains(t, buf.String(), `"line":"step 2"`)
+					assert.NotContains(t, buf.String(), "View job run at:")
+				} else {
+					// The first fetch already returns logs, so no waiting status prints.
+					assert.Equal(t, "step 1\nstep 2\n\nView job run at: "+srv.URL+"/jobs/runs/777\n", buf.String())
+				}
+			})
+		}
+	}
+}
+
+func TestRunLogsPreservesSubmittedRunURL(t *testing.T) {
+	srv := watchServer(t, "SUCCESS")
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(&cobra.Command{}, flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	runURL := srv.URL + "/jobs/runs/777?o=42"
+
+	err := runLogs(ctx, cmd, logRequest{runID: 777, runURL: runURL, attempt: -1, tailLines: -1})
+	require.NoError(t, err)
+	assert.True(t, strings.HasSuffix(buf.String(), "\n\nView job run at: "+runURL+"\n"), buf.String())
+}
+
+// lateIndexedRunServer serves a run that ended endedAgo ago. Its first tail read
+// misses a record that Bricklens indexes late; later reads include it.
+func lateIndexedRunServer(t *testing.T, endedAgo time.Duration, logReads *int) *httptest.Server {
+	t.Helper()
+	end := time.Now().Add(-endedAgo).UnixMilli()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			*logReads++
+			if *logReads == 1 {
+				_, _ = w.Write([]byte(`{"log_records":[{"record_id":"b","time_unix_nano":20000000000,"body":"epoch 2"},{"record_id":"a","time_unix_nano":10000000000,"body":"epoch 1"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"b","time_unix_nano":20000000000,"body":"epoch 2"},{"record_id":"late","time_unix_nano":15000000000,"body":"epoch 1.5"},{"record_id":"a","time_unix_nano":10000000000,"body":"epoch 1"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			fmt.Fprintf(w, `{"run_id":1,"start_time":10000,"end_time":%d,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`, end)
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// snapshotRunServer serves a terminal run whose successive log reads return
+// snapshots in order, repeating the last one.
+func snapshotRunServer(t *testing.T, runJSON string, snapshots []string, logReads *int) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			_, _ = w.Write([]byte(snapshots[min(*logReads, len(snapshots)-1)]))
+			*logReads++
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(runJSON))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func runLogsCommand(t *testing.T, srvURL string, args ...string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
+	cmd := withOutput(newLogsCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+	require.NoError(t, cmd.ParseFlags(args[1:]))
+	require.NoError(t, cmd.RunE(cmd, args[:1]))
+	return buf.String()
+}
+
+func TestLogsJustEndedFullTailSettlesOnRecordIdentity(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	rec := func(id string, sec int) string {
+		return fmt.Sprintf(`{"record_id":%q,"time_unix_nano":%d,"body":%q}`, id, sec*1_000_000_000, id)
+	}
+	page := func(recs ...string) string { return `{"log_records":[` + strings.Join(recs, ",") + `]}` }
+	// A full --tail 2 window shifts as late records arrive without changing length.
+	snapshots := []string{
+		page(rec("B", 20), rec("A", 10)),
+		page(rec("C", 30), rec("B", 20)),
+		page(rec("D", 40), rec("C", 30)),
+	}
+	runJSON := fmt.Sprintf(`{"run_id":1,"start_time":10000,"end_time":%d,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`, time.Now().Add(-5*time.Second).UnixMilli())
+	var logReads int
+	srv := snapshotRunServer(t, runJSON, snapshots, &logReads)
+
+	assert.Equal(t, "C\nD\n", runLogsCommand(t, srv.URL, "1", "--tail", "2"))
+}
+
+func TestLogsPastRetrySkipsSettleWhenOnlyRunJustEnded(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	now := time.Now()
+	// Attempt 0 ended an hour ago; attempt 1 (and so the run) just ended.
+	runJSON := fmt.Sprintf(`{"run_id":1,"start_time":10000,"end_time":%d,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0,"end_time":%d},{"run_id":3,"attempt_number":1,"end_time":%d}]}`,
+		now.Add(-5*time.Second).UnixMilli(), now.Add(-time.Hour).UnixMilli(), now.Add(-5*time.Second).UnixMilli())
+	var logReads int
+	srv := snapshotRunServer(t, runJSON, []string{`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"retry 0 log"}]}`}, &logReads)
+
+	assert.Equal(t, "retry 0 log\n", runLogsCommand(t, srv.URL, "1", "--retry", "0"))
+	assert.Equal(t, 1, logReads, "a past attempt that ended long ago is read once")
+}
+
+func TestLogsJustEndedRunWaitsForLateRecords(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	for _, tc := range []struct {
+		name     string
+		endedAgo time.Duration
+		want     string
+	}{
+		{"just ended", 5 * time.Second, "epoch 1\nepoch 1.5\nepoch 2\n"},
+		// An old run's index has settled, so it gets a single read.
+		{"ended long ago", time.Hour, "epoch 1\nepoch 2\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var logReads int
+			srv := lateIndexedRunServer(t, tc.endedAgo, &logReads)
+			var buf bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))
+			ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL))
+			cmd := withOutput(newLogsCommand(), flags.OutputText)
+			cmd.SetContext(ctx)
+			cmd.SetOut(&buf)
+
+			require.NoError(t, cmd.RunE(cmd, []string{"1"}))
+			assert.Equal(t, tc.want, buf.String())
+		})
+	}
 }

@@ -3,6 +3,9 @@ Databricks CLI
 Usage:
   databricks [command]
 
+Lakewatch
+  lakewatch                              *Beta* Manage Lakewatch: security-analytics data sources, detection rules, and per-catalog configuration.
+
 Databricks Workspace
   fs                                     Filesystem related commands
   git-credentials                        Registers personal access token for Databricks to do operations on behalf of the user.
@@ -19,9 +22,6 @@ Compute
   libraries                              The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.
   policy-compliance-for-clusters         The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.
   policy-families                        View available policy families.
-
-Sandbox
-  sandbox                                *Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.
 
 Lakeflow
   jobs                                   The Jobs API allows you to create, edit, and delete jobs.
@@ -44,9 +44,10 @@ Vector Search
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
 AI Search
-  ai-search                              *Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
+  ai-search                              **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
 
 Identity and Access Management
+  assume-group                           *Beta* Manage the workspace's restricted sharing groups.
   current-user                           *Public Preview* This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
   groups-v2                              *Public Preview* Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
@@ -66,6 +67,7 @@ Databricks SQL
   queries                                The queries API can be used to perform CRUD operations on queries.
   queries-legacy                         These endpoints are used for CRUD operations on query definitions.
   query-history                          A service responsible for storing and retrieving the list of queries run against SQL endpoints and serverless compute.
+  statement-execution-v2                 *Public Preview* The Statement Execution API v2 can be used to execute SQL statements on a SQL warehouse and fetch the result.
   warehouses                             A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL.
 
 AI/BI
@@ -95,6 +97,7 @@ Unity Catalog
   rfa                                    *Public Preview* Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   secrets-uc                             A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).
+  software-artifacts                     *Public Preview* Manage software artifacts and their versions in Unity Catalog.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
@@ -130,13 +133,13 @@ Marketplace
   consumer-listings                      Listings are the core entities in the Marketplace.
   consumer-personalization-requests      Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
   consumer-providers                     Providers are the entities that publish listings to the Marketplace.
-  provider-exchange-filters              *Public Preview* Marketplace exchanges filters curate which groups can access an exchange.
-  provider-exchanges                     *Public Preview* Marketplace exchanges allow providers to share their listings with a curated set of customers.
-  provider-files                         *Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
-  provider-listings                      *Public Preview* Listings are the core entities in the Marketplace.
-  provider-personalization-requests      *Public Preview* Personalization requests are an alternate to instantly available listings.
-  provider-provider-analytics-dashboards *Public Preview* Manage templated analytics solution for providers.
-  provider-providers                     *Public Preview* Providers are entities that manage assets in Marketplace.
+  provider-exchange-filters              Marketplace exchanges filters curate which groups can access an exchange.
+  provider-exchanges                     Marketplace exchanges allow providers to share their listings with a curated set of customers.
+  provider-files                         Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
+  provider-listings                      Listings are the core entities in the Marketplace.
+  provider-personalization-requests      Personalization requests are an alternate to instantly available listings.
+  provider-provider-analytics-dashboards Manage templated analytics solution for providers.
+  provider-providers                     Providers are entities that manage assets in Marketplace.
 
 Clean Rooms
   clean-room-asset-revisions             *Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
@@ -152,7 +155,7 @@ Data Classification
   data-classification                    Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
-  data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).
+  data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
 
 Database Instances
   database                               *Public Preview* Database Instances provide access to a database via REST API or direct SQL.
@@ -164,7 +167,7 @@ Agent Bricks
   supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
 AI Functions
-  ai-functions                           Transform and enrich data with AI on Databricks.
+  ai-functions                           Transform and enrich data with AI.
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
@@ -177,11 +180,13 @@ Environments
   environments                           APIs to manage environment resources.
 
 Domains
-  domains                                *Beta* Manage domains for organizing and discovering data assets.
+  domains                                *Public Preview* Manage domains for organizing and discovering data assets.
 
 Developer Tools
-  air                                    *Public Preview* Run and manage AI Runtime training workloads
+  air                                    Run and manage AI Runtime workloads on serverless GPU compute
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
+  feedback                               Send feedback about the Databricks CLI to Databricks
+  sandbox                                *Beta* Manage Databricks Sandbox environments
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:
@@ -198,11 +203,11 @@ Additional Commands:
   version                                Retrieve information about the current version of this CLI
 
 Flags:
-      --debug            enable debug logging
-  -h, --help             help for databricks
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-  -v, --version          version for databricks
+      --debug[=true|false]     enable debug logging
+  -h, --help[=true|false]      help for databricks
+  -o, --output type            output type: text or json (default text)
+  -p, --profile string         ~/.databrickscfg profile
+  -t, --target string          bundle target to use (if applicable)
+  -v, --version[=true|false]   version for databricks
 
 Use "databricks [command] --help" for more information about a command.

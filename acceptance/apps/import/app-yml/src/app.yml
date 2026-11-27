@@ -1,0 +1,10 @@
+command:
+  - python
+  - app.py
+env:
+  - name: GREETING
+    value: hello
+  - name: WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: PYTHON_VERSION
+    value: 3.10

@@ -1,5 +1,6 @@
 
 === A target that matches several profiles, including [DEFAULT], is rejected
+
 >>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/ambiguous.databrickscfg [CLI] bundle validate -t classic
 Error: cannot resolve bundle auth configuration: resolve: strict profile matching: multiple profiles match host [DATABRICKS_URL]: DEFAULT, workspace_classic. Config: host=[DATABRICKS_URL], config_file=[TEST_TMP_DIR]/ambiguous.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 
@@ -13,6 +14,7 @@ Found 1 error
 Exit code: 1
 
 === Account profiles are skipped
+
 >>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/account.databrickscfg [CLI] bundle run -t custom_host show_auth
 profile=workspace_custom_host host=[CUSTOM_HOST] workspace_id=[WORKSPACE_ID]
 
@@ -39,6 +41,7 @@ Found 1 error
 Exit code: 1
 
 === A missing config file is rejected
+
 >>> errcode env DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/missing.databrickscfg [CLI] bundle validate -t classic
 Error: cannot resolve bundle auth configuration: resolve: strict profile matching: config file [TEST_TMP_DIR]/missing.databrickscfg not found. Config: host=[DATABRICKS_URL], config_file=[TEST_TMP_DIR]/missing.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 

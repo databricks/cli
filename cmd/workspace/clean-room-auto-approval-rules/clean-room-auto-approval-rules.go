@@ -3,6 +3,7 @@
 package clean_room_auto_approval_rules
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clean-room-auto-approval-rules",
-		Short: `*Beta* Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clean-room-auto-approval-rules",
+	Short:   `*Beta* Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.`,
+	GroupID: "cleanrooms",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 Clean room auto-approval rules automatically create an approval on your behalf
   when an asset (e.g. notebook) meeting specific criteria is shared in a clean
-  room.`,
-		GroupID: "cleanrooms",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  room.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ Clean room auto-approval rules automatically create an approval on your behalf
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

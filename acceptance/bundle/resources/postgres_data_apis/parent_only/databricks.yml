@@ -1,0 +1,7 @@
+bundle:
+  name: parent-only-pg-data-api
+
+resources:
+  postgres_data_apis:
+    my_data_api:
+      parent: projects/test-project/branches/production/databases/test-database

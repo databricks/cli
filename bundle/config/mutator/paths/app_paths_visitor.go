@@ -6,7 +6,8 @@ import (
 )
 
 func VisitAppPaths(root *config.Root, fn VisitFunc) error {
-	for _, name := range sortedKeys(root.Resources.Apps) {
+	names := sortedKeys(root.Resources.Apps)
+	for _, name := range names {
 		if a := root.Resources.Apps[name]; a != nil {
 			if err := visit(fn, visitArgs{
 				owner: a,
@@ -14,6 +15,19 @@ func VisitAppPaths(root *config.Root, fn VisitFunc) error {
 				value: &a.SourceCodePath,
 				mode:  TranslateModeDirectory,
 				path:  structpath.NewPath(resourcePath("apps", name), "source_code_path"),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	for _, name := range names {
+		if a := root.Resources.Apps[name]; a != nil {
+			if err := visit(fn, visitArgs{
+				owner: a,
+				field: "thumbnail_path",
+				value: &a.ThumbnailPath,
+				mode:  TranslateModeLocalRelative,
+				path:  structpath.NewPath(resourcePath("apps", name), "thumbnail_path"),
 			}); err != nil {
 				return err
 			}

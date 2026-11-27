@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.apps._models.app_config import (
-    AppConfig,
-    AppConfigParam,
-)
+from databricks.bundles.apps._models.app_config import AppConfig, AppConfigParam
 from databricks.bundles.apps._models.app_permission import (
     AppPermission,
     AppPermissionParam,
@@ -41,7 +38,11 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class App(Resource):
-    """"""
+    """
+    An app that runs on Databricks Apps. The app runs on managed compute in the workspace and is
+    deployed from a workspace folder or a Git repository. Each app acts as its own dedicated service
+    principal.
+    """
 
     name: VariableOr[str]
     """
@@ -51,7 +52,9 @@ class App(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    [Public Preview]
+    [Public Preview] ID of the serverless budget policy that the app's compute usage is attributed to. Budget
+    policies and usage policies are alternatives: set at most one of `budget_policy_id` and
+    `usage_policy_id`.
     """
 
     compute_max_instances: VariableOrOptional[int] = None
@@ -65,6 +68,12 @@ class App(Resource):
     """
 
     compute_size: VariableOrOptional[ComputeSize] = None
+    """
+    Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more
+    CPU and memory at a higher hourly cost. Leave unset for an app in a space: apps in a space always
+    run on space compute and reject any other size. See
+    https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.
+    """
 
     config: VariableOrOptional[AppConfig] = None
 
@@ -105,10 +114,16 @@ class App(Resource):
 
     resources: VariableOrList[AppResource] = field(default_factory=list)
     """
-    Resources for the app.
+    Databricks resources the app depends on. Each entry grants the app's service principal the
+    listed permission on one resource and makes that resource available to the app under the
+    entry's name.
     """
 
     source_code_path: VariableOrOptional[str] = None
+    """
+    Workspace file system path of the app source code. On create, the app is deployed from this
+    path. Alternative to `git_source`.
+    """
 
     space: VariableOrOptional[str] = None
     """
@@ -120,15 +135,29 @@ class App(Resource):
     telemetry_export_destinations: VariableOrList[TelemetryExportDestination] = field(
         default_factory=list
     )
+    """
+    Destinations that receive the app's OpenTelemetry logs, metrics and traces. Changes take
+    effect when the app is next deployed.
+    """
+
+    thumbnail_path: VariableOrOptional[str] = None
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
+    """
 
     usage_policy_id: VariableOrOptional[str] = None
     """
-    [Public Preview]
+    [Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to
+    `budget_policy_id`.
     """
 
     user_api_scopes: VariableOrList[str] = field(default_factory=list)
     """
-    [Public Preview]
+    [Public Preview] API scopes the app requests for user authorization. The user access token that Databricks
+    forwards to the app is limited to these scopes plus the default identity scopes, so the app
+    can act on the user's behalf only within them. Workspace admins can restrict which scopes apps
+    in the workspace may request. See
+    https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth.
     """
 
     @classmethod
@@ -150,7 +179,9 @@ class AppDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    [Public Preview]
+    [Public Preview] ID of the serverless budget policy that the app's compute usage is attributed to. Budget
+    policies and usage policies are alternatives: set at most one of `budget_policy_id` and
+    `usage_policy_id`.
     """
 
     compute_max_instances: VariableOrOptional[int]
@@ -164,6 +195,12 @@ class AppDict(TypedDict, total=False):
     """
 
     compute_size: VariableOrOptional[ComputeSizeParam]
+    """
+    Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more
+    CPU and memory at a higher hourly cost. Leave unset for an app in a space: apps in a space always
+    run on space compute and reject any other size. See
+    https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.
+    """
 
     config: VariableOrOptional[AppConfigParam]
 
@@ -204,10 +241,16 @@ class AppDict(TypedDict, total=False):
 
     resources: VariableOrList[AppResourceParam]
     """
-    Resources for the app.
+    Databricks resources the app depends on. Each entry grants the app's service principal the
+    listed permission on one resource and makes that resource available to the app under the
+    entry's name.
     """
 
     source_code_path: VariableOrOptional[str]
+    """
+    Workspace file system path of the app source code. On create, the app is deployed from this
+    path. Alternative to `git_source`.
+    """
 
     space: VariableOrOptional[str]
     """
@@ -217,15 +260,29 @@ class AppDict(TypedDict, total=False):
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestinationParam]
+    """
+    Destinations that receive the app's OpenTelemetry logs, metrics and traces. Changes take
+    effect when the app is next deployed.
+    """
+
+    thumbnail_path: VariableOrOptional[str]
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
+    """
 
     usage_policy_id: VariableOrOptional[str]
     """
-    [Public Preview]
+    [Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to
+    `budget_policy_id`.
     """
 
     user_api_scopes: VariableOrList[str]
     """
-    [Public Preview]
+    [Public Preview] API scopes the app requests for user authorization. The user access token that Databricks
+    forwards to the app is limited to these scopes plus the default identity scopes, so the app
+    can act on the user's behalf only within them. Workspace admins can restrict which scopes apps
+    in the workspace may request. See
+    https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth.
     """
 
 

@@ -7,6 +7,10 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.jobs._models.cluster_spec import ClusterSpec, ClusterSpecParam
+from databricks.bundles.jobs._models.job_cluster_serverless_compute import (
+    JobClusterServerlessCompute,
+    JobClusterServerlessComputeParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -25,6 +29,15 @@ class JobCluster:
     new_cluster: VariableOrOptional[ClusterSpec] = None
     """
     If new_cluster, a description of a cluster that is created for each task.
+    """
+
+    serverless_compute: VariableOrOptional[JobClusterServerlessCompute] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Serverless compute settings for this cluster. At most one job cluster per job
+    may set this field; the rate limit defined on the referenced policy applies
+    across all tasks bound to this cluster.
     """
 
     serverless_compute_id: VariableOrOptional[str] = None
@@ -56,6 +69,15 @@ class JobClusterDict(TypedDict, total=False):
     new_cluster: VariableOrOptional[ClusterSpecParam]
     """
     If new_cluster, a description of a cluster that is created for each task.
+    """
+
+    serverless_compute: VariableOrOptional[JobClusterServerlessComputeParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] Serverless compute settings for this cluster. At most one job cluster per job
+    may set this field; the rate limit defined on the referenced policy applies
+    across all tasks bound to this cluster.
     """
 
     serverless_compute_id: VariableOrOptional[str]

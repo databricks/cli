@@ -1,0 +1,18 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "spec": {
+      "db_max_rows": 500,
+      "db_schemas": [
+        "public"
+      ],
+      "server_cors_allowed_origins": [
+        "https://app.example.com"
+      ]
+    }
+  }
+}

@@ -3,6 +3,7 @@
 package groups_v2
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,24 +18,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "groups-v2",
-		Short: `Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.`,
-		Long: `Groups simplify identity management, making it easier to assign access to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "groups-v2",
+	Short:   `Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Groups simplify identity management, making it easier to assign access to
   Databricks account, data, and other securable objects.
 
   It is best practice to assign access to workspaces and access-control policies
   in Unity Catalog to groups, instead of to users individually. All Databricks
   account identities can be assigned as members of groups, and members inherit
-  permissions that are assigned to their group.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  permissions that are assigned to their group.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -48,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -69,9 +72,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `Sets the human-readable name of the group.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Sets the identifier of the group in an external identity provider.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Identifies the group within Databricks.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
@@ -354,7 +357,7 @@ func newPatch() *cobra.Command {
   Partially updates the details of a group.
 
   Arguments:
-    ID: Unique ID in the Databricks workspace.`
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -420,8 +423,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `Sets the human-readable name of the group.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Sets the identifier of the group in an external identity provider.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
@@ -433,7 +436,7 @@ func newUpdate() *cobra.Command {
   Updates the details of a group by replacing the entire group entity.
 
   Arguments:
-    ID: Databricks group ID`
+    ID: Identifies the group within Databricks.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

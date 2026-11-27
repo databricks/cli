@@ -1,19 +1,23 @@
 
 === Test should use a fake psql command:
+
 >>> psql --version
 echo-arguments.sh was called with the following arguments: --version
 PGPASSWORD=
 PGSSLMODE=
 
 === Command should require instance name:
+
 >>> musterr [CLI] psql
 Error: no Lakebase databases found in workspace
 
 === Command should require instance name even if extra arguments are provided:
+
 >>> musterr [CLI] psql -- --dbname=my-database
 Error: no Lakebase databases found in workspace
 
 === Command should use default db name if it is not specified:
+
 >>> [CLI] psql my-database
 Instance: my-database
 Connecting to database instance...
@@ -22,6 +26,7 @@ PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should by-pass extra arguments to psql:
+
 >>> [CLI] psql my-database -- -c SELECT * FROM my_table --echo-all
 Instance: my-database
 Connecting to database instance...
@@ -30,6 +35,7 @@ PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should use the db name from extra arguments when specified:
+
 >>> [CLI] psql my-database -- --dbname=db1
 Instance: my-database
 Connecting to database instance...
@@ -45,6 +51,7 @@ PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should use the port from extra arguments when specified:
+
 >>> [CLI] psql my-database -- --dbname=db1 -p 3000
 Instance: my-database
 Connecting to database instance...
@@ -60,6 +67,7 @@ PGPASSWORD=my-secret-token
 PGSSLMODE=require
 
 === Command should not use retries if max-retries is set to 0:
+
 >>> [CLI] psql my-database --max-retries 0 -- --dbname=db1 -p 3000
 Instance: my-database
 Connecting to database instance...

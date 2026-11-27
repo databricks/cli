@@ -3,6 +3,7 @@
 package feature_store
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,27 +19,31 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "feature-store",
-		Short: `A feature store is a centralized repository that enables data scientists to find and share features.`,
-		Long: `A feature store is a centralized repository that enables data scientists to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "feature-store",
+	Short:   `A feature store is a centralized repository that enables data scientists to find and share features.`,
+	GroupID: "ml",
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A feature store is a centralized repository that enables data scientists to
   find and share features. Using a feature store also ensures that the code used
   to compute feature values is the same during model training and when the model
   is used for inference.
 
   An online store is a low-latency database used for feature lookup during
-  real-time model inference or serve feature for real-time applications.`,
-		GroupID: "ml",
+  real-time model inference or serve feature for real-time applications.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateOnlineStore())
@@ -53,8 +58,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-online-store command

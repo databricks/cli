@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // na is the placeholder shown for an empty text-table cell, matching the Python CLI.
@@ -52,19 +54,16 @@ func reformatYAMLForDisplay(content []byte) string {
 	forceLiteralBlockStrings(&node)
 
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(&node); err != nil {
+	if err := yamlutil.Encode(&buf, &node); err != nil {
 		return string(content)
 	}
-	enc.Close()
 	return buf.String()
 }
 
 // forceLiteralBlockStrings walks a YAML node tree and marks every multi-line
 // string scalar for `|` block-literal rendering. The encoder automatically
 // falls back to a quoted style when a value can't be represented as a block
-// literal (e.g. lines with trailing whitespace), so no explicit guard is needed.
+// literal (e.g. control characters), so no explicit guard is needed.
 func forceLiteralBlockStrings(node *yaml.Node) {
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && strings.Contains(node.Value, "\n") {
 		node.Style = yaml.LiteralStyle
@@ -106,23 +105,36 @@ func runStatus(state *jobs.RunState) string {
 
 func displayRunStatus(run *jobs.Run) string {
 	status := runStatus(run.State)
-	if runWaitingForCompute(run) {
+	if runAppearsPending(run) {
 		return "PENDING"
 	}
 	return status
 }
 
-func runWaitingForCompute(run *jobs.Run) bool {
+// runAppearsPending reports whether a run is pending itself, or running while
+// its lead task waits to start. It does not identify why the task is waiting.
+// A run that is queued, blocked on an upstream task or waiting to retry at run
+// level reports that state instead. A task of a multi-task run carries its own
+// state (see taskRun): PENDING while it waits to start, BLOCKED while it waits
+// on an upstream task.
+func runAppearsPending(run *jobs.Run) bool {
 	if run.State == nil || run.State.ResultState != "" {
 		return false
 	}
 	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
 		return true
 	}
-	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
+	task := leadTask(run)
+	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || task == nil || task.State == nil {
 		return false
 	}
-	switch run.Tasks[0].State.LifeCycleState {
+	return isWaitingState(task.State.LifeCycleState)
+}
+
+// isWaitingState reports whether a task lifecycle state means it has not
+// started running yet.
+func isWaitingState(s jobs.RunLifeCycleState) bool {
+	switch s {
 	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
 		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
 		return true
@@ -135,8 +147,8 @@ func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
 	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
 		return statusMessage
 	}
-	if runWaitingForCompute(run) {
-		return waitingForComputeStatus
+	if runAppearsPending(run) {
+		return waitingForWorkloadStatus
 	}
 	return displayRunStatus(run)
 }
@@ -156,8 +168,8 @@ func terminationReason(run *jobs.Run) *string {
 			return &message
 		}
 	}
-	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
-		if message := strings.TrimSpace(run.Tasks[0].State.StateMessage); message != "" {
+	if task := leadTask(run); task != nil && task.State != nil {
+		if message := strings.TrimSpace(task.State.StateMessage); message != "" {
 			return &message
 		}
 	}
@@ -254,9 +266,14 @@ func roundMillisToSeconds(ms int64) int64 {
 
 // dashboardURL builds {host}/jobs/runs/{id}?o={workspace_id}, matching Python
 // (cli_entrypoint.py:1911). The ?o= workspace id deep-links to the right
-// workspace on multi-workspace accounts.
+// workspace on multi-workspace accounts; an unknown (zero) workspace id omits
+// it rather than linking to ?o=0.
 func dashboardURL(host string, runID, workspaceID int64) string {
-	return fmt.Sprintf("%s/jobs/runs/%d?o=%d", strings.TrimRight(host, "/"), runID, workspaceID)
+	url := fmt.Sprintf("%s/jobs/runs/%d", strings.TrimRight(host, "/"), runID)
+	if workspaceID == 0 {
+		return url
+	}
+	return fmt.Sprintf("%s?o=%d", url, workspaceID)
 }
 
 // formatDuration turns a number of seconds into a compact human string such as
@@ -294,10 +311,11 @@ func latestAttemptNumber(run *jobs.Run) int {
 // "/Users/me@example.com/my-experiment"); we strip that prefix so users see just
 // the experiment name they chose.
 func experimentName(run *jobs.Run) *string {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	task := run.Tasks[0].GenAiComputeTask
+	task := t.GenAiComputeTask
 	if task == nil || task.MlflowExperimentName == "" {
 		return nil
 	}
@@ -318,19 +336,6 @@ func stripExperimentUserPrefix(name string) string {
 		return parts[3]
 	}
 	return name
-}
-
-// accelerators returns a short description of the GPUs the run uses, such as
-// "8x H100", or an empty string if the run has no GPU compute attached.
-func accelerators(run *jobs.Run) string {
-	if len(run.Tasks) == 0 {
-		return ""
-	}
-	task := run.Tasks[0].GenAiComputeTask
-	if task == nil || task.Compute == nil {
-		return ""
-	}
-	return acceleratorLabel(task.Compute.GpuType, task.Compute.NumGpus)
 }
 
 // acceleratorLabel renders a GPU count and type as "8x H100", "" for none, or
@@ -354,15 +359,105 @@ func gpuDisplayName(gpuType string) string {
 	return gpuType
 }
 
-// maxRetries returns the configured retry limit for the run's latest task as a
-// display string: "unlimited" for the backend's -1, otherwise the count.
-func maxRetries(run *jobs.Run) string {
+// maxRetriesSource says where a run's retry limit was read from.
+type maxRetriesSource string
+
+const (
+	// maxRetriesReported: runs/get returned max_retries on the task.
+	maxRetriesReported maxRetriesSource = "reported"
+	// maxRetriesConfigured: the run's uploaded config sets max_retries.
+	maxRetriesConfigured maxRetriesSource = "configured"
+	// maxRetriesCLIDefault: the config leaves max_retries unset, and the CLI
+	// submitted its default.
+	maxRetriesCLIDefault maxRetriesSource = "cli_default"
+)
+
+// runMaxRetries is a run's retry limit and where it came from. Limit -1 means
+// unlimited.
+type runMaxRetries struct {
+	Limit  int              `json:"limit"`
+	Source maxRetriesSource `json:"source"`
+}
+
+// resolveMaxRetries returns the retry limit of the run's latest task, or nil
+// when it can't be known. configRaw is the run's training config as uploaded
+// (nil when it was not found or could not be downloaded).
+//
+// runs/get omits max_retries on task runs, and the SDK decodes the missing field
+// as 0, so a value is trusted only when the response actually carried the key.
+// Otherwise the limit is read from the config, and only for one-time submit
+// runs: a job run (for example a bundle deployed with `air convert-to-dabs`)
+// takes its retries from the job settings, which the config doesn't track. When
+// the config leaves the key unset, the CLI default is assumed only for
+// ai_runtime_task runs, because every CLI that submits that task type sends 3
+// (runsubmit.go always sends max_retries). Legacy gen_ai_compute_task runs may
+// predate the Python CLI's switch from 0 to 3, so their unset limit is unknown.
+func resolveMaxRetries(run *jobs.Run, configRaw []byte) *runMaxRetries {
+	if n, ok := reportedMaxRetries(run); ok {
+		return &runMaxRetries{Limit: n, Source: maxRetriesReported}
+	}
+	if run.RunType != jobs.RunTypeSubmitRun {
+		return nil
+	}
+	n, set, ok := configMaxRetries(configRaw)
+	switch {
+	case !ok:
+		return nil
+	case set:
+		return &runMaxRetries{Limit: n, Source: maxRetriesConfigured}
+	case aiRuntimeTaskOf(run) != nil:
+		return &runMaxRetries{Limit: defaultMaxRetries, Source: maxRetriesCLIDefault}
+	default:
+		return nil
+	}
+}
+
+// maxRetriesDisplay renders a retry limit for the text view: "N/A" when it is
+// unknown, "unlimited" for -1, and a "(CLI default)" note when the config left
+// it unset.
+func maxRetriesDisplay(m *runMaxRetries) string {
+	if m == nil {
+		return na
+	}
+	s := strconv.Itoa(m.Limit)
+	if m.Limit < 0 {
+		s = "unlimited"
+	}
+	if m.Source == maxRetriesCLIDefault {
+		s += " (CLI default)"
+	}
+	return s
+}
+
+// reportedMaxRetries returns the latest task's max_retries if the runs/get
+// response carried the key. The SDK records a decoded zero value in
+// ForceSendFields, which tells an explicit 0 apart from a missing field.
+func reportedMaxRetries(run *jobs.Run) (int, bool) {
 	if len(run.Tasks) == 0 {
-		return "0"
+		return 0, false
 	}
-	n := run.Tasks[len(run.Tasks)-1].MaxRetries
-	if n < 0 {
-		return "unlimited"
+	t := run.Tasks[len(run.Tasks)-1]
+	if t.MaxRetries == 0 && !slices.Contains(t.ForceSendFields, "MaxRetries") {
+		return 0, false
 	}
-	return strconv.Itoa(n)
+	return t.MaxRetries, true
+}
+
+// configMaxRetries reads max_retries from a run's config YAML: the value, whether
+// the key is set, and whether the config parsed at all. It decodes only that
+// key so configs written by other CLI versions still parse.
+func configMaxRetries(raw []byte) (n int, set, ok bool) {
+	if len(raw) == 0 {
+		return 0, false, false
+	}
+	var cfg struct {
+		MaxRetries *int `yaml:"max_retries"`
+	}
+	if err := yaml.Unmarshal(raw, &cfg); err != nil {
+		return 0, false, false
+	}
+	if cfg.MaxRetries == nil {
+		return 0, false, true
+	}
+	return *cfg.MaxRetries, true, true
 }

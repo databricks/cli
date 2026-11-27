@@ -1,0 +1,64 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# Task keys of a job in databricks.yml and in the workspace, which a correct sync makes equal.
+task_keys() {
+  echo "$1 config: $($CLI bundle validate -o json | jq -r --arg j "$1" '[.resources.jobs[$j].tasks[]?.task_key] | sort | join(" ")')"
+  echo "$1 remote: $($CLI jobs get $2 -o json | jq -r '[.settings.tasks[]?.task_key] | sort | join(" ")')"
+}
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+rename_job_id="$(read_id.py rename_job)"
+readd_job_id="$(read_id.py readd_job)"
+
+title "Remove every task except keep remotely"
+edit_resource.py jobs $job_id <<EOF
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] == "keep"]
+EOF
+
+title "Remove a, b and c and rename z to y remotely, keep stays"
+edit_resource.py jobs $rename_job_id <<EOF
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] in ("keep", "z")]
+for task in r["tasks"]:
+    if task["task_key"] == "z":
+        task["task_key"] = "y"
+EOF
+
+title "Rename k to z remotely in readd_job"
+edit_resource.py jobs $readd_job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "k":
+        task["task_key"] = "z"
+EOF
+
+title "Sync"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Tasks left in databricks.yml"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Task keys after the sync"
+task_keys my_job $job_id
+task_keys rename_job $rename_job_id
+
+title "Without deploying, remove a and add m remotely in readd_job"
+edit_resource.py jobs $readd_job_id <<EOF
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "a"]
+r["tasks"].append({"task_key": "m", "notebook_task": {"notebook_path": "/Users/${CURRENT_USER_NAME}/m"}})
+EOF
+
+title "Sync readd_job again"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save --select-ids jobs:$readd_job_id
+
+title "readd_job keeps m and z"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+task_keys readd_job $readd_job_id

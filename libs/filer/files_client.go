@@ -1,22 +1,32 @@
 package filer
 
 import (
+	"bufio"
+	"bytes"
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"slices"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
+	"github.com/databricks/sdk-go/core/apiretry"
+	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
+	"github.com/databricks/sdk-go/options/call"
 	"github.com/databricks/sdk-go/options/client"
 	"golang.org/x/sync/errgroup"
 )
@@ -35,6 +45,90 @@ func httpStatus(err error) int {
 		return aerr.HTTPStatusCode()
 	}
 	return -1
+}
+
+// filesRetryStatusCodes are the HTTP statuses on which Files API calls are
+// retried; the same set files/v2 retries for its own upload control-plane calls.
+// Throttled cloud storage comes back as 429 RESOURCE_EXHAUSTED (e.g. "AWS S3 is
+// throttling requests; try again later."), which asks the caller to retry.
+// files/v2 retries nothing unless the caller passes a retrier, so the filer
+// supplies one to keep the retries the databricks-sdk-go client used to do.
+var filesRetryStatusCodes = []int{
+	http.StatusRequestTimeout,     // 408
+	http.StatusTooManyRequests,    // 429
+	http.StatusBadGateway,         // 502
+	http.StatusServiceUnavailable, // 503
+	http.StatusGatewayTimeout,     // 504
+}
+
+// filesReadRetryStatusCodes add 500 to filesRetryStatusCodes for read-only
+// calls (metadata, download, list): a retry cannot apply anything twice there,
+// so a transient server error is worth retrying too. Writes and deletes are not
+// retried on 500 because the failed attempt may have been applied.
+var filesReadRetryStatusCodes = append(slices.Clone(filesRetryStatusCodes), http.StatusInternalServerError)
+
+// filesMaxServerErrorRetries bounds the retries on 500 within one call, so a
+// 500 that does not clear (e.g. on one broken path) still fails in seconds.
+const filesMaxServerErrorRetries = 3
+
+// filesMaxRetries bounds the retries of one call. Non-streaming files/v2 calls
+// also have a 5 minute SDK timeout, but the single-shot upload retried by the
+// filer itself does not.
+const filesMaxRetries = 10
+
+// filesRetryBackoff is the default delay policy between retries.
+var filesRetryBackoff = ops.BackoffPolicy{Initial: time.Second, Maximum: 10 * time.Second}
+
+// cappedRetrier stops retrying after filesMaxRetries retries.
+type cappedRetrier struct {
+	ops.Retrier
+	retries int
+}
+
+func (r *cappedRetrier) IsRetriable(err error) (time.Duration, bool) {
+	if r.retries >= filesMaxRetries {
+		return 0, false
+	}
+	r.retries++
+	return r.Retrier.IsRetriable(err)
+}
+
+// readRetrier is a cappedRetrier that also stops after
+// filesMaxServerErrorRetries retries on 500.
+type readRetrier struct {
+	cappedRetrier
+	serverErrors int
+}
+
+func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
+	if httpStatus(err) == http.StatusInternalServerError {
+		if r.serverErrors >= filesMaxServerErrorRetries {
+			return 0, false
+		}
+		r.serverErrors++
+	}
+	return r.cappedRetrier.IsRetriable(err)
+}
+
+// deleteRetrier is a cappedRetrier that records whether it retried an attempt
+// that may have been applied. A 429 or a refused connection means the backend
+// did not act; after any other retried error (a 5xx or 408 from a gateway, a
+// reset connection) the delete may have gone through, and its retry then gets
+// 404 for a path that is gone as asked. This matches libs/retry, which forgives
+// a 404 after any of its own retries; it does not retry 429 or refused
+// connections.
+type deleteRetrier struct {
+	*cappedRetrier
+	retriedAppliedAttempt bool
+}
+
+func (r *deleteRetrier) IsRetriable(err error) (time.Duration, bool) {
+	delay, ok := r.cappedRetrier.IsRetriable(err)
+	notApplied := httpStatus(err) == http.StatusTooManyRequests || errors.Is(err, syscall.ECONNREFUSED)
+	if ok && !notApplied {
+		r.retriedAppliedAttempt = true
+	}
+	return delay, ok
 }
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
@@ -152,6 +246,81 @@ type FilesClient struct {
 	// (e.g. fs cp -r) draw from one bounded budget and one connection pool.
 	limiter        files.Limiter
 	transferClient *http.Client
+
+	// retryBackoff is copied into a fresh retrier for every call.
+	retryBackoff ops.BackoffPolicy
+}
+
+func (w *FilesClient) newCappedRetrier() *cappedRetrier {
+	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
+}
+
+func (w *FilesClient) newRetrier() ops.Retrier {
+	return w.newCappedRetrier()
+}
+
+func (w *FilesClient) newReadRetrier() ops.Retrier {
+	inner := apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesReadRetryStatusCodes})
+	return &readRetrier{Retrier: inner}
+}
+
+// retry is the call option that retries a files/v2 call on throttling.
+func (w *FilesClient) retry() call.Option {
+	return call.WithRetrier(w.newRetrier)
+}
+
+// deleteRetry is retry for deletes. The returned retrier tells whether an
+// attempt that may have been applied was retried.
+func (w *FilesClient) deleteRetry() (call.Option, *deleteRetrier) {
+	r := &deleteRetrier{cappedRetrier: w.newCappedRetrier()}
+	return call.WithRetrier(func() ops.Retrier { return r }), r
+}
+
+// readRetry is retry for read-only calls, which are also retried on 500.
+func (w *FilesClient) readRetry() call.Option {
+	return call.WithRetrier(w.newReadRetrier)
+}
+
+// filesAPIError describes a Files API error that carries no message. The files/v2
+// error text is "databricks-api error: " plus the message from the JSON body, so
+// an error with no body (every failed HEAD) or a non-JSON one (e.g. from a proxy)
+// would otherwise print as "databricks-api error: " with no status or path.
+type filesAPIError struct {
+	op      string
+	absPath string
+	err     *apierr.APIError
+}
+
+func (e filesAPIError) Error() string {
+	status := e.err.HTTPStatusCode()
+	msg := fmt.Sprintf("%s %s: Files API returned HTTP %d", e.op, e.absPath, status)
+	// Non-standard codes such as 520 have no status text.
+	if text := http.StatusText(status); text != "" {
+		msg += " " + text
+	}
+	// A JSON body can carry an error_code without a message.
+	var body struct {
+		ErrorCode string `json:"error_code"`
+	}
+	if json.Unmarshal(e.err.HTTPBody(), &body) == nil && body.ErrorCode != "" {
+		msg += " (" + body.ErrorCode + ")"
+	}
+	return msg
+}
+
+func (e filesAPIError) Unwrap() error {
+	return e.err
+}
+
+// describeFilesError returns err, or a [filesAPIError] for it if err is a
+// files/v2 HTTP error without a message.
+func describeFilesError(err error, op, absPath string) error {
+	// Only a bare error: a wrapped one already has context from its wrapper.
+	aerr, ok := err.(*apierr.APIError) //nolint:errorlint // must not match wrapped errors
+	if !ok || aerr.Message() != "" || aerr.HTTPStatusCode() < 0 {
+		return err
+	}
+	return filesAPIError{op: op, absPath: absPath, err: aerr}
 }
 
 func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -167,6 +336,7 @@ func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root str
 
 		limiter:        files.NewLimiter(uploadConcurrency),
 		transferClient: newTransferClient(uploadConcurrency),
+		retryBackoff:   filesRetryBackoff,
 	}, nil
 }
 
@@ -213,13 +383,13 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// Check that target path exists if CreateParentDirectories mode is not set
 	if !slices.Contains(mode, CreateParentDirectories) {
 		dir := path.Dir(absPath)
-		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
+		_, err := w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &dir}, w.readRetry())
 		if err != nil {
 			// This API returns a 404 if the directory doesn't exist.
 			if httpStatus(err) == http.StatusNotFound {
 				return noSuchDirectoryError{dir}
 			}
-			return err
+			return describeFilesError(err, "stat", dir)
 		}
 	}
 
@@ -229,7 +399,8 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// upload engine, which sends small files in a single PUT and splits large ones
 	// into parts. Non-seekable streams and the flag-off case use the single-shot
 	// UploadFile endpoint below: the former to avoid buffering the whole stream in
-	// memory, the latter to keep the default behavior a plain PUT. The engine
+	// memory (uploadFile buffers only small ones, to retry them), the latter to
+	// keep the default behavior a plain PUT. The engine
 	// recovers an io.ReaderAt for concurrent positioned reads when the source
 	// provides one (a local file).
 	if MultipartUploadEnabled(ctx) && isSeekable(reader) {
@@ -244,14 +415,10 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 			opts = append(opts, files.WithProgress(fn))
 		}
 		_, uerr := w.client.Upload(ctx, absPath, reader, opts...)
-		return mapUploadError(uerr, absPath)
+		return describeFilesError(mapUploadError(uerr, absPath), "write", absPath)
 	}
 
-	_, err = w.client.UploadFile(ctx, files.UploadFileRequest{
-		FilePath:  &absPath,
-		Contents:  io.NopCloser(reader),
-		Overwrite: &overwrite,
-	})
+	err = w.uploadFile(ctx, absPath, reader, overwrite)
 	if err == nil {
 		return nil
 	}
@@ -260,7 +427,102 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if httpStatus(err) == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
+	return describeFilesError(err, "write", absPath)
+}
+
+// filesReplayBufferSize is the largest non-seekable upload that is buffered in
+// memory so it can be retried. fs cp between remote paths (Volumes or DBFS to
+// Volumes) streams the source download into the upload, so without the buffer
+// a single 503 fails the copy. Larger streams get one attempt.
+//
+// 8 MiB is not an API limit; it caps memory. With fs cp's default concurrency
+// of 8, at most 64 MiB is buffered at once, and most files copied with fs cp
+// (code, notebooks, configs) are well below it. A variable so tests can lower it.
+var filesReplayBufferSize = 8 * 1024 * 1024 // 8 MiB
+
+// filesReplayReadSize is the size of the reads replayable makes from the
+// source. It matches the DBFS read limit: /api/2.0/dbfs/read returns at most
+// 1 MiB per call, and the SDK's DBFS read handle makes one call per Read.
+const filesReplayReadSize = 1024 * 1024 // 1 MiB
+
+// replayable returns a reader that can be rewound to start before each upload
+// attempt. A non-seekable reader (including a pipe, which is an *os.File whose
+// Seek fails) is read into memory if it is at most filesReplayBufferSize bytes;
+// otherwise stream holds the bytes read so far followed by the
+// rest of reader, to be sent once.
+func replayable(reader io.Reader) (rs io.ReadSeeker, start int64, stream io.Reader, err error) {
+	if s, ok := reader.(io.ReadSeeker); ok {
+		if start, err := s.Seek(0, io.SeekCurrent); err == nil {
+			return s, start, nil, nil
+		}
+	}
+	// io.ReadAll asks for small, growing chunks; reading through
+	// filesReplayReadSize keeps a DBFS source to one API call per MiB.
+	br := bufio.NewReaderSize(reader, filesReplayReadSize)
+	head, err := io.ReadAll(io.LimitReader(br, int64(filesReplayBufferSize)+1))
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("reading upload body: %w", err)
+	}
+	if len(head) > filesReplayBufferSize {
+		return nil, 0, io.MultiReader(bytes.NewReader(head), br), nil
+	}
+	return bytes.NewReader(head), 0, nil, nil
+}
+
+// uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
+// call because it cannot replay a streamed body, so the filer retries it here
+// with a reader from replayable, rewound to its starting offset each attempt.
+func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
+	seeker, start, stream, err := replayable(reader)
+	if err != nil {
+		return err
+	}
+	if stream != nil {
+		return w.putFile(ctx, absPath, io.NopCloser(stream), overwrite)
+	}
+	return ops.Execute(ctx, func(ctx context.Context) error {
+		if _, err := seeker.Seek(start, io.SeekStart); err != nil {
+			return err
+		}
+		body := &attemptBody{r: seeker}
+		err := w.putFile(ctx, absPath, body, overwrite)
+		body.Close()
+		return err
+	}, ops.WithRetrier(w.newRetrier))
+}
+
+func (w *FilesClient) putFile(ctx context.Context, absPath string, body io.ReadCloser, overwrite bool) error {
+	_, err := w.client.UploadFile(ctx, files.UploadFileRequest{
+		FilePath:  &absPath,
+		Contents:  body,
+		Overwrite: &overwrite,
+	})
 	return err
+}
+
+// attemptBody is the request body of one upload attempt. net/http may still be
+// sending the body after the response has arrived; Close waits for an in-flight
+// Read and stops further ones, so the next attempt can safely rewind the reader.
+type attemptBody struct {
+	mu     sync.Mutex
+	r      io.Reader
+	closed bool
+}
+
+func (b *attemptBody) Read(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return b.r.Read(p)
+}
+
+func (b *attemptBody) Close() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.closed = true
+	return nil
 }
 
 // isSeekable reports whether r can be seeked, without moving it: a no-op
@@ -295,7 +557,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, err
 	}
 
-	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath})
+	resp, err := w.client.DownloadFile(ctx, files.DownloadFileRequest{FilePath: &absPath}, w.readRetry())
 
 	// Return early on success.
 	if err == nil {
@@ -313,7 +575,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, fileDoesNotExistError{absPath}
 	}
 
-	return nil, err
+	return nil, describeFilesError(err, "read", absPath)
 }
 
 func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
@@ -327,7 +589,8 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath})
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -336,10 +599,16 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// This files delete API returns a 404 if the specified path does not exist.
 	if httpStatus(err) == http.StatusNotFound {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the file.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
+			return nil
+		}
 		return fileDoesNotExistError{absPath}
 	}
 
-	return err
+	return describeFilesError(err, "delete", absPath)
 }
 
 func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
@@ -353,7 +622,8 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath})
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -366,7 +636,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		if info := aerr.Details().ErrorInfo; info != nil && info.Reason == "FILES_API_DIRECTORY_IS_NOT_EMPTY" {
 			return directoryNotEmptyError{absPath}
 		}
-		return err
+		return describeFilesError(err, "delete", absPath)
 	}
 
 	// On GCS-backed storage a directory created implicitly is just a key prefix
@@ -375,9 +645,15 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 	// directory; treat it as a not-found error so recursive delete can consider
 	// its goal satisfied.
 	if httpStatus(err) == http.StatusNotFound {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the directory.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
+			return nil
+		}
 		return noSuchDirectoryError{absPath}
 	}
-	return err
+	return describeFilesError(err, "delete", absPath)
 }
 
 func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
@@ -477,7 +753,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	var entries []fs.DirEntry
 	for entry, err := range w.client.ListDirectoryContentsIter(ctx, files.ListDirectoryContentsRequest{
 		DirectoryPath: &absPath,
-	}) {
+	}, w.readRetry()) {
 		if err != nil {
 			// This API returns a 404 if the specified path does not exist.
 			if httpStatus(err) == http.StatusNotFound {
@@ -489,7 +765,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 				// No file or directory exists at the specified path. Return no such directory error.
 				return nil, noSuchDirectoryError{absPath}
 			}
-			return nil, err
+			return nil, describeFilesError(err, "list", absPath)
 		}
 
 		entries = append(entries, filesApiDirEntry{
@@ -513,7 +789,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath})
+	_, err = w.client.CreateDirectory(ctx, files.CreateDirectoryRequest{DirectoryPath: &absPath}, w.retry())
 
 	// This API returns a 409 when a file already exists at the path (the create
 	// is not idempotent over a file).
@@ -521,7 +797,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return fileAlreadyExistsError{absPath}
 	}
 
-	return err
+	return describeFilesError(err, "mkdir", absPath)
 }
 
 // Get file metadata for a file using the Files API.
@@ -531,7 +807,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, err
 	}
 
-	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath})
+	resp, err := w.client.GetFileMetadata(ctx, files.GetFileMetadataRequest{FilePath: &absPath}, w.readRetry())
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
@@ -547,7 +823,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, fileDoesNotExistError{absPath}
 	}
 
-	return nil, err
+	return nil, describeFilesError(err, "stat", absPath)
 }
 
 // Get file metadata for a directory using the Files API.
@@ -557,7 +833,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, err
 	}
 
-	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
+	_, err = w.client.GetDirectoryMetadata(ctx, files.GetDirectoryMetadataRequest{DirectoryPath: &absPath}, w.readRetry())
 
 	// If the HEAD requests succeeds, the directory exists.
 	if err == nil {
@@ -569,7 +845,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, noSuchDirectoryError{absPath}
 	}
 
-	return nil, err
+	return nil, describeFilesError(err, "stat", absPath)
 }
 
 func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {

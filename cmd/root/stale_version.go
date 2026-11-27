@@ -9,11 +9,12 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/versioncheck"
+	"github.com/spf13/cobra"
 )
 
 const (
 	staleVersionThreshold = 6 * 30 * 24 * time.Hour
-	installDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
+	InstallDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
 )
 
 // staleVersionWarning returns the warning for a build older than the threshold, or "" otherwise.
@@ -28,20 +29,22 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	if upgradeCommand != "" {
 		return msg + "To upgrade, run: " + upgradeCommand + "\n"
 	}
-	return msg + "See " + installDocsURL + " to upgrade.\n"
+	return msg + "See " + InstallDocsURL + " to upgrade.\n"
 }
 
-func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
-	if info.IsDevelopment() {
+// staleVersionSkipped reports whether cmd gets no stale-version warning. A command whose stdout carries a protocol never
+// gets one, nor does a development build, nor a CLI on DBR, which installs the latest version by default.
+func staleVersionSkipped(ctx context.Context, cmd *cobra.Command, info build.Info) bool {
+	if carriesProtocol(cmd) || info.IsDevelopment() {
 		return true
 	}
 	// DBR installs the latest CLI by default, so skip the warning there.
 	return dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 }
 
-func warnIfStaleVersion(ctx context.Context) {
+func warnIfStaleVersion(ctx context.Context, cmd *cobra.Command) {
 	info := build.GetInfo()
-	if skipStaleVersionWarning(ctx, info) {
+	if staleVersionSkipped(ctx, cmd, info) {
 		return
 	}
 	_, command := versioncheck.DetectInstallMethod(ctx)

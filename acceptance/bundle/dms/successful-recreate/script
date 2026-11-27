@@ -17,14 +17,15 @@ trace print_state.py --no-dms
 
 title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
 # One operation per resource per version; both writes land on the same one.
-# The drop opens it IN_PROGRESS, the save patches it to SUCCEEDED.
+# The drop marks it PENDING, the save patches it to SUCCEEDED. The CLI merges the drop into the
+# save if the drop has not been sent yet, so --fold-pending prints the same either way.
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
 other_catalog="dms_other_${UNIQUE_NAME}"
 $CLI catalogs create "$other_catalog" &> LOG.catalog
 trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py --dms //api/2.0/bundle
+trace print_requests.py --dms --fold-pending //api/2.0/bundle
 
 title "The recreate is done: nothing left to plan, and the serial moved to 2"
 dms_plan

@@ -19,17 +19,20 @@ class UnityCatalog:
 
     logs_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL logs.
+    Three-level name of the Unity Catalog table that receives OpenTelemetry logs. The table is
+    created if it does not exist.
     """
 
     metrics_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL metrics.
+    Three-level name of the Unity Catalog table that receives OpenTelemetry metrics. The table is
+    created if it does not exist.
     """
 
     traces_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL traces (spans).
+    Three-level name of the Unity Catalog table that receives OpenTelemetry traces (spans). The
+    table is created if it does not exist.
     """
 
     @classmethod
@@ -45,17 +48,20 @@ class UnityCatalogDict(TypedDict, total=False):
 
     logs_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL logs.
+    Three-level name of the Unity Catalog table that receives OpenTelemetry logs. The table is
+    created if it does not exist.
     """
 
     metrics_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL metrics.
+    Three-level name of the Unity Catalog table that receives OpenTelemetry metrics. The table is
+    created if it does not exist.
     """
 
     traces_table: VariableOr[str]
     """
-    Unity Catalog table for OTEL traces (spans).
+    Three-level name of the Unity Catalog table that receives OpenTelemetry traces (spans). The
+    table is created if it does not exist.
     """
 
 

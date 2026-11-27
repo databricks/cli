@@ -8,16 +8,15 @@ cleanup() {
     rm -rf "$WHEELS_DIR"
 }
 
-# The example modules import `requests` and `databricks.sdk` at module top level,
-# but the acceptance harness runs uv offline against a fixed find-links dir that
-# only has databricks-lakeflow-integrations. Build stub wheels for these two
-# packages from `stub-wheels/` into a per-test find-links dir that also
-# symlinks the real vendored wheels, and point UV_FIND_LINKS at it.
+# The example modules import `databricks.sdk` at module top level, but the
+# acceptance harness runs uv offline against a fixed find-links dir that only
+# has databricks-lakeflow-integrations. Build a stub wheel for it from
+# `stub-wheels/` into a per-test find-links dir that also symlinks the real
+# vendored wheels, and point UV_FIND_LINKS at it.
 mkdir -p "$WHEELS_DIR"
 for whl in "$VENDORED_PY_PACKAGES"/*.whl; do
     ln -sf "$whl" "$WHEELS_DIR/$(basename "$whl")"
 done
-uv build --wheel --quiet --out-dir "$WHEELS_DIR" "$STUB_WHEELS_SRC/requests"
 uv build --wheel --quiet --out-dir "$WHEELS_DIR" "$STUB_WHEELS_SRC/databricks-sdk"
 
 export UV_FIND_LINKS="$WHEELS_DIR"

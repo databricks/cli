@@ -1,0 +1,9 @@
+experiment_name: eval-smoke-test
+command: python train.py --eval
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ../src

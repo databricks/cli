@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRmCommand() *cobra.Command {
+func newRmCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "rm PATH",
 		Short:   "Remove files and directories.",
@@ -33,6 +33,7 @@ func newRmCommand() *cobra.Command {
 	}
 
 	v := newValidArgs()
+	v.filerForPathFunc = filerForPath
 	cmd.ValidArgsFunction = v.Validate
 
 	return cmd

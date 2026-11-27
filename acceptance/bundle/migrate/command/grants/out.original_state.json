@@ -2,7 +2,7 @@
   "version": 4,
   "terraform_version": "1.5.5",
   "serial": 7,
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "outputs": {},
   "resources": [
     {
@@ -172,11 +172,11 @@
             "browse_only": false,
             "catalog_name": "main",
             "comment": "mycomment",
-            "created_at": [UNIX_TIME_MILLIS][0],
+            "created_at": [UNIX_TIME_MILLIS],
             "created_by": "[USERNAME]",
             "full_name": "main.schema_grants.mymodel",
             "id": "main.schema_grants.mymodel",
-            "metastore_id": "[UUID]",
+            "metastore_id": "[UUID][1]",
             "name": "mymodel",
             "owner": "[USERNAME]",
             "provider_config": [
@@ -186,7 +186,7 @@
             ],
             "schema_name": "schema_grants",
             "storage_location": null,
-            "updated_at": [UNIX_TIME_MILLIS][0],
+            "updated_at": [UNIX_TIME_MILLIS],
             "updated_by": "[USERNAME]"
           },
           "sensitive_attributes": [],
@@ -211,7 +211,7 @@
             "enable_predictive_optimization": "INHERIT",
             "force_destroy": true,
             "id": "main.schema_grants",
-            "metastore_id": "[UUID]",
+            "metastore_id": "[UUID][2]",
             "name": "schema_grants",
             "owner": "[USERNAME]",
             "properties": null,
@@ -220,7 +220,7 @@
                 "workspace_id": "[WORKSPACE_ID]"
               }
             ],
-            "schema_id": "[UUID]",
+            "schema_id": "[UUID][3]",
             "storage_root": null
           },
           "sensitive_attributes": [],
@@ -248,7 +248,7 @@
               }
             ],
             "schema_name": "schema_grants",
-            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][2]/volumes/[UUID][4]",
             "volume_path": "/Volumes/main/schema_grants/volume_name",
             "volume_type": "MANAGED"
           },

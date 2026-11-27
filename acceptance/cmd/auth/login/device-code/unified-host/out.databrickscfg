@@ -1,0 +1,16 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[account]
+host       = [DATABRICKS_URL]
+account_id = spog-acct-123
+auth_type  = databricks-cli
+
+[__settings__]
+default_profile = account
+
+[workspace]
+host         = [DATABRICKS_URL]
+account_id   = spog-acct-123
+workspace_id = 12345
+auth_type    = databricks-cli

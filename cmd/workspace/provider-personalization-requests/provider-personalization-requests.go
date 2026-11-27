@@ -3,6 +3,7 @@
 package provider_personalization_requests
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,21 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "provider-personalization-requests",
-		Short: `*Public Preview* Personalization requests are an alternate to instantly available listings.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-personalization-requests",
+	Short:   `Personalization requests are an alternate to instantly available listings.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-Personalization requests are an alternate to instantly available listings.
-  Control the lifecycle of personalized solutions.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Personalization requests are an alternate to instantly available listings.
+  Control the lifecycle of personalized solutions.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -42,8 +45,6 @@ Personalization requests are an alternate to instantly available listings.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start list command
@@ -74,17 +75,15 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `*Public Preview* All personalization requests across all listings.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-All personalization requests across all listings.
+	cmd.Short = `All personalization requests across all listings.`
+	cmd.Long = `All personalization requests across all listings.
 
   List personalization requests to this provider. This will return all
   personalization requests, regardless of which listing they are for.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -136,21 +135,29 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, ``)
+	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, `Message for the consumer that explains the status change, at most 255 characters.`)
 	// TODO: complex arg: share
 
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"
-	cmd.Short = `*Public Preview* Update personalization request status.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Update personalization request status.`
+	cmd.Long = `Update personalization request status.
 
-Update personalization request status.
+  Updates the status of a personalization request; other properties of the
+  request cannot be changed. Fulfilling a request grants the consumer access to
+  the share, and denying a fulfilled request revokes that access. The listing
+  must be published.
 
-  Update personalization request. This method only permits updating the status
-  of the request.`
+  Arguments:
+    LISTING_ID: ID of the listing that the request was made for.
+    REQUEST_ID: ID of the personalization request.
+    STATUS: New status of the request. Allowed transitions: NEW or REQUEST_PENDING to
+      REQUEST_PENDING, FULFILLED or DENIED; FULFILLED to DENIED; DENIED to
+      REQUEST_PENDING.
+      Supported values: [DENIED, FULFILLED, NEW, REQUEST_PENDING]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

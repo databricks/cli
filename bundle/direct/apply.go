@@ -13,6 +13,8 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -44,13 +46,23 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	if oldID == "" {
 		return errors.New("state entry not found")
 	}
+	if planEntry.ID != "" {
+		// The plan found the resource at the ID its config gives it: a rename moved it.
+		oldID = planEntry.ID
+	}
 
 	switch actionType {
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
+		if planEntry.StateOnly {
+			return d.RecordState(ctx, db, oldID, newState, planEntry)
+		}
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
+		if planEntry.StateOnly {
+			return d.Rekey(ctx, db, oldID, newState, planEntry)
+		}
 		return d.UpdateWithID(ctx, db, oldID, newState, planEntry)
 	case deployplan.Resize:
 		return d.Resize(ctx, db, oldID, newState, planEntry)
@@ -63,11 +75,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	var newID string
 	var remoteState any
-	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
-		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
-		_, ok := errors.AsType[*dresources.RetrySafeError](err)
-		return ok && retry.IsTransient(ctx, err)
-	}, func() (struct{}, error) {
+	// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
+	_, err := retry.With(ctx, dresources.IsRetrySafe, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
 		return struct{}{}, e
@@ -77,6 +86,10 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
 	}
+	// An empty id would be saved as-is, and the next plan would treat the resource as missing and create it again.
+	if newID == "" {
+		return errors.New("create returned an empty resource id")
+	}
 
 	log.Infof(ctx, "Created %s id=%#v", d.ResourceKey, newID)
 
@@ -85,7 +98,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn, nil)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -183,7 +196,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(ctx, db, id, newState, d.DependsOn)
+		err = d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -206,15 +219,24 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
+	oldID, err := d.followParentRename(ctx, db, oldID, newState, planEntry)
+	if err != nil {
+		return err
+	}
+
 	var newID string
 	var remoteState any
-	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoUpdateWithID(ctx, oldID, newState, planEntry)
 		return struct{}{}, e
 	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
+	}
+	// Same reason as in Create: an empty id must not replace the saved one.
+	if newID == "" {
+		return errors.New("update returned an empty resource id")
 	}
 
 	if oldID != newID {
@@ -228,7 +250,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn, planEntry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -249,13 +271,99 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	return nil
 }
 
+// followParentRename records a resource with no internal ID (a model, a secret) at the ID its
+// parent's rename moved it to, before the update applies the resource's own changes there. The
+// parent is applied first, so the move has already happened: if the update then fails, or the
+// deploy is interrupted, the state still points at the resource. Without this, the next plan
+// would find nothing at the old ID and nothing to recognize the resource by at its new one. A
+// resource with an internal ID needs none of this: the plan finds it there (see findMoved). It
+// returns the ID to update at.
+func (d *DeploymentUnit) followParentRename(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) (string, error) {
+	if d.Adapter.HasInternalID() {
+		return oldID, nil
+	}
+
+	var parentPaths []*structpath.PathNode
+	for pathString, ch := range planEntry.Changes {
+		if ch.Reason != deployplan.ReasonParentRenamed {
+			continue
+		}
+		path, err := structpath.ParsePath(pathString)
+		if err != nil {
+			return "", err
+		}
+		parentPaths = append(parentPaths, path)
+	}
+	if len(parentPaths) == 0 {
+		return oldID, nil
+	}
+
+	// The saved state with the parent fields of the new one: what the resource is after the move.
+	state, err := d.loadPersistedState(db)
+	if err != nil {
+		return "", err
+	}
+	for _, path := range parentPaths {
+		value, err := structaccess.Get(newState, path)
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", path, err)
+		}
+		if err := structaccess.Set(state, path, value); err != nil {
+			return "", fmt.Errorf("setting %s: %w", path, err)
+		}
+	}
+	movedID, err := d.Adapter.IDFromState(state)
+	if err != nil {
+		return "", err
+	}
+	if movedID == oldID {
+		return oldID, nil
+	}
+
+	log.Infof(ctx, "Re-keyed %s id=%#v (previously %#v) after its parent's rename", d.ResourceKey, movedID, oldID)
+	err = d.saveState(ctx, db, movedID, state, d.DependsOn, planEntry.RemoteState)
+	if err != nil {
+		return "", fmt.Errorf("saving state id=%s: %w", movedID, err)
+	}
+	return movedID, nil
+}
+
+// Rekey records the resource under the ID its new state gives it, without calling the backend: a
+// rename already moved it there (see PlanEntry.StateOnly).
+func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
+	newID, err := d.Adapter.IDFromState(newState)
+	if err != nil {
+		return err
+	}
+	log.Infof(ctx, "Re-keyed %s id=%#v (previously %#v)", d.ResourceKey, newID, oldID)
+
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn, planEntry.RemoteState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", newID, err)
+	}
+	return nil
+}
+
+// RecordState saves the state at its ID without a backend call. A state-only update does this to
+// record the internal ID the state lacks, from the plan's remote state.
+func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
+	err := d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
+	}
+	return nil
+}
+
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
 	oldState, err := d.loadPersistedState(db)
 	if err != nil {
 		return err
 	}
 
-	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	// Delete is idempotent: if a failed attempt did delete the resource, the retry gets a NotFound.
+	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
+	})
 	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
@@ -265,8 +373,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
-		} else if db.RecordsHistory() {
-			// When using the deployment metadata service, record the error.
+		} else {
 			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
 			db.RecordFailure(d.ResourceKey, oldID, err)
 			return err
@@ -321,7 +428,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(ctx, db, id, newState, d.DependsOn)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn, entry.RemoteState)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -333,7 +440,19 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 // with content hashes, see dresources.CompactState) before persisting it. Fields already
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
-func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+//
+// It first records the internal ID in state (see ResourceLifecycleConfig.InternalIDField), from the
+// remote state the operation returned or else from planRemote, the object as the plan read it (nil
+// for a new object).
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry, planRemote any) error {
+	remote := d.RemoteState
+	if remote == nil {
+		remote = planRemote
+	}
+	err := d.Adapter.RecordInternalID(state, remote)
+	if err != nil {
+		return fmt.Errorf("recording internal id: %w", err)
+	}
 	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
 	if err != nil {
 		return fmt.Errorf("compacting state: %w", err)

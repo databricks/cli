@@ -1,0 +1,6 @@
+pipeline_id=$($CLI pipelines create --json '{"name": "orders", "root_path": "/Workspace/Users/someone@example.com/orders"}' | jq -r .pipeline_id)
+rm "$OUT_REQUESTS"
+
+title "Where the testing API is off, a run of all tests is rejected, not run as an older test-only update"
+trace musterr $CLI pipelines test --pipeline-id $pipeline_id --junit-xml out.not-enabled.xml
+trace print_requests.py //updates

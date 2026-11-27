@@ -51,19 +51,19 @@ class VectorSearchIndex(Resource):
 
     index_type: VariableOr[VectorIndexType]
     """
-    There are 2 types of AI Search indexes:
-    - `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.
-    - `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.
+    Type of index to create, which determines which spec field is required.
     """
 
     name: VariableOr[str]
     """
-    Name of the index
+    Three-level Unity Catalog name of the index to create.
     """
 
     primary_key: VariableOr[str]
     """
-    Primary key of the index
+    Name of the column that uniquely identifies each row. For a Delta Sync index it is a column of
+    the source table; for a Direct Vector Access index it must be declared in `schema_json`. It
+    cannot be the embedding source or embedding vector column.
     """
 
     delta_sync_index_spec: VariableOrOptional[DeltaSyncVectorIndexSpecRequest] = None
@@ -111,19 +111,19 @@ class VectorSearchIndexDict(TypedDict, total=False):
 
     index_type: VariableOr[VectorIndexTypeParam]
     """
-    There are 2 types of AI Search indexes:
-    - `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.
-    - `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.
+    Type of index to create, which determines which spec field is required.
     """
 
     name: VariableOr[str]
     """
-    Name of the index
+    Three-level Unity Catalog name of the index to create.
     """
 
     primary_key: VariableOr[str]
     """
-    Primary key of the index
+    Name of the column that uniquely identifies each row. For a Delta Sync index it is a column of
+    the source table; for a Direct Vector Access index it must be declared in `schema_json`. It
+    cannot be the embedding source or embedding vector column.
     """
 
     delta_sync_index_spec: VariableOrOptional[DeltaSyncVectorIndexSpecRequestParam]

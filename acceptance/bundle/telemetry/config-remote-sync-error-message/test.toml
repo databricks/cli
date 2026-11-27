@@ -1,0 +1,5 @@
+# config-remote-sync is not supported on Windows.
+GOOS.windows = false
+
+# The script writes .databrickscfg.
+Ignore = [".databrickscfg"]

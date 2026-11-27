@@ -7,3 +7,9 @@ errcode trace $CLI air logs 123
 
 title "logs falls back to mlflow (json)"
 errcode trace $CLI air logs 123 -o json
+
+title "logs falls back to mlflow for a specific node"
+trace $CLI air logs 123 --node 0
+
+title "logs falls back to mlflow for a specific node (json)"
+trace $CLI air logs 123 --node 0 -o json

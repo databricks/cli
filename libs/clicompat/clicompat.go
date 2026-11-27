@@ -56,6 +56,13 @@ const (
 type Entry struct {
 	AppKit      string `json:"appkit"`
 	AgentSkills string `json:"skills"`
+
+	// AutoInstall turns on the automatic installation of Databricks AI tools
+	// on the first run of a new CLI version in this range. Off when absent, so
+	// the feature ships off and can be turned on (or off again) remotely; a
+	// change reaches a machine on its first run of a version after the change.
+	// CLIs that predate the field ignore it.
+	AutoInstall bool `json:"auto_install,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -90,9 +97,18 @@ var httpClient = &http.Client{Timeout: fetchTimeout}
 // Set DATABRICKS_CACHE_ENABLED=false to bypass the local cache (tiers 1 and 3a),
 // which is useful to recover from a bad cached manifest.
 func FetchManifest(ctx context.Context) (Manifest, error) {
+	m, _, err := fetchManifest(ctx)
+	return m, err
+}
+
+// fetchManifest is FetchManifest. fallback is set when the remote and the
+// local cache both failed and the manifest is the embedded one, which may be
+// older than either.
+func fetchManifest(ctx context.Context) (m Manifest, fallback bool, err error) {
 	if force, ok := env.GetBool(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT"); ok && force {
 		log.Debugf(ctx, "Using embedded manifest (DATABRICKS_FORCE_EMBEDDED_COMPAT=true)")
-		return parseEmbeddedManifest()
+		m, err := parseEmbeddedManifest()
+		return m, false, err
 	}
 
 	cacheEnabled := true
@@ -114,7 +130,7 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	// Tier 1: local file is fresh.
 	if localErr == nil && local.isFresh(cacheTTL) {
 		log.Debugf(ctx, "Using cached manifest from %s", localPath)
-		return local.manifest, nil
+		return local.manifest, false, nil
 	}
 
 	// Tier 2: fetch from remote (local file missing or stale).
@@ -123,23 +139,23 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 		if cacheEnabled {
 			writeLocalManifest(ctx, localPath, m)
 		}
-		return m, nil
+		return m, false, nil
 	}
 
 	// Tier 3a: local file exists but stale — use it anyway.
 	if localErr == nil {
 		log.Debugf(ctx, "Using stale cached manifest (remote failed: %v)", fetchErr)
-		return local.manifest, nil
+		return local.manifest, false, nil
 	}
 
 	// Tier 3b: embedded manifest.
 	m, embeddedErr := parseEmbeddedManifest()
 	if embeddedErr == nil {
 		log.Debugf(ctx, "Using embedded manifest (remote and local cache failed)")
-		return m, nil
+		return m, true, nil
 	}
 
-	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %w)", fetchErr, embeddedErr)
+	return nil, false, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %w)", fetchErr, embeddedErr)
 }
 
 // parseEmbeddedManifest parses the embedded manifest once and caches the result.
@@ -285,6 +301,25 @@ func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return entry.AgentSkills, nil
+}
+
+// ResolveAutoInstall reports whether the manifest entry for cliVersion turns on
+// the automatic installation of Databricks AI tools. It fails when only the
+// embedded manifest is available: that one predates any remote change of the
+// gate, so it cannot tell off from not known yet.
+func ResolveAutoInstall(ctx context.Context, cliVersion string) (bool, error) {
+	m, fallback, err := fetchManifest(ctx)
+	if err != nil {
+		return false, err
+	}
+	if fallback {
+		return false, errors.New("the compatibility manifest could not be fetched")
+	}
+	entry, err := Resolve(m, cliVersion)
+	if err != nil {
+		return false, err
+	}
+	return entry.AutoInstall, nil
 }
 
 // --- Local manifest cache ---

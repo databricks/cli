@@ -17,13 +17,20 @@ class AlertV2OperandColumn:
     """"""
 
     name: VariableOr[str]
+    """
+    Name of the column in the query result.
+    """
 
     aggregation: VariableOrOptional[Aggregation] = None
     """
-    If not set, the behavior is equivalent to using `First row` in the UI.
+    Aggregation applied to the column across all rows of the query result: `SUM`, `COUNT`, `COUNT_DISTINCT`, `AVG`, `MEDIAN`, `MIN`, `MAX` or `STDDEV`.
+    If not set, the value in the first row is used, which is equivalent to using `First row` in the UI.
     """
 
     display: VariableOrOptional[str] = None
+    """
+    Label for the column in notifications. Defaults to `name`.
+    """
 
     @classmethod
     def from_dict(cls, value: "AlertV2OperandColumnDict") -> "Self":
@@ -37,13 +44,20 @@ class AlertV2OperandColumnDict(TypedDict, total=False):
     """"""
 
     name: VariableOr[str]
+    """
+    Name of the column in the query result.
+    """
 
     aggregation: VariableOrOptional[AggregationParam]
     """
-    If not set, the behavior is equivalent to using `First row` in the UI.
+    Aggregation applied to the column across all rows of the query result: `SUM`, `COUNT`, `COUNT_DISTINCT`, `AVG`, `MEDIAN`, `MIN`, `MAX` or `STDDEV`.
+    If not set, the value in the first row is used, which is equivalent to using `First row` in the UI.
     """
 
     display: VariableOrOptional[str]
+    """
+    Label for the column in notifications. Defaults to `name`.
+    """
 
 
 AlertV2OperandColumnParam = AlertV2OperandColumnDict | AlertV2OperandColumn

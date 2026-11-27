@@ -14,6 +14,10 @@ resources:
       name: "[${bundle.target}] Test Spark Jar Job $UNIQUE_NAME"
       tasks:
         - task_key: TestSparkJarTask
+          # The AWS test pool is spot-only in one zone, so the job cluster is sometimes lost
+          # (spot kill, no capacity, terminated during library install). A lost cluster
+          # produces no task logs, so a retried run prints the same output as a clean one.
+          max_retries: 1
           new_cluster:
             num_workers: 1
             spark_version: 16.4.x-scala2.12

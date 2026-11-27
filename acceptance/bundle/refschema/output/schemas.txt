@@ -23,7 +23,7 @@ resources.schemas.*.name	string	ALL
 resources.schemas.*.owner	string	REMOTE
 resources.schemas.*.properties	map[string]string	ALL
 resources.schemas.*.properties.*	string	ALL
-resources.schemas.*.schema_id	string	REMOTE
+resources.schemas.*.schema_id	string	REMOTE	STATE
 resources.schemas.*.storage_location	string	REMOTE
 resources.schemas.*.storage_root	string	ALL
 resources.schemas.*.updated_at	int64	REMOTE

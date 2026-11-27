@@ -96,7 +96,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 				},
 			},
 			Experimental: &config.Experimental{
-				PythonWheelWrapper: true,
+				PythonWheelWrapper: new(true),
 			},
 		},
 	}

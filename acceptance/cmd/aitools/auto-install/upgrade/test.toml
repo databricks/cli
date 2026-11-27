@@ -1,0 +1,75 @@
+Ignore = ["pinned-home"]
+
+# Skills releases: the latest release is v0.3.0, under /newer it is v0.4.0 and
+# under /older it is v0.2.0 (DATABRICKS_CLI_GITHUB_API_URL picks one).
+
+[[Server]]
+Pattern = "GET /repos/databricks/databricks-agent-skills/releases/latest"
+Response.Body = '{"tag_name": "v0.3.0"}'
+
+[[Server]]
+Pattern = "GET /newer/repos/databricks/databricks-agent-skills/releases/latest"
+Response.Body = '{"tag_name": "v0.4.0"}'
+
+[[Server]]
+Pattern = "GET /older/repos/databricks/databricks-agent-skills/releases/latest"
+Response.Body = '{"tag_name": "v0.2.0"}'
+
+[[Server]]
+Pattern = "GET /v0.3.0/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "databricks-kept": {"version": "1.0.0", "description": "Kept", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "databricks-dropped": {"version": "1.0.0", "description": "Dropped", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "databricks-edited": {"version": "1.0.0", "description": "Edited", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /v0.3.0/skills/databricks-kept/SKILL.md"
+Response.Body = "kept 1.0.0\n"
+
+[[Server]]
+Pattern = "GET /v0.3.0/skills/databricks-dropped/SKILL.md"
+Response.Body = "dropped 1.0.0\n"
+
+[[Server]]
+Pattern = "GET /v0.3.0/skills/databricks-edited/SKILL.md"
+Response.Body = "edited 1.0.0\n"
+
+[[Server]]
+Pattern = "GET /v0.4.0/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-02-01T00:00:00Z",
+  "skills": {
+    "databricks-kept": {"version": "2.0.0", "description": "Kept", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "databricks-edited": {"version": "2.0.0", "description": "Edited", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /v0.4.0/skills/databricks-kept/SKILL.md"
+Response.Body = "kept 2.0.0\n"
+
+[[Server]]
+Pattern = "GET /v0.4.0/skills/databricks-edited/SKILL.md"
+Response.Body = "edited 2.0.0\n"
+
+[[Server]]
+Pattern = "GET /v0.2.0/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2025-12-01T00:00:00Z",
+  "skills": {
+    "databricks-kept": {"version": "0.5.0", "description": "Kept", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''

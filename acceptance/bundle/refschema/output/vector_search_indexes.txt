@@ -44,6 +44,12 @@ resources.vector_search_indexes.*.modified_status	string	INPUT
 resources.vector_search_indexes.*.name	string	ALL
 resources.vector_search_indexes.*.primary_key	string	ALL
 resources.vector_search_indexes.*.status	*vectorsearch.VectorIndexStatus	REMOTE
+resources.vector_search_indexes.*.status.detailed_state	vectorsearch.IndexStatus	REMOTE
+resources.vector_search_indexes.*.status.failed_status	*vectorsearch.FailedStatus	REMOTE
+resources.vector_search_indexes.*.status.failed_status.error_code	string	REMOTE
+resources.vector_search_indexes.*.status.failed_status.error_message	string	REMOTE
+resources.vector_search_indexes.*.status.failed_status.last_processed_commit_timestamp	*time.Time	REMOTE
+resources.vector_search_indexes.*.status.failed_status.last_processed_commit_version	int64	REMOTE
 resources.vector_search_indexes.*.status.index_url	string	REMOTE
 resources.vector_search_indexes.*.status.indexed_row_count	int64	REMOTE
 resources.vector_search_indexes.*.status.message	string	REMOTE

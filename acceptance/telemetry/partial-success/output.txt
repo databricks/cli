@@ -18,8 +18,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID][0]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID][1]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][0]
 > }
@@ -33,8 +33,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID][0]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID][1]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][1]
 > }
@@ -48,8 +48,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID][0]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID][1]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS][2]
 > }
@@ -63,11 +63,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
 
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][0]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -81,11 +81,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][1]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -99,11 +99,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][0]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -117,11 +117,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][1]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -135,11 +135,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][0]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
@@ -153,11 +153,11 @@ HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after th
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][1]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
-        "cmd_exec_id": "[UUID]",
+        "cmd_exec_id": "[UUID][2]",
         "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",

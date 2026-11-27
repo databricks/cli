@@ -128,15 +128,17 @@ func newProfilesCommand() *cobra.Command {
 		Use:   "profiles",
 		Short: "Lists profiles from ~/.databrickscfg",
 		Annotations: map[string]string{
+			// With --skip-validate nothing is validated, so the Valid column is
+			// omitted instead of reporting NO for every profile.
 			"template": cmdio.Heredoc(`
-			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{header "Name"}}	{{header "Host"}}{{if not .SkipValidate}}	{{header "Valid"}}{{end}}
+			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}{{if not $.SkipValidate}}	{{bool .Valid}}{{end}}
 			{{end}}`),
 		},
 	}
 
 	var skipValidate bool
-	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column is omitted and JSON \"valid\" is always false)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
@@ -176,7 +178,9 @@ func newProfilesCommand() *cobra.Command {
 		wg.Wait()
 		return cmdio.Render(cmd.Context(), struct {
 			Profiles []*profileMetadata `json:"profiles"`
-		}{profiles})
+			// Used only by the text template; kept out of JSON so its shape stays stable.
+			SkipValidate bool `json:"-"`
+		}{profiles, skipValidate})
 	}
 
 	return cmd

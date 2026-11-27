@@ -3,6 +3,7 @@
 package external_metadata
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "external-metadata",
-		Short: `*Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "external-metadata",
+	Short:   `*Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 External Metadata objects enable customers to register and manage metadata
   about external systems within Unity Catalog.
@@ -30,14 +36,13 @@ External Metadata objects enable customers to register and manage metadata
   These APIs provide a standardized way to create, update, retrieve, list, and
   delete external metadata objects. Fine-grained authorization ensures that only
   users with appropriate permissions can view and manage external metadata
-  objects.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  objects.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateExternalMetadata())
@@ -50,8 +55,6 @@ External Metadata objects enable customers to register and manage metadata
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-external-metadata command
@@ -73,10 +76,10 @@ func newCreateExternalMetadata() *cobra.Command {
 	cmd.Flags().Var(&createExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Description, "description", createExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Description, "description", createExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description of the object.`)
 	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Owner, "owner", createExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL of the object in the external system.`)
 
 	cmd.Use = "create-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `*Public Preview* Create an external metadata object.`
@@ -89,8 +92,14 @@ Create an external metadata object.
   **BROWSE** to all account users upon creation by default.
 
   Arguments:
-    NAME: Name of the external metadata object.
-    SYSTEM_TYPE: Type of external system.
+    NAME: Name of the external metadata object. The name is unique within the
+      metastore, must follow the [Unity Catalog naming requirements], and is
+      stored in lowercase. It cannot be changed after creation, and external
+      lineage relationships refer to the object by this name.
+
+      [Unity Catalog naming requirements]: https://docs.databricks.com/aws/en/data-governance/unity-catalog/requirements#naming-requirements
+    SYSTEM_TYPE: Type of the external system that holds the object. Use OTHER for a
+      system that is not in the list.
       Supported values: [
         AMAZON_REDSHIFT,
         AZURE_SYNAPSE,
@@ -116,7 +125,8 @@ Create an external metadata object.
         TERADATA,
         WORKDAY,
       ]
-    ENTITY_TYPE: Type of entity within the external system.`
+    ENTITY_TYPE: Type of the object within the external system, such as a table, a report,
+      or a dashboard. The value is free-form text of at most 255 characters.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -205,9 +215,13 @@ func newDeleteExternalMetadata() *cobra.Command {
 
 Delete an external metadata object.
 
-  Deletes the external metadata object that matches the supplied name. The
-  caller must be a metastore admin, the owner of the external metadata object,
-  or a user that has the **MANAGE** privilege.`
+  Deletes the external metadata object that matches the supplied name. Every
+  external lineage relationship in which the object is the source or the target
+  is deleted with it. The caller must be a metastore admin, the owner of the
+  external metadata object, or a user that has the **MANAGE** privilege.
+
+  Arguments:
+    NAME: Name of the external metadata object to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -266,7 +280,10 @@ Get an external metadata object.
 
   Gets the specified external metadata object in a metastore. The caller must be
   a metastore admin, the owner of the external metadata object, or a user that
-  has the **BROWSE** privilege.`
+  has the **BROWSE** privilege.
+
+  Arguments:
+    NAME: Name of the external metadata object to get.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -399,10 +416,10 @@ func newUpdateExternalMetadata() *cobra.Command {
 	cmd.Flags().Var(&updateExternalMetadataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Description, "description", updateExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Description, "description", updateExternalMetadataReq.ExternalMetadata.Description, `User-provided free-form text description of the object.`)
 	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Owner, "owner", updateExternalMetadataReq.ExternalMetadata.Owner, `Owner of the external metadata object.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
+	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL of the object in the external system.`)
 
 	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `*Public Preview* Update an external metadata object.`
@@ -417,19 +434,17 @@ Update an external metadata object.
   updating the owner, they must also have the **MANAGE** privilege.
 
   Arguments:
-    NAME: Name of the external metadata object.
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
+    NAME: Name of the external metadata object. The name is unique within the
+      metastore, must follow the [Unity Catalog naming requirements], and is
+      stored in lowercase. It cannot be changed after creation, and external
+      lineage relationships refer to the object by this name.
 
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.
-    SYSTEM_TYPE: Type of external system.
+      [Unity Catalog naming requirements]: https://docs.databricks.com/aws/en/data-governance/unity-catalog/requirements#naming-requirements
+    UPDATE_MASK: Comma-separated list of the fields to update, for example
+      description,properties. Only the listed fields change. The other fields
+      keep their current values. The mask must not be empty.
+    SYSTEM_TYPE: Type of the external system that holds the object. Use OTHER for a
+      system that is not in the list.
       Supported values: [
         AMAZON_REDSHIFT,
         AZURE_SYNAPSE,
@@ -455,7 +470,8 @@ Update an external metadata object.
         TERADATA,
         WORKDAY,
       ]
-    ENTITY_TYPE: Type of entity within the external system.`
+    ENTITY_TYPE: Type of the object within the external system, such as a table, a report,
+      or a dashboard. The value is free-form text of at most 255 characters.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"

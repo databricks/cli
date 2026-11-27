@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl, id_repl_name
-from print_state import get_resources, get_state_file
+from print_state import get_resources_for_lookup, get_state_file
 
 
 def iter_ids_terraform(filename):
@@ -28,7 +28,7 @@ def iter_ids_terraform(filename):
 
 
 def iter_ids_recorded(target):
-    for key, value in get_resources(target).items():
+    for key, value in get_resources_for_lookup(target).items():
         if value["id"]:
             yield key.split(".")[1], value["id"]
 

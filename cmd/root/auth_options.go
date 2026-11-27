@@ -43,3 +43,24 @@ func shouldSkipLoadBundle(ctx context.Context) bool {
 	skipLoadBundle, ok := ctx.Value(skipLoadBundleKey).(bool)
 	return ok && skipLoadBundle
 }
+
+type skipTokenRefreshKey struct{}
+
+// SkipTokenRefresh makes the config that [MustWorkspaceClient] and
+// [MustAccountClient] build use auth.CredentialsWithoutRefresh: a cached
+// OAuth token is used only while it is valid, never refreshed. It is for
+// best-effort auth that the command may abandon at exit, where an unfinished
+// refresh could lose the server's rotated single-use refresh token.
+//
+// It applies to that config only. A bundle's workspace client and the config
+// of a profile picked interactively still refresh, so combine it with
+// [SkipLoadBundle] and [SkipPrompt].
+func SkipTokenRefresh(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipTokenRefreshKey{}, true)
+}
+
+// shouldSkipTokenRefresh returns whether or not [SkipTokenRefresh] has been set on the specified context.
+func shouldSkipTokenRefresh(ctx context.Context) bool {
+	skip, ok := ctx.Value(skipTokenRefreshKey{}).(bool)
+	return ok && skip
+}

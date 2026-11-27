@@ -18,6 +18,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update storage, triggering recreate for pipeline; this means updating downstream deps
+
 >>> update_file.py databricks.yml storage: dbfs:/my-storage storage: dbfs:/my-new-storage
 
 >>> [CLI] bundle plan
@@ -42,6 +43,7 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 >>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 
 === Fetch resource IDs and verify remote state
+
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
@@ -93,6 +95,7 @@ Error: The specified pipeline [FOO_ID] was not found.
 }
 
 === Follow up plan & deploy do nothing
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

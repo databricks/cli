@@ -169,12 +169,38 @@ func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*
 }
 
 func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
-	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
+	create := func(ctx context.Context) (*serving.ServingEndpointDetailed, error) {
+		waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
+		if err != nil {
+			return nil, err
+		}
+		return waiter.Response, nil
+	}
+	start := time.Now()
+	endpoint, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// Endpoint names are chosen by the bundle and unique in the workspace. WaitAfterCreate waits
+		// for a recovered endpoint as it does for one the first request created.
+		endpoint, err = recoverCreate(ctx, createRecovery[serving.ServingEndpointDetailed, *serving.ServingEndpointDetailed]{
+			name:  "serving endpoint " + config.Name,
+			start: start,
+			get: func(ctx context.Context) (*serving.ServingEndpointDetailed, error) {
+				return r.client.ServingEndpoints.Get(ctx, serving.GetServingEndpointRequest{Name: config.Name})
+			},
+			createTime: func(found *serving.ServingEndpointDetailed) (time.Time, bool) {
+				return unixMilliTime(found.CreationTimestamp)
+			},
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[serving.ServingEndpointDetailed],
+			create:          repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
-	return waiter.Response.Name, nil, nil
+	return endpoint.Name, nil, nil
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)

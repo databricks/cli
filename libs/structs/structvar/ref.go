@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -15,7 +16,9 @@ import (
 // Behavioral parity is enforced by testdata/reference_vectors.json.
 const BaseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
-var re = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
+var re = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
+})
 
 // Ref represents the variable references in a string.
 type Ref struct {
@@ -44,7 +47,7 @@ type Ref struct {
 //   - "${a} ${b} ${c}"
 func NewRef(s string) (Ref, bool) {
 	// Find all matches with their byte positions so we can detect escaped references.
-	indices := re.FindAllStringSubmatchIndex(s, -1)
+	indices := re().FindAllStringSubmatchIndex(s, -1)
 	if len(indices) == 0 {
 		return Ref{}, false
 	}
@@ -133,7 +136,7 @@ func (v Ref) References() []string {
 }
 
 func IsPureVariableReference(s string) bool {
-	return len(s) > 0 && re.FindString(s) == s
+	return len(s) > 0 && re().FindString(s) == s
 }
 
 // ContainsVariableReference reports whether s contains at least one reference that
@@ -141,7 +144,7 @@ func IsPureVariableReference(s string) bool {
 // so an escaped "$${foo}" must not count: it is a literal, and treating it as
 // pending leaves the value permanently unresolved.
 func ContainsVariableReference(s string) bool {
-	for _, loc := range re.FindAllStringIndex(s, -1) {
+	for _, loc := range re().FindAllStringIndex(s, -1) {
 		if !isEscapedAt(s, loc[0]) {
 			return true
 		}

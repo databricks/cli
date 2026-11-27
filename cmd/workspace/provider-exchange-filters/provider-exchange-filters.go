@@ -3,6 +3,7 @@
 package provider_exchange_filters
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,20 +19,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "provider-exchange-filters",
-		Short: `*Public Preview* Marketplace exchanges filters curate which groups can access an exchange.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-exchange-filters",
+	Short:   `Marketplace exchanges filters curate which groups can access an exchange.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-Marketplace exchanges filters curate which groups can access an exchange.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Marketplace exchanges filters curate which groups can access an exchange.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -43,8 +46,6 @@ Marketplace exchanges filters curate which groups can access an exchange.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -65,16 +66,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `*Public Preview* Create a new exchange filter.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a new exchange filter.
+	cmd.Short = `Create a new exchange filter.`
+	cmd.Long = `Create a new exchange filter.
 
   Add an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -131,16 +130,14 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteExchangeFilterRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `*Public Preview* Delete an exchange filter.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete an exchange filter.
+	cmd.Short = `Delete an exchange filter.`
+	cmd.Long = `Delete an exchange filter.
 
   Delete an exchange filter`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -213,16 +210,14 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list EXCHANGE_ID"
-	cmd.Short = `*Public Preview* List exchange filters.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List exchange filters.
+	cmd.Short = `List exchange filters.`
+	cmd.Long = `List exchange filters.
 
   List exchange filter`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -277,16 +272,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `*Public Preview* Update exchange filter.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update exchange filter.
+	cmd.Short = `Update exchange filter.`
+	cmd.Long = `Update exchange filter.
 
   Update an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

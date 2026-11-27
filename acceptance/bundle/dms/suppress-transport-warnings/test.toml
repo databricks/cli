@@ -1,0 +1,3 @@
+# Only echoes lines: no workspace, no requests.
+Cloud = false
+RecordRequests = false

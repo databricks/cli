@@ -1,0 +1,20 @@
+Cloud = true
+
+# Lakebase v2 (postgres) is only available in AWS as of January 2026
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+# Deployment history has no "postgres_data_apis." resource-key prefix, so the deploy fails before the
+# Data API is created. See dmsResourceTypes in libs/testserver/bundledeployments.go, which mirrors Universe.
+EnvMatrixExclude.no_data_api_dms = ["DMS=true"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+[[Repls]]
+# Normalize endpoint UIDs (ep-xxx-yyy format, supports both word-based and hex-based UIDs)
+Old = 'ep-[a-z0-9-]+'
+New = '[ENDPOINT_UID]'
+Order = 1

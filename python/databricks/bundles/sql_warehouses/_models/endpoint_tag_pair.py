@@ -16,8 +16,15 @@ class EndpointTagPair:
     """"""
 
     key: VariableOrOptional[str] = None
+    """
+    Tag key. Keys must be unique within the warehouse and cannot use the keys that
+    Databricks reserves for the tags it sets automatically.
+    """
 
     value: VariableOrOptional[str] = None
+    """
+    Tag value. Keys and values must follow the tagging rules of the cloud provider.
+    """
 
     @classmethod
     def from_dict(cls, value: "EndpointTagPairDict") -> "Self":
@@ -31,8 +38,15 @@ class EndpointTagPairDict(TypedDict, total=False):
     """"""
 
     key: VariableOrOptional[str]
+    """
+    Tag key. Keys must be unique within the warehouse and cannot use the keys that
+    Databricks reserves for the tags it sets automatically.
+    """
 
     value: VariableOrOptional[str]
+    """
+    Tag value. Keys and values must follow the tagging rules of the cloud provider.
+    """
 
 
 EndpointTagPairParam = EndpointTagPairDict | EndpointTagPair

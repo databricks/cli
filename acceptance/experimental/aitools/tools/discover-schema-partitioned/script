@@ -1,0 +1,7 @@
+export DATABRICKS_WAREHOUSE_ID=$TEST_DEFAULT_WAREHOUSE_ID
+
+# Only the COLUMNS section is meaningful: the stub returns the DESCRIBE output for every statement.
+trace $CLI experimental aitools tools discover-schema main.default.events 2>&1 | sed -n -e '/^>>>/p' -e '/^COLUMNS:/,/^$/p'
+
+title "wire SQL"
+trace print_requests.py --sort //api/2.0/sql/statements | jq -r .body.statement

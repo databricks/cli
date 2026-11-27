@@ -1,0 +1,12 @@
+title "Whole plan: remote_state and the deployment stamp are dropped from every entry"
+trace plan_filter.py < plan.json
+
+title "One entry"
+trace plan_filter.py resources.jobs.foo < plan.json
+
+title "A missing entry is an error, not an empty golden"
+trace errcode plan_filter.py resources.jobs.missing < plan.json
+
+title "Input that is not a plan is an error"
+trace errcode plan_filter.py <<< '{"summary": {}}'
+trace errcode plan_filter.py < /dev/null

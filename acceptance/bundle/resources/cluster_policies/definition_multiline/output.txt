@@ -14,6 +14,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create body preserves the block-scalar definition as a newline-escaped string
+
 >>> print_requests.py //policies/clusters
 {
   "method": "POST",

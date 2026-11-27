@@ -1,5 +1,6 @@
 
 === Profiles before logout — logfood should be valid
+
 >>> [CLI] auth profiles
 Name               Host                    Valid
 logfood (Default)  [DATABRICKS_URL]  YES
@@ -11,6 +12,7 @@ logfood (Default)  [DATABRICKS_URL]  YES
 ]
 
 === Logout without --delete
+
 >>> [CLI] auth logout --profile logfood --auto-approve
 Logged out of profile "logfood". Use --delete to also remove it from the config file.
 
@@ -30,10 +32,12 @@ default_profile = logfood
 []
 
 === Profiles after logout — logfood should be invalid
+
 >>> [CLI] auth profiles
 Name               Host                    Valid
 logfood (Default)  [DATABRICKS_URL]  NO
 
 === Logged out profile should no longer return a token
+
 >>> musterr [CLI] auth token --profile logfood
 Error: cache: databricks OAuth is not configured for this host. no cached credentials; run `databricks auth login` to sign in

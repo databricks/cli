@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd"
+	"github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 
 	// Registers a disk-cached HostMetadataResolver factory on the SDK so every
 	// *config.Config the CLI constructs reuses the cached /.well-known lookup.
@@ -24,9 +26,15 @@ func main() {
 		os.Setenv("DATABRICKS_CLI_PATH", arg0)
 	}
 
+	// cmd/root runs auto-install after a command but cannot import cmd/aitools,
+	// which imports it. It is wired here, not in a package init, for the same
+	// reason as DATABRICKS_CLI_PATH above.
+	autoinstall.Run = aitools.AutoInstall
+	autoinstall.InstallsFor = aitools.AutoInstallsFor
+
 	ctx := context.Background()
-	err := root.Execute(ctx, cmd.New(ctx))
+	err := cmd.New(ctx).Execute(ctx, os.Args[1:])
 	if err != nil {
-		os.Exit(1)
+		os.Exit(root.ExitStatus(err))
 	}
 }

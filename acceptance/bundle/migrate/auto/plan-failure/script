@@ -15,7 +15,9 @@ title "Inject GET failure so the migration plan check fails: migration hard-erro
 fault.py "GET /api/2.2/jobs/get*" 403 0 1
 trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
-rm -f "$OUT_REQUESTS"
+# The requests the failed deploy made, including the telemetry upload. Also clears the
+# recorded requests for the next step.
+trace print_request_paths
 
 title "Local state was NOT rewritten (still terraform)"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

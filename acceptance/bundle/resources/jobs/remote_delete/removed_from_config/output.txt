@@ -11,7 +11,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] pipelines delete [UUID]
 
 === Remove resources from config, plan and deploy
+
 === Plan and deploy again, then summary
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
@@ -21,4 +23,5 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 === No delete API calls for resources that are already gone remotely
+
 >>> print_requests.py //jobs/delete //pipelines/ --nostamp

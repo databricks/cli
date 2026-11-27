@@ -1,2 +1,2 @@
-Badness = "In validate we dont detect issue; in direct we dont detect syntax issue, skipping the reference completely"
+Badness = "The malformed reference ${resources.volumes.bar.bad..syntax} is not reported: validate, plan and deploy all accept it, and deploy succeeds (out.deploy.txt ends with 'Unexpected success'). It should be rejected as invalid reference syntax."
 RecordRequests = false

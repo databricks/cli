@@ -1,5 +1,6 @@
 
 === Initial deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created model_serving_endpoints.endpoint1
@@ -7,10 +8,12 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op despite write-only secret and burst_scaling_enabled not round-tripping
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The write-only fields are skipped as input_only (confirms the matched rules)
+
 >>> [CLI] bundle plan --output json
 {
   "config.served_entities[0].burst_scaling_enabled": {
@@ -47,6 +50,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === Redeploy is a no-op (no config/ai-gateway/tags update calls)
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted

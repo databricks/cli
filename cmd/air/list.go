@@ -2,7 +2,10 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -10,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -20,6 +22,11 @@ import (
 // that match the filters. runs/list returns runs of every kind, so this caps the
 // work on a workspace with a large run history.
 const maxListScan = 2000
+
+// maxFallbackListScan bounds the Jobs scan that stands in for an unavailable
+// AiTrainingService index. That scan can't use active_only, so it walks the full
+// run history, which costs several seconds per page on a busy workspace.
+const maxFallbackListScan = 250
 
 // jobsPageLimit is the per-request page size for runs/list; enrichConcurrency
 // bounds the parallel MLflow lookups.
@@ -37,16 +44,26 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID         string  `json:"run_id"`
-	RunName       string  `json:"run_name"`
-	User          string  `json:"user"`
-	Status        string  `json:"status"`
-	DisplayStatus string  `json:"-"`
-	StartedAt     *string `json:"started_at"`
-	IsSweep       bool    `json:"is_sweep"`
+	RunID string `json:"run_id"`
+	// TaskKey names the AI runtime task the row shows, or is null for a run
+	// without one (as in `air get`). A job with several AI runtime tasks has one
+	// row per task, all with the same RunID; ShowTask marks those rows so the
+	// table names the task.
+	TaskKey         *string `json:"task_key"`
+	ShowTask        bool    `json:"-"`
+	RunName         string  `json:"run_name"`
+	User            string  `json:"user"`
+	Status          string  `json:"status"`
+	DisplayStatus   string  `json:"-"`
+	StartedAt       *string `json:"started_at"`
+	IsSweep         bool    `json:"is_sweep"`
+	ExperimentName  *string `json:"experiment_name"`
+	DurationSeconds *int64  `json:"duration_seconds"`
+	AcceleratorType *string `json:"accelerator_type"`
+	NumAccelerators *int    `json:"num_accelerators"`
+	DashboardURL    string  `json:"dashboard_url"`
 
-	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
-	// columns, omitted from JSON to match `air list --json`.
+	// The fields below are pre-rendered table cells or text-only enrichment.
 	Experiment string `json:"-"`
 	Duration   string `json:"-"`
 	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
@@ -59,20 +76,47 @@ type listRow struct {
 	Accelerators  string `json:"-"`
 }
 
-// listedRun pairs a row with its parent and task run ids, so the MLflow link can
-// be fetched after the run has been filtered in and cached afterward.
+// taskKey returns the AI runtime task key the row shows, or "" for a run
+// without one.
+func (r listRow) taskKey() string {
+	if r.TaskKey == nil {
+		return ""
+	}
+	return *r.TaskKey
+}
+
+// runIDLabel is the Run ID cell: the run ID, followed by the task key when the
+// run has several AI runtime tasks, so each of its rows names the task to pass
+// to `air get --task-key`.
+func (r listRow) runIDLabel() string {
+	if r.ShowTask && r.TaskKey != nil {
+		return r.RunID + " " + *r.TaskKey
+	}
+	return r.RunID
+}
+
+// listedRun pairs a row with its parent run id and task runs, so the MLflow link
+// can be fetched after the run has been filtered in and cached afterward.
 type listedRun struct {
-	row       listRow
-	runID     int64
-	taskRunID int64
+	row      listRow
+	runID    int64
+	taskKey  string
+	tasks    []jobs.RunTask // see retryTasks
+	terminal bool
 }
 
 // listQuery holds the resolved inputs to a runFetcher.
 type listQuery struct {
-	activeOnly  bool
-	allUsers    bool
-	userFilter  string
-	currentUser string
+	activeOnly bool
+	allUsers   bool
+	userFilter string
+	// currentUser resolves the caller's user name for a self-scoped list. It is
+	// nil when an explicit user= filter or --all-users is set.
+	currentUser func() (string, error)
+	// selfUser is the caller's user name when it was resolved up front, despite
+	// an explicit user= filter (--all-status only). The strategy compares it
+	// with userFilter to tell a self filter from a filter for another user.
+	selfUser    string
 	filters     listFilters
 	fetchMLflow bool
 	limit       int
@@ -90,17 +134,21 @@ func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List active runs for the current user",
+		Short: "List your active runs",
 		Long: `List active runs for the current user.
 
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or full YAML type. Examples:
+                    A10, H100, GPU_1xA10, GPU_8xH100.
+                    Workspace types: databricks air run -h config.compute.accelerator_type
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
 		Example: `  databricks air list --filter accelerator_type=H100
+
+  databricks air list --filter accelerator_type=GPU_8xH100
 
   databricks air list --all-status \
     --filter 'experiment=qwen*' \
@@ -110,7 +158,7 @@ Filters:
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
-	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show")
+	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task")
 	cmd.Flags().BoolVar(&allStatus, "all-status", false, "Show runs in all states (default: active only)")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
 	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs by KEY=VALUE (repeatable)")
@@ -125,42 +173,53 @@ Filters:
 
 		f, err := parseListFilters(filters)
 		if err != nil {
-			return err
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		}
+		if f.AcceleratorType != "" {
+			configureAcceleratorFilter(&f)
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
-		// unless --all-users is set. runs/list has no creator param, so the
-		// creator is matched while scanning.
-		userFilter := f.User
-		var currentUser string
-		if userFilter == "" && !allUsers {
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-			if err != nil {
-				return fmt.Errorf("failed to resolve current user: %w", err)
+		// unless --all-users is set. The user is resolved only if a strategy
+		// needs it: the index is already scoped to the caller, and runs/list has
+		// no creator param, so the scan matches the creator itself. With
+		// --all-status the current user is also resolved for an explicit user=
+		// filter, so filtering on your own email uses the index instead of a
+		// full-history scan.
+		var currentUser func() (string, error)
+		var selfUser string
+		if !allUsers && (f.User == "" || allStatus) {
+			if f.User == "" {
+				currentUser = sync.OnceValues(func() (string, error) { return currentUserEmail(ctx, w) })
+			} else {
+				// Resolve the caller up front so the strategy can tell a self
+				// filter from a filter for another user. A lookup failure keeps
+				// the scan, which matches the creator itself.
+				user, err := currentUserEmail(ctx, w)
+				if err != nil {
+					log.Debugf(ctx, "air list: could not resolve current user, scanning Jobs runs for user=%s: %v", f.User, err)
+				} else {
+					selfUser = user
+				}
 			}
-			currentUser = me.UserName
-			userFilter = currentUser
-		}
-
-		// Fetch workspace ID once for dashboard links; proceed with 0 on error.
-		var workspaceID int64
-		wsID, err := w.CurrentWorkspaceID(ctx)
-		if err != nil {
-			log.Debugf(ctx, "air list: could not fetch workspace ID for dashboard links: %v", err)
-		} else {
-			workspaceID = wsID
 		}
 
 		fetcher := newRunFetcher(ctx, w, listQuery{
 			activeOnly:  !allStatus,
 			allUsers:    allUsers,
-			userFilter:  userFilter,
+			userFilter:  f.User,
 			currentUser: currentUser,
+			selfUser:    selfUser,
 			filters:     f,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
-			workspaceID: workspaceID,
+			workspaceID: workspaceIDForRunLink(ctx, w),
 		})
+		if f.AcceleratorType != "" {
+			fetcher.validateEmpty = func() error {
+				return validateEmptyAcceleratorFilter(ctx, w, f.AcceleratorType)
+			}
+		}
 
 		// JSON prints the newest `limit` runs once. Text renders the table:
 		// navigable in a terminal (paging in older runs on demand), printed once
@@ -168,7 +227,7 @@ Filters:
 		if root.OutputType(cmd) == flags.OutputJSON {
 			rows, err := fetcher.next(limit)
 			if err != nil {
-				return err
+				return renderListFilterValidationError(ctx, cmd, err)
 			}
 			warnIfTruncated(ctx, fetcher)
 			return renderEnvelope(ctx, listData{Rows: rows})
@@ -179,12 +238,53 @@ Filters:
 	return cmd
 }
 
+type listFilterValidationError struct {
+	message   string
+	cause     error
+	transient bool
+}
+
+func (e *listFilterValidationError) Error() string {
+	return e.message
+}
+
+func (e *listFilterValidationError) Unwrap() error {
+	return e.cause
+}
+
+func renderListFilterValidationError(ctx context.Context, cmd *cobra.Command, err error) error {
+	validationErr, ok := errors.AsType[*listFilterValidationError](err)
+	if !ok {
+		return err
+	}
+	if validationErr.transient {
+		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true, err)
+	}
+	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+}
+
+func validateEmptyAcceleratorFilter(ctx context.Context, w *databricks.WorkspaceClient, value string) error {
+	options, err := listWorkspaceComputeOptions(ctx, w)
+	if err != nil {
+		log.Debugf(ctx, "air list: could not validate accelerator filter against workspace compute options: %v", err)
+		return &listFilterValidationError{
+			message:   fmt.Sprintf("no runs matched --filter accelerator_type=%q\nRetry or run 'databricks air run -h config.compute.accelerator_type' to check available types", value),
+			cause:     err,
+			transient: true,
+		}
+	}
+	if err := validateAcceleratorFilter(value, options); err != nil {
+		return &listFilterValidationError{message: err.Error(), cause: err}
+	}
+	return nil
+}
+
 // listStrategy is a source of matching runs, pulled in batches. Two implement it:
 // jobsScanStrategy pages runs/list; indexStrategy hydrates the AiTrainingService
 // index. The fetcher wraps whichever is chosen.
 type listStrategy interface {
-	// next returns up to want more matching runs (already row-built + task id).
-	next(want int) ([]listedRun, error)
+	// next returns up to want more matching runs, each as its group of rows.
+	next(want int) ([]runGroup, error)
 	// done reports whether the source has no more runs to yield.
 	done() bool
 	// truncated reports whether a safety cap stopped the scan short of the end.
@@ -195,13 +295,16 @@ type listStrategy interface {
 // the interactive table's lazy paging. It wraps a listStrategy and adds the
 // shared tail: MLflow enrichment (text only) and row projection.
 type runFetcher struct {
-	ctx         context.Context
-	w           *databricks.WorkspaceClient
-	fetchMLflow bool
-	strategy    listStrategy
-	workspaceID int64
+	ctx           context.Context
+	w             *databricks.WorkspaceClient
+	fetchMLflow   bool
+	strategy      listStrategy
+	workspaceID   int64
+	validateEmpty func() error
 
-	exhausted bool
+	exhausted      bool
+	matchedAny     bool
+	validatedEmpty bool
 }
 
 func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *runFetcher {
@@ -217,17 +320,22 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 // newListStrategy picks the fetch source. The AiTrainingService index serves only
 // the caller's own runs, so it's used for an all-status self-scoped list; if the
 // index load fails (e.g. endpoint unavailable in this workspace), we fall back to
-// the Jobs scan so the command still returns. Everything else — the default
+// a bounded Jobs scan so the command still returns. Everything else — the default
 // active list, --all-users, and --all-status for another user — uses the scan.
 func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) listStrategy {
-	useIndex := !q.activeOnly && !q.allUsers && (q.userFilter == "" || q.userFilter == q.currentUser)
+	// The index serves only the caller's own runs: a list with no user filter
+	// (the scan would resolve the caller itself), or an explicit user= filter
+	// that matches the caller case-insensitively (resolved up front under
+	// --all-status).
+	isSelf := q.userFilter == "" || (q.selfUser != "" && strings.EqualFold(q.userFilter, q.selfUser))
+	useIndex := !q.activeOnly && !q.allUsers && isSelf
 	if !useIndex {
-		return newJobsScanStrategy(ctx, w, q)
+		return newJobsScanStrategy(ctx, w, q, maxListScan)
 	}
 	idx := newIndexStrategy(ctx, w, q, q.limit)
 	if err := idx.load(); err != nil {
-		log.Debugf(ctx, "air list: AiTrainingService index unavailable, falling back to Jobs scan: %v", err)
-		return newJobsScanStrategy(ctx, w, q)
+		log.Warnf(ctx, "air list: the AI Runtime run index is unavailable (%v); falling back to a slower scan of up to %d recent job runs", err, maxFallbackListScan)
+		return newJobsScanStrategy(ctx, w, q, maxFallbackListScan)
 	}
 	return idx
 }
@@ -236,26 +344,60 @@ func newListStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQ
 // text output, and projects it to rows. It sets exhausted once the strategy is
 // drained so the interactive table knows to stop paging.
 func (f *runFetcher) next(want int) ([]listRow, error) {
-	entries, err := f.strategy.next(want)
+	groups, err := f.nextRuns(want)
+	if err != nil {
+		return nil, err
+	}
+	// Start from an empty slice so a list with no matching runs prints
+	// "runs": [] rather than null.
+	rows := make([]listRow, 0, len(groups))
+	for _, g := range groups {
+		rows = append(rows, g...)
+	}
+	return rows, nil
+}
+
+// nextRuns is next with the rows kept grouped by run: one slice per run, one
+// row per AI runtime task.
+func (f *runFetcher) nextRuns(want int) ([][]listRow, error) {
+	groups, err := f.strategy.next(want)
 	if err != nil {
 		return nil, err
 	}
 	f.exhausted = f.strategy.done()
-
-	// MLflow links appear only in the text table, so the per-run get-output
-	// lookups are skipped for JSON output (which omits the column anyway).
-	if f.fetchMLflow {
-		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, entries)
-		if s, ok := f.strategy.(*indexStrategy); ok {
-			s.cacheMLflowLinks(entries)
+	if len(groups) > 0 {
+		f.matchedAny = true
+	}
+	if len(groups) == 0 && f.exhausted && !f.matchedAny && f.validateEmpty != nil && !f.validatedEmpty {
+		f.validatedEmpty = true
+		if err := f.validateEmpty(); err != nil {
+			return nil, err
 		}
 	}
 
-	rows := make([]listRow, len(entries))
-	for i, e := range entries {
-		rows[i] = e.row
+	// MLflow links appear only in the text table, so the per-run get-output
+	// lookups are skipped for JSON output (which omits the column anyway). They
+	// run over all rows at once, then land back in their groups.
+	if f.fetchMLflow {
+		var flat []listedRun
+		for _, g := range groups {
+			flat = append(flat, g.entries...)
+		}
+		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, flat)
+		if s, ok := f.strategy.(*indexStrategy); ok {
+			s.cacheMLflowLinks(flat)
+		}
+		for _, g := range groups {
+			n := copy(g.entries, flat)
+			flat = flat[n:]
+		}
 	}
-	return rows, nil
+
+	out := make([][]listRow, len(groups))
+	for i, g := range groups {
+		out[i] = g.rows()
+	}
+	return out, nil
 }
 
 // jobsScanStrategy pages Jobs runs/list, keeping the AIR runs that match the user
@@ -266,34 +408,46 @@ type jobsScanStrategy struct {
 	w           *databricks.WorkspaceClient
 	iter        listing.Iterator[jobs.BaseRun]
 	userFilter  string
+	currentUser func() (string, error) // resolves userFilter for a self-scoped scan
 	filters     listFilters
 	host        string
 	workspaceID int64
 
+	// maxScan caps how many runs this scan inspects; see maxListScan.
+	maxScan int
 	scanned int
 }
 
-func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
+func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery, maxScan int) *jobsScanStrategy {
 	req := jobs.ListRunsRequest{
 		RunType:     jobs.RunTypeSubmitRun,
 		ExpandTasks: true,
 		Limit:       jobsPageLimit,
 		ActiveOnly:  q.activeOnly,
 	}
+	// Resolve the current user while the first runs/list page is fetched; next()
+	// waits for it only when it first needs to match a run's creator.
+	if q.currentUser != nil {
+		go func() { _, _ = q.currentUser() }()
+	}
 	return &jobsScanStrategy{
 		ctx:         ctx,
 		w:           w,
 		iter:        w.Jobs.ListRuns(ctx, req),
 		userFilter:  q.userFilter,
+		currentUser: q.currentUser,
 		filters:     q.filters,
 		host:        w.Config.Host,
 		workspaceID: q.workspaceID,
+		maxScan:     maxScan,
 	}
 }
 
-func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
-	var entries []listedRun
-	for len(entries) < want && s.scanned < maxListScan && s.iter.HasNext(s.ctx) {
+// next returns the next want matching runs, each as its group of rows (see
+// runGroup).
+func (s *jobsScanStrategy) next(want int) ([]runGroup, error) {
+	var groups []runGroup
+	for len(groups) < want && s.scanned < s.maxScan && s.iter.HasNext(s.ctx) {
 		base, err := s.iter.Next(s.ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list runs: %w", err)
@@ -304,31 +458,44 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if !isAirRun(run) {
 			continue
 		}
+		if s.currentUser != nil {
+			user, err := s.currentUser()
+			if err != nil {
+				return nil, err
+			}
+			s.userFilter, s.currentUser = user, nil
+		}
 		if s.userFilter != "" && run.CreatorUserName != s.userFilter {
 			continue
 		}
-		if !s.filters.matches(run) {
-			continue
+		if g, ok := matchingGroup(run.RunId, buildTaskEntries(run, s.host, s.workspaceID), s.filters); ok {
+			groups = append(groups, g)
 		}
-		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, taskRunID: taskRunID(run)})
 	}
-	return entries, nil
+	return groups, nil
 }
 
 func (s *jobsScanStrategy) done() bool {
-	return s.scanned >= maxListScan || !s.iter.HasNext(s.ctx)
+	return s.scanned >= s.maxScan || !s.iter.HasNext(s.ctx)
 }
 
 func (s *jobsScanStrategy) truncated() bool {
-	return s.scanned >= maxListScan
+	return s.scanned >= s.maxScan
 }
 
-// warnIfTruncated logs when a scan hit its safety cap, so one-shot output signals
+// warnIfTruncated warns when a scan hit its safety cap, so the output signals
 // its results may be incomplete.
 func warnIfTruncated(ctx context.Context, f *runFetcher) {
-	if f.strategy.truncated() {
-		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
+	if !f.strategy.truncated() {
+		return
 	}
+	// Only the scan strategy can report truncated, and it carries the scanned
+	// count for the warning.
+	s, ok := f.strategy.(*jobsScanStrategy)
+	if !ok {
+		return
+	}
+	log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete. Narrow the search with --filter or a smaller --limit", s.scanned)
 }
 
 // setMLflowLinks fills in each row's MLflow link, label, and experiment URL -
@@ -343,13 +510,15 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			if entries[i].row.MLflowURL != "" && entries[i].row.MLflowURL != "-" {
 				return nil
 			}
-			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
+			ids := mlflowIDsForRetries(ctx, w, entries[i].tasks, entries[i].terminal)
 			if ids == nil {
 				return nil
 			}
 			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
 			name := fetchMLflowRunName(ctx, w, ids.RunID)
-			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID)
+			// Shorten the label, not the retry note, to fit the column.
+			note := ids.retryNote()
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID, mlflowColWidth-len(note)) + note
 			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
 			// The ETA needs a progress-metric history fetch, so it's computed only
 			// for running rows (the only ones that can have one).
@@ -361,6 +530,6 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			return nil
 		})
 	}
-	// mlflowIDsForTask never returns an error (it logs and yields nil), so Wait can't fail.
+	// mlflowIDsForRetries never returns an error (it logs and yields nil), so Wait can't fail.
 	_ = g.Wait()
 }

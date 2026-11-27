@@ -28,33 +28,19 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-var deployApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
-	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
-	{group: "volumes", message: deleteOrRecreateVolumeMessage},
-	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
-	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
-	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
-	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
-}
-
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
 	// Deletes that only clean up the state (already gone remotely, or no delete
 	// operation) are not destructive and need no approval.
-	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
 		return false, err
 	}
 
-	total := logApprovalGroups(ctx, actions, deployApprovalGroups, false, deployplan.Recreate, deployplan.Delete)
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups(), false, deployplan.Recreate, deployplan.Delete)
 	if total == 0 {
 		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil

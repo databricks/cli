@@ -1,0 +1,20 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+# Keep the start the handler applied, replace only the response with a 504, so the start
+# is sent again while the compute is already ACTIVE.
+fault.py --after-handler "POST /api/2.0/apps/*/start" 504 0 1
+
+title "the deploy succeeds, though its start was answered with a 504"
+trace update_file.py databricks.yml "started: false" "started: true"
+trace $CLI bundle deploy
+
+title "start was sent twice; the second was rejected because the compute was already ACTIVE"
+trace print_requests.py //apps '^//api/2.0/bundle' --del-body url
+trace $CLI apps get myapp | jq '.compute_status.state'

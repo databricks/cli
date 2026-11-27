@@ -1,3 +1,5 @@
+Badness = "Adding a tag to an existing model is silently ignored: tags are excluded from the diff (configs/models.yml, terraform_compat), so the plan is empty and the model keeps only key1. Tag changes should be applied in place (SetModelTag/DeleteModelTag), or at least reported."
+
 Cloud = true
 RecordRequests = false
 RunsOnDbr = true

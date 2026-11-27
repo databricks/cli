@@ -3,6 +3,7 @@
 package data_quality
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,21 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "data-quality",
-		Short: `*Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "data-quality",
+	Short:   `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
+	GroupID: "dataquality",
+	Build:   buildCommand,
+}
 
-Manage the data quality of Unity Catalog objects (currently support schema
-  and table)`,
-		GroupID: "dataquality",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage the data quality of Unity Catalog objects (currently support schema
+  and table)`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCancelRefresh())
@@ -51,8 +54,6 @@ Manage the data quality of Unity Catalog objects (currently support schema
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-refresh command
@@ -70,10 +71,8 @@ func newCancelRefresh() *cobra.Command {
 	var cancelRefreshReq dataquality.CancelRefreshRequest
 
 	cmd.Use = "cancel-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `*Public Preview* Cancel a refresh.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Cancel a refresh.
+	cmd.Short = `Cancel a refresh.`
+	cmd.Long = `Cancel a refresh.
 
   Cancels a data quality monitor refresh. Currently only supported for the
   table object_type. The call must be made in the same workspace as where
@@ -106,8 +105,8 @@ Cancel a refresh.
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -168,10 +167,8 @@ func newCreateMonitor() *cobra.Command {
 	// TODO: complex arg: data_profiling_config
 
 	cmd.Use = "create-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Create a monitor.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a monitor.
+	cmd.Short = `Create a monitor.`
+	cmd.Long = `Create a monitor.
 
   Create a data quality monitor on a Unity Catalog object. The caller must
   provide either anomaly_detection_config for a schema monitor or
@@ -212,8 +209,8 @@ Create a monitor.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -290,10 +287,8 @@ func newCreateRefresh() *cobra.Command {
 	cmd.Flags().Var(&createRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-refresh OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Create a refresh.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a refresh.
+	cmd.Short = `Create a refresh.`
+	cmd.Long = `Create a refresh.
 
   Creates a refresh. Currently only supported for the table object_type. The
   call must be made in the same workspace as where the monitor was created.
@@ -324,8 +319,8 @@ Create a refresh.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -387,17 +382,15 @@ func newDeleteMonitor() *cobra.Command {
 	var deleteMonitorReq dataquality.DeleteMonitorRequest
 
 	cmd.Use = "delete-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Delete a monitor.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Delete a monitor.`
+	cmd.Long = `Delete a monitor.
 
-Delete a monitor.
-
-  Delete a data quality monitor on Unity Catalog object.
+  Delete a data quality monitor on a Unity Catalog object.
 
   For the table object_type, the caller must have either of the following
-  sets of permissions: **MANAGE** and **USE_CATALOG** on the table's parent
-  catalog. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
-  **USE_SCHEMA** on the table's parent schema. **USE_CATALOG** on the table's
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
   parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
   the table.
 
@@ -428,8 +421,8 @@ Delete a monitor.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -478,10 +471,8 @@ func newDeleteRefresh() *cobra.Command {
 	var deleteRefreshReq dataquality.DeleteRefreshRequest
 
 	cmd.Use = "delete-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `*Public Preview* Delete a refresh.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete a refresh.
+	cmd.Short = `Delete a refresh.`
+	cmd.Long = `Delete a refresh.
 
   (Unimplemented) Delete a refresh
 
@@ -505,8 +496,8 @@ Delete a refresh.
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -559,10 +550,8 @@ func newGetMonitor() *cobra.Command {
 	var getMonitorReq dataquality.GetMonitorRequest
 
 	cmd.Use = "get-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Read a monitor.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Read a monitor.
+	cmd.Short = `Read a monitor.`
+	cmd.Long = `Read a monitor.
 
   Read a data quality monitor on a Unity Catalog object.
 
@@ -602,8 +591,8 @@ Read a monitor.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -653,10 +642,8 @@ func newGetRefresh() *cobra.Command {
 	var getRefreshReq dataquality.GetRefreshRequest
 
 	cmd.Use = "get-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `*Public Preview* Get a refresh.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a refresh.
+	cmd.Short = `Get a refresh.`
+	cmd.Long = `Get a refresh.
 
   Get data quality monitor refresh. The call must be made in the same workspace
   as where the monitor was created.
@@ -693,8 +680,8 @@ Get a refresh.
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -751,7 +738,7 @@ func newListMonitor() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listMonitorLimit int
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
+	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, `The maximum number of monitors to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMonitorLimit, "limit", 0, `Maximum number of results to return.`)
@@ -761,16 +748,14 @@ func newListMonitor() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-monitor"
-	cmd.Short = `*Public Preview* List monitors.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List monitors.
+	cmd.Short = `List monitors.`
+	cmd.Long = `List monitors.
 
   (Unimplemented) List data quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -833,10 +818,8 @@ func newListRefresh() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* List refreshes.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List refreshes.
+	cmd.Short = `List refreshes.`
+	cmd.Long = `List refreshes.
 
   List data quality monitor refreshes. The call must be made in the same
   workspace as where the monitor was created.
@@ -872,8 +855,8 @@ List refreshes.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -933,12 +916,11 @@ func newUpdateMonitor() *cobra.Command {
 	// TODO: complex arg: data_profiling_config
 
 	cmd.Use = "update-monitor OBJECT_TYPE OBJECT_ID UPDATE_MASK OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Update a monitor.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Update a monitor.`
+	cmd.Long = `Update a monitor.
 
-Update a monitor.
-
-  Update a data quality monitor on Unity Catalog object.
+  Update a data quality monitor on a Unity Catalog object. Only the fields named
+  in update_mask are changed.
 
   For the table object_type, the caller must have either of the following
   sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
@@ -990,8 +972,8 @@ Update a monitor.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1071,10 +1053,8 @@ func newUpdateRefresh() *cobra.Command {
 	cmd.Flags().Var(&updateRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID UPDATE_MASK OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `*Public Preview* Update a refresh.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update a refresh.
+	cmd.Short = `Update a refresh.`
+	cmd.Long = `Update a refresh.
 
   (Unimplemented) Update a refresh
 
@@ -1115,8 +1095,8 @@ Update a refresh.
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

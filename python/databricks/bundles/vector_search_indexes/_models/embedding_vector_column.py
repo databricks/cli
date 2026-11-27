@@ -22,7 +22,7 @@ class EmbeddingVectorColumn:
 
     name: VariableOrOptional[str] = None
     """
-    Name of the column
+    Name of the column that contains the embedding vectors.
     """
 
     @classmethod
@@ -43,7 +43,7 @@ class EmbeddingVectorColumnDict(TypedDict, total=False):
 
     name: VariableOrOptional[str]
     """
-    Name of the column
+    Name of the column that contains the embedding vectors.
     """
 
 

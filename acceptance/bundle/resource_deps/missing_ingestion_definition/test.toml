@@ -1,2 +1,2 @@
-Badness = "In TF error message talks about ingestion_definition being a list which is not the case. In direct error message says 'on invalid' which is confusing, should say about ingestion_definition being nil"
+Badness = "A reference to foo.ingestion_definition, which is not set, passes validate and plan; deploy creates pipelines.foo and only then fails on bar with 'ingestion_definition: cannot access nil value'. It should fail before deploying anything, saying that ingestion_definition is not set on pipelines.foo."
 RecordRequests = false

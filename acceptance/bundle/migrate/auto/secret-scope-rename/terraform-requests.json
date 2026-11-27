@@ -1,0 +1,10 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/secrets/scopes/create",
+    "body": {
+      "scope": "test-scope-[UNIQUE_NAME]",
+      "scope_backend_type": "DATABRICKS"
+    }
+  }
+]

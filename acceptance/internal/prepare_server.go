@@ -93,6 +93,45 @@ func lookupEnv(testEnv []string, key string) (string, bool) {
 	return "", false
 }
 
+// cloudWorkspaceState caches the cloud workspace client shared by all tests in
+// the process. Resolving auth per test repeats the OIDC endpoint discovery GET
+// for every test. The SDK retries the token exchange, but not a timed-out
+// discovery request. When the workspace is briefly slow, discovery times out,
+// the SDK's default auth chain hides the timeout behind a "cannot configure
+// default credentials" error, and every test starting at that moment fails.
+// A shared client resolves auth once and refreshes its token in the background.
+var cloudWorkspaceState struct {
+	mu          sync.Mutex
+	client      *databricks.WorkspaceClient
+	user        iam.User
+	workspaceID string
+}
+
+// cloudWorkspace returns the shared workspace client, the current user and the
+// workspace id. Only a successful result is cached, so a transient failure
+// fails one test and the next test tries again.
+func cloudWorkspace(t *testing.T) (*databricks.WorkspaceClient, iam.User, string) {
+	s := &cloudWorkspaceState
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.client != nil {
+		return s.client, s.user, s.workspaceID
+	}
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	user, err := iamutil.GetCurrentUser(t.Context(), w)
+	require.NoError(t, err, "Failed to get current user")
+
+	workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
+	require.NoError(t, err, "Failed to get current workspace id")
+
+	s.client, s.user, s.workspaceID = w, *user, workspaceID
+	return w, *user, workspaceID
+}
+
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User, string) {
 	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
@@ -117,15 +156,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	if cloudEnv != "" {
-		w, err := databricks.NewWorkspaceClient()
-		require.NoError(t, err)
-
-		user, err := iamutil.GetCurrentUser(t.Context(), w)
-		require.NoError(t, err, "Failed to get current user")
-
-		workspaceID, err := auth.ResolveWorkspaceID(t.Context(), w)
-		require.NoError(t, err, "Failed to get current workspace id")
-
+		w, user, workspaceID := cloudWorkspace(t)
 		cfg := w.Config
 
 		// If we are running in a cloud environment AND we need to intercept requests
@@ -145,7 +176,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 			}
 		}
 
-		return cfg, *user, workspaceID
+		return cfg, user, workspaceID
 	}
 
 	// Same topology as cloud, with the testserver as the upstream. Both servers see
@@ -189,25 +220,184 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 }
 
-func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
-	mu := sync.Mutex{}
+// requestRecorder appends each request to out.requests.txt in outputDir as it arrives.
+type requestRecorder struct {
+	t              *testing.T
+	includeHeaders []string
+	outputDir      string
 
-	return func(request *testserver.Request) {
-		mu.Lock()
-		defer mu.Unlock()
+	mu sync.Mutex
+	// entries holds what was written for requests still waiting for a response; nil unless
+	// failed attempts are dropped.
+	entries map[*testserver.Request]string
+	// failed counts the entries answered with a transient error and not repeated yet.
+	failed map[string]int
+	// createLookups maps the path of a resource that a create request answered with a transient
+	// error names (the request path plus one of its query values, e.g. /api/2.0/postgres/projects
+	// with project_id=p names /api/2.0/postgres/projects/p) to that request's entry.
+	createLookups map[string]string
+	// lookups holds, per failed create entry, the GETs of its resource answered with 404 since. The
+	// CLI makes them to check whether the failed request created the resource before it repeats
+	// the request, so they go together with the failed attempt.
+	lookups map[string][]recordedLookup
+}
 
-		req := getLoggedRequest(request, includeHeaders)
-		reqJson, err := json.MarshalIndent(req, "", "  ")
-		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
+// recordedLookup is a GET answered with 404 that a repeated create makes redundant.
+type recordedLookup struct {
+	path  string
+	entry string
+}
 
-		requestsPath := filepath.Join(outputDir, "out.requests.txt")
-		f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-		assert.NoError(t, err)
-		defer f.Close()
-
-		_, err = f.WriteString(string(reqJson) + "\n")
-		assert.NoError(t, err)
+func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
+	r := &requestRecorder{
+		t:              t,
+		includeHeaders: includeHeaders,
+		outputDir:      outputDir,
 	}
+	if dropRetried {
+		r.entries = map[*testserver.Request]string{}
+		r.failed = map[string]int{}
+		r.createLookups = map[string]string{}
+		r.lookups = map[string][]recordedLookup{}
+	}
+	return r
+}
+
+func (r *requestRecorder) path() string {
+	return filepath.Join(r.outputDir, "out.requests.txt")
+}
+
+func (r *requestRecorder) record(request *testserver.Request) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	req := getLoggedRequest(request, r.includeHeaders)
+	reqJson, err := json.MarshalIndent(req, "", "  ")
+	assert.NoErrorf(r.t, err, "Failed to json-encode: %#v", req)
+	entry := string(reqJson) + "\n"
+
+	if r.failed[entry] > 0 {
+		r.failed[entry]--
+		lookups := r.lookups[entry]
+		delete(r.lookups, entry)
+		r.forgetCreateLookups(entry)
+		entries := []string{entry}
+		for _, lookup := range lookups {
+			entries = append(entries, lookup.entry)
+		}
+		dropped := r.dropEntries(entries)
+		if dropped[0] {
+			r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+		}
+		for i, lookup := range lookups {
+			if dropped[i+1] {
+				r.t.Logf("Dropped from out.requests.txt, a lookup before a repeated create: GET %s", lookup.path)
+			}
+		}
+	}
+
+	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	assert.NoError(r.t, err)
+	defer f.Close()
+
+	_, err = f.WriteString(entry)
+	assert.NoError(r.t, err)
+	if r.entries != nil {
+		r.entries[request] = entry
+	}
+}
+
+// dropEntries removes the last copy of each entry from out.requests.txt and reports which ones it
+// found.
+func (r *requestRecorder) dropEntries(entries []string) []bool {
+	dropped := make([]bool, len(entries))
+	data, err := os.ReadFile(r.path())
+	if errors.Is(err, os.ErrNotExist) {
+		// The script consumed the file since the entries were written.
+		return dropped
+	}
+	require.NoError(r.t, err)
+
+	for n, entry := range entries {
+		i := strings.LastIndex(string(data), entry)
+		if i < 0 {
+			continue
+		}
+		data = append(data[:i:i], data[i+len(entry):]...)
+		dropped[n] = true
+	}
+	if slices.Contains(dropped, true) {
+		require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
+	}
+	return dropped
+}
+
+// forgetCreateLookups stops treating reads as lookups for the failed create entry: the CLI
+// repeated the create or found the resource, so its recovery is over.
+func (r *requestRecorder) forgetCreateLookups(create string) {
+	for path, entry := range r.createLookups {
+		if entry == create {
+			delete(r.createLookups, path)
+		}
+	}
+}
+
+// isTransientStatus reports whether a response status is one the CLI may repeat a request after
+// (see libs/retry and the SDK's own retries).
+func isTransientStatus(status int) bool {
+	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
+}
+
+// noteResponse remembers a request answered with a transient error, so that if the CLI repeats
+// it, the failed attempt is dropped from out.requests.txt. A real workspace answers with such
+// errors now and then, so recording both attempts makes request goldens flaky. A request that is
+// not repeated stays recorded. Before it repeats a failed create, the CLI reads the resource to
+// see whether the request created it anyway; a read answered with 404 is dropped with the failed
+// attempt. A read that finds the resource stays recorded, since no repeat follows, and ends the
+// recovery. Only the proxy uses this: the testserver answers with an error only when a test
+// injects one, and its goldens show that.
+func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	entry, ok := r.entries[request]
+	delete(r.entries, request)
+	if !ok {
+		return
+	}
+	if isTransientStatus(response.StatusCode) {
+		r.failed[entry]++
+		if request.Method == http.MethodPost {
+			// The id of the resource a create names travels in a query parameter such as project_id.
+			for key, values := range request.URL.Query() {
+				if !strings.HasSuffix(key, "_id") {
+					continue
+				}
+				for _, value := range values {
+					if value != "" && !strings.Contains(value, "/") {
+						r.createLookups[request.URL.Path+"/"+value] = entry
+					}
+				}
+			}
+		}
+		return
+	}
+	if request.Method != http.MethodGet {
+		return
+	}
+	create, found := r.createLookups[request.URL.Path]
+	if !found || r.failed[create] == 0 {
+		return
+	}
+	if response.StatusCode == http.StatusNotFound {
+		r.lookups[create] = append(r.lookups[create], recordedLookup{path: request.URL.Path, entry: entry})
+		return
+	}
+	// The failed create did create the resource, so the CLI uses it and does not repeat the create:
+	// the failed attempt stands for the create, and later reads of the resource are not lookups.
+	r.failed[create]--
+	delete(r.lookups, create)
+	r.forgetCreateLookups(create)
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
@@ -237,7 +427,7 @@ func startLocalServer(t *testing.T,
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		s.RequestCallback = newRequestRecorder(t, includeHeaders, outputDir, false).record
 	}
 
 	// Log API responses if the -logrequests flag is set.
@@ -291,14 +481,26 @@ func startProxyServer(t *testing.T,
 ) string {
 	s := testproxy.New(t, upstream)
 
+	var responseCallbacks []func(request *testserver.Request, response *testserver.EncodedResponse)
+
 	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		recorder := newRequestRecorder(t, includeHeaders, outputDir, true)
+		s.RequestCallback = recorder.record
+		responseCallbacks = append(responseCallbacks, recorder.noteResponse)
 	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = logResponseCallback(t)
+		responseCallbacks = append(responseCallbacks, logResponseCallback(t))
+	}
+
+	if len(responseCallbacks) > 0 {
+		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			for _, callback := range responseCallbacks {
+				callback(request, response)
+			}
+		}
 	}
 
 	return s.URL

@@ -1,12 +1,15 @@
 package quickstart
 
 import (
-	_ "embed"
+	"context"
 	"fmt"
 	"strings"
 
+	_ "embed"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -15,44 +18,101 @@ import (
 //go:embed quickstart-human.md
 var humanQuickstart string
 
-// agentQuickstart is the denser, agent-oriented version. It is also the
-// `databricks-quickstart` skill, so it carries skill frontmatter that
-// stripFrontmatter removes before printing.
+// agentQuickstart is the denser, agent-oriented version. Its frontmatter is
+// the `databricks-quickstart` skill's, and stripFrontmatter removes it before
+// printing. The raw file has marker lines inside that frontmatter, so it is
+// not a valid SKILL.md on its own: skillFor returns the skill. Blocks split it
+// into two variants (see variantText): the skills variant points agents at
+// `databricks skills`, the other at `databricks aitools`.
 //
 //go:embed quickstart-agent.md
 var agentQuickstart string
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "quickstart",
-		Args:  root.NoArgs,
-		Short: "Print an introduction to the Databricks CLI",
-		Long: `Print a short introduction to the Databricks CLI: authentication, profiles,
+// Marker lines that split agentQuickstart into variants. A block holds the
+// skills variant, then the aitools variant, between skillsMarker and
+// endMarker. Text outside blocks is shared by both variants.
+const (
+	skillsMarker  = "<!--skills-->"
+	aitoolsMarker = "<!--aitools-->"
+	endMarker     = "<!--end-->"
+)
+
+// Spec declares the quickstart command.
+var Spec = root.CommandSpec{
+	Use:   "quickstart",
+	Short: "Print an introduction to the Databricks CLI",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Args = root.NoArgs
+	cmd.Long = `Print a short introduction to the Databricks CLI: authentication, profiles,
 building with Declarative Automation Bundles, and where to go next.
 
 Prints a human-friendly guide by default. When stdout is not an interactive
 terminal (for example, when a coding agent runs the command), it prints a
-denser, agent-oriented version instead.`,
+denser, agent-oriented version instead.`
+
+	skillsVariant := skills.Enabled(ctx)
+	var printSkill bool
+	if skillsVariant {
+		cmd.Flags().BoolVar(&printSkill, "skill", false, "Print the databricks-quickstart skill with its frontmatter")
+		cmd.Flags().MarkHidden("skill")
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		content := quickstartFor(cmdio.IsPromptSupported(cmd.Context()))
+		var content string
+		if printSkill {
+			content = skillFor()
+		} else {
+			content = quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant)
+		}
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
 	}
-
-	return cmd
 }
 
 // quickstartFor returns the quickstart text for the caller. Interactive
 // terminals (people) get the friendly guide; non-interactive callers (coding
 // agents, scripts, CI) get the agent-oriented version. The detection is
-// intentionally simple for now and can grow more precise later.
-func quickstartFor(interactive bool) string {
+// intentionally simple for now and can grow more precise later. skillsVariant
+// selects the agent text that points at `databricks skills`.
+func quickstartFor(interactive, skillsVariant bool) string {
 	if interactive {
 		return strings.TrimRight(humanQuickstart, "\n")
 	}
-	return stripFrontmatter(agentQuickstart)
+	return stripFrontmatter(variantText(agentQuickstart, skillsVariant))
+}
+
+// skillFor returns the skills variant of the agent quickstart with its
+// frontmatter: the text a harness writes to databricks-quickstart/SKILL.md.
+func skillFor() string {
+	return strings.TrimRight(variantText(agentQuickstart, true), "\n")
+}
+
+// variantText keeps the variant that was asked for and drops the other one,
+// along with the marker lines. Text outside blocks is kept as it is. A marker
+// matches with a trailing \r ignored, so a CRLF copy still splits into
+// variants. The other lines keep their \r. The frontmatter fence in
+// stripFrontmatter needs LF, which cmd/quickstart/.gitattributes ensures.
+func variantText(s string, skillsVariant bool) string {
+	var out []string
+	keep := true
+	for line := range strings.SplitSeq(s, "\n") {
+		switch strings.TrimRight(line, "\r") {
+		case skillsMarker:
+			keep = skillsVariant
+		case aitoolsMarker:
+			keep = !skillsVariant
+		case endMarker:
+			keep = true
+		default:
+			if keep {
+				out = append(out, line)
+			}
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // stripFrontmatter removes a leading YAML frontmatter block ("---\n...\n---\n")

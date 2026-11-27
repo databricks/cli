@@ -4,6 +4,18 @@
 Pattern = "HEAD /"
 Response.Body = ''
 
+# Cancel by ID verifies each run is an AIR run via runs/get before cancelling.
+# Stubs match on path only, so every ID resolves to this AIR run.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "state": {"life_cycle_state": "RUNNING"},
+  "tasks": [{"run_id": 124, "ai_runtime_task": {"experiment": "/Users/tester@databricks.com/exp"}}]
+}
+'''
+
 # CancelRun accepts the request and returns an empty body.
 [[Server]]
 Pattern = "POST /api/2.2/jobs/runs/cancel"

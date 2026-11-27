@@ -22,7 +22,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	if _, exists := s.VectorSearchEndpoints[createReq.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search endpoint with name %s already exists", createReq.Name)},
+			Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": fmt.Sprintf("AI Search endpoint %s already exists. Please try again with a different endpoint name.", createReq.Name)},
 		}
 	}
 

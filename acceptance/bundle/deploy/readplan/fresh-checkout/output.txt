@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+{"seq":1,"files":["a.py","b.py","databricks.yml"]}
+
+=== Remove b.py from the bundle and save a plan
+
+>>> rm b.py
+
+>>> [CLI] bundle plan -o json
+
+=== Apply the plan from a fresh checkout (no .databricks cache, as in a separate CI job)
+
+>>> rm -rf .databricks
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 1 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Is b.py, removed from the bundle, still in the workspace?
+
+>>> errcode env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/b.py
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/b.py) doesn't exist.
+
+Exit code: 1
+
+=== Remote deployment state
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+{"seq":2,"files":["a.py","databricks.yml"]}
+
+=== A regular deploy afterwards
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> errcode env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/b.py
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/b.py) doesn't exist.
+
+Exit code: 1
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+{"seq":3,"files":["a.py","databricks.yml"]}

@@ -52,12 +52,10 @@ r["tasks"].append({
 EOF
 
 title "Detect and save changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
@@ -99,11 +97,9 @@ r["tasks"].append({
 EOF
 
 title "Detect task key rename"
-echo
 cp databricks.yml databricks.yml.backup2
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes for task key rename"
-echo
 trace diff.py databricks.yml.backup2 databricks.yml
 rm databricks.yml.backup2

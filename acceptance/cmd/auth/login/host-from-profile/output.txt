@@ -6,6 +6,7 @@ auth_type = databricks-cli
 client_id = custom-client-id
 
 === Login with existing profile (no host argument)
+
 >>> [CLI] auth login --profile existing-profile
 Profile existing-profile was successfully saved
 

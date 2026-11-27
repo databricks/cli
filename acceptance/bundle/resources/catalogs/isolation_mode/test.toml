@@ -1,0 +1,8 @@
+# Local only: the create-then-update sequence is direct-engine-specific, and whether an
+# ISOLATED catalog stays readable from the deploying workspace without an explicit
+# workspace binding has not been verified against a real workspace.
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]

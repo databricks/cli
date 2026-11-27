@@ -222,12 +222,23 @@ func formatCounts(counts map[string]int) string {
 func renderRegressionReport(selected string, columns []regrColumn) string {
 	branch, refs := columns[0], columns[1:]
 	tests := leafTests(branch.Results)
+	counts := countByCategory(tests, branch, refs)
+	// The heading reports the branch only: a test that pins new behavior is meant to fail on
+	// main or the latest release.
+	status := statusPass
+	if counts[catFailing] > 0 {
+		status = statusFail
+	}
 
 	var b strings.Builder
-	b.WriteString("## Regression test report\n\n")
+	// The workflow that posts the report finds its comment by this heading, so the status comes
+	// last: the text before it never changes.
+	fmt.Fprintf(&b, "## Regression test report %s\n\n", statusMark(status))
 	fmt.Fprintf(&b, "%s\n\n", selected)
-	fmt.Fprintf(&b, "%d tests: %s\n\n", len(tests), formatCounts(countByCategory(tests, branch, refs)))
 
+	// The table has a row per test variant, often hundreds, so it is collapsed. The workflow
+	// that posts the report always keeps this first <details> block when it trims the comment.
+	fmt.Fprintf(&b, "<details>\n<summary>%d tests: %s</summary>\n\n", len(tests), formatCounts(counts))
 	b.WriteString("| test | " + strings.Join(columnTitles(columns), " | ") + " |\n")
 	b.WriteString("|---|" + strings.Repeat("---|", len(columns)) + "\n")
 	for _, test := range tests {
@@ -237,7 +248,7 @@ func renderRegressionReport(selected string, columns []regrColumn) string {
 		}
 		fmt.Fprintf(&b, "| %s | %s |\n", test, strings.Join(marks, " | "))
 	}
-	b.WriteString("\n")
+	b.WriteString("\n</details>\n\n")
 
 	for _, test := range tests {
 		renderDetails(&b, test, columns)

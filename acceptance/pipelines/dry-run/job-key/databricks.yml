@@ -1,0 +1,14 @@
+bundle:
+  name: test-pipeline-dry-run-job-key
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline
+  jobs:
+    my_job:
+      name: My Job
+      tasks:
+        - task_key: main
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
@@ -23,6 +25,9 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 		}
 	}
 
+	// UC normalizes feature names to lowercase.
+	feature.FullName = strings.ToLower(feature.FullName)
+
 	parts := strings.Split(feature.FullName, ".")
 	if len(parts) != 3 {
 		return Response{
@@ -30,8 +35,18 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 			Body:       fmt.Sprintf("full_name must be a three-part name, got %q", feature.FullName),
 		}
 	}
+	if _, exists := s.Features[feature.FullName]; exists {
+		return Response{
+			StatusCode: http.StatusConflict,
+			Body: map[string]string{
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Feature '%s' already exists.", feature.FullName),
+			},
+		}
+	}
 	feature.CatalogName, feature.SchemaName, feature.Name = parts[0], parts[1], parts[2]
 	feature.CreatedBy = s.CurrentUser().UserName
+	feature.CreatedAt = sdktime.New(time.Unix(0, nowNano()).UTC())
 
 	s.Features[feature.FullName] = feature
 	return Response{

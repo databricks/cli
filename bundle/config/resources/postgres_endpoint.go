@@ -23,7 +23,7 @@ type PostgresEndpointConfig struct {
 	// ReplaceExisting, when true, takes over an existing endpoint with the same ID
 	// instead of returning ALREADY_EXISTS. Used to manage the implicitly-created
 	// primary read-write endpoint of a new branch. Input-only: not returned by the GET API.
-	ReplaceExisting bool `json:"replace_existing,omitempty"`
+	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 func (c *PostgresEndpointConfig) UnmarshalJSON(b []byte) error {

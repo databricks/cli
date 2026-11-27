@@ -4,10 +4,6 @@ Cloud = true
 # (and on cloud, flaky timestamps/operation IDs).
 RecordRequests = false
 
-# Lakebase v2 (postgres) is only available in AWS as of January 2026
-CloudEnvs.gcp = false
-CloudEnvs.azure = false
-
 # Error-path tests don't iterate cleanly under terraform: the terraform engine
 # rolls back to its prior state on a partial failure, which makes the recorded
 # output diverge from the direct engine. Run them on direct only; the error

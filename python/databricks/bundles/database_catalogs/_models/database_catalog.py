@@ -18,7 +18,12 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class DatabaseCatalog(Resource):
-    """"""
+    """
+    A Database Catalog registers a Postgres database that lives in a Lakebase database instance as a
+    catalog in Unity Catalog, so that the database's schemas and tables are governed and discoverable
+    through Unity Catalog. For an overview, see
+    https://docs.databricks.com/aws/en/oltp/projects/register-uc.
+    """
 
     database_instance_name: VariableOr[str]
     """
@@ -27,17 +32,20 @@ class DatabaseCatalog(Resource):
 
     database_name: VariableOr[str]
     """
-    [Public Preview] The name of the database (in an instance) associated with the catalog.
+    [Public Preview] The name of the Postgres database in the instance that the catalog registers. The database must
+    already exist unless create_database_if_not_exists is true. The system databases postgres,
+    databricks_system, template0 and template1 cannot be registered.
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the catalog in UC.
+    [Public Preview] The name of the catalog in Unity Catalog.
     """
 
     create_database_if_not_exists: VariableOrOptional[bool] = None
     """
-    [Public Preview]
+    [Public Preview] If true, the database named in database_name is created in the instance when it does not already
+    exist, with the calling user as its owner. Defaults to false.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -63,17 +71,20 @@ class DatabaseCatalogDict(TypedDict, total=False):
 
     database_name: VariableOr[str]
     """
-    [Public Preview] The name of the database (in an instance) associated with the catalog.
+    [Public Preview] The name of the Postgres database in the instance that the catalog registers. The database must
+    already exist unless create_database_if_not_exists is true. The system databases postgres,
+    databricks_system, template0 and template1 cannot be registered.
     """
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the catalog in UC.
+    [Public Preview] The name of the catalog in Unity Catalog.
     """
 
     create_database_if_not_exists: VariableOrOptional[bool]
     """
-    [Public Preview]
+    [Public Preview] If true, the database named in database_name is created in the instance when it does not already
+    exist, with the calling user as its owner. Defaults to false.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]

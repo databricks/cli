@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -90,13 +91,33 @@ func (r *ResourceModelProviderService) DoRead(ctx context.Context, id string) (*
 }
 
 func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *resources.ModelProviderServiceConfig) (string, *resources.ModelProviderServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateModelProviderService(ctx, catalog.CreateModelProviderServiceRequest{
-		Parent:                 config.Parent,
-		ModelProviderServiceId: config.ModelProviderServiceId,
-		ModelProviderService:   modelProviderServiceBody(config),
-	})
+	create := func(ctx context.Context) (*catalog.ModelProviderService, error) {
+		return r.client.AiGateway.CreateModelProviderService(ctx, catalog.CreateModelProviderServiceRequest{
+			Parent:                 config.Parent,
+			ModelProviderServiceId: config.ModelProviderServiceId,
+			ModelProviderService:   modelProviderServiceBody(config),
+		})
+	}
+	start := time.Now()
+	resp, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The bundle chooses the full name (parent and model_provider_service_id), and it is unique in the metastore.
+		id := strings.TrimPrefix(config.Parent, "schemas/") + "." + config.ModelProviderServiceId
+		resp, err = recoverCreate(ctx, createRecovery[catalog.ModelProviderService, *catalog.ModelProviderService]{
+			name:  "model provider service " + id,
+			start: start,
+			get: func(ctx context.Context) (*catalog.ModelProviderService, error) {
+				return r.client.AiGateway.GetModelProviderService(ctx, catalog.GetModelProviderServiceRequest{Name: modelProviderServiceNamePrefix + id})
+			},
+			createTime:      func(found *catalog.ModelProviderService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[catalog.ModelProviderService],
+			create:          repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	state, err := responseToModelProviderServiceConfig(resp)
 	if err != nil {

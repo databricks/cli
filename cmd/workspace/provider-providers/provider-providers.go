@@ -3,6 +3,7 @@
 package provider_providers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,20 +19,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "provider-providers",
-		Short: `*Public Preview* Providers are entities that manage assets in Marketplace.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-providers",
+	Short:   `Providers are entities that manage assets in Marketplace.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-Providers are entities that manage assets in Marketplace.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Providers are entities that manage assets in Marketplace.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -44,8 +47,6 @@ Providers are entities that manage assets in Marketplace.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -66,16 +67,15 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `*Public Preview* Create a provider.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Create a provider.`
+	cmd.Long = `Create a provider.
 
-Create a provider.
-
-  Create a provider`
+  Creates a provider profile in the caller's account. Returns the ID of the new
+  profile.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -132,16 +132,17 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteProviderRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `*Public Preview* Delete provider.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Delete provider.`
+	cmd.Long = `Delete provider.
 
-Delete provider.
+  Deletes a provider profile and all of the listings that it owns.
 
-  Delete provider`
+  Arguments:
+    ID: ID of the provider profile to delete.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -156,14 +157,14 @@ Delete provider.
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Providers drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the provider profile to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the provider profile to delete")
 		}
 		deleteReq.Id = args[0]
 
@@ -201,16 +202,14 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetProviderRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `*Public Preview* Get provider.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Get provider.`
+	cmd.Long = `Get provider.
 
-Get provider.
-
-  Get provider profile`
+  Gets a provider profile by ID.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -274,7 +273,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of results to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -284,16 +283,14 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `*Public Preview* List providers.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `List providers.`
+	cmd.Long = `List providers.
 
-List providers.
-
-  List provider profiles for account.`
+  Lists the provider profiles in the caller's account.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -346,16 +343,17 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `*Public Preview* Update provider.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Update provider.`
+	cmd.Long = `Update provider.
 
-Update provider.
+  Updates a provider profile. Send the full profile definition.
 
-  Update provider profile`
+  Arguments:
+    ID: ID of the provider profile to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

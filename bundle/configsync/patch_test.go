@@ -22,7 +22,7 @@ func TestApplyChangesToYAML_PreserveFormatting(t *testing.T) {
 	yamlContent := `# Comment at top
 resources:
   jobs:
-    test_job:
+    "test.job":
       name: "Test Job"
 
       # Comment before timeout
@@ -42,7 +42,7 @@ resources:
 	mutator.DefaultMutators(ctx, b)
 
 	changes := Changes{
-		"resources.jobs.test_job": ResourceChanges{
+		"resources.jobs.test.job": ResourceChanges{
 			"timeout_seconds": &ConfigChangeDesc{
 				Operation: OperationReplace,
 				Value:     7200,
@@ -61,6 +61,7 @@ resources:
 	modified := fileChanges[0].ModifiedContent
 
 	assert.Contains(t, modified, "# Comment at top")
+	assert.Contains(t, modified, `"test.job":`)
 	assert.Contains(t, modified, "# Comment before timeout")
 	assert.Contains(t, modified, "timeout_seconds: 7200")
 	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")
@@ -333,7 +334,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank next to marker is deduplicated",
+			name: "encoder-added blank next to marker is deduplicated",
 			input: nl(`
 key1: value1
 # __YAMLPATCH_BLANK_LINE__
@@ -347,7 +348,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added standalone blank is kept",
+			name: "encoder-added standalone blank is kept",
 			input: nl(`
 key1: value1
 
@@ -360,7 +361,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank near block scalar",
+			name: "encoder-added blank near block scalar",
 			input: nl(`
 key: |
   line1
@@ -436,4 +437,308 @@ func TestBuildNestedMaps(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expected, result)
+}
+
+func TestApplyChangeScalarParents(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"string", "parent: text\n", "parent.key", ""},
+		{"quoted null", "parent: \"null\"\n", "parent.key", ""},
+		{"empty string", "parent: \"\"\n", "parent.key", ""},
+		{"boolean", "parent: false\n", "parent.key", ""},
+		{"anchored null", "parent: &shared null\nother: *shared\n", "parent.key", ""},
+		{"aliased null", "other: &shared null\nparent: *shared\n", "parent.key", ""},
+		{"anchored container", "parent: &shared {tags: null}\nother: *shared\n", "parent.tags.key", ""},
+		{"nonzero index", "parent: null\n", "parent[1].key", ""},
+		{"append", "parent: null\n", "parent[*]", "parent: [value]"},
+		{"nested sequence", "parent: ~\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			if tc.want == "" {
+				assert.ErrorContains(t, err, "scalar can not be a container")
+				return
+			}
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeAddToExistingKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"scalar", "tasks:\n  - task_key: main\n    job_cluster_key: old\n", "tasks[0].job_cluster_key", "tasks: [{task_key: main, job_cluster_key: value}]"},
+		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
+		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
+		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
+		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: value}\njob: {k: value}"},
+		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeKeepsAnchoredKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+	}{
+		{"anchored null", "parameters:\n  - name: p\n    value: &v\n  - name: q\n    value: *v\n"},
+		{"anchored scalar", "parameters:\n  - name: p\n    value: &v old\n  - name: q\n    value: *v\n"},
+		{"anchor inside the value", "parameters:\n  - name: p\n    value: {k: &v old}\n  - name: q\n    value: *v\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: "parameters[0].value",
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			assert.ErrorContains(t, err, "already exists")
+		})
+	}
+}
+
+func TestApplyChangeNullParentComments(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"root", "# head\nnull # inline\n# foot\n", "key", "key: value"},
+		{"sequence item", "parent:\n  # head\n  - null # inline\n  # foot\n", "parent[0].key", "parent: [{key: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+			for _, comment := range []string{"# head", "# inline", "# foot"} {
+				assert.Equal(t, 1, strings.Count(string(result), comment), "%s in %s", comment, result)
+			}
+		})
+	}
+}
+
+func TestApplyChangeReusesExistingParent(t *testing.T) {
+	for _, parent := range []string{"null", "~", "", "{}"} {
+		t.Run(parent, func(t *testing.T) {
+			content := "resources: " + parent + " # base resources\ntargets:\n  dev:\n    resources:\n      jobs:\n        job:\n          tags:\n            existing: preserved # existing tag\n"
+			result, err := applyChange(t.Context(), []byte(content), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, content+"            added: value\n", string(result))
+			assert.Contains(t, string(result), "# base resources")
+			assert.Contains(t, string(result), "existing: preserved # existing tag")
+		})
+	}
+}
+
+func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		parent string
+	}{
+		{"missing alternative parent", "{}"},
+		{"null alternative parent", "null"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := "targets:\n  dev:\n    resources: " + tc.parent + "\n"
+			result, err := applyChange(t.Context(), []byte("resources: null\n"+target), FieldChange{
+				WritePath:    "resources.jobs.job.tags.added",
+				AltWritePath: "targets.dev.resources.jobs.job.tags.added",
+				Change:       &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, `resources:
+  jobs:
+    job:
+      tags:
+        added: value
+`+target, string(result))
+		})
+	}
+}
+
+func TestApplyChangeKeepsAnchors(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		content   string
+		operation OperationType
+		path      string
+		want      string
+	}{
+		{
+			name:      "replace anchored node",
+			content:   "a: &x\n  k: 1\nb: *x\nc: *x\n",
+			operation: OperationReplace,
+			path:      "a",
+			want:      "a: 2\nb: &x\n  k: 1\nc: *x\n",
+		},
+		{
+			name:      "remove ancestor of anchored node",
+			content:   "tasks:\n  - task_key: a\n    libraries: &libs\n      - whl: a.whl\n  - task_key: b\n    libraries: *libs\n",
+			operation: OperationRemove,
+			path:      "tasks[0]",
+			want:      "tasks:\n  - task_key: b\n    libraries: &libs\n      - whl: a.whl\n",
+		},
+		{
+			name:      "nested anchor",
+			content:   "a: &outer\n  x: &inner 1\nb: *inner\nc: *outer\nd: *inner\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "b: &inner 1\nc: &outer\n  x: 1\nd: *inner\n",
+		},
+		{
+			name:      "reused anchor name",
+			content:   "a: &outer\n  x: &inner 1\nb: &inner 2\nc: *outer\nd: *inner\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "b: &inner 2\nc: &outer\n  x: 1\nd: *inner\n",
+		},
+		{
+			name:      "remove node with inner alias",
+			content:   "a:\n  x: &x 1\n  y: *x\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "b: &x 1\n",
+		},
+		{
+			name:      "replace node with inner alias",
+			content:   "a:\n  x: &x\n    - 1\n  y: *x # same\nb: *x\nc: *x\n",
+			operation: OperationReplace,
+			path:      "a",
+			want:      "a: 2\nb: &x\n  - 1\nc: *x\n",
+		},
+		{
+			name:      "anchored key",
+			content:   "a: 1\n&k b: 2\nc: *k\n",
+			operation: OperationRemove,
+			path:      "b",
+			want:      "a: 1\nc: &k b\n",
+		},
+		{
+			name:      "edit through alias",
+			content:   "a: &x\n  k: 1\nb: *x\n",
+			operation: OperationReplace,
+			path:      "b.k",
+			want:      "a: &x\n  k: 2\nb: *x\n",
+		},
+		{
+			name:      "remove nested anchor through alias",
+			content:   "a: &x\n  k: &y 1\n  n: 3\nb: *x\nc: *y\n",
+			operation: OperationRemove,
+			path:      "b.k",
+			want:      "a: &x\n  n: 3\nb: *x\nc: &y 1\n",
+		},
+		{
+			name:      "commented alias",
+			content:   "a: &x\n  - 1\nb: *x # shared\nc: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "# shared\nb: &x\n  - 1\nc: *x\n",
+		},
+		{
+			name:      "replace alias",
+			content:   "a: &x 1\nb: *x\n",
+			operation: OperationReplace,
+			path:      "b",
+			want:      "a: &x 1\nb: 2\n",
+		},
+		{
+			name:      "alias to kept anchor",
+			content:   "c: &c 1\na: &x\n  k: *c\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "c: &c 1\nb: &x\n  k: *c\n",
+		},
+		{
+			name:      "alias to reused anchor name",
+			content:   "c: &c 1\na: &x\n  k: *c\nd: &c 2\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "c: &c 1\nd: &c 2\nb: &x\n  k: 1\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: tc.operation, Value: 2},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestSourceDocsWritten(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "databricks.yml")
+	require.NoError(t, os.WriteFile(file, []byte(`base: &base
+  a: 1
+  nested:
+    x: 1
+alias: *base
+merged:
+  <<: *base
+  b: 2
+anchored: &anchored
+  <<: *base
+targets:
+  dev:
+    merged:
+      <<: *base
+`), 0o644))
+
+	for _, tc := range []struct {
+		name, path, altPath string
+		shadowed            bool
+		key                 bool
+		addPath             string
+	}{
+		{"written", "merged.b", "", false, true, "merged.b"},
+		{"inherited", "merged.a", "", false, false, "merged.a"},
+		{"inherited parent", "merged.nested.x", "", false, false, ""},
+		{"through alias", "alias.a", "", false, true, ""},
+		{"under anchor", "anchored.a", "", false, false, ""},
+		{"written in anchor", "base.a", "", false, true, ""},
+		{"missing parent", "missing.a", "", false, false, ""},
+		{"alternative only", "missing.a", "targets.dev.merged.a", false, false, "targets.dev.merged.a"},
+		{"both scopes", "merged.a", "targets.dev.merged.a", false, false, "merged.a"},
+		{"both scopes, shadowed", "merged.a", "targets.dev.merged.a", true, false, "targets.dev.merged.a"},
+		{"shadowed", "merged.a", "", true, false, ""},
+		{"written, shadowed", "merged.b", "targets.dev.merged.b", true, false, "targets.dev.merged.b"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath, tc.shadowed)
+			assert.Equal(t, tc.key, key)
+			assert.Equal(t, tc.addPath, addPath)
+		})
+	}
+
+	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "", false)
+	assert.True(t, key)
+	assert.Empty(t, addPath)
 }

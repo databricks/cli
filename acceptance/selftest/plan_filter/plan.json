@@ -1,0 +1,22 @@
+{
+  "plan_version": 2,
+  "cli_version": "0.0.0-dev",
+  "lineage": "lineage-1",
+  "serial": 3,
+  "features": {"deployment_history_shadow": {}},
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update",
+      "new_state": {"value": {"name": "new name"}},
+      "remote_state": {"job_id": 123, "name": "old name", "created_time": 1700000000000},
+      "changes": {
+        "name": {"action": "update", "old": "old name", "new": "new name", "remote": "old name"},
+        "deployment.version_id": {"action": "update", "old": "1", "new": "2"}
+      }
+    },
+    "resources.jobs.bar": {
+      "action": "create",
+      "new_state": {"value": {"name": "bar"}}
+    }
+  }
+}

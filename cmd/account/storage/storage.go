@@ -3,6 +3,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,23 +18,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "storage",
-		Short: `These APIs manage storage configurations for this workspace.`,
-		Long: `These APIs manage storage configurations for this workspace. A root storage S3
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "storage",
+	Short:   `These APIs manage storage configurations for this workspace.`,
+	GroupID: "provisioning",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage storage configurations for this workspace. A root storage S3
   bucket in your account is required to store objects like cluster logs,
   notebook revisions, and job results. You can also use the root storage S3
   bucket for storage of non-production DBFS data. A storage configuration
   encapsulates this bucket information, and its ID is used when creating a new
-  workspace.`,
-		GroupID: "provisioning",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  workspace.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

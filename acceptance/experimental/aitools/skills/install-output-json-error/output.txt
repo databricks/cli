@@ -1,11 +1,13 @@
 
 === install --output json reports a top-level error category and exits non-zero
+
 >>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --skills=nonexistent --output json
 {
   "scope": "global",
   "agents": [],
   "error": "skill \"nonexistent\" not found",
-  "error_category": "SKILL_NOT_FOUND"
+  "error_category": "SKILL_NOT_FOUND",
+  "recovery": "Run 'databricks aitools list' to see the available skills."
 }
 
 Exit code: 1

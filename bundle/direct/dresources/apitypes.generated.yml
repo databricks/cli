@@ -4,13 +4,15 @@ alerts: sql.AlertV2
 
 apps: apps.App
 
-catalogs: catalog.CreateCatalog
+catalogs: catalog.CatalogInfo
 
 cluster_policies: compute.CreatePolicy
 
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
+
+data_quality_monitors: dataquality.Monitor
 
 database_catalogs: database.DatabaseCatalog
 
@@ -20,15 +22,21 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+feature_specs: ml.FeatureSpec
+
 features: ml.Feature
 
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
 instance_pools: compute.CreateInstancePool
 
+internal_immutable_snapshots: compute.ServerlessCompute
+
 job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
+
+materialization_sets: ml.MaterializationSet
 
 mcp_services: catalog.CreateMcpServiceRequest
 
@@ -46,6 +54,8 @@ postgres_branches: postgres.BranchSpec
 
 postgres_catalogs: postgres.CatalogCatalogSpec
 
+postgres_data_apis: postgres.DataApiDataApiSpec
+
 postgres_databases: postgres.DatabaseDatabaseStatus
 
 postgres_endpoints: postgres.EndpointSpec
@@ -62,7 +72,7 @@ quality_monitors: catalog.CreateMonitor
 
 registered_models: catalog.RegisteredModelInfo
 
-schemas: catalog.CreateSchema
+schemas: catalog.SchemaInfo
 
 secret_scopes: workspace.CreateScope
 
@@ -76,4 +86,4 @@ vector_search_endpoints: vectorsearch.CreateEndpoint
 
 vector_search_indexes: vectorsearch.CreateVectorIndexRequest
 
-volumes: catalog.CreateVolumeRequestContent
+volumes: catalog.VolumeInfo

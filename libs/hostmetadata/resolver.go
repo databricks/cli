@@ -9,11 +9,16 @@ package hostmetadata
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 const (
@@ -82,12 +87,71 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, nil
 		}
-		// The raw error is env-dependent (DNS vs TLS vs HTTP) and would make
-		// acceptance goldens brittle, so keep it at Debug; the Warn text is
-		// stable (host only) for user visibility.
-		log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		// The Warn text is stable (host only) for user visibility. The raw
+		// error is env-dependent (DNS vs TLS vs HTTP) and would make
+		// acceptance goldens brittle, so it stays at Debug.
+		// A host that doesn't answer in time or answers with a transient
+		// status (408, 429, 5xx other than 501) is still cached, so the next commands don't wait
+		// on it again, but such a failure says nothing about the host's config
+		// and the SDK falls back to the user config, so it is logged at Debug
+		// too.
+		if isSDKInactivityTimeout(err) || isTransientHTTPError(err) {
+			log.Debugf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		} else {
+			log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		}
 		log.Debugf(ctx, "[hostmetadata] fetch error for %s: %v", host, err)
 		cache.Put(ctx, negative, fp, &negativeSentinel{Error: true})
 		return nil, nil
+	}
+}
+
+// sdkInactivityTimeoutPrefix starts the error the SDK puts in a url.Error when
+// a request sees no activity for HTTPTimeout (httpclient/api_client.go).
+const sdkInactivityTimeoutPrefix = "request timed out after "
+
+// isSDKInactivityTimeout reports whether err is the SDK's HTTP inactivity
+// timeout. The SDK replaces the url.Error cause with a new unwrapped error, so
+// there is no sentinel or type to match and the message text is the only
+// signal; TestNewResolver_Timeout_LogsAtDebugAndCachesNegative runs the real
+// SDK client and catches a change in that wording.
+func isSDKInactivityTimeout(err error) bool {
+	uerr, ok := errors.AsType[*url.Error](err)
+	if !ok || uerr.Err == nil {
+		return false
+	}
+	return strings.HasPrefix(uerr.Err.Error(), sdkInactivityTimeoutPrefix)
+}
+
+// transientAPIErrors are the sentinels the SDK's refresh client unwraps a
+// transient HTTP status to (see tokenError in the SDK's config package).
+var transientAPIErrors = []error{
+	apierr.ErrTooManyRequests,
+	apierr.ErrInternalError,
+	apierr.ErrTemporarilyUnavailable,
+	apierr.ErrDeadlineExceeded,
+}
+
+// isTransientHTTPError reports whether err is an HTTP response with a status
+// that a later attempt may not repeat: 408, 429 or 5xx other than 501. The
+// SDK's refresh client unwraps statuses it knows to an apierr sentinel and
+// leaves others (e.g. 502) as an [httpclient.HttpError].
+func isTransientHTTPError(err error) bool {
+	for _, sentinel := range transientAPIErrors {
+		if errors.Is(err, sentinel) {
+			return true
+		}
+	}
+	herr, ok := errors.AsType[*httpclient.HttpError](err)
+	if !ok || herr.Response == nil {
+		return false
+	}
+	switch herr.StatusCode {
+	case http.StatusRequestTimeout, http.StatusTooManyRequests:
+		return true
+	case http.StatusNotImplemented:
+		return false
+	default:
+		return herr.StatusCode >= 500
 	}
 }

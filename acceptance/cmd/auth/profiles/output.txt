@@ -28,3 +28,11 @@
     }
   ]
 }
+
+=== Profiles with workspace_id (text output)
+
+>>> [CLI] auth profiles --skip-validate
+Name               Host
+workspace-profile  https://workspace.cloud.databricks.test
+account-profile    https://accounts.cloud.databricks.test
+unified-profile    https://unified.databricks.test

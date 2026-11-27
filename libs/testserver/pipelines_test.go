@@ -51,7 +51,7 @@ func TestPipelineCreate_AllowsSingleSegmentTargetSchemaName(t *testing.T) {
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
-	response := workspace.PipelineStartUpdate("non-existent-pipeline")
+	response := workspace.PipelineStartUpdate(Request{Body: []byte(`{}`)}, "non-existent-pipeline")
 	assert.Equal(t, 404, response.StatusCode)
 	assert.Contains(t, response.Body.(map[string]string)["message"], "The specified pipeline non-existent-pipeline was not found")
 }
@@ -74,7 +74,7 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 
 	pipelineId := createTestPipeline(t, workspace)
 
-	startResponse := workspace.PipelineStartUpdate(pipelineId)
+	startResponse := workspace.PipelineStartUpdate(Request{Body: []byte(`{}`)}, pipelineId)
 	assert.Equal(t, 0, startResponse.StatusCode)
 
 	stopResponse := workspace.PipelineStop(pipelineId)
@@ -84,4 +84,44 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, pipelineId, stopBody.PipelineId)
 	assert.Equal(t, pipelines.PipelineStateIdle, stopBody.State)
+}
+
+func TestPipelineGetUpdatePreservesRefreshSelections(t *testing.T) {
+	workspace := NewFakeWorkspace("http://workspace.test", "dbapi123")
+	pipelineId := createTestPipeline(t, workspace)
+	tests := []struct {
+		name string
+		body string
+		want pipelines.UpdateInfo
+	}{
+		{
+			name: "file selections",
+			body: `{"refresh_selection_by_path":["/Workspace/src/orders.py","/Workspace/src/returns.py"],"full_refresh_selection_by_path":["/Workspace/src/customers.sql"]}`,
+			want: pipelines.UpdateInfo{
+				RefreshSelectionByPath:     []string{"/Workspace/src/orders.py", "/Workspace/src/returns.py"},
+				FullRefreshSelectionByPath: []string{"/Workspace/src/customers.sql"},
+			},
+		},
+		{
+			name: "table selections",
+			body: `{"refresh_selection":["orders"],"full_refresh_selection":["customers"]}`,
+			want: pipelines.UpdateInfo{
+				RefreshSelection:     []string{"orders"},
+				FullRefreshSelection: []string{"customers"},
+			},
+		},
+	}
+	for i := range tests {
+		response := workspace.PipelineStartUpdate(Request{Body: []byte(tests[i].body)}, pipelineId)
+		require.Zero(t, response.StatusCode)
+		tests[i].want.UpdateId = response.Body.(pipelines.StartUpdateResponse).UpdateId
+		tests[i].want.State = pipelines.UpdateInfoStateCompleted
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response := workspace.PipelineGetUpdate(pipelineId, tt.want.UpdateId)
+			require.Zero(t, response.StatusCode)
+			assert.Equal(t, &tt.want, response.Body.(pipelines.GetUpdateResponse).Update)
+		})
+	}
 }

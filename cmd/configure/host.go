@@ -7,7 +7,8 @@ import (
 )
 
 // normalizeHost ensures a https:// scheme is present and returns only scheme
-// and host, consistent with the normalizeHost in libs/databrickscfg/host.go.
+// and host, like the normalizeHost in libs/databrickscfg/host.go, which also
+// drops the default port when matching profiles.
 func normalizeHost(input string) string {
 	input = strings.TrimSpace(input)
 	u, err := url.Parse(input)

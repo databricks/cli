@@ -1,0 +1,9 @@
+Ignore = ["databrickscfg"]
+
+[[Repls]]
+Old = 'sandbox-[0-9a-f]{64}'
+New = '[SSH_IDENTITY]'
+
+[[Server]]
+Pattern = "GET /api/2.0/sandboxes/test"
+Response.Body = '''{"name":"sandboxes/test","status":{"state":"SANDBOX_STATE_STOPPED"}}'''

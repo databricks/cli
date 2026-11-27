@@ -3,6 +3,8 @@
 package redash_config
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,21 +15,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "redash-config",
-		Short:   `Redash V2 service for workspace configurations (internal).`,
-		Long:    `Redash V2 service for workspace configurations (internal)`,
-		GroupID: "sql",
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "redash-config",
+	Short:   `Redash V2 service for workspace configurations (internal).`,
+	GroupID: "sql",
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Redash V2 service for workspace configurations (internal)`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetConfig())
@@ -36,8 +42,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-config command

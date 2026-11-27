@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // This file implements the `--override KEY=VALUE` flag. Overrides are applied to
@@ -65,14 +64,7 @@ func checkOverridePath(parts []string, node configField, fullPath string) error 
 	name := parts[0]
 	child, ok := findConfigChild(node.children, name)
 	if !ok {
-		names := make([]string, 0, len(node.children))
-		for _, c := range node.children {
-			if c.hidden {
-				continue
-			}
-			names = append(names, configLeafName(c.path))
-		}
-		slices.Sort(names)
+		names := visibleConfigChildNames(node)
 		return fmt.Errorf("invalid --override %q: %q is not a known field; available fields are: %s",
 			fullPath, name, strings.Join(names, ", "))
 	}

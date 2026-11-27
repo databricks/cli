@@ -1,0 +1,9 @@
+trace $CLI bundle deploy
+
+title "Delete the monitor out of band"
+trace $CLI data-quality delete-monitor table 11111111-2222-3333-4444-555555555555
+
+title "Plan should detect the monitor is gone and re-create it"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve

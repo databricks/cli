@@ -26,7 +26,22 @@ func TestReplacement_UUID(t *testing.T) {
 
 	PrepareReplacementsUUID(t, &repls)
 
+	// A lone UUID stays unsuffixed.
 	assert.Equal(t, "[UUID]", repls.Replace("123e4567-e89b-12d3-a456-426614174000"))
+}
+
+func TestReplacement_UUIDUnique(t *testing.T) {
+	var repls ReplacementsContext
+
+	PrepareReplacementsUUID(t, &repls)
+
+	input := "a: 123e4567-e89b-12d3-a456-426614174000\n" +
+		"b: 00000000-0000-0000-0000-000000000001\n" +
+		"a again: 123e4567-e89b-12d3-a456-426614174000"
+	expected := "a: [UUID][0]\n" +
+		"b: [UUID][1]\n" +
+		"a again: [UUID][0]"
+	assert.Equal(t, expected, repls.Replace(input))
 }
 
 func TestReplacement_Distinct(t *testing.T) {
@@ -45,6 +60,17 @@ func TestReplacement_DistinctSingleMatch(t *testing.T) {
 
 	got := rc.Replace("25")
 	assert.Equal(t, "[NUMBER]", got)
+}
+
+func TestReplacement_DistinctSingleValueRepeated(t *testing.T) {
+	rc := ReplacementsContext{Repls: []Replacement{
+		{Old: regexp.MustCompile(`\d+`), New: "[NUMBER]", Distinct: true},
+	}}
+
+	// A single distinct value, even repeated, stays unsuffixed: numbering only
+	// adds signal when there is more than one distinct value to tell apart.
+	got := rc.Replace("25\n25")
+	assert.Equal(t, "[NUMBER]\n[NUMBER]", got)
 }
 
 func TestReplaceAppliesInOrder(t *testing.T) {

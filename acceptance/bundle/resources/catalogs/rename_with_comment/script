@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a catalog with a comment"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the catalog and change its comment in one deploy: both go in one PATCH"
+trace update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "Both landed, so the redeploy is a no-op"
+trace $CLI catalogs get "test_catalog_renamed_${UNIQUE_NAME}" | jq '{name, comment}'
+trace $CLI bundle plan

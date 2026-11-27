@@ -14,6 +14,10 @@ from databricks.bundles.features._models.feature_view_source import (
     FeatureViewSource,
     FeatureViewSourceParam,
 )
+from databricks.bundles.features._models.iceberg_table_source import (
+    IcebergTableSource,
+    IcebergTableSourceParam,
+)
 from databricks.bundles.features._models.kafka_source import (
     KafkaSource,
     KafkaSourceParam,
@@ -52,6 +56,13 @@ class DataSource:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] A data source composed from registered upstream Features.
+    """
+
+    iceberg_table_source: VariableOrOptional[IcebergTableSource] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A Unity Catalog managed or foreign Iceberg table source.
     """
 
     kafka_source: VariableOrOptional[KafkaSource] = None
@@ -105,6 +116,13 @@ class DataSourceDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] A data source composed from registered upstream Features.
+    """
+
+    iceberg_table_source: VariableOrOptional[IcebergTableSourceParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] A Unity Catalog managed or foreign Iceberg table source.
     """
 
     kafka_source: VariableOrOptional[KafkaSourceParam]

@@ -1,0 +1,9 @@
+bundle:
+  name: sensitive-variables
+
+variables:
+  api_credential:
+    sensitive: true
+  api_header:
+    description: Not marked as sensitive, so it must not reference a sensitive variable
+    default: "Bearer ${var.api_credential}"

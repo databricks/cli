@@ -11,7 +11,7 @@ import (
 
 // indexStrategy serves the caller's own runs from the AiTrainingService index:
 // it fetches every run id up front (cheap id+timestamp pairs), orders them
-// newest-first, keeps the newest `limit`, then hydrates them into full rows in
+// newest-first, then hydrates them into full rows in
 // want-sized batches via Jobs runs/get. Terminal rows are cached so repeat calls
 // skip the network. Unlike the Jobs scan it can't lazy-page (it must sort the
 // whole id set first), but it still yields in batches so the table paints early.
@@ -25,9 +25,10 @@ type indexStrategy struct {
 	host        string
 	workspaceID int64
 
-	ids    []int64 // newest-first run ids to hydrate, resolved on first next()
-	pos    int
-	loaded bool
+	ids      []int64 // newest-first run ids to hydrate, resolved on first next()
+	pos      int
+	returned int
+	loaded   bool
 }
 
 func newIndexStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery, limit int) *indexStrategy {
@@ -51,12 +52,6 @@ func (s *indexStrategy) load() error {
 		return err
 	}
 	slices.SortFunc(refs, func(a, b workflowRef) int { return cmp.Compare(b.submitTimeMs, a.submitTimeMs) })
-	// Keep only the newest `limit` ids so hydration is bounded — but skip that when
-	// a task filter is active, since it drops matches post-hydration and we'd
-	// otherwise return fewer than `limit`. The caller stops pulling at `limit`.
-	if s.limit > 0 && len(refs) > s.limit && !s.filters.hasTaskFilter() {
-		refs = refs[:s.limit]
-	}
 	s.ids = make([]int64, len(refs))
 	for i, r := range refs {
 		s.ids[i] = r.jobRunID
@@ -65,50 +60,56 @@ func (s *indexStrategy) load() error {
 	return nil
 }
 
-func (s *indexStrategy) next(want int) ([]listedRun, error) {
+func (s *indexStrategy) next(want int) ([]runGroup, error) {
 	if !s.loaded {
 		if err := s.load(); err != nil {
 			return nil, err
 		}
 	}
+	if s.limit > 0 {
+		want = min(want, s.limit-s.returned)
+	}
 
-	var entries []listedRun
-	for len(entries) < want && s.pos < len(s.ids) {
-		end := min(s.pos+want-len(entries), len(s.ids))
+	// want counts runs, as on the scan path: a run with several AI runtime
+	// tasks hydrates into one group of rows.
+	var groups []runGroup
+	for len(groups) < want && s.pos < len(s.ids) {
+		end := min(s.pos+want-len(groups), len(s.ids))
 		batch := s.ids[s.pos:end]
 		s.pos = end
 
-		rows, err := s.hydrate(batch)
+		hydrated, err := s.hydrate(batch)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, rows...)
+		groups = append(groups, hydrated...)
 	}
-	return entries, nil
+	s.returned += len(groups)
+	return groups, nil
 }
 
 func (s *indexStrategy) done() bool {
-	return s.loaded && s.pos >= len(s.ids)
+	return s.loaded && ((s.limit > 0 && s.returned >= s.limit) || s.pos >= len(s.ids))
 }
 
-// truncated is always false: the index path is bounded by limit, not a scan cap.
+// truncated is always false: the index path stops at the requested limit, not a scan cap.
 func (s *indexStrategy) truncated() bool { return false }
 
 // hydrate turns a batch of run ids into rows, serving cached terminal rows
 // without a network call and fetching the rest via runs/get. Freshly hydrated
-// terminal runs are cached. Results keep the input (newest-first) order, then
-// the batch is re-sorted by start time since concurrent hydration reorders it.
-func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
+// terminal runs are cached. Results keep the input order: the index's,
+// newest submission first.
+func (s *indexStrategy) hydrate(ids []int64) ([]runGroup, error) {
 	host := s.w.Config.Host
 
-	rows := make([]listedRun, 0, len(ids))
+	groups := make([]runGroup, 0, len(ids))
 	var toFetch []int64
-	// The cache key excludes the filter, so a cached row is still run through the
+	// The cache key excludes the filter, so a cached run is still run through the
 	// active filter; a non-matching hit is dropped, not re-fetched.
 	for _, id := range ids {
-		if row, fields, taskRunID, ok := cachedRow(s.ctx, s.cache, host, id); ok {
-			if s.filters.matchesFields(fields) {
-				rows = append(rows, listedRun{row: row, runID: id, taskRunID: taskRunID})
+		if entries, ok := cachedEntries(s.ctx, s.cache, host, id); ok {
+			if g, ok := matchingGroup(id, entries, s.filters); ok {
+				groups = append(groups, g)
 			}
 			continue
 		}
@@ -120,25 +121,28 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		return nil, err
 	}
 	for _, run := range runs {
-		fields := filterFieldsFromRun(run)
-		if !s.filters.matchesFields(fields) {
-			continue
-		}
-		row := buildListRow(run, s.host, s.workspaceID)
-		taskRunID := taskRunID(run)
-		rows = append(rows, listedRun{row: row, runID: run.RunId, taskRunID: taskRunID})
+		entries := buildTaskEntries(run, s.host, s.workspaceID)
 		if isTerminal(run) {
-			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunId, taskRunID, start, row, fields)
+			start, _ := jobTiming(defaultTaskRun(run))
+			putEntries(s.ctx, s.cache, host, run.RunId, entries, start)
+		}
+		if g, ok := matchingGroup(run.RunId, entries, s.filters); ok {
+			groups = append(groups, g)
 		}
 	}
 
-	// Concurrent hydration reorders runs, so re-sort the batch newest-first. The
-	// ISO start timestamp sorts lexicographically; a missing time ("") sorts last.
-	slices.SortStableFunc(rows, func(a, b listedRun) int {
-		return cmp.Compare(rowStartKey(b.row), rowStartKey(a.row))
+	// Cache hits come first and concurrent hydration reorders the rest, so put
+	// the batch back in the index's order, keeping a run's rows together. It is
+	// the order runs were submitted in, which a task that hasn't started or was
+	// skipped (and so has no start time, see taskRun) can't disturb.
+	pos := make(map[int64]int, len(ids))
+	for i, id := range ids {
+		pos[id] = i
+	}
+	slices.SortStableFunc(groups, func(a, b runGroup) int {
+		return cmp.Compare(pos[a.runID], pos[b.runID])
 	})
-	return rows, nil
+	return groups, nil
 }
 
 // cacheMLflowLinks writes successful MLflow enrichment back to terminal rows
@@ -146,16 +150,7 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 func (s *indexStrategy) cacheMLflowLinks(entries []listedRun) {
 	for _, entry := range entries {
 		if entry.row.MLflowURL != "" && entry.row.MLflowURL != "-" {
-			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.row)
+			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.taskKey, entry.row)
 		}
 	}
-}
-
-// rowStartKey returns a row's ISO start timestamp for ordering, or "" when the
-// run hasn't started (which sorts last under descending comparison).
-func rowStartKey(r listRow) string {
-	if r.StartedAt == nil {
-		return ""
-	}
-	return *r.StartedAt
 }

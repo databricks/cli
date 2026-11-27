@@ -1,5 +1,6 @@
 
 === Deploy with run_as
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Created jobs.job_with_run_as
@@ -47,6 +48,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Remove run_as and redeploy
+
 >>> [CLI] bundle plan
 update jobs.job_with_run_as
 

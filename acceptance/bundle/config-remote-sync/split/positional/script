@@ -23,12 +23,10 @@ for cluster in r["clusters"]:
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "default updates top-level, maintenance updates the target block"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
@@ -47,12 +45,10 @@ r["clusters"] = [c for c in r["clusters"] if c["label"] != "maintenance"]
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "The top-level cluster is untouched; the target entry is left as a remnant"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 errcode trace grep -c "label: default" databricks.yml
 errcode trace grep -c "label: maintenance" databricks.yml

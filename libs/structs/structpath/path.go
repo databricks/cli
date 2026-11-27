@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // baseVarDef matches a path segment of a ${...} reference. It is the grammar of
@@ -14,7 +15,9 @@ import (
 const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
 // pureReference matches a string that is a single ${...} reference.
-var pureReference = regexp.MustCompile(`^\$\{(` + baseVarDef + `(\.` + baseVarDef + `(\[[0-9]+\])*)*(\[[0-9]+\])*)\}$`)
+var pureReference = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^\$\{(` + baseVarDef + `(\.` + baseVarDef + `(\[[0-9]+\])*)*(\[[0-9]+\])*)\}$`)
+})
 
 const (
 	// Encodes wildcard after a dot: foo.*
@@ -753,7 +756,7 @@ func isValidField(s string) bool {
 
 // PureReferenceToPath returns a PathNode if s is a pure variable reference, otherwise false.
 func PureReferenceToPath(s string) (*PathNode, bool) {
-	m := pureReference.FindStringSubmatch(s)
+	m := pureReference().FindStringSubmatch(s)
 	if m == nil {
 		return nil, false
 	}

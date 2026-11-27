@@ -35,13 +35,18 @@ class MlflowExperiment(Resource):
 
     name: VariableOr[str]
     """
-    Experiment name.
+    Name of the experiment, as an absolute path in the workspace. Experiments cannot be created
+    under `/Repos`.
     """
 
     artifact_location: VariableOrOptional[str] = None
     """
-    Location where all artifacts for the experiment are stored.
-    If not provided, the remote server will select an appropriate default.
+    URI of the location where the artifacts of the experiment's runs are stored, such as a Unity
+    Catalog volume path of the form `dbfs:/Volumes/<catalog>/<schema>/<volume>/<path>`. The URI
+    must have a scheme other than `file` and must not point under the MLflow-managed prefix
+    `dbfs:/databricks/mlflow-tracking`. If omitted, artifacts are stored in MLflow-managed
+    storage. See https://docs.databricks.com/aws/en/mlflow/experiments for the supported
+    locations.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -58,10 +63,8 @@ class MlflowExperiment(Resource):
 
     tags: VariableOrList[ExperimentTag] = field(default_factory=list)
     """
-    A collection of tags to set on the experiment. Maximum tag size and number of tags per request
-    depends on the storage backend. All storage backends are guaranteed to support tag keys up
-    to 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also
-    guaranteed to support up to 20 tags per request.
+    Tags to set on the new experiment, as key-value pairs. A request can include at most 100
+    tags.
     """
 
     trace_location: VariableOrOptional[ExperimentTraceLocation] = None
@@ -87,13 +90,18 @@ class MlflowExperimentDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    Experiment name.
+    Name of the experiment, as an absolute path in the workspace. Experiments cannot be created
+    under `/Repos`.
     """
 
     artifact_location: VariableOrOptional[str]
     """
-    Location where all artifacts for the experiment are stored.
-    If not provided, the remote server will select an appropriate default.
+    URI of the location where the artifacts of the experiment's runs are stored, such as a Unity
+    Catalog volume path of the form `dbfs:/Volumes/<catalog>/<schema>/<volume>/<path>`. The URI
+    must have a scheme other than `file` and must not point under the MLflow-managed prefix
+    `dbfs:/databricks/mlflow-tracking`. If omitted, artifacts are stored in MLflow-managed
+    storage. See https://docs.databricks.com/aws/en/mlflow/experiments for the supported
+    locations.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -108,10 +116,8 @@ class MlflowExperimentDict(TypedDict, total=False):
 
     tags: VariableOrList[ExperimentTagParam]
     """
-    A collection of tags to set on the experiment. Maximum tag size and number of tags per request
-    depends on the storage backend. All storage backends are guaranteed to support tag keys up
-    to 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also
-    guaranteed to support up to 20 tags per request.
+    Tags to set on the new experiment, as key-value pairs. A request can include at most 100
+    tags.
     """
 
     trace_location: VariableOrOptional[ExperimentTraceLocationParam]

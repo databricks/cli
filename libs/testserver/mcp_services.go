@@ -3,11 +3,18 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
+	"time"
 
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// mcpSchemaParentPrefix prefixes the parent query parameter of the MCP services API.
+const mcpSchemaParentPrefix = "schemas/"
 
 // McpServicesCreate fakes POST /api/2.1/unity-catalog/mcp-services. See
 // ModelServicesCreate for the shape: the McpService body is sent directly,
@@ -24,14 +31,25 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 		}
 	}
 
-	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
+	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), mcpSchemaParentPrefix)
 	key := schema + "." + req.URL.Query().Get("mcp_service_id")
+
+	if _, exists := s.McpServices[key]; exists {
+		return Response{
+			StatusCode: http.StatusConflict,
+			Body: map[string]string{
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("McpService '%s' already exists", key),
+			},
+		}
+	}
 
 	ms.Name = "mcp-services/" + key
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
 	ms.MetastoreId = nextUUID()
+	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
 	s.McpServices[key] = ms
 	return Response{
@@ -65,5 +83,57 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 	s.McpServices[name] = existing
 	return Response{
 		Body: existing,
+	}
+}
+
+// McpServicesList fakes GET /api/2.1/unity-catalog/mcp-services. It filters by parent
+// (schemas/{catalog}.{schema}, in any casing, as Unity Catalog names are case-insensitive) and
+// drops the source connection unless view is FULL. Other BASIC-view omissions, such as rate-limit
+// principal names, are not faked. Pagination is not faked either: every match is returned in one page.
+func (s *FakeWorkspace) McpServicesList(req Request) Response {
+	defer s.LockUnlock()()
+
+	query := req.URL.Query()
+	prefix := strings.ToLower(strings.TrimPrefix(query.Get("parent"), mcpSchemaParentPrefix)) + "."
+	full := query.Get("view") == string(catalog.ListMcpServicesRequestViewFull)
+
+	var services []catalog.McpService
+	for _, key := range slices.Sorted(maps.Keys(s.McpServices)) {
+		if !strings.HasPrefix(strings.ToLower(key), prefix) {
+			continue
+		}
+		ms := s.McpServices[key]
+		if !full && ms.Config != nil {
+			// Copy so the stored service keeps its source connection for later FULL reads.
+			config := *ms.Config
+			config.SourceConnection = nil
+			ms.Config = &config
+		}
+		services = append(services, ms)
+	}
+
+	return Response{
+		Body: catalog.ListMcpServicesResponse{McpServices: services},
+	}
+}
+
+// McpUserCredentialCreate fakes POST .../mcp-services/{name}/user-credentials, which completes a
+// caller's provider sign-in. Tests use it to flip a credential from absent to ACTIVE while the CLI
+// polls. The login body is not checked. A service that does not exist is NOT_FOUND, as the API answers.
+func (s *FakeWorkspace) McpUserCredentialCreate(service string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.McpServices[service]; !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       fmt.Sprintf("mcp service %s not found", service),
+		}
+	}
+	cred := catalog.McpServiceUserMappedCredential{
+		ProvisioningInfo: &catalog.ProvisioningInfo{State: catalog.ProvisioningInfoStateActive},
+	}
+	s.McpUserCredentials[service] = cred
+	return Response{
+		Body: cred,
 	}
 }

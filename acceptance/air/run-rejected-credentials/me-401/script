@@ -1,0 +1,2 @@
+title "a 401 from the current-user lookup is rejected credentials (json)"
+musterr trace $CLI air run -f $TESTDIR/../valid.yaml --dry-run -o json

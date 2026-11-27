@@ -13,15 +13,13 @@ import (
 
 type captureUCDependencies struct{}
 
-// If a user defines a UC schema in the bundle, they can refer to it in SDP pipelines,
-// UC Volumes, Registered Models, Quality Monitors, Model Serving Endpoints, or Vector Search
-// Indexes using the `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
+// If a user defines a UC schema in the bundle, other resources can refer to it using the
+// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
 // TF to capture the deploy time dependency this resource has on the schema and deploy changes
 // to the schema before deploying the dependent resource.
 //
-// Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
-// UC Volumes, Registered Models, Model Serving Endpoints, or Vector Search Indexes using the
-// `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
+// Similarly, if a user defines a UC catalog in the bundle, other resources can refer to it using
+// the `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
 // dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
@@ -118,6 +116,22 @@ func resolveAiGatewayParent(b *bundle.Bundle, parent string) string {
 	return "schemas/" + resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
 }
 
+// resolveThreePartName applies resolveCatalog and resolveSchema to the catalog and
+// schema of a "catalog.schema.name" UC identifier. A name that is not three parts, or
+// that already contains a reference, is returned unchanged; a mix of references and
+// literals is not supported.
+func resolveThreePartName(b *bundle.Bundle, name string) string {
+	if structvar.ContainsVariableReference(name) {
+		return name
+	}
+	parts, ok := splitUCName(name, 3)
+	if !ok {
+		return name
+	}
+	catalogName, schemaName := parts[0], parts[1]
+	return resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+}
+
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
@@ -177,32 +191,35 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if idx == nil {
 			continue
 		}
-		// A name that already contains a reference is left as is; a mix of
-		// references and literals is not supported.
-		if structvar.ContainsVariableReference(idx.Name) {
-			continue
-		}
-		// Name is a three-part "catalog.schema.index" UC identifier.
-		parts, ok := splitUCName(idx.Name, 3)
-		if !ok {
-			continue
-		}
-		catalogName, schemaName := parts[0], parts[1]
-		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		idx.Name = resolveThreePartName(b, idx.Name)
 	}
 	for _, f := range b.Config.Resources.Features {
 		if f == nil {
 			continue
 		}
-		if structvar.ContainsVariableReference(f.FullName) {
+		f.FullName = resolveThreePartName(b, f.FullName)
+	}
+	for _, set := range b.Config.Resources.MaterializationSets {
+		if set == nil {
 			continue
 		}
-		parts, ok := splitUCName(f.FullName, 3)
-		if !ok {
+		for i := range set.MaterializedFeatures {
+			member := &set.MaterializedFeatures[i]
+			if offline := member.OfflineStoreConfig; offline != nil {
+				offline.SchemaName = resolveSchema(b, offline.CatalogName, offline.SchemaName)
+				offline.CatalogName = resolveCatalog(b, offline.CatalogName)
+			}
+			if online := member.OnlineStoreConfig; online != nil {
+				online.SchemaName = resolveSchema(b, online.CatalogName, online.SchemaName)
+				online.CatalogName = resolveCatalog(b, online.CatalogName)
+			}
+		}
+	}
+	for _, fs := range b.Config.Resources.FeatureSpecs {
+		if fs == nil {
 			continue
 		}
-		catalogName, schemaName := parts[0], parts[1]
-		f.FullName = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+		fs.Name = resolveThreePartName(b, fs.Name)
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {

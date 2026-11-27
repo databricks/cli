@@ -1,0 +1,51 @@
+
+=== a failing command: no install, the hint once the command ends
+
+>>> CLAUDECODE=1 [CLI] jobs get abc
+Error: invalid JOB_ID: abc
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+Exit code: 1
+
+>>> print_telemetry
+{"command":"jobs_get","exit_code":1,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+=== first run of a new version: the install notice, no install hint
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Installed Databricks AI tools for Claude Code, Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"CLI_NOT_ON_PATH"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+=== second run: the tools are installed, nothing
+
+>>> CLAUDECODE=1 [CLI] jobs list
+
+>>> print_telemetry
+
+=== gate off: no install, the hint once the command ends, and on the next
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+=== an agent the install skips is still hinted: Claude Code has no config dir
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}

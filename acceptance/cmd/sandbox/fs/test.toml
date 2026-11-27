@@ -1,0 +1,3 @@
+# Runs against the testserver fake of the sandbox file APIs locally, and against the existing
+# sandbox named by TEST_SANDBOX_ID on cloud, so a run doesn't create a sandbox per test.
+Cloud = true

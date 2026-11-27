@@ -59,8 +59,11 @@ jobs:
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: context.issue.number,
             });
+            // The report starts with its heading. One posted before the heading came first starts with
+            // a hidden marker instead; that match can go once no open PR has such a comment.
             const existing = comments.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body && c.body.startsWith('<!-- regression-test-report -->'));
+              c.user.login === 'github-actions[bot]' && c.body &&
+              (c.body.startsWith('## Regression test report') || c.body.startsWith('<!-- regression-test-report -->')));
             if (existing) {
               await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
             }
@@ -105,7 +108,7 @@ jobs:
 
       - name: Upload report
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: regression-report
           path: regression_report.md
@@ -121,15 +124,19 @@ jobs:
             const fs = require('fs');
             const path = process.env.GITHUB_WORKSPACE + '/regression_report.md';
 
-            // Other comments by the same bot are left alone: ours is found by this marker.
-            const MARKER = '<!-- regression-test-report -->';
+            // Other comments by the same bot are left alone: ours is found by the heading it starts
+            // with. One posted before the heading came first starts with a hidden marker instead; that
+            // match can go once no open PR has such a comment.
+            const HEADING = '## Regression test report';
+            const LEGACY_MARKER = '<!-- regression-test-report -->';
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number,
             });
             const existing = comments.find(c =>
-              c.user.login === 'github-actions[bot]' && c.body && c.body.startsWith(MARKER));
+              c.user.login === 'github-actions[bot]' && c.body &&
+              (c.body.startsWith(HEADING) || c.body.startsWith(LEGACY_MARKER)));
 
             if (!fs.existsSync(path)) {
               if (existing) {
@@ -148,8 +155,9 @@ jobs:
             const MAX_REPORT = 60000;
             let report = fs.readFileSync(path, 'utf8');
             if (report.length > MAX_REPORT) {
-              const [head, ...blocks] = report.split('<details>\n');
-              let kept = head;
+              // The first <details> block is the table, which is always kept.
+              const [head, table, ...blocks] = report.split('<details>\n');
+              let kept = head + '<details>\n' + table;
               let shown = 0;
               for (const block of blocks) {
                 if (kept.length + block.length > MAX_REPORT) break;
@@ -159,7 +167,9 @@ jobs:
               report = kept + `_${blocks.length - shown} more failure details omitted, see the full report in the [run](${runUrl})._\n`;
             }
 
-            const body = `${MARKER}\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n${report}`;
+            // The links go below the heading, at the first blank line: a notification shows only
+            // the start of the comment, which should say what it is and whether the branch passes.
+            const body = report.replace('\n\n', `\n\nCommit: [\`${sha.slice(0, 9)}\`](${commitUrl}) | [Workflow run](${runUrl})\n\n`);
 
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });

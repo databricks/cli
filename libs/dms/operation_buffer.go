@@ -17,12 +17,42 @@ const bufferedOperations = 10
 
 const historyDrainTimeoutPerOperation = 5 * time.Second
 
+type recordingState uint8
+
+const (
+	recordingPending recordingState = iota
+	recordingSucceeded
+	recordingFailed
+)
+
+type bufferedUpdate struct {
+	update OperationUpdate
+	state  recordingState
+}
+
 // BufferOptions selects optional deployment history shadow recording behavior.
 type BufferOptions struct {
 	BestEffort bool
-	// OperationCount counts staged resource keys. All recorded keys must be staged.
+	// StagedOperationCount counts staged resource keys. All recorded keys must be staged.
 	// File history uses it for queue capacity and the drain timeout.
-	OperationCount int
+	StagedOperationCount int
+}
+
+// OperationBufferStats describes one deployment version's history uploads.
+type OperationBufferStats struct {
+	StagedOperationCount         int
+	PeakPendingUpdateCount       int
+	QueuedUpdateCountAtTimeout   int
+	RecordingAttemptFailureCount int
+	// Successful history uploads. Intermediate and repeated updates count separately.
+	RecordingAttemptSuccessCount int
+	// Resource operations whose latest final history update uploaded successfully.
+	OperationRecordingSuccessCount int
+	// Resource operations whose latest final history update failed to build or upload.
+	OperationRecordingFailureCount int
+	// Staged resource operations whose latest final history update has not completed,
+	// including queued, in-flight, and never-queued updates.
+	OperationRecordingPendingCount int
 }
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
@@ -31,6 +61,10 @@ type BufferOptions struct {
 type OperationBuffer struct {
 	deploymentID string
 	versionNum   int
+
+	// heartbeat keeps the version's update_time fresh until Stop, past Drain. Each write renews
+	// it as it starts, since the service counts a write as a heartbeat.
+	heartbeat *Heartbeat
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
@@ -56,7 +90,10 @@ type OperationBuffer struct {
 	mu sync.Mutex
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
-	pending map[string]OperationUpdate
+	pending map[string]*bufferedUpdate
+	stats   OperationBufferStats
+	// Tracks the recording outcome of each resource's latest update.
+	operations map[string]*bufferedUpdate
 
 	// latestState is the newest state-bearing update per resource key, kept for the buffer's
 	// whole life - unlike pending, which the writer removes on take. RecordFailure merges its
@@ -70,6 +107,8 @@ type OperationBuffer struct {
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int, options BufferOptions) *OperationBuffer {
+	// Started on ctx, not the writer's context below, so it keeps running after Drain.
+	heartbeat := startVersionHeartbeat(ctx, deploymentID, versionNum)
 	// History can stop independently without canceling the deployment.
 	ctx, cancel := context.WithCancel(ctx)
 	capacity := bufferedOperations
@@ -77,19 +116,22 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 		// Updates coalesce, so each staged key occupies at most one queue slot.
 		// The worker frees that slot before the key can be queued again.
 		// One slot per staged key therefore avoids deployment backpressure.
-		capacity = options.OperationCount
+		capacity = options.StagedOperationCount
 	}
 	b := &OperationBuffer{
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
+		heartbeat:    heartbeat,
 		queue:        make(chan string, capacity),
 		done:         make(chan struct{}),
 		cancel:       cancel,
 		bestEffort:   options.BestEffort,
-		drainTimeout: time.Duration(options.OperationCount) * historyDrainTimeoutPerOperation,
-		pending:      make(map[string]OperationUpdate),
+		drainTimeout: time.Duration(options.StagedOperationCount) * historyDrainTimeoutPerOperation,
+		pending:      make(map[string]*bufferedUpdate),
 		latestState:  make(map[string]OperationUpdate),
 		sequenceIDs:  make(map[string]int64),
+		stats:        OperationBufferStats{StagedOperationCount: options.StagedOperationCount},
+		operations:   make(map[string]*bufferedUpdate, options.StagedOperationCount),
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
 	go b.run(ctx)
@@ -101,6 +143,12 @@ func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum i
 func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
+		b.mu.Lock()
+		b.stats.RecordingAttemptFailureCount++
+		if !inProgress {
+			b.operations[resourceKey] = &bufferedUpdate{state: recordingFailed}
+		}
+		b.mu.Unlock()
 		b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
 	}
@@ -130,9 +178,12 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 	}
 	waiting, queued := b.pending[resourceKey]
 	if queued {
-		update = waiting.Merge(update)
+		update = waiting.update.Merge(update)
 	}
-	b.pending[resourceKey] = update
+	entry := &bufferedUpdate{update: update, state: recordingPending}
+	b.pending[resourceKey] = entry
+	b.operations[resourceKey] = entry
+	b.stats.PeakPendingUpdateCount = max(b.stats.PeakPendingUpdateCount, len(b.pending))
 	b.mu.Unlock()
 
 	// when already queued: the writer reads the map when it gets to the key,
@@ -145,13 +196,13 @@ func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, kee
 }
 
 // take claims the update waiting for resourceKey.
-func (b *OperationBuffer) take(resourceKey string) (OperationUpdate, bool) {
+func (b *OperationBuffer) take(resourceKey string) (*bufferedUpdate, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	update, ok := b.pending[resourceKey]
+	entry, ok := b.pending[resourceKey]
 	delete(b.pending, resourceKey)
-	return update, ok
+	return entry, ok
 }
 
 func (b *OperationBuffer) run(ctx context.Context) {
@@ -175,7 +226,7 @@ func (b *OperationBuffer) run(ctx context.Context) {
 		if !ok {
 			return
 		}
-		update, ok := b.take(resourceKey)
+		entry, ok := b.take(resourceKey)
 		if !ok {
 			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
 			// a stray key could never write a zero-valued update.
@@ -183,20 +234,34 @@ func (b *OperationBuffer) run(ctx context.Context) {
 		}
 
 		// Keep going after a failure, so one bad write does not drop everything behind it.
-		if err := b.write(ctx, resourceKey, update); err != nil {
+		if err := b.write(ctx, resourceKey, entry); err != nil {
 			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		}
 	}
 }
 
 // write sends one update, at the sequence id the resource is at.
-func (b *OperationBuffer) write(ctx context.Context, key string, update OperationUpdate) error {
+func (b *OperationBuffer) write(ctx context.Context, key string, entry *bufferedUpdate) error {
+	// Renewed when the write starts, not when it succeeds, so a heartbeat only overlaps a write
+	// that has been in flight for a full interval. Both update the version row.
+	b.heartbeat.renew()
+
 	w := cmdctx.WorkspaceClient(ctx)
 	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
-		Operation:  update.operation(b.sequenceIDs[key]),
-		UpdateMask: update.Fields.Mask(),
+		Operation:  entry.update.operation(b.sequenceIDs[key]),
+		UpdateMask: entry.update.Fields.Mask(),
 	})
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	state := recordingSucceeded
+	if err != nil {
+		b.stats.RecordingAttemptFailureCount++
+		state = recordingFailed
+	} else {
+		b.stats.RecordingAttemptSuccessCount++
+	}
+	entry.state = state
 	if err != nil {
 		return err
 	}
@@ -230,10 +295,43 @@ func (b *OperationBuffer) Drain(ctx context.Context) error {
 		return b.Err()
 	case <-ctx.Done():
 		// Deadline or cancellation: stop the upload so deployment can finish promptly.
-		b.setErr(ctx.Err())
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		b.stats.QueuedUpdateCountAtTimeout = len(b.queue)
+		if b.err == nil {
+			b.err = ctx.Err()
+		}
 		b.cancel()
-		return b.Err()
+		return b.err
 	}
+}
+
+// Stop ends the heartbeat, the buffer's only background work left after Drain.
+func (b *OperationBuffer) Stop() {
+	b.heartbeat.Stop()
+}
+
+// Stats returns a snapshot of the history measurements.
+func (b *OperationBuffer) Stats() OperationBufferStats {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	stats := b.stats
+	for _, entry := range b.operations {
+		// A recreation's delete update is not the operation's final result.
+		if entry.update.Status == StatusPending {
+			continue
+		}
+		switch entry.state {
+		case recordingPending:
+			continue
+		case recordingSucceeded:
+			stats.OperationRecordingSuccessCount++
+		case recordingFailed:
+			stats.OperationRecordingFailureCount++
+		}
+	}
+	stats.OperationRecordingPendingCount = stats.StagedOperationCount - stats.OperationRecordingSuccessCount - stats.OperationRecordingFailureCount
+	return stats
 }
 
 // setErr keeps the first recording error for Drain to report.

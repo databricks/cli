@@ -3,6 +3,7 @@
 package enhanced_security_monitoring
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,15 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "enhanced-security-monitoring",
-		Short: `*Public Preview* Controls whether enhanced security monitoring is enabled for the current workspace.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "enhanced-security-monitoring",
+	Short: `*Public Preview* Controls whether enhanced security monitoring is enabled for the current workspace.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether enhanced security monitoring is enabled for the current
   workspace. If the compliance security profile is enabled, this is
@@ -29,13 +34,13 @@ Controls whether enhanced security monitoring is enabled for the current
   security profile is enabled, this is automatically enabled.
 
   If the compliance security profile is disabled, you can enable or disable this
-  setting and it is not permanent.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  setting and it is not permanent.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -45,8 +50,6 @@ Controls whether enhanced security monitoring is enabled for the current
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

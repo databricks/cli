@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -210,6 +211,13 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		if err != nil {
 			return fmt.Errorf("failed to clear token cache: %w", err)
 		}
+	} else {
+		// A device code login started for the profile could still complete
+		// and save a token for it. The profile does not use the token store
+		// otherwise, so an unavailable store does not fail its logout.
+		if err := args.tokenStore.Delete(pendingLoginKey(matchedProfile.Name)); err != nil {
+			log.Debugf(ctx, "Failed to delete the pending device code login: %v", err)
+		}
 	}
 
 	if args.deleteProfile {
@@ -226,6 +234,11 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		err = databrickscfg.ClearDefaultProfile(ctx, args.profileName, args.configFilePath)
 		if err != nil {
 			return fmt.Errorf("profile deleted, but failed to clear default profile setting: %w", err)
+		}
+
+		err = databrickscfg.ClearDockerProfiles(ctx, args.profileName, args.configFilePath)
+		if err != nil {
+			return fmt.Errorf("profile deleted, but failed to clear Docker credential helper settings: %w", err)
 		}
 	}
 
@@ -273,6 +286,11 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 	if err := tokenStore.Delete(p.Name); err != nil {
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
+	// A pending device code login could still complete and restore the
+	// credentials that the user is logging out of.
+	if err := tokenStore.Delete(pendingLoginKey(p.Name)); err != nil {
+		return fmt.Errorf("failed to delete pending device code login for profile %q: %w", p.Name, err)
+	}
 
 	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
 	if hostCacheKey == "" {
@@ -292,6 +310,9 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 	if len(otherProfiles) == 0 {
 		if err := tokenStore.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
+		}
+		if err := tokenStore.Delete(pendingLoginKey(hostCacheKey)); err != nil {
+			return fmt.Errorf("failed to delete pending device code login for %q: %w", hostCacheKey, err)
 		}
 	}
 	return nil

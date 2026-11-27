@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/filer"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,6 +27,11 @@ const (
 	envVarsName         = "env_vars.json"
 	secretEnvVarsName   = "secret_env_vars.json"
 )
+
+// optionalLaunchArtifacts are the launch artifacts buildArtifacts writes only when
+// the config calls for them. Keep in sync with buildArtifacts: convert-to-dabs
+// removes the ones a forced re-conversion no longer writes.
+var optionalLaunchArtifacts = []string{commandScriptName, hyperparametersName, envVarsName, secretEnvVarsName}
 
 // maxConfigYAMLBytes caps training_config.yaml. It is referenced by the Jobs
 // payload and rendered on the run page, so an oversized parameters/command block
@@ -136,7 +141,7 @@ func containerEnvironmentEntries(cfg *runConfig, container containerConfig) (map
 	for name, value := range container.EnvironmentVariables.Variables {
 		delete(plain, name)
 		delete(secrets, name)
-		match := secretTemplateRe.FindStringSubmatch(value)
+		match := secretTemplateRe().FindStringSubmatch(value)
 		if match != nil {
 			secrets[name] = match[1] + "/" + match[2]
 		} else {

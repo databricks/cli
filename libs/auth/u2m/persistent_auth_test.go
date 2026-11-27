@@ -69,6 +69,32 @@ func TestToken(t *testing.T) {
 	}
 }
 
+func TestToken_EntryWithoutToken(t *testing.T) {
+	cache := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return nil, nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://abc", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+	}
+	p, err := NewPersistentAuth(t.Context(), WithTokenStore(cache), WithOAuthArgument(arg))
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	for name, get := range map[string]func() (*oauth2.Token, error){
+		"Token":             p.Token,
+		"ForceRefreshToken": p.ForceRefreshToken,
+	} {
+		if _, err := get(); !errors.Is(err, storage.ErrNotFound) {
+			t.Errorf("p.%s(): want storage.ErrNotFound, got %v", name, err)
+		}
+	}
+}
+
 func TestToken_WithProfile(t *testing.T) {
 	profileKey := "my-profile"
 	cache := &tokenStoreMock{
@@ -340,6 +366,225 @@ func TestToken_RefreshesTokenExpiringSoon(t *testing.T) {
 	}
 	if tok.AccessToken != "refreshed" {
 		t.Errorf("p.Token(): want access token 'refreshed', got %s", tok.AccessToken)
+	}
+}
+
+func TestToken_WithoutRefresh(t *testing.T) {
+	tests := []struct {
+		name        string
+		accessToken string
+		expiry      time.Duration
+		wantTok     string
+		wantErr     error
+	}{
+		{name: "valid token is returned", accessToken: "cached", expiry: time.Hour, wantTok: "cached"},
+		{name: "token expiring soon is returned, not refreshed", accessToken: "cached", expiry: 4 * time.Minute, wantTok: "cached"},
+		{name: "expired token fails, not refreshed", accessToken: "cached", expiry: -time.Minute, wantErr: ErrRefreshDisabled},
+		// The keyring store returns a token without its access token when the
+		// parts of a split access token are missing or stale.
+		{name: "token without access token fails, not refreshed", expiry: time.Hour, wantErr: ErrRefreshDisabled},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := &tokenStoreMock{
+				lookup: func(string) (*oauth2.Token, error) {
+					return &oauth2.Token{
+						AccessToken:  tt.accessToken,
+						RefreshToken: "cde",
+						Expiry:       time.Now().Add(tt.expiry),
+					}, nil
+				},
+				store: func(string, *oauth2.Token) error {
+					t.Fatal("store(): must not store a token")
+					return nil
+				},
+			}
+			arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+			if err != nil {
+				t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+			}
+			p, err := NewPersistentAuth(
+				t.Context(),
+				WithTokenStore(cache),
+				// An empty SliceTransport fails any request, so a refresh fails the test.
+				WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+				WithOAuthArgument(arg),
+				WithoutRefresh(),
+			)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+			}
+			defer p.Close()
+
+			tok, err := p.Token()
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("p.Token(): want error %v, got %v", tt.wantErr, err)
+			}
+			if tt.wantErr != nil {
+				return
+			}
+			if tok.AccessToken != tt.wantTok {
+				t.Errorf("p.Token(): want access token %q, got %q", tt.wantTok, tok.AccessToken)
+			}
+			if tok.RefreshToken != "" {
+				t.Errorf("p.Token(): want refresh token '', got %s", tok.RefreshToken)
+			}
+		})
+	}
+}
+
+// The keyring store returns a token without its access token when the parts
+// of a split access token are missing or stale. Such a token is not valid, so
+// Token refreshes it although it has not expired.
+func TestToken_RefreshesTokenWithoutAccessToken(t *testing.T) {
+	const key = "https://accounts.cloud.databricks.test/oidc/accounts/xyz"
+	tokenStore := storage.NewMemoryStore()
+	err := tokenStore.Put(key, storage.Entry{Token: &oauth2.Token{
+		RefreshToken: "cde",
+		Expiry:       time.Now().Add(time.Hour),
+	}})
+	if err != nil {
+		t.Fatalf("Put(): want no error, got %v", err)
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+	}
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(tokenStore),
+		WithHttpClient(&http.Client{
+			Transport: fixtures.SliceTransport{
+				{
+					Method:          "POST",
+					Resource:        "/oidc/accounts/xyz/v1/token",
+					ExpectedRequest: url.Values{"client_id": {"databricks-cli"}, "grant_type": {"refresh_token"}, "refresh_token": {"cde"}},
+					Response:        `access_token=refreshed&refresh_token=def&expires_in=3600`,
+					ResponseHeaders: map[string][]string{
+						"Content-Type": {"application/x-www-form-urlencoded"},
+					},
+				},
+			},
+		}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	tok, err := p.Token()
+	if err != nil {
+		t.Fatalf("p.Token(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "refreshed" {
+		t.Errorf("p.Token(): want access token 'refreshed', got %q", tok.AccessToken)
+	}
+	stored, err := tokenStore.Lookup(key)
+	if err != nil {
+		t.Fatalf("Lookup(): want no error, got %v", err)
+	}
+	if stored.Token.AccessToken != "refreshed" || stored.Token.RefreshToken != "def" {
+		t.Errorf("Lookup(): want the refreshed token stored, got access token %q and refresh token %q", stored.Token.AccessToken, stored.Token.RefreshToken)
+	}
+}
+
+// accessTokenPartFailingStore stands in for the keyring store when it fails
+// to write a part of a split access token: the entry keeps the new refresh
+// token but not the access token, and Put returns err wrapped in
+// storage.ErrAccessTokenNotStored.
+type accessTokenPartFailingStore struct {
+	storage.Store
+	err error
+}
+
+func (s *accessTokenPartFailingStore) Put(key string, e storage.Entry) error {
+	if s.err == nil || e.Token == nil {
+		return s.Store.Put(key, e)
+	}
+	rest := *e.Token
+	rest.AccessToken = ""
+	if err := s.Store.Put(key, storage.Entry{Token: &rest}); err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: %w", storage.ErrAccessTokenNotStored, s.err)
+}
+
+// A refresh whose access token cannot be stored still succeeds, because the
+// new refresh token was stored, and the next call refreshes with it.
+// Refreshing with the old one would fail, because the server replaces the
+// refresh token on every refresh.
+func TestToken_RefreshesWithRefreshTokenStoredByFailedStoreUpdate(t *testing.T) {
+	const key = "https://accounts.cloud.databricks.test/oidc/accounts/xyz"
+	memory := storage.NewMemoryStore()
+	err := memory.Put(key, storage.Entry{Token: &oauth2.Token{
+		AccessToken:  "expired",
+		RefreshToken: "first",
+		Expiry:       time.Now().Add(-time.Minute),
+	}})
+	if err != nil {
+		t.Fatalf("Put(): want no error, got %v", err)
+	}
+	storeErr := errors.New("keyring set timed out")
+	tokenStore := &accessTokenPartFailingStore{Store: memory, err: storeErr}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): want no error, got %v", err)
+	}
+	headers := map[string][]string{"Content-Type": {"application/x-www-form-urlencoded"}}
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(tokenStore),
+		WithHttpClient(&http.Client{
+			Transport: fixtures.SliceTransport{
+				{
+					Method:          "POST",
+					Resource:        "/oidc/accounts/xyz/v1/token",
+					ExpectedRequest: url.Values{"client_id": {"databricks-cli"}, "grant_type": {"refresh_token"}, "refresh_token": {"first"}},
+					Response:        `access_token=second-access&refresh_token=second&expires_in=3600`,
+					ResponseHeaders: headers,
+				},
+				{
+					Method:          "POST",
+					Resource:        "/oidc/accounts/xyz/v1/token",
+					ExpectedRequest: url.Values{"client_id": {"databricks-cli"}, "grant_type": {"refresh_token"}, "refresh_token": {"second"}},
+					Response:        `access_token=third-access&refresh_token=third&expires_in=3600`,
+					ResponseHeaders: headers,
+				},
+			},
+		}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
+	}
+	defer p.Close()
+
+	tok, err := p.Token()
+	if err != nil {
+		t.Fatalf("first p.Token(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "second-access" {
+		t.Errorf("first p.Token(): want access token 'second-access', got %q", tok.AccessToken)
+	}
+
+	tokenStore.err = nil
+	tok, err = p.Token()
+	if err != nil {
+		t.Fatalf("second p.Token(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "third-access" {
+		t.Errorf("second p.Token(): want access token 'third-access', got %q", tok.AccessToken)
+	}
+	stored, err := memory.Lookup(key)
+	if err != nil {
+		t.Fatalf("Lookup(): want no error, got %v", err)
+	}
+	if stored.Token.RefreshToken != "third" {
+		t.Errorf("Lookup(): want refresh token 'third', got %q", stored.Token.RefreshToken)
 	}
 }
 

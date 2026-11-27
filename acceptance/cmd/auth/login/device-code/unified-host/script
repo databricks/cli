@@ -1,0 +1,26 @@
+sethome "./home"
+
+# An account-scoped discovery URL marks the host as a unified host.
+export DATABRICKS_DISCOVERY_URL="$DATABRICKS_HOST/oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server"
+
+# Acceptance tests run the CLI without a terminal on stdin, so device code
+# login runs non-interactively.
+title "Log in to the account"
+trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123" --profile account --use-device-code
+# The device code only works with the token endpoint of the account that
+# issued it, so the login cannot be completed for another account.
+trace musterr $CLI auth login --host "$DATABRICKS_HOST?a=other-acct" --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
+trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123" --profile account --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
+trace $CLI auth token --profile account | gron.py | grep access_token
+
+title "Log in to a workspace of the account"
+trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123&o=12345" --profile workspace --use-device-code
+trace $CLI auth login --host "$DATABRICKS_HOST?a=spog-acct-123&o=12345" --profile workspace --use-device-code --user-code WDJB-0002 --confirmation-code FTFA-QQKY
+trace $CLI auth token --profile workspace | gron.py | grep access_token
+
+# Both logins use the account's OIDC endpoints.
+title "Device code requests"
+trace print_requests.py --oneline //oidc
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"

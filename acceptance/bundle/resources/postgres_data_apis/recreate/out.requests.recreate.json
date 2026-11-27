@@ -1,0 +1,16 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/first-database/data-api"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/second-database/data-api",
+  "body": {
+    "spec": {
+      "db_max_rows": 100,
+      "db_schemas": [
+        "public"
+      ]
+    }
+  }
+}

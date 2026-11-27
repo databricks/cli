@@ -7,6 +7,10 @@ from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import _append_description
 from codegen.jsonschema import Schema, is_experimental_stage
 
+# Enums whose platform value set grows faster than the schema. They keep their
+# members for completion, but unknown strings are accepted instead of rejected.
+OPEN_ENUMS = {"catalog.Privilege"}
+
 
 @dataclass(kw_only=True)
 class GeneratedEnum:
@@ -16,6 +20,7 @@ class GeneratedEnum:
     description: Optional[str]
     experimental: bool
     deprecated: bool
+    open: bool = False
 
 
 def generate_enum(namespace: str, schema_name: str, schema: Schema) -> GeneratedEnum:
@@ -43,6 +48,7 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
         description=schema.description,
         experimental=is_experimental_stage(schema.stage),
         deprecated=schema.deprecated or False,
+        open=schema_name in OPEN_ENUMS,
     )
 
 
@@ -71,6 +77,10 @@ def get_code(generated: GeneratedEnum) -> str:
         b.indent().append(f'{key} = "{value}"')
         b.newline()
 
+    if generated.open:
+        b.newline()
+        _append_missing(b, generated.class_name)
+
     b.newline()
 
     # Example:
@@ -80,9 +90,39 @@ def get_code(generated: GeneratedEnum) -> str:
     b.append(generated.class_name).append('Param = Literal["')
     b.append_list(list(generated.values.values()), sep='", "')
     b.append('"] | ', generated.class_name)
+
+    if generated.open:
+        b.append(" | str")
+
     b.newline()
 
     return b.build()
+
+
+def _append_missing(b: CodeBuilder, class_name: str):
+    # Example:
+    #
+    #   @classmethod
+    #   def _missing_(cls, value: object) -> "Color | None":
+    #       ...
+    #
+    # Unknown strings become pseudo-members, the same way stdlib Flag builds
+    # them. They are cached in _value2member_map_ so repeated lookups return
+    # the same object and dataclass equality keeps working.
+    b.indent().append("@classmethod").newline()
+    b.indent().append(
+        f'def _missing_(cls, value: object) -> "{class_name} | None":'
+    ).newline()
+    b.indent().indent().append("if not isinstance(value, str):").newline()
+    b.indent().indent().indent().append("return None").newline()
+    b.newline()
+    b.indent().indent().append("member = object.__new__(cls)").newline()
+    b.indent().indent().append("member._name_ = value").newline()
+    b.indent().indent().append("member._value_ = value").newline()
+    b.newline()
+    b.indent().indent().append(
+        "return cls._value2member_map_.setdefault(value, member)  # type:ignore"
+    ).newline()
 
 
 def _camel_to_upper_snake(value):

@@ -1,0 +1,798 @@
+package pipelines
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
+	"maps"
+	"net/http"
+	"os"
+	"os/signal"
+	"path"
+	"path/filepath"
+	"slices"
+	"strings"
+	"syscall"
+	"time"
+	"uuid"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/resources"
+	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shellquote"
+	databricks "github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
+// newStartTestUpdateRequest returns the Start Update request of a test run. It always sends
+// test_options, empty to run every test: only a request with test_options is rejected where the
+// testing API is off; without them, the service runs its older test-only update instead.
+func newStartTestUpdateRequest(selection, pytestArgs []string) pipelines.StartUpdate {
+	return pipelines.StartUpdate{
+		TestOnly:    true,
+		TestOptions: &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs},
+	}
+}
+
+const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
+
+// validatePytestArgs accepts only -k and -m, each followed by its value in the next argument, as the API
+// requires. The value cannot be empty or start with "-", because pytest reads it as an option.
+func validatePytestArgs(args []string) error {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case strings.TrimSpace(arg) == "":
+			return errors.New("--pytest-arg requires a non-empty value")
+		case arg == "-k" || arg == "-m":
+			if i == len(args)-1 {
+				return fmt.Errorf("pytest argument %s requires a value: pass it in the next --pytest-arg", arg)
+			}
+			next := args[i+1]
+			if strings.TrimSpace(next) == "" {
+				return fmt.Errorf("pytest argument %s requires a non-empty value", arg)
+			}
+			if strings.HasPrefix(next, "-") {
+				return fmt.Errorf("pytest argument %s requires a value, not %q: pass it in the next --pytest-arg", arg, next)
+			}
+			i++
+		case strings.HasPrefix(arg, "-k") || strings.HasPrefix(arg, "-m"):
+			option, value := arg[:2], strings.TrimPrefix(arg[2:], "=")
+			return fmt.Errorf("pytest argument %q must be split: pass --pytest-arg=%s --pytest-arg=%s", arg, option, shellquote.BashArg(value))
+		case !strings.HasPrefix(arg, "-"):
+			return fmt.Errorf("unsupported pytest argument %q: pass test paths and test IDs as TEST_SELECTION arguments", arg)
+		default:
+			return fmt.Errorf("unsupported pytest argument %q: only -k and -m are supported", arg)
+		}
+	}
+	return nil
+}
+
+// testFlagErrorFunc adds guidance when pytest's -k or -m is passed as a CLI flag.
+func testFlagErrorFunc(cmd *cobra.Command, err error) error {
+	if notExist, ok := errors.AsType[*pflag.NotExistError](err); ok {
+		if name := notExist.GetSpecifiedName(); name == "k" || name == "m" {
+			return fmt.Errorf("-%s is a pytest argument: %s", name, pytestArgHint)
+		}
+	}
+	return cmd.Parent().FlagErrorFunc()(cmd, err)
+}
+
+// resolveTestSelections converts relative selection paths with toWorkspacePath and keeps
+// the pytest test ID after "::" unchanged. Paths that start with "/" are workspace paths and are
+// passed as typed: the service checks them and reports errors about what the user wrote.
+func resolveTestSelections(selections []string, toWorkspacePath func(string) (string, error)) ([]string, error) {
+	var resolved []string
+	for _, selection := range selections {
+		p, testID, _ := strings.Cut(selection, "::")
+		if p == "" {
+			return nil, fmt.Errorf("test selection %q has no path", selection)
+		}
+		if !strings.HasPrefix(p, "/") {
+			var err error
+			p, err = toWorkspacePath(p)
+			if err != nil {
+				return nil, fmt.Errorf("cannot resolve test selection %q: %w", selection, err)
+			}
+		}
+		if strings.Contains(selection, "::") {
+			p += "::" + testID
+		}
+		resolved = append(resolved, p)
+	}
+	return resolved, nil
+}
+
+// bundleWorkspacePath maps a local path, relative to the working directory, to its deployed
+// path under filesRoot, the deployed path of the bundle's synchronized files.
+func bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
+	if !filepath.IsAbs(localPath) {
+		localPath = filepath.Join(cwd, localPath)
+	}
+	rel, err := filepath.Rel(syncRoot, localPath)
+	if err != nil || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("%s is not in the files synced from %s; pass its /Workspace path", filepath.ToSlash(localPath), filepath.ToSlash(syncRoot))
+	}
+	return path.Join(filesRoot, filepath.ToSlash(rel)), nil
+}
+
+// bundleFilesRoot returns the deployed path of the bundle's synchronized files, as TranslatePaths
+// maps resource paths, or "" for an immutable deployment, whose snapshot path the command does not know.
+func bundleFilesRoot(b *bundle.Bundle) string {
+	switch {
+	case b.SyncMode() == config.SyncModeImmutable:
+		return ""
+	case b.IsSourceLinkedDeployment():
+		return b.SyncRootPath
+	default:
+		return b.Config.Workspace.FilePath
+	}
+}
+
+// bundleTestSelectionPath maps a local path, relative to the working directory, to its deployed path
+// under filesRoot. The path must exist locally, so that a typo fails before compute starts.
+func bundleTestSelectionPath(cwd, syncRoot, filesRoot, localPath string) (string, error) {
+	if filesRoot == "" {
+		return "", errors.New("relative test paths need synced local files, but workspace.sync_mode is immutable; pass the /Workspace path")
+	}
+	workspacePath, err := bundleWorkspacePath(cwd, syncRoot, filesRoot, localPath)
+	if err != nil {
+		return "", err
+	}
+	if !filepath.IsAbs(localPath) {
+		localPath = filepath.Join(cwd, localPath)
+	}
+	if _, err := os.Stat(localPath); errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("%s does not exist; pass a local path or an absolute workspace path", filepath.ToSlash(localPath))
+	} else if err != nil {
+		return "", err
+	}
+	return workspacePath, nil
+}
+
+// hasRelativeSelection reports whether a selection is a relative path.
+func hasRelativeSelection(selections []string) bool {
+	for _, selection := range selections {
+		if p, _, _ := strings.Cut(selection, "::"); !strings.HasPrefix(p, "/") {
+			return true
+		}
+	}
+	return false
+}
+
+// rootPathSelection appends a relative path to the pipeline's root_path without cleaning it,
+// so that the service checks the path as the user typed it.
+func rootPathSelection(rootPath, relPath string) (string, error) {
+	if rootPath == "" {
+		return "", errors.New("the pipeline has no root_path; use an absolute workspace path such as /Workspace/Users/someone@example.com/tests")
+	}
+	return strings.TrimSuffix(rootPath, "/") + "/" + filepath.ToSlash(relPath), nil
+}
+
+// relativeTestID shows a test ID whose file is under folder relative to that folder, as pytest names
+// tests from the project root. Other IDs are returned unchanged. The service reports IDs with the
+// /Workspace prefix, which a folder may lack, so both are compared without it.
+func relativeTestID(folder, id string) string {
+	if folder == "" {
+		return id
+	}
+	prefix := strings.TrimSuffix(strings.TrimPrefix(folder, "/Workspace"), "/") + "/"
+	if rel, ok := strings.CutPrefix(strings.TrimPrefix(id, "/Workspace"), prefix); ok {
+		return rel
+	}
+	return id
+}
+
+// getRootPath reads the root_path of the deployed pipeline.
+func getRootPath(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string) (string, error) {
+	pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineID})
+	if err != nil {
+		return "", err
+	}
+	if pipeline.Spec == nil {
+		return "", nil
+	}
+	return pipeline.Spec.RootPath, nil
+}
+
+// checkTestUpdate returns an error if the service reports that the update is not a test-only update.
+// The service leaves test_only out where it cannot report it, such as before pipeline testing is enabled.
+func checkTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string) error {
+	response, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{PipelineId: pipelineID, UpdateId: updateID})
+	if err != nil {
+		return err
+	}
+	if update := response.Update; update != nil && !update.TestOnly && slices.Contains(update.ForceSendFields, "TestOnly") {
+		return fmt.Errorf("update %s is not a test update; pass the update ID that pipelines test printed", updateID)
+	}
+	return nil
+}
+
+// startTestUpdate starts a test-only update and returns its ID.
+func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, req pipelines.StartUpdate) (string, error) {
+	req.PipelineId = pipelineID
+	response, err := w.Pipelines.StartUpdate(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	return response.UpdateId, nil
+}
+
+// pipelineTestNoTestSources is the error class of Start Update for a pipeline without testing.sources.
+const pipelineTestNoTestSources = "PIPELINE_TEST_NO_TEST_SOURCES"
+
+// withDeployHint adds a hint to deploy when Start Update says the pipeline has no test sources but
+// the bundle sets testing: the bundle was changed after its last deploy.
+func withDeployHint(cmd *cobra.Command, t testTarget, err error) error {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !t.bundleHasTesting || !ok {
+		return err
+	}
+	// The class is the error code or, for errors with a generic code, the [CLASS] prefix of the message.
+	if apiErr.ErrorCode != pipelineTestNoTestSources && !strings.Contains(apiErr.Message, pipelineTestNoTestSources) {
+		return err
+	}
+	return fmt.Errorf("%w\nThe bundle sets testing for %s, but the deployed pipeline has none. Run '%s deploy' first", err, t.key, cmd.Parent().CommandPath())
+}
+
+// testTarget is the pipeline a test run is submitted to.
+type testTarget struct {
+	key        string
+	pipelineID string
+	selections []string
+	w          *databricks.WorkspaceClient
+
+	// bundleHasTesting is true when the bundle sets testing for the pipeline.
+	bundleHasTesting bool
+
+	// projectFolder is the deployed folder that test IDs are shown relative to: the bundle's
+	// synchronized files, or root_path. It is "" when unknown.
+	projectFolder string
+}
+
+func (t testTarget) shortTestID(id string) string {
+	return relativeTestID(t.projectFolder, id)
+}
+
+// shortSelections returns the selections as shortTestID shows them.
+func (t testTarget) shortSelections() []string {
+	var short []string
+	for _, s := range t.selections {
+		short = append(short, t.shortTestID(s))
+	}
+	return short
+}
+
+func (t testTarget) printHeader(out io.Writer, updateID string) {
+	if t.key != "" {
+		fmt.Fprintf(out, "Pipeline: %s (%s)\n", t.key, t.pipelineID)
+	} else {
+		fmt.Fprintf(out, "Pipeline: %s\n", t.pipelineID)
+	}
+	fmt.Fprintf(out, "Update: %s\n", updateID)
+}
+
+// resolveTestTargetByID identifies the pipeline by --pipeline-id; all positional arguments are selections.
+func resolveTestTargetByID(cmd *cobra.Command, args []string, pipelineID string, wait bool) (testTarget, error) {
+	if cmd.Flag("target").Value.String() == "" {
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+	}
+	if err := root.MustWorkspaceClient(cmd, args); err != nil {
+		return testTarget{}, err
+	}
+	ctx := cmd.Context()
+	w := cmdctx.WorkspaceClient(ctx)
+
+	// root_path resolves relative selections and shortens the test IDs printed while waiting.
+	var rootPath string
+	if wait || hasRelativeSelection(args) {
+		var err error
+		rootPath, err = getRootPath(ctx, w, pipelineID)
+		if err != nil {
+			return testTarget{}, err
+		}
+	}
+	selections, err := resolveTestSelections(args, func(p string) (string, error) {
+		return rootPathSelection(rootPath, p)
+	})
+	if err != nil {
+		return testTarget{}, err
+	}
+	return testTarget{pipelineID: pipelineID, selections: selections, w: w, projectFolder: rootPath}, nil
+}
+
+// resolveTestTargetInBundle identifies the pipeline by its bundle KEY, which must precede any selections.
+func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (testTarget, error) {
+	var key string
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+			var err error
+			key, err = resolvePipelineArgument(ctx, b, args[:min(len(args), 1)])
+			return err
+		},
+		ErrorOnEmptyState: true,
+		SkipInitContext:   true,
+	})
+	if err != nil {
+		return testTarget{}, err
+	}
+	ctx := cmd.Context()
+
+	pipelineID, err := resolvePipelineIdFromKey(ctx, b, key)
+	if err != nil {
+		if _, lookupErr := resources.Lookup(b, key, isPipeline); lookupErr != nil {
+			return testTarget{}, notPipelineKeyError(cmd, b, key, args)
+		}
+		return testTarget{}, err
+	}
+	if !resume {
+		suggestPipelineDeploy(ctx, cmd)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return testTarget{}, err
+	}
+	var selectionArgs []string
+	if len(args) > 1 {
+		selectionArgs = args[1:]
+	}
+	filesRoot := bundleFilesRoot(b)
+	selections, err := resolveTestSelections(selectionArgs, func(p string) (string, error) {
+		return bundleTestSelectionPath(cwd, b.SyncRootPath, filesRoot, p)
+	})
+	if err != nil {
+		return testTarget{}, err
+	}
+	pipeline := b.Config.Resources.Pipelines[key]
+	return testTarget{
+		key:              key,
+		pipelineID:       pipelineID,
+		selections:       selections,
+		w:                b.WorkspaceClient(ctx),
+		bundleHasTesting: pipeline != nil && pipeline.Testing != nil,
+		projectFolder:    filesRoot,
+	}, nil
+}
+
+// resumeCommand returns the command that reads the result of the update later. It keeps the
+// options that select the pipeline and its workspace, quoted so that it can be pasted into a shell.
+func (t testTarget) resumeCommand(cmd *cobra.Command, updateID string) string {
+	parts := []string{cmd.CommandPath()}
+	if t.key != "" {
+		parts = append(parts, shellquote.BashArg(t.key))
+	} else {
+		parts = append(parts, "--pipeline-id", shellquote.BashArg(t.pipelineID))
+	}
+	if target := cmd.Flag("target").Value.String(); target != "" {
+		parts = append(parts, "--target", shellquote.BashArg(target))
+	}
+	if profile := cmd.Flag("profile").Value.String(); profile != "" {
+		parts = append(parts, "--profile", shellquote.BashArg(profile))
+	}
+	// Reading the results again replaces the partial report.
+	if flag := cmd.Flag("junit-xml"); flag != nil && flag.Value.String() != "" {
+		parts = append(parts, "--junit-xml", shellquote.BashArg(flag.Value.String()))
+	}
+	// --resume loads the bundle again, so it needs the same variable values.
+	if flag := cmd.Flag("var"); flag != nil {
+		if values, ok := flag.Value.(pflag.SliceValue); ok {
+			for _, v := range values.GetSlice() {
+				parts = append(parts, "--var", shellquote.BashArg(v))
+			}
+		}
+	}
+	return strings.Join(append(parts, "--resume", updateID), " ")
+}
+
+// withActiveUpdateHint adds the next steps to a Start Update error that says the pipeline already
+// has an active update. The update ID is not read from the message, which is the service's text.
+func withActiveUpdateHint(cmd *cobra.Command, t testTarget, err error) error {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode != http.StatusConflict {
+		return err
+	}
+	hint := "Wait for it to finish, or pass its update ID to --resume to read its results"
+	if t.key != "" {
+		hint = fmt.Sprintf("Wait for it to finish, run '%s stop %s' to cancel it, or pass its update ID to --resume to read its results", cmd.Parent().CommandPath(), shellquote.BashArg(t.key))
+	}
+	return fmt.Errorf("%w\n%s", err, hint)
+}
+
+// notifyTestInterrupt returns a context that the first Ctrl+C or SIGTERM cancels; the CLI root
+// installs no signal handler of its own. It stops listening on that first signal, so that a second
+// one ends the process, as notifyInterrupt in cmd/air/run.go does. The caller must call stop.
+func notifyTestInterrupt(parent context.Context) (ctx context.Context, stop context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+			signal.Stop(sigCh)
+		}
+	}()
+	return ctx, cancel
+}
+
+var errTestWaitTimeout = errors.New("test wait timed out")
+
+// withTestWaitTimeout returns a context that is canceled with the cause errTestWaitTimeout when
+// the timeout passes, so that it also interrupts a read in flight; a zero timeout never fires.
+// It is not a context deadline: the SDK rate limiter fails a request that would wait past the
+// deadline before the context expires, with an error that does not name the timeout. The caller
+// must call stop.
+func withTestWaitTimeout(parent context.Context, timeout time.Duration) (ctx context.Context, stop context.CancelFunc) {
+	ctx, cancel := context.WithCancelCause(parent)
+	if timeout <= 0 {
+		return ctx, func() { cancel(nil) }
+	}
+	timer := time.AfterFunc(timeout, func() { cancel(errTestWaitTimeout) })
+	return ctx, func() {
+		timer.Stop()
+		cancel(nil)
+	}
+}
+
+const testPollInterval = time.Second
+
+// waitForTestUpdate polls the update until it ends, prints each test case as it finishes, and
+// returns the final state. It takes the steps of the bundle pipeline runner's wait loop
+// (bundle/run/pipeline.go), which cannot be reused because it starts a regular update. Every read
+// uses ctx, so canceling it also interrupts a read in flight.
+func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, run *testRun, printer *testProgressPrinter) (pipelines.UpdateInfoState, error) {
+	lastTimestamp := ""
+	for {
+		response, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		if err != nil {
+			return "", waitReadError(ctx, err)
+		}
+		if response.Update == nil {
+			return "", fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
+		}
+		state := response.Update.State
+		printer.updateState(state)
+
+		// Reading from the last timestamp returns its events again; the run ignores duplicates.
+		events, err := readTestEvents(ctx, w, pipelineID, updateID, lastTimestamp)
+		if err != nil {
+			return "", waitReadError(ctx, err)
+		}
+		if len(events) > 0 {
+			lastTimestamp = events[len(events)-1].Timestamp
+		}
+		addTestEvents(run, printer, events)
+
+		switch state {
+		case pipelines.UpdateInfoStateCompleted, pipelines.UpdateInfoStateFailed, pipelines.UpdateInfoStateCanceled:
+			// Events can become readable after later ones, so read all of them once more.
+			events, err := readTestEvents(ctx, w, pipelineID, updateID, "")
+			if err != nil {
+				return "", waitReadError(ctx, err)
+			}
+			addTestEvents(run, printer, events)
+			return state, nil
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return "", context.Cause(ctx)
+		case <-time.After(testPollInterval):
+		}
+	}
+}
+
+// waitReadError adds the cause of ctx, such as errTestWaitTimeout, to a read error that ctx's
+// cancellation caused. The SDK rate limiter fails a request on a canceled ctx before sending it,
+// with the bare context error that hides the cause.
+func waitReadError(ctx context.Context, err error) error {
+	if errors.Is(err, context.Canceled) {
+		if cause := context.Cause(ctx); cause != nil && !errors.Is(err, cause) {
+			return fmt.Errorf("%w: %w", cause, err)
+		}
+	}
+	return err
+}
+
+// addTestEvents adds events to the run and prints each case that gets its final outcome.
+func addTestEvents(run *testRun, printer *testProgressPrinter, events []testPipelineEvent) {
+	for _, e := range events {
+		if c := run.add(e); c != nil {
+			printer.caseFinished(c, len(run.cases))
+		}
+	}
+}
+
+// updateError returns the error that the update reported: its own, or else the test verdict.
+func (r *testRun) updateError() string {
+	if r.fatalError != "" {
+		return r.fatalError
+	}
+	return r.verdictError
+}
+
+// testRunError returns the error the command exits with after the update ended, or nil if at
+// least one test was collected and every collected test passed or was skipped.
+func testRunError(updateID string, state pipelines.UpdateInfoState, run *testRun, incompleteReason string) error {
+	if incompleteReason == "" {
+		summary := run.summaries[0]
+		testsFailed := summary.Total == 0 || summary.Failed > 0 || summary.Errored > 0
+		if !testsFailed && state == pipelines.UpdateInfoStateCompleted && run.fatalError == "" {
+			return nil
+		}
+		// A test update fails when its tests fail; the printed result explains it, unless the
+		// update ended in another way or reports an error of its own. The service's own verdict,
+		// such as "[PIPELINE_TEST_FAILED] 1 of the pipeline's tests failed", is not.
+		ended := state == pipelines.UpdateInfoStateFailed || state == pipelines.UpdateInfoStateCompleted
+		if testsFailed && ended && run.fatalError == "" {
+			return root.ErrAlreadyPrinted
+		}
+	} else if state == pipelines.UpdateInfoStateCompleted {
+		return root.ErrAlreadyPrinted
+	}
+	if updateError := run.updateError(); updateError != "" {
+		return fmt.Errorf("update %s is %s: %s", updateID, state, updateError)
+	}
+	return fmt.Errorf("update %s is %s", updateID, state)
+}
+
+// testRunProblem describes why a run that ended did not pass for a reason other than
+// failed tests, or returns "" otherwise.
+func testRunProblem(run *testRun, incompleteReason string, runErr error) string {
+	var lines []string
+	switch {
+	case incompleteReason != "":
+		lines = append(lines, fmt.Sprintf("RUN INCOMPLETE: %s.", incompleteReason))
+	case run.summaries[0].Total == 0:
+		lines = append(lines, run.noTestsMessage)
+	}
+	if runErr != nil && !errors.Is(runErr, root.ErrAlreadyPrinted) {
+		lines = append(lines, runErr.Error())
+	}
+	return strings.Join(lines, "\n")
+}
+
+// testFlags holds the flags of pipelines test.
+type testFlags struct {
+	pipelineID     string
+	pytestArgs     []string
+	noWait         bool
+	timeout        time.Duration
+	resumeUpdateID string
+	junitPath      string
+}
+
+// checkTestFlags rejects the flag combinations that pipelines test does not support, before any API call.
+func checkTestFlags(cmd *cobra.Command, args []string, f testFlags) error {
+	if cmd.ArgsLenAtDash() >= 0 {
+		return errors.New("the -- separator is not supported: " + pytestArgHint)
+	}
+	if root.OutputType(cmd) != flags.OutputText {
+		return fmt.Errorf("--output %s is not supported by pipelines test", root.OutputType(cmd))
+	}
+	if err := validatePytestArgs(f.pytestArgs); err != nil {
+		return err
+	}
+	if f.timeout < 0 {
+		return errors.New("--timeout must not be negative")
+	}
+	if f.noWait && f.timeout > 0 {
+		return errors.New("--timeout cannot be used with --no-wait")
+	}
+	if f.noWait && f.junitPath != "" {
+		return errors.New("--junit-xml cannot be used with --no-wait because no results are available when the command returns")
+	}
+	// An empty --resume, such as from an unset shell variable, must not start a new run.
+	if cmd.Flags().Changed("resume") {
+		selectionCount := len(args)
+		if f.pipelineID == "" {
+			selectionCount = max(len(args)-1, 0)
+		}
+		switch {
+		case f.noWait:
+			return errors.New("--resume cannot be used with --no-wait")
+		case len(f.pytestArgs) > 0:
+			return errors.New("--resume cannot be used with --pytest-arg")
+		case selectionCount > 0:
+			return errors.New("--resume cannot be used with test selections")
+		}
+		if _, err := uuid.Parse(f.resumeUpdateID); err != nil {
+			return fmt.Errorf("--resume %q is not an update ID; pass the update ID that pipelines test printed", f.resumeUpdateID)
+		}
+	}
+	return nil
+}
+
+// resolveTestTarget identifies the pipeline by --pipeline-id or, in a bundle, by its KEY.
+func resolveTestTarget(cmd *cobra.Command, args []string, f testFlags, resume bool) (testTarget, error) {
+	if f.pipelineID != "" {
+		id, err := uuid.Parse(f.pipelineID)
+		if err != nil {
+			return testTarget{}, fmt.Errorf("--pipeline-id %q is not a pipeline ID", f.pipelineID)
+		}
+		return resolveTestTargetByID(cmd, args, id.String(), !f.noWait)
+	}
+	cmd.SetContext(logdiag.InitContext(cmd.Context()))
+	return resolveTestTargetInBundle(cmd, args, resume)
+}
+
+// notPipelineKeyError explains that the first argument is not a pipeline KEY, names the bundle's
+// pipelines, and shows the command that passes the arguments as test selections of the first one.
+func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args []string) error {
+	keys := slices.Sorted(maps.Keys(resources.Completions(b, isPipeline)))
+	if len(keys) == 0 {
+		return fmt.Errorf("%q is not a pipeline in this bundle, and the bundle has no pipelines", key)
+	}
+	usage := []string{cmd.CommandPath(), shellquote.BashArg(keys[0])}
+	for _, arg := range args {
+		usage = append(usage, shellquote.BashArg(arg))
+	}
+	return fmt.Errorf("%q is not a pipeline in this bundle (pipelines: %s). Usage: %s", key, strings.Join(keys, ", "), strings.Join(usage, " "))
+}
+
+func testCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
+		Short: "*Beta* Run the tests of a pipeline",
+		Long: `Run the tests of a pipeline in a test-only update.
+
+KEY is the unique name of the pipeline, as defined in its YAML file.
+It is required when test selections are given. If there is only one pipeline
+in the project and no arguments are given, it is selected automatically.
+Outside a project, identify the pipeline with --pipeline-id; all positional
+arguments are then test selections.
+
+TEST_SELECTION is a test directory, file, or pytest test ID, for example
+tests/test_orders.py::test_backfill. In a project, a relative path is a local
+path, relative to the working directory, and is converted to its deployed
+workspace path. With --pipeline-id, a relative path is relative to the
+pipeline's root_path. Paths that start with / are workspace paths. Without a
+selection, all of the pipeline's tests run.
+
+Each --pytest-arg passes one argument to pytest, in the order given. Only -k
+and -m are supported, each followed by its value in the next --pytest-arg, for
+example:
+
+  databricks pipelines test my_pipeline --pytest-arg=-k --pytest-arg='orders and not slow'
+
+The command waits for the results. It exits with code 0 only if at least one
+test was collected and none failed or errored, so a run whose tests were all
+skipped succeeds; otherwise it exits with code 1. --no-wait returns after the
+update starts.
+
+--timeout and Ctrl+C stop waiting but not the update; pass its ID to --resume
+to read the results later. To stop the update, run 'pipelines stop'.
+
+--junit-xml writes one entry per test with its outcome and duration. An
+incomplete run, a run without tests, or a timeout adds a failing entry that
+names the cause. The report replaces the file on every exit except a flag that
+cannot be parsed. With workspace.sync_mode immutable, test names keep the path
+of the deployed snapshot, which changes with each deployment.`,
+		Example: `  # Run all tests of the pipeline my_pipeline
+  databricks pipelines test my_pipeline
+
+  # Run the tests in one file
+  databricks pipelines test my_pipeline tests/test_orders.py
+
+  # Run one failed test again, by the test ID that the output shows
+  databricks pipelines test my_pipeline tests/test_orders.py::test_backfill
+
+  # Run the tests in CI and write a JUnit XML report
+  databricks pipelines test my_pipeline --junit-xml report.xml
+
+  # Stop waiting after 30 minutes, then read the results later
+  databricks pipelines test my_pipeline --timeout 30m
+  databricks pipelines test my_pipeline --resume UPDATE_ID
+
+  # Run the tests of any pipeline by its ID
+  databricks pipelines test --pipeline-id PIPELINE_ID`,
+	}
+
+	var f testFlags
+
+	testGroup := cmdgroup.NewFlagGroup("Pipeline Test")
+	testGroup.FlagSet().StringVar(&f.pipelineID, "pipeline-id", "", "ID of the pipeline to test, instead of a KEY.")
+	testGroup.FlagSet().StringArrayVar(&f.pytestArgs, "pytest-arg", nil, "Argument to pass to pytest (repeatable). Only -k and -m are supported.")
+	testGroup.FlagSet().BoolVar(&f.noWait, "no-wait", false, "Don't wait for the tests to complete.")
+	testGroup.FlagSet().DurationVar(&f.timeout, "timeout", 0, "Stop waiting for results after this duration, for example 30m. The update keeps running.")
+	testGroup.FlagSet().StringVar(&f.resumeUpdateID, "resume", "", "Read the results of an existing test update instead of starting one.")
+	testGroup.FlagSet().StringVar(&f.junitPath, "junit-xml", "", "Write the results as a JUnit XML report to this file, replacing it.")
+
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(testGroup)
+
+	cmd.SetFlagErrorFunc(testFlagErrorFunc)
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		// Every exit writes the report, so that an older report never survives.
+		report := &testReport{path: f.junitPath, out: cmd.OutOrStdout(), suiteName: f.pipelineID}
+		if report.suiteName == "" && len(args) > 0 {
+			report.suiteName = args[0]
+		}
+		if err := checkTestFlags(cmd, args, f); err != nil {
+			return report.failed(cmd.Context(), err)
+		}
+		resume := cmd.Flags().Changed("resume")
+		target, err := resolveTestTarget(cmd, args, f, resume)
+		if err != nil {
+			return report.failed(cmd.Context(), err)
+		}
+		report.suiteName = target.key
+		if report.suiteName == "" {
+			report.suiteName = target.pipelineID
+		}
+		report.projectFolder = target.projectFolder
+		ctx := cmd.Context()
+
+		// The handler is installed before the update starts, but only the wait listens to it: a
+		// Ctrl+C during Start Update must not cancel a request that the service may accept, or the
+		// update would run without its ID being printed.
+		waitCtx, stop := notifyTestInterrupt(ctx)
+		defer stop()
+
+		updateID := f.resumeUpdateID
+		if !resume {
+			req := newStartTestUpdateRequest(target.selections, f.pytestArgs)
+			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
+			if err != nil {
+				return report.failed(ctx, withDeployHint(cmd, target, withActiveUpdateHint(cmd, target, err)))
+			}
+		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
+			return report.failed(ctx, err)
+		}
+		out := cmd.OutOrStdout()
+		target.printHeader(out, updateID)
+		if f.noWait {
+			return nil
+		}
+
+		run := newTestRun()
+		run.noTestsMessage = noTestsCollectedMessage(target.shortSelections(), f.pytestArgs)
+		printer := &testProgressPrinter{out: out, shortID: target.shortTestID}
+		readCtx, stopReads := withTestWaitTimeout(waitCtx, f.timeout)
+		defer stopReads()
+		state, err := waitForTestUpdate(readCtx, target.w, target.pipelineID, updateID, run, printer)
+		if err != nil {
+			isTimeout := errors.Is(err, errTestWaitTimeout) || errors.Is(context.Cause(readCtx), errTestWaitTimeout)
+			resumeCmd := target.resumeCommand(cmd, updateID)
+			if !isTimeout && waitCtx.Err() == nil {
+				// The SDK client already retries transient errors, so the read failed for good.
+				readErr := fmt.Errorf("%w; the update keeps running, to get its results run: %s", err, resumeCmd)
+				return report.finish(updateID, run, readErr.Error(), readErr)
+			}
+			stopErr := fmt.Errorf("stopped waiting for update %s; the update keeps running, to get its results run: %s", updateID, resumeCmd)
+			if isTimeout {
+				stopErr = fmt.Errorf("stopped waiting for update %s after %s; the update keeps running, to get its results run: %s", updateID, f.timeout, resumeCmd)
+			}
+			return report.finish(updateID, run, stopErr.Error(), stopErr)
+		}
+		incompleteReason := run.incompleteReason(state)
+		renderTestResult(out, run, incompleteReason, target.shortTestID)
+		// Events can still arrive after the update ends, so the results can be read again later.
+		if incompleteReason != "" {
+			fmt.Fprintf(out, "To read the results again, run: %s\n", target.resumeCommand(cmd, updateID))
+		}
+		runErr := testRunError(updateID, state, run, incompleteReason)
+		// The report line comes before the summary, so that the summary stays the last line.
+		err = report.finish(updateID, run, testRunProblem(run, incompleteReason, runErr), runErr)
+		renderTestSummaryLine(out, run, incompleteReason)
+		return err
+	}
+
+	return cmd
+}

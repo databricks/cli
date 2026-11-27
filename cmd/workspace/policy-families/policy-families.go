@@ -3,6 +3,7 @@
 package policy_families
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -16,11 +17,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "policy-families",
-		Short: `View available policy families.`,
-		Long: `View available policy families. A policy family contains a policy definition
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "policy-families",
+	Short:   `View available policy families.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `View available policy families. A policy family contains a policy definition
   providing best practices for configuring clusters for a particular use case.
 
   Databricks manages and provides policy families for several common cluster use
@@ -28,14 +34,13 @@ func New() *cobra.Command {
 
   Policy families cannot be used directly to create clusters. Instead, you
   create cluster policies using a policy family. Cluster policies created using
-  a policy family inherit the policy family's policy definition.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  a policy family inherit the policy family's policy definition.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

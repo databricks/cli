@@ -5,6 +5,9 @@ package account
 {{$excludes := list}}
 
 import (
+	"context"
+
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 	{{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/account/{{(.TrimPrefix "account").KebabName}}"{{end}}{{end}}{{end}}
@@ -14,18 +17,18 @@ import (
 	account_users "github.com/databricks/cli/cmd/account/users"
 )
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "account",
-		Short: `Databricks Account Commands`,
-	}
+// Spec declares the account command.
+var Spec = root.CommandSpec{
+	Use:   "account",
+	Short: `Databricks Account Commands`,
+	Build: buildCommand,
+}
 
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	{{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) -}}
-	cmd.AddCommand({{.SnakeName}}.New())
+	cmd.AddCommand(root.NewCommand(ctx, {{.SnakeName}}.Spec))
 	{{end}}{{end}}{{end}}
-	cmd.AddCommand(account_groups.New())
-	cmd.AddCommand(account_service_principals.New())
-	cmd.AddCommand(account_users.New())
-
-	return cmd
+	cmd.AddCommand(root.NewCommand(ctx, account_groups.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_service_principals.Spec))
+	cmd.AddCommand(root.NewCommand(ctx, account_users.Spec))
 }

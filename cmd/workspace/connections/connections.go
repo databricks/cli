@@ -3,6 +3,7 @@
 package connections
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "connections",
-		Short: `A connection represents an external data source for use within Databricks.`,
-		Long: `A connection represents an external data source for use within Databricks.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "connections",
+	Short:   `A connection represents an external data source for use within Databricks.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A connection represents an external data source for use within Databricks.
 
   Creating a connection object is the first step to managing external data
   sources within Unity Catalog. The second step is creating a data object
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   connection can be written to or read from similar to other Unity Catalog data
   objects based on cloud storage. You can create different types of connections,
   and each connection has a unique set of configuration options to support
-  credential management and other settings.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  credential management and other settings.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -75,7 +78,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: environment_settings
 	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
+	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the connection is read only.`)
 	// TODO: map via StringToStringVar: secrets
 
 	cmd.Use = "create"
@@ -220,7 +223,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a connection.`
 	cmd.Long = `Get a connection.
 
-  Gets a connection from it's name.
+  Gets a connection from its name.
 
   Arguments:
     NAME: Name of the connection.`
@@ -372,14 +375,16 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: environment_settings
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the current owner of the connection.`)
 	// TODO: map via StringToStringVar: secrets
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`
 	cmd.Long = `Update a connection.
 
-  Updates the connection that matches the supplied name.
+  Updates the connection that matches the supplied name. When options are
+  provided, they replace the existing options of the connection, so include
+  every key that the connection type requires.
 
   Arguments:
     NAME: Name of the connection.`

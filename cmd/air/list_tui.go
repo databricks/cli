@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -45,7 +46,11 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly boo
 			tea.WithInput(cmd.InOrStdin()),
 			tea.WithOutput(out),
 		).Run()
-		return err
+		if err != nil {
+			return err
+		}
+		warnIfTruncated(ctx, f)
+		return nil
 	}
 
 	rows, err := f.next(limit)
@@ -114,6 +119,7 @@ type listModel struct {
 	cursor int
 	offset int // index of the first visible row
 	height int // terminal height, for windowing
+	width  int // terminal width, for fitting the flexible columns; 0 until known
 
 	mode          int            // modeList or modeDetail
 	viewport      viewport.Model // for detail pane
@@ -122,7 +128,12 @@ type listModel struct {
 	detailContent string         // rendered detail content
 }
 
+// detailHorizontalStep is how many columns ←/→ pan the detail pane.
+const detailHorizontalStep = 8
+
 func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
+	vp := viewport.New(0, 0)
+	vp.SetHorizontalStep(detailHorizontalStep)
 	return listModel{
 		rows:     rows,
 		styles:   newListStyles(r),
@@ -130,7 +141,7 @@ func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links boo
 		links:    links,
 		fetcher:  f,
 		mode:     modeList,
-		viewport: viewport.New(0, 0),
+		viewport: vp,
 	}
 }
 
@@ -182,8 +193,11 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
+		m.width = msg.Width
+		m.cols = layoutListCols(m.rows, m.width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = max(msg.Height-3, 1)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
 
@@ -194,7 +208,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.rows = append(m.rows, msg.rows...)
-		m.cols = computeListCols(m.rows)
+		// A new page can only widen the natural columns, so the layout moves one
+		// way as pages load: a column may compact or disappear, never reappear.
+		m.cols = layoutListCols(m.rows, m.width)
 		m.offset = m.clampedOffset()
 		// A page with no matches but more to scan: keep paging so the cursor isn't
 		// stuck at the end of the loaded rows.
@@ -217,8 +233,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.detailContent = msg.body
 		}
 		m.detailTitle = msg.title
-		m.viewport.SetContent(m.detailContent)
+		m.viewport.SetContent(m.wrappedDetail())
 		m.viewport.GotoTop()
+		m.viewport.SetXOffset(0)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -274,7 +291,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Run Details"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunDetail(runID)
+				return m, m.fetchRunDetail(runID, m.rows[m.cursor].taskKey())
 			}
 		case "L", "l":
 			// Open the logs snapshot pane; the fetch fills it in.
@@ -283,13 +300,29 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Logs Snapshot"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunLogs(runID)
+				return m, m.fetchRunLogs(runID, m.rows[m.cursor].taskKey())
 			}
 		}
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
 	}
 	return m, nil
+}
+
+// wrappedDetail is the detail text with long lines wrapped to the pane width,
+// since the viewport clips them at the pane edge. Box rows and URLs stay on one
+// row, because wrapping would break the box borders or the link; ←/→ pans to
+// their clipped ends.
+func (m listModel) wrappedDetail() string {
+	lines := strings.Split(m.detailContent, "\n")
+	for i, line := range lines {
+		plain := strings.TrimSpace(ansi.Strip(line))
+		if strings.IndexAny(plain, "╭│╰") == 0 || strings.Contains(plain, "://") {
+			continue
+		}
+		lines[i] = ansi.Wrap(line, m.viewport.Width, "")
+	}
+	return strings.Join(lines, "\n")
 }
 
 // clampedOffset returns the scroll offset that keeps the cursor visible.
@@ -311,7 +344,7 @@ func (m listModel) View() string {
 		} else {
 			lines = append(lines, m.viewport.View())
 		}
-		footer := faint.Render("↑/↓ scroll · esc back · q quit")
+		footer := faint.Render("↑/↓ scroll · ←/→ pan · esc back · q quit")
 		lines = append(lines, footer)
 		return strings.Join(lines, "\n")
 	}
@@ -323,32 +356,97 @@ func (m listModel) View() string {
 	visible := m.visibleCount()
 	lines := []string{m.styles.renderHeader(m.cols)}
 	for i := m.offset; i < m.offset+visible && i < len(m.rows); i++ {
-		lines = append(lines, m.styles.renderRow(m.cols, m.rows[i], i == m.cursor, m.links))
+		row := m.rows[i]
+		// Experiment names often share a prefix and differ at the end, so a
+		// shrunk cell keeps the end. The one-shot table keeps the start, so its
+		// output stays as scripts already see it.
+		row.Experiment = truncateStart(row.Experiment, m.cols.experiment)
+		lines = append(lines, m.styles.renderRow(m.cols, row, i == m.cursor, m.links))
 	}
 	lines = append(lines, m.renderHint())
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// renderHint is the faint one-line key legend, with the cursor position and the
-// paging state (loading / load failed).
+// Key legends for the hint line: the full one, and the keys alone for when the
+// full one leaves no room for the rest of the hint.
+const (
+	hintLegend      = "↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit"
+	hintLegendShort = "↑/↓ ←/→ ↵ i L q"
+)
+
+// renderHint is the faint one-line hint: the key legend, the cursor position,
+// the paging state (loading / load failed) and, in a narrow terminal, the
+// columns the layout has hidden. It must fit the terminal, or bubbletea cuts
+// off its end, so it gives up detail in steps: the legend shrinks to its keys,
+// then the hidden columns are counted instead of named, then the legend goes,
+// and as a last resort the line is truncated.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
-	switch {
-	case m.loadErr != nil:
-		hint += " (load failed)"
-	case m.loading:
-		hint += " (loading…)"
+	hidden := m.cols.hiddenNames()
+	variants := []struct {
+		legend string
+		note   string
+	}{
+		{hintLegend, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, true)},
+		{hintLegendShort, hiddenNote(hidden, false)},
+		{"", hiddenNote(hidden, false)},
 	}
-	return faint.Render(hint)
+	for _, v := range variants {
+		if m.width <= 0 || lipgloss.Width(m.hintText(v.legend, v.note, true)) <= m.width {
+			return faint.Render(m.hintText(v.legend, v.note, false))
+		}
+	}
+	last := variants[len(variants)-1]
+	return faint.Render(truncate(m.hintText(last.legend, last.note, false), m.width))
 }
 
-// fetchRunDetail returns a tea.Cmd that fetches run details in the background.
-func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
+// hintText assembles the hint from its (possibly empty) legend and
+// hidden-columns note. With widest set, the row counter and paging state take
+// the widest form they have while pages load ("row N/N (loading…)"), so the
+// choice of variant doesn't change as the cursor moves or a page loads. A load
+// failure is permanent, so it is measured as is.
+func (m listModel) hintText(legend, note string, widest bool) string {
+	row, state := m.cursor+1, ""
+	switch {
+	case m.loadErr != nil:
+		state = " (load failed)"
+	case widest, m.loading:
+		state = " (loading…)"
+	}
+	if widest {
+		row = len(m.rows)
+	}
+	hint := fmt.Sprintf("row %d/%d%s%s", row, len(m.rows), state, note)
+	if legend == "" {
+		return hint
+	}
+	return legend + "  ·  " + hint
+}
+
+// hiddenNote is the hint's hidden-columns note: "" when every column is shown,
+// otherwise the hidden columns by name, or just their count when names is
+// false.
+func hiddenNote(hidden []string, names bool) string {
+	switch {
+	case len(hidden) == 0:
+		return ""
+	case names:
+		return "  ·  hidden: " + strings.Join(hidden, ", ")
+	case len(hidden) == 1:
+		return "  ·  1 column hidden"
+	default:
+		return fmt.Sprintf("  ·  %d columns hidden", len(hidden))
+	}
+}
+
+// fetchRunDetail returns a tea.Cmd that fetches the details of the run's task
+// in the background.
+func (m listModel) fetchRunDetail(runID int64, taskKey string) tea.Cmd {
 	ctx := m.fetcher.ctx
 	w := m.fetcher.w
 	return func() tea.Msg {
-		body, err := runDetailText(ctx, w, runID)
+		body, err := runDetailText(ctx, w, runID, taskKey)
 		if err != nil {
 			return detailMsg{title: "Run Details", err: err}
 		}
@@ -357,11 +455,11 @@ func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
 }
 
 // fetchRunLogs returns a tea.Cmd that fetches a log snapshot in the background.
-func (m listModel) fetchRunLogs(runID int64) tea.Cmd {
+func (m listModel) fetchRunLogs(runID int64, taskKey string) tea.Cmd {
 	ctx := m.fetcher.ctx
 	w := m.fetcher.w
 	return func() tea.Msg {
-		body, err := runLogsSnapshot(ctx, w, runID)
+		body, err := runLogsSnapshot(ctx, w, runID, taskKey)
 		if err != nil {
 			return detailMsg{title: "Logs Snapshot", err: err}
 		}

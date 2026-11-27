@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -86,6 +87,33 @@ func TestListAiTrainingWorkflowsPaginates(t *testing.T) {
 	assert.Equal(t, int64(1), refs[0].jobRunID)
 	assert.Equal(t, int64(1700000000000), refs[0].submitTimeMs)
 	assert.Equal(t, int64(2), refs[1].jobRunID)
+}
+
+func TestListAiTrainingWorkflowsSendsPageSize(t *testing.T) {
+	var queries []url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != aiTrainingWorkflowsPath {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		queries = append(queries, r.URL.Query())
+		if len(queries) == 1 {
+			_, _ = w.Write([]byte(`{"training_workflows":[{"job_run_id":"1"}],"next_page_token":"tok"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"training_workflows":[{"job_run_id":"2"}]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	_, err := listAiTrainingWorkflows(t.Context(), newTestWorkspaceClient(t, srv.URL), false)
+	require.NoError(t, err)
+	require.Len(t, queries, 2)
+	// Every page, not just the first, asks for the larger page size.
+	for _, q := range queries {
+		assert.Equal(t, "1000", q.Get("page_size"))
+	}
+	assert.Empty(t, queries[0].Get("page_token"))
+	assert.Equal(t, "tok", queries[1].Get("page_token"))
 }
 
 func TestListAiTrainingWorkflowsStopsOnRepeatedToken(t *testing.T) {

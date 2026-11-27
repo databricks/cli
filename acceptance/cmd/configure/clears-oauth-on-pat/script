@@ -2,11 +2,11 @@ sethome "./home"
 
 # home/.databrickscfg is a checked-in input: a profile with OAuth metadata and
 # unified host fields (as if `auth login` was previously run against a unified host).
-title "Initial profile (OAuth with unified host)\n"
+title "Initial profile (OAuth with unified host)"
 cat "./home/.databrickscfg"
 
 title "Run configure with PAT token"
 echo "new-token" | trace $CLI configure --token --host https://host
 
-title "Profile after PAT configure\n"
+title "Profile after PAT configure"
 cat "./home/.databrickscfg"

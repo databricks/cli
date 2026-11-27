@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  feature_specs:
+    foo:
+      name: main.fspec_inv_$UNIQUE_NAME.test_feature_spec
+      features:
+        - feature_lookup:
+            table: main.fspec_inv_$UNIQUE_NAME.user_features
+            lookup_keys: [user_id]
+            feature_names: [age]
+      grants:
+        - principal: account users
+          privileges:
+            - EXECUTE

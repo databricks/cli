@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      catalog: main
+      target: ${resources.schemas.bar.name}
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
+  schemas:
+    bar:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME

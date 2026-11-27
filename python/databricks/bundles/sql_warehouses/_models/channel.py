@@ -22,8 +22,16 @@ class Channel:
     """
 
     dbsql_version: VariableOrOptional[str] = None
+    """
+    Databricks SQL version to pin to. Set it if and only if name is
+    CHANNEL_NAME_CUSTOM.
+    """
 
     name: VariableOrOptional[ChannelName] = None
+    """
+    Channel to follow. CHANNEL_NAME_CURRENT is the default, and CHANNEL_NAME_PREVIEW
+    carries the upcoming Databricks SQL release for testing.
+    """
 
     @classmethod
     def from_dict(cls, value: "ChannelDict") -> "Self":
@@ -37,8 +45,16 @@ class ChannelDict(TypedDict, total=False):
     """"""
 
     dbsql_version: VariableOrOptional[str]
+    """
+    Databricks SQL version to pin to. Set it if and only if name is
+    CHANNEL_NAME_CUSTOM.
+    """
 
     name: VariableOrOptional[ChannelNameParam]
+    """
+    Channel to follow. CHANNEL_NAME_CURRENT is the default, and CHANNEL_NAME_PREVIEW
+    carries the upcoming Databricks SQL release for testing.
+    """
 
 
 ChannelParam = ChannelDict | Channel

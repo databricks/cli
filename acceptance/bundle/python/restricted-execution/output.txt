@@ -1,5 +1,6 @@
 
 === Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessible
+
 >>> uv run [UV_ARGS] -q [CLI] bundle summary -o json
 {
   "python": {
@@ -13,6 +14,7 @@
 value_from_env
 
 === With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
+
 >>> musterr uv run [UV_ARGS] -q [CLI] bundle summary
 Error: Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
 

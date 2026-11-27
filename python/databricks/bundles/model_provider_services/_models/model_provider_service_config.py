@@ -71,43 +71,49 @@ class ModelProviderServiceConfig:
 
     allow_all_targets: VariableOrOptional[bool] = None
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK`.
     """
 
     anthropic: VariableOrOptional[ModelProviderServiceConfigAnthropicProviderConfig] = (
         None
     )
     """
-    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
-    be set on Create; the two are mutually exclusive.
+    Configuration for Anthropic. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC`.
     """
 
     azure_openai: VariableOrOptional[
         ModelProviderServiceConfigAzureOpenAiProviderConfig
     ] = None
     """
-    Azure OpenAI provider configuration.
+    Configuration for Azure OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI`.
     """
 
     bedrock_mantle: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock Mantle, with the same fields as
+    `amazon_bedrock`. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE`.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
     """
-    Custom OpenAI-compatible provider configuration.
+    Configuration for a custom OpenAI-compatible provider. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM`.
     """
 
     forward_headers: VariableOrOptional[bool] = None
@@ -140,7 +146,8 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigGeminiEnterpriseProviderConfig
     ] = None
     """
-    Gemini Enterprise provider configuration.
+    Configuration for Google Gemini Enterprise. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE`.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfig] = None
@@ -154,12 +161,14 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigMicrosoftFoundryProviderConfig
     ] = None
     """
-    Microsoft Foundry provider configuration.
+    Configuration for Microsoft Foundry. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY`.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfig] = None
     """
-    OpenAI provider configuration.
+    Configuration for OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI`.
     """
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfig] = None
@@ -191,8 +200,9 @@ class ModelProviderServiceConfig:
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
     @classmethod
@@ -208,43 +218,49 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     allow_all_targets: VariableOrOptional[bool]
     """
-    When true, accepts any model exposed by the upstream provider; `targets`
-    is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable. Defaults to false.
+    When true, allows models from the provider's built-in model catalog in
+    addition to explicit `targets`. When false, only models listed in `targets`
+    are routable. Defaults to false. CUSTOM providers have no built-in model
+    catalog and must leave this false and list their models in `targets`.
     """
 
     amazon_bedrock: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK`.
     """
 
     anthropic: VariableOrOptional[
         ModelProviderServiceConfigAnthropicProviderConfigParam
     ]
     """
-    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
-    be set on Create; the two are mutually exclusive.
+    Configuration for Anthropic. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC`.
     """
 
     azure_openai: VariableOrOptional[
         ModelProviderServiceConfigAzureOpenAiProviderConfigParam
     ]
     """
-    Azure OpenAI provider configuration.
+    Configuration for Azure OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI`.
     """
 
     bedrock_mantle: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    Amazon Bedrock provider configuration.
+    Configuration for Amazon Bedrock Mantle, with the same fields as
+    `amazon_bedrock`. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE`.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
-    Custom OpenAI-compatible provider configuration.
+    Configuration for a custom OpenAI-compatible provider. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM`.
     """
 
     forward_headers: VariableOrOptional[bool]
@@ -277,7 +293,8 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigGeminiEnterpriseProviderConfigParam
     ]
     """
-    Gemini Enterprise provider configuration.
+    Configuration for Google Gemini Enterprise. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE`.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfigParam]
@@ -291,12 +308,14 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigMicrosoftFoundryProviderConfigParam
     ]
     """
-    Microsoft Foundry provider configuration.
+    Configuration for Microsoft Foundry. Set this field when
+    `provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY`.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfigParam]
     """
-    OpenAI provider configuration.
+    Configuration for OpenAI. Set this field when `provider_type` is
+    `EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI`.
     """
 
     pricing: VariableOrOptional[ModelProviderServiceConfigProviderPricingConfigParam]
@@ -326,8 +345,9 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
     entry must include at least one `native_api_types` value. When
     `allow_all_targets` is false, at least one entry is required and model
     service destinations can reference only listed models. When
-    `allow_all_targets` is true, any upstream model is routable; entries in
-    this list provide API-type metadata without restricting other models.
+    `allow_all_targets` is true, models from the provider's built-in model
+    catalog are also routable. CUSTOM providers must explicitly list their
+    models here and cannot enable `allow_all_targets`.
     """
 
 

@@ -110,3 +110,22 @@ func TestRenderSummaryNoCVE(t *testing.T) {
 		"[GO-2026-5021]: https://pkg.go.dev/vuln/GO-2026-5021\n"
 	assert.Equal(t, want, renderSummary(bumps))
 }
+
+// TestRenderSummaryRepositoryAdvisory checks that an advisory carrying its own
+// page URL links there rather than to the Go vulnerability database.
+func TestRenderSummaryRepositoryAdvisory(t *testing.T) {
+	bumps := []bump{
+		{
+			Module:       "github.com/jackc/pgx/v5",
+			FixedVersion: "v5.12.0",
+			Advisories: []advisory{
+				{ID: "GHSA-j38q-h3ph-jjpq", URL: "https://github.com/jackc/pgx/security/advisories/GHSA-j38q-h3ph-jjpq"},
+			},
+		},
+	}
+
+	want := "- github.com/jackc/pgx/v5 → v5.12.0 (fixes [GHSA-j38q-h3ph-jjpq])\n" +
+		"\n" +
+		"[GHSA-j38q-h3ph-jjpq]: https://github.com/jackc/pgx/security/advisories/GHSA-j38q-h3ph-jjpq\n"
+	assert.Equal(t, want, renderSummary(bumps))
+}

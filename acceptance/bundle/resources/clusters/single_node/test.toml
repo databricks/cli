@@ -1,0 +1,17 @@
+# The standalone clusters resource boots a real cluster at deploy, which is slow and has hit
+# capacity limits on cloud; CloudSlow keeps it out of the per-PR run (it still runs locally and
+# in the full cloud sweep). Output is projected to spark_conf/custom_tags so it is cloud-portable.
+Cloud = true
+CloudSlow = true
+
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    "edit.json",
+]
+
+# The core count the backend puts in spark.master follows the node type.
+[[Repls]]
+Old = 'local\[\*, \d+\]'
+New = 'local[*, [CORES]]'

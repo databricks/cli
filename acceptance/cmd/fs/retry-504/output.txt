@@ -1,0 +1,19 @@
+
+=== A 504 on list is retried
+
+>>> [CLI] fs ls dbfs:/tmp/fs-retry-504-[UNIQUE_NAME]
+Warn: retrying after 504 Gateway Timeout from GET /api/2.0/dbfs/list
+hello.txt
+
+=== A 504 on get-status is retried
+
+>>> [CLI] fs cat dbfs:/tmp/fs-retry-504-[UNIQUE_NAME]/hello.txt
+Warn: retrying after 504 Gateway Timeout from GET /api/2.0/dbfs/get-status: dbfs open: Fault injected by test.
+hello
+
+=== A 504 on delete is retried
+
+>>> [CLI] fs rm dbfs:/tmp/fs-retry-504-[UNIQUE_NAME]/hello.txt
+Warn: retrying after 504 Gateway Timeout from POST /api/2.0/dbfs/delete
+
+>>> [CLI] fs ls dbfs:/tmp/fs-retry-504-[UNIQUE_NAME]

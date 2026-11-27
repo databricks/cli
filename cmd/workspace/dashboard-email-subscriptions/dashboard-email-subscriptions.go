@@ -3,6 +3,7 @@
 package dashboard_email_subscriptions
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,21 +18,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dashboard-email-subscriptions",
-		Short: `*Public Preview* Controls whether schedules or workload tasks for refreshing AI/BI Dashboards in the workspace can send subscription emails containing PDFs and/or images of the dashboard.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "dashboard-email-subscriptions",
+	Short: `*Public Preview* Controls whether schedules or workload tasks for refreshing AI/BI Dashboards in the workspace can send subscription emails containing PDFs and/or images of the dashboard.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether schedules or workload tasks for refreshing AI/BI Dashboards
   in the workspace can send subscription emails containing PDFs and/or images of
-  the dashboard. By default, this setting is enabled (set to true)`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  the dashboard. By default, this setting is enabled (set to true)`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -42,8 +47,6 @@ Controls whether schedules or workload tasks for refreshing AI/BI Dashboards
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command

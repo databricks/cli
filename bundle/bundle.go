@@ -34,7 +34,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const internalFolder = ".internal"
+// InternalDirName is the name of the directory InternalDir returns, under the target's cache directory.
+const InternalDirName = ".internal"
 
 // QuietLevel is how much of the informational output to suppress, controlled by
 // repeating -q. Warnings and errors are never suppressed.
@@ -142,6 +143,10 @@ type Bundle struct {
 	// Path to the root of git worktree containing the bundle.
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
+
+	// InGitRepo reports whether the bundle root is inside a git repository.
+	// Nil when git detection did not run or failed.
+	InGitRepo *bool
 
 	// Config contains the bundle configuration.
 	// It is loaded from the bundle configuration files and mutators may update it.
@@ -384,13 +389,35 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	dir := filepath.Join(cacheDir, internalFolder)
+	dir := filepath.Join(cacheDir, InternalDirName)
 	err = os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return dir, err
 	}
 
 	return dir, nil
+}
+
+// GetSyncFiles lists files matching the bundle sync configuration.
+func (b *Bundle) GetSyncFiles(ctx context.Context) ([]fileset.File, error) {
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	if err != nil {
+		return nil, err
+	}
+	list, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	return list.Files(ctx)
+}
+
+// RemoteFilePath returns the workspace root for bundle files:
+// the sync root for in-place deployments, otherwise workspace.file_path.
+func (b *Bundle) RemoteFilePath() string {
+	if b.IsSourceLinkedDeployment() {
+		return filepath.ToSlash(b.SyncRootPath)
+	}
+	return b.Config.Workspace.FilePath
 }
 
 // GetSyncIncludePatterns returns a list of user defined includes
@@ -441,7 +468,7 @@ func (b *Bundle) SyncMode() config.SyncMode {
 	switch {
 	case b.Config.Workspace.SyncMode != "":
 		return b.Config.Workspace.SyncMode
-	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+	case b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.ImmutableFolder):
 		return config.SyncModeImmutable
 	case config.IsExplicitlyEnabled(sourceLinked):
 		return config.SyncModeInPlace

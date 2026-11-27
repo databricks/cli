@@ -1,0 +1,42 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+state_node="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-create-response-lost-${UNIQUE_NAME}/default/state/resources.deployment.json"
+
+show_job_deployment() {
+    job_id=$(jq -r '.state["resources.jobs.foo"].__id__' .databricks/bundle/default/resources.json)
+    add_repl "$job_id" JOB_ID
+    trace $CLI jobs get "$job_id" | jq '.settings.deployment'
+}
+
+# The service creates the deployment, but the client never sees the answer (in CI: an HTTP/2
+# stream reset while the body is read).
+title "The first deploy's create is applied, but its response is lost"
+trace fault.py --after-handler "POST /api/2.0/bundle/deployments" 500 0 1
+trace $CLI bundle deploy
+
+title "The deploy recovered the deployment: the job carries its id"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_node" | jq -r .object_id)
+add_repl "$deployment_id" DEPLOYMENT_ID
+show_job_deployment
+
+title "No drift after the deploy"
+trace $CLI bundle plan
+
+# The startup lookup fails, so the deploy tries to create the deployment again. The service
+# rejects it as ALREADY_EXISTS, and the deployment it finds has versions: it existed before this
+# run, so the deploy does not take it over.
+title "A create that finds an earlier deployment with versions does not adopt it"
+trace fault.py "GET /api/2.0/bundle/deployments/*" 500 0 3
+trace $CLI bundle deploy
+
+title "Destroy, so the next deploy creates a new deployment"
+trace $CLI bundle destroy --auto-approve
+
+# The service answers 503 after the create was applied; the SDK retries it, and the retry is
+# rejected as ALREADY_EXISTS.
+title "A create retried into ALREADY_EXISTS is recovered"
+trace fault.py --after-handler "POST /api/2.0/bundle/deployments" 503 0 1
+trace $CLI bundle deploy
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "$state_node" | jq -r .object_id)
+add_repl "$deployment_id" DEPLOYMENT_ID_2
+show_job_deployment
+trace $CLI bundle plan

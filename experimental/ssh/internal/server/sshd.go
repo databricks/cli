@@ -32,7 +32,7 @@ import (
 const clientAliveIntervalSeconds = 30
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
-	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
+	clientPublicKey, err := keys.GetAuthorizedKey(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}

@@ -139,64 +139,22 @@ func TestLoadProfile(t *testing.T) {
 	}
 }
 
-func TestEnsureUniqueProfile(t *testing.T) {
-	selected := workspaceProfile("prod")
-	tests := []struct {
-		name     string
-		profiles profile.Profiles
-		selected profile.Profile
-		wantErr  string
-	}{
-		{name: "single profile", profiles: profile.Profiles{selected}, selected: selected},
-		{
-			name:     "duplicate workspace ID",
-			profiles: profile.Profiles{selected, workspaceProfile("dev")},
-			selected: selected,
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
-		},
-		{
-			name: "unsupported duplicate",
-			profiles: profile.Profiles{selected, {
-				Name:                 "m2m",
-				Host:                 workspaceHost,
-				WorkspaceID:          workspaceID,
-				HasClientCredentials: true,
-			}},
-			selected: selected,
-		},
-		{
-			name:     "resolved workspace ID appends selected profile",
-			profiles: profile.Profiles{selected},
-			selected: profile.Profile{
-				Name:     "workspace",
-				Host:     workspaceHost,
-				AuthType: auth.AuthTypeDatabricksCli,
-			},
-			wantErr: "multiple Databricks profiles match workspace ID 123456789: prod and workspace. Remove duplicate workspace_id entries before using Docker credential helper",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := dockercredentials.EnsureUniqueProfile(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, tt.selected, workspaceID)
-			if tt.wantErr == "" {
-				assert.NoError(t, err)
-				return
-			}
-			assert.EqualError(t, err, tt.wantErr)
-		})
-	}
-}
-
 func TestProfileForRegistry(t *testing.T) {
 	registry := dockercredentials.Registry{
 		WorkspaceID: workspaceID,
 		Host:        "123456789.container.us-west-2.cloud.databricks.test",
 	}
 	workspace := workspaceProfile("workspace")
+	m2m := profile.Profile{
+		Name:                 "m2m",
+		Host:                 workspaceHost,
+		WorkspaceID:          workspaceID,
+		HasClientCredentials: true,
+	}
 	tests := []struct {
 		name     string
 		profiles profile.Profiles
+		recorded string
 		want     string
 		wantErr  string
 	}{
@@ -204,27 +162,40 @@ func TestProfileForRegistry(t *testing.T) {
 		{
 			name:     "duplicate workspace ID",
 			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
-			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Remove duplicate workspace_id entries before using Docker credential helper",
+			wantErr:  "multiple Databricks profiles match workspace ID 123456789: prod and dev. Select the profile for Docker with: databricks auth docker configure <profile-name>",
 		},
 		{
-			name: "ignores unsupported duplicate",
-			profiles: profile.Profiles{workspace, {
-				Name:                 "m2m",
-				Host:                 workspaceHost,
-				WorkspaceID:          workspaceID,
-				HasClientCredentials: true,
-			}},
-			want: workspace.Name,
+			name:     "ignores unsupported duplicate",
+			profiles: profile.Profiles{workspace, m2m},
+			want:     workspace.Name,
 		},
 		{
 			name:    "no matching profile",
 			wantErr: "no Databricks profile found for workspace ID 123456789 from registry host 123456789.container.us-west-2.cloud.databricks.test. Run databricks auth login --host <workspace-url> and set workspace_id for that profile",
 		},
+		{
+			name:     "selects recorded profile",
+			profiles: profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")},
+			recorded: "dev",
+			want:     "dev",
+		},
+		{
+			name:     "recorded profile is missing",
+			profiles: profile.Profiles{workspace},
+			recorded: "gone",
+			wantErr:  `profile "gone" selected for Docker registry 123456789.container.us-west-2.cloud.databricks.test is missing or no longer targets workspace ID 123456789. Select the profile for Docker with: databricks auth docker configure <profile-name>`,
+		},
+		{
+			name:     "recorded profile is unsupported",
+			profiles: profile.Profiles{workspace, m2m},
+			recorded: "m2m",
+			wantErr:  `profile "m2m" uses client credentials. Docker credential helper requires a profile created by databricks auth login`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := dockercredentials.ProfileForRegistry(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, registry)
+			got, err := dockercredentials.ProfileForRegistry(t.Context(), profile.InMemoryProfiler{Profiles: tt.profiles}, registry, tt.recorded)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 				return

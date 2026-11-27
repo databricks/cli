@@ -1,52 +1,33 @@
-This file provides guidance to AI assistants when working with code in this repository.
-
-Rules prefixed `**RULE:**` are mandatory. `GOOD:` and `BAD:` labels on code snippets mark patterns to follow and patterns to avoid. This convention is a common best practice for AI-assistant rule files and is used consistently across `AGENTS.md` and `.agents/rules/*.md`.
+This file provides guidance to AI assistants when working with code in this repository. Rules prefixed `**RULE:**` are mandatory. Path-specific rules live in `.agents/rules/`.
 
 # Project Overview
 
-This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go and follows a modular architecture.
+This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go.
 
 # General Rules
 
 **RULE: When moving code from one place to another, don't unnecessarily change or omit parts.** Keep refactors separate from content changes so reviewers can tell them apart.
 
-**RULE: Prefer simplicity over cleverness. Avoid speculative fallbacks and default values.** If you catch yourself adding a fallback branch "just in case," identify the correct path and use only that one. Reviewers in this repo reject speculative flexibility.
+**RULE: Prefer simplicity over cleverness. Avoid speculative fallbacks and default values.** If you catch yourself adding a fallback branch "just in case," identify the correct path and use only that one.
 
-**RULE: Keep each PR focused on one change.** If you notice an unrelated cleanup, bug fix, or refactor while making your primary change, leave it alone or put it in a separate PR. Reviewers consistently ask to split mixed PRs, especially when a dependency bump or schema diff rides along with a feature change.
+**RULE: Keep each PR focused on one change.** Put unrelated cleanups, fixes, refactors and dependency bumps in a separate PR.
 
-**RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (shared utilities), `libs/databrickscfg/` (config), `libs/git/`, `libs/filer/`, `libs/cmdio/` (CLI I/O, spinners, prompts), `libs/env/` (env vars), `libs/testserver/`, `libs/structs/structpath/` and `libs/structs/structvar/` (paths / typed config values), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks). A function that duplicates an existing name and signature in the same package is a compile error waiting to happen; grep before you name.
+**RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (notably `libs/cmdio/`, `libs/env/`, `libs/filer/`, `libs/structs/`), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks).
 
 # Development Commands
 
-### Building and Testing
-
 - `./task build` - Build the CLI binary
-- `./task test` - Run unit and acceptance tests for all packages. This runs the *entire* acceptance suite locally against the fake server in `libs/testserver`.
-- `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `./task integration` - Run integration tests (requires environment variables). The `integration/` tree is deprecated; new coverage that needs a real workspace goes into an acceptance test with `Cloud = true`.
-- `./task cover` - Generate test coverage reports
-
-Every acceptance test runs locally. `Cloud = true` in a `test.toml` means the test *also* runs against a real workspace when `CLOUD_ENV` is set — never that it skips the local run. See `.agents/rules/testing.md`.
-
-### Code Quality
-
-- `./task lint` - Run full linter across all Go modules (root, tools, codegen)
-- `./task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
-- `./task ws` - Run whitespace linter
-- `./task fmt` - Format all code (Go, Python, YAML)
-- `./task fmt-q` - Format changed files only (incremental Go + Python + YAML)
+- `./task test` - Run unit and acceptance tests for all packages
+- `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - Run a single acceptance test
+- `./task test-update` - Regenerate acceptance test outputs
+- `./task lint` - Run full linter across all Go modules; `./task lint-q` - changed files only, with `--fix`
+- `./task fmt` - Format all code (Go, Python, YAML); `./task fmt-q` - changed files only
 - `./task checks` - Run quick checks (tidy, whitespace, links)
+- `./task generate` - Run all generators (see `.agents/rules/auto-generated-files.md`)
 
-### Specialized Commands
+Every acceptance test runs locally against the fake server in `libs/testserver`. `Cloud = true` in a `test.toml` means the test *also* runs against a real workspace — never that it skips the local run. The `integration/` tree is deprecated; coverage that needs a real workspace goes into an acceptance test with `Cloud = true`. See `.agents/rules/testing.md`.
 
-- `./task generate-schema` - Generate bundle JSON schema
-- `./task generate-cligen` - Regenerate CLI command stubs from the checked-in .codegen/cli.json
-- `./task generate-clijson` - Refresh .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
-- `./task generate` - Run all generators
-
-### Git Commands
-
-**RULE: Use `git rm` to remove and `git mv` to rename files, instead of directly modifying files on the filesystem.**
+**RULE: Use `git rm` to remove and `git mv` to rename files.**
 
 **RULE: When rebasing, prefix git commands so they never launch an interactive editor.**
 
@@ -55,134 +36,42 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git fetch ori
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase origin/main
 ```
 
+If `./task lint` reports issues in files under a *different* or deleted worktree, the golangci-lint cache is stale. Run `go tool -modfile=tools/go.mod golangci-lint cache clean` and re-run; don't investigate the reported issues.
+
 # Architecture
 
-### Core Components
+- `cmd/` - Cobra commands. `cmd/workspace/` and `cmd/account/` are generated.
+- `bundle/` - Bundles: `config/` (loading, validation, schema), `config/mutator/` and `mutator/` (the configuration transformation pipeline; each mutator implements `Mutator`), `phases/` (high-level deployment phases), `direct/` (the deployment engine).
+- `libs/` - Shared libraries: `filer/` (local, DBFS, workspace file systems), `auth/`, `sync/`.
 
-**cmd/** - CLI command structure using Cobra framework
-- `cmd/cmd.go` - Main command setup and subcommand registration
-- `cmd/bundle/` - Bundle-related commands (deploy, validate, etc.)
-- `cmd/workspace/` - Workspace API commands (auto-generated)
-- `cmd/account/` - Account-level API commands (auto-generated)
+Bundles are deployed by the direct engine, which calls the APIs without Terraform. The Terraform engine was removed in v1.20.0: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` are rejected, and existing Terraform state is migrated to the direct engine before the command runs.
 
-**bundle/** - Core bundle functionality for Declarative Automation Bundles
-- `bundle/bundle.go` - Main Bundle struct and lifecycle management
-- `bundle/config/` - Configuration loading, validation, and schema
-- `bundle/deploy/` - Deployment logic (file upload, locking, state)
-- `bundle/mutator/` - Configuration transformation pipeline
-- `bundle/phases/` - High-level deployment phases
-
-**libs/** - Shared libraries and utilities
-- `libs/structs/structvar/` - Typed configuration values with references and locations
-- `libs/filer/` - File system abstraction (local, DBFS, workspace)
-- `libs/auth/` - Databricks authentication handling
-- `libs/sync/` - File synchronization between local and remote
-
-### Key Concepts
-
-**Bundles**: Configuration-driven deployments of Databricks resources (jobs, pipelines, etc.). The bundle system uses a mutator pattern where each transformation is a separate, testable component.
-
-**Mutators**: Transform bundle configuration through a pipeline. Located in `bundle/config/mutator/` and `bundle/mutator/`. Each mutator implements the `Mutator` interface.
-
-**Direct deployment engine**: Bundles are deployed by the direct engine (`bundle/direct/`), which calls the APIs without Terraform. The Terraform engine was removed in v1.20.0: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` are rejected, and existing Terraform state is migrated to the direct engine before the command runs.
-
-# Development Tips
-
-- Use `./task test-update` to regenerate acceptance test outputs after changes.
-- The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
-
-**Stale golangci-lint cache across worktrees.** Triggered by `task lint` or a direct `go tool ... golangci-lint` run reporting issues in files under a *different* or deleted worktree, often with `no such file or directory` warnings. Fix — clear the cache and re-run, don't investigate the reported issues:
-
-```sh
-go tool -modfile=tools/go.mod golangci-lint cache clean
-```
+The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
 # Common Mistakes
 
-**RULE: When adding a direct Go dependency, annotate its license in `go.mod` and update `NOTICE`.** Before picking the SPDX identifier, read `internal/build/license_test.go` to see the current allowlist (the `spdxLicenses` map). That test is the source of truth and will fail CI if a direct `require` line lacks a matching SPDX suffix comment (e.g. `// MIT`). Also add a corresponding entry to `NOTICE` under the matching license section. If a dep's license isn't on the allowlist, discuss before adding.
-
-**RULE: Do not use `os.Exit()` outside of `main.go`.** `main.go` owns the exit path; calling `os.Exit()` elsewhere skips deferred cleanup and complicates testing.
-
 **RULE: Do not remove or skip failing tests to fix CI.** Fix the underlying issue instead.
 
-**RULE: Do not leave debug print statements in committed code.** `fmt.Println`, `log.Printf`, or similar. Always scrub before committing.
+**RULE: When adding a direct Go dependency, annotate its license in `go.mod` and add it to `NOTICE`.** The allowed SPDX identifiers are the `spdxLicenses` map in `internal/build/license_test.go`. If a dep's license isn't on the allowlist, discuss before adding.
 
-**RULE: Do not add defensive `nil` checks for values the caller or framework is documented to always provide.** If a check exists "just in case", either remove it or attach a comment explaining why the invariant might be violated. Direct engine resource methods (`DoCreate`, `DoUpdate`, `RemapState`, etc.) never receive nil receivers or state from the framework, so extra nil-guards there are dead code.
+**RULE: Do not use `os.Exit()` in library or command code; `main.go` owns the exit path.** It skips deferred cleanup and complicates testing. `TestMain` does not need it either: since Go 1.15, returning from `TestMain` exits with `m.Run()`'s code.
 
-**RULE: Use a non-resolving TLD reserved by [RFC 2606 §2](https://datatracker.ietf.org/doc/html/rfc2606#section-2) (`.test`, `.example`, `.invalid`, `.localhost`) for any test fixture host — `Config.Host`, `databricks.yml`'s `workspace.host`, `.databrickscfg`.** Real domains hit the SDK well-known endpoint resolver and can stall tests for ~5 minutes per call when the runner network can't fast-fail the lookup. The repo convention is `.test` (the TLD RFC 2606 specifically reserves "for use in testing"). See PR #5125 for prior history.
+**RULE: Do not add defensive `nil` checks for values the caller or framework always provides.** For example, direct engine resource methods (`DoCreate`, `DoUpdate`, `RemapState`, etc.) never receive nil receivers or state. Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer), validate at the entry point and return an error.
 
-Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer, division by an empty slice's length), validate at the entry point and return an error.
+**RULE: Use a reserved, non-resolving TLD (`.test`) for any test fixture host** — `Config.Host`, `databricks.yml`'s `workspace.host`, `.databrickscfg`. Real domains hit the SDK well-known endpoint resolver and can stall tests for minutes.
 
-**RULE: Never copy a `config.Config` by value.** It embeds a `sync.Mutex`, so `go vet` copylocks fails and CI lint blocks it (govet runs with enable-all). Pass it by pointer, or mutate the resolved config in place (e.g. set `HTTPTimeoutSeconds` on it before `client.New`; there is no per-request option).
+**RULE: Open URLs through `libs/browser`, never `github.com/pkg/browser` directly.** `pkg/browser` ignores the `BROWSER` env var. For a custom `BROWSER=<command>`, launch via `libs/exec`, not an inline `cmd /c` (that broke Windows OAuth URLs via `%...%` expansion).
 
-**RULE: Open URLs through `libs/browser`, never `github.com/pkg/browser` directly.** `pkg/browser` ignores the `BROWSER` env var, so `BROWSER=none` and custom browser commands break. `browser.Open(ctx, url)` handles empty/none/custom in one path; branch on `browser.IsDisabled(ctx)` first if you need custom messaging. For a custom `BROWSER=<command>`, launch via `libs/exec`, not an inline `cmd /c` (that broke Windows OAuth URLs via `%...%` expansion).
+**RULE: For hand-written workspace-routed raw API calls (`client.Do` / `apiClient.Do`), set routing headers via `libs/auth.WorkspaceIDHeaders`.**
 
-**RULE: For hand-written workspace-routed raw API calls (`client.Do` / `apiClient.Do`), set routing headers via `libs/auth.WorkspaceIDHeaders`.** It emits `X-Databricks-Workspace-Id` and suppresses the legacy `workspace_id = none` sentinel. Grepping only for old header names misses calls that never set any routing header but still need one.
+**RULE: To keep an intentionally-unreferenced exported function, mark it `//deadcode:allow <reason>` within 6 lines above the `func`.** CI runs `deadcode -test ./...`.
 
-**RULE: To keep an intentionally-unreferenced exported function, mark it `//deadcode:allow <reason>` within 6 lines above the `func`.** CI runs `deadcode -test ./...`; a func reachable only from a `*_test.go` is not flagged, so unwiring a feature can leave a sibling entry point dead. (`gofmt` inserts a blank `//` line between the directive and the doc comment; that's expected and still detected.)
+**RULE: Write platform-agnostic code and tests; they also run on Windows.**
 
-**RULE: Write platform agnostic code.** Avoid test logic that runs only on the operating system you are using. Do not forget about Windows!
+# Errors and CLI UX
 
-# Error Handling
+**RULE: Never branch on `err.Error()` string content.** Use `errors.Is` / `errors.AsType` with a sentinel or typed error (e.g. `apierr.ErrResourceDoesNotExist`).
 
-**RULE: Wrap errors with context using `%w`.** Preserves the error chain so `errors.Is` and `errors.As` keep working upstream.
+**RULE: Use `diag.Errorf` / `diag.Warningf` to create diagnostics and `logdiag.LogDiag` / `logdiag.LogError` to log them.**
 
-GOOD:
-
-```go
-return fmt.Errorf("failed to deploy %s: %w", name, err)
-```
-
-BAD:
-
-```go
-return fmt.Errorf("failed to deploy %s: %s", name, err)
-```
-
-**RULE: Return early on errors; avoid deeply nested if-else chains.**
-
-**RULE: Use `logdiag.LogDiag` and `logdiag.LogError` for logging diagnostics.**
-
-**RULE: Use `diag.Errorf` and `diag.Warningf` to create diagnostics with severity.**
-
-**RULE: Compare errors with `errors.Is` or `errors.As` against a sentinel or typed error. Never branch on `err.Error()` string content.** The SDK exposes sentinels like `apierr.ErrNotFound` and `apierr.ErrResourceDoesNotExist`; the CLI has its own helpers like `isResourceGone`. String-matching error messages breaks the moment the upstream wording changes.
-
-GOOD:
-
-```go
-import "github.com/databricks/databricks-sdk-go/apierr"
-
-if errors.Is(err, apierr.ErrResourceDoesNotExist) {
-	return nil
-}
-```
-
-BAD:
-
-```go
-if err != nil && strings.Contains(err.Error(), "does not exist") {
-	return nil
-}
-```
-
-**RULE: Error strings must not end with punctuation or a newline (golangci-lint ST1005).** Applies to `fmt.Errorf` / `errors.New`: when appending a multi-sentence hint to an error, drop the final period (mid-string periods and newlines are fine). Keep `Error()` methods unpunctuated at the end too, for consistency.
-
-# CLI UX and validation
-
-**RULE: Reject incompatible inputs early with an actionable error. Never silently ignore a flag or config field the current mode can't honor.** If a flag is incompatible with another flag or with a mode, return an error at flag-parse or validation time that tells the user which flag pair is at fault and what to do. If a config field applies only to certain resource types or engines, return a validation error, not a warning that gets lost in log output.
-
-GOOD:
-
-```go
-if opts.Bind && opts.Resource != "dashboards" {
-	return fmt.Errorf("--bind is only supported for dashboards, got %q", opts.Resource)
-}
-```
-
-BAD:
-
-```go
-if opts.Bind && opts.Resource != "dashboards" {
-	// silently drop the flag; user can't tell why nothing happened
-}
-```
+**RULE: Reject incompatible inputs early with an actionable error. Never silently ignore a flag or config field the current mode can't honor.** Name the conflicting flags or the field in the error. A config field that applies only to certain resource types is a validation error, not a warning that gets lost in log output.

@@ -4,9 +4,11 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting to find no wheels
+
 >>> errcode find.py --expect 0 whl
 
 === Expecting 1 wheel in libraries section in /jobs/create
+
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
@@ -25,6 +27,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting no wheels to be uploaded
+
 >>> errcode sh -c jq .path < "$OUT_REQUESTS" | grep import | grep whl
 
 Exit code: 1

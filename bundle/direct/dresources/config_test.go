@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func TestMustLoadConfig(t *testing.T) {
@@ -28,7 +28,7 @@ func TestConfigFiles(t *testing.T) {
 
 	for _, name := range names {
 		resourceType := strings.TrimSuffix(strings.TrimSuffix(path.Base(name), ymlSuffix), generatedSuffix)
-		assert.Containsf(t, SupportedResources, resourceType, "%s: %q is not a supported resource type", name, resourceType)
+		assert.NotEmptyf(t, configResourceTypes(resourceType), "%s: %q is not a supported resource type or sub-resource", name, resourceType)
 	}
 
 	for _, cfg := range []*Config{MustLoadConfig(), MustLoadGeneratedConfig()} {
@@ -41,6 +41,27 @@ func TestConfigFiles(t *testing.T) {
 func TestGetResourceConfig(t *testing.T) {
 	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
+}
+
+// TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
+// permissions of every parent, except where a parent has its own file.
+func TestSubResourceConfig(t *testing.T) {
+	for resourceType := range SupportedResources {
+		var field string
+		switch {
+		case resourceType == "secret_scopes.permissions":
+			field = "scope_name" // secret_scopes.permissions.yml
+		case strings.HasSuffix(resourceType, ".grants"):
+			field = "full_name" // grants.yml
+		case strings.HasSuffix(resourceType, ".permissions"):
+			field = "object_id" // permissions.yml
+		default:
+			continue
+		}
+		rules := GetResourceConfig(resourceType).UpdatableIDFields
+		require.Lenf(t, rules, 1, "%s", resourceType)
+		assert.Equalf(t, field, rules[0].Field.String(), "%s", resourceType)
+	}
 }
 
 // TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root
@@ -146,7 +167,9 @@ func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
 // before recreate_on_changes in the ladder and short-circuits, so a field listed
 // in more than one would have all but the first entry silently dead — and the
 // categories disagree (e.g. provided_id_fields skips a remote-only diff that
-// recreate_on_changes would recreate).
+// recreate_on_changes would recreate). parent_id_fields counts as one: a parent ID
+// field is a provided ID field too, so listing it under provided_id_fields as well
+// only repeats it.
 func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 	cfg := MustLoadConfig()
 	for resourceType, rc := range cfg.Resources {
@@ -157,6 +180,7 @@ func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 			{"recreate_on_changes", rc.RecreateOnChanges},
 			{"provided_id_fields", rc.ProvidedIDFields},
 			{"updatable_id_fields", rc.UpdatableIDFields},
+			{"parent_id_fields", rc.ParentIDFields},
 		}
 		firstCat := map[string]string{}
 		for _, c := range actionCats {
@@ -202,4 +226,12 @@ func joinPattern(prefix *structpath.PatternNode, field string) string {
 		return field
 	}
 	return prefix.String() + "." + field
+}
+
+func TestProvidedIDRulesIncludeParentIDFields(t *testing.T) {
+	var fields []string
+	for _, rule := range GetResourceConfig("volumes").ProvidedIDRules() {
+		fields = append(fields, rule.Field.String())
+	}
+	assert.ElementsMatch(t, []string{"catalog_name", "schema_name"}, fields)
 }

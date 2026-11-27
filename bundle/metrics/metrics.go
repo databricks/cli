@@ -30,9 +30,13 @@ const (
 	//   - migrate_commit_error: the state was converted, but committing it
 	//                           (renaming files / pushing to workspace) failed.
 	//   - migrate_warnings:     the conversion emitted warnings (e.g. resources the direct engine can't represent).
-	DirectMigrateError       = "direct_migrate_error"
-	DirectMigrateCommitError = "direct_migrate_commit_error"
-	DirectMigrateWarnings    = "direct_migrate_warnings"
+	//   - migrate_state_missing: the terraform state was pulled, but its local file was gone
+	//                            when the migration read it. Nothing was converted. When a
+	//                            concurrent deploy migrated it, a retry picks up the direct state.
+	DirectMigrateError        = "direct_migrate_error"
+	DirectMigrateCommitError  = "direct_migrate_commit_error"
+	DirectMigrateWarnings     = "direct_migrate_warnings"
+	DirectMigrateStateMissing = "direct_migrate_state_missing"
 	// True when the post-convert plan check failed; the migration was not committed.
 	DirectMigratePlanError = "direct_migrate_plan_error"
 	// True when the migrated state's first plan would recreate (destroy + create) an

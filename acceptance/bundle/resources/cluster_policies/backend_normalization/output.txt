@@ -8,10 +8,12 @@ Files: 2 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === [json_string] definition returned by the backend (GET)
+
 >>> [CLI] cluster-policies get [JSON_STRING_ID] -o json
 {"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}
 
 === [multiline] definition returned by the backend (GET)
+
 >>> [CLI] cluster-policies get [MULTILINE_ID] -o json
 {
   "spark_version": {
@@ -21,10 +23,12 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === [yaml] definition returned by the backend (GET)
+
 >>> [CLI] cluster-policies get [YAML_ID] -o json
 {"autotermination_minutes":{"maxValue":120,"type":"range"},"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}
 
 === Plan after deploy: any drift means the backend reformatted a definition
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 

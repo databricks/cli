@@ -3,6 +3,7 @@
 package policy_compliance_for_jobs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "policy-compliance-for-jobs",
-		Short: `The compliance APIs allow you to view and manage the policy compliance status of jobs in your workspace.`,
-		Long: `The compliance APIs allow you to view and manage the policy compliance status
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "policy-compliance-for-jobs",
+	Short:   `The compliance APIs allow you to view and manage the policy compliance status of jobs in your workspace.`,
+	GroupID: "lakeflow",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The compliance APIs allow you to view and manage the policy compliance status
   of jobs in your workspace. This API currently only supports compliance
   controls for cluster policies.
 
@@ -34,14 +40,13 @@ func New() *cobra.Command {
 
   The get and list compliance APIs allow you to view the policy compliance
   status of a job. The enforce compliance API allows you to update a job so that
-  it becomes compliant with all of its policies.`,
-		GroupID: "lakeflow",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  it becomes compliant with all of its policies.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newEnforceCompliance())
@@ -52,8 +57,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start enforce-compliance command

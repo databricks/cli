@@ -155,6 +155,26 @@ func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) 
 	return capResults(out), nil
 }
 
+// ListModelServicesInSchema returns model services in catalog.schema, with IDs as catalog.schema.name.
+func ListModelServicesInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	svcs, err := w.AiGateway.ListModelServicesAll(ctx, catalog.ListModelServicesRequest{
+		Parent: "schemas/" + catalogName + "." + schemaName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, min(len(svcs), maxListResults))
+	for _, s := range svcs {
+		fullName := strings.TrimPrefix(s.Name, "model-services/")
+		out = append(out, ListItem{ID: fullName, Label: fullName})
+	}
+	return capResults(out), nil
+}
+
 // listDatabasesResponse is the response from the /databases endpoint.
 type listDatabasesResponse struct {
 	Databases []struct {

@@ -3,10 +3,11 @@ package auth
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,18 +76,15 @@ func TestProfileHostConflictViaCobra(t *testing.T) {
 	// Point at a config file that has "profile-1" with host https://www.host1.test.
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 
-	ctx := cmdctx.GenerateExecId(t.Context())
-	cli := root.New(ctx)
-	cli.AddCommand(New())
+	ctx := t.Context()
+	cli := root.NewTree(ctx)
+	cli.Add(Spec)
 
-	// Set args: auth login --profile profile-1 --host https://other.host.test
-	cli.SetArgs([]string{
+	err := cli.Execute(ctx, []string{
 		"auth", "login",
 		"--profile", "profile-1",
 		"--host", "https://other.host.test",
 	})
-
-	_, err := cli.ExecuteContextC(ctx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.test", which conflicts with --host "https://other.host.test"`)
 	assert.Contains(t, err.Error(), "Use --profile only to select a profile")
@@ -96,17 +94,15 @@ func TestProfileHostConflictViaCobra(t *testing.T) {
 func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 
-	ctx := cmdctx.GenerateExecId(t.Context())
-	cli := root.New(ctx)
-	cli.AddCommand(New())
+	ctx := t.Context()
+	cli := root.NewTree(ctx)
+	cli.Add(Spec)
 
-	cli.SetArgs([]string{
+	err := cli.Execute(ctx, []string{
 		"auth", "token",
 		"--profile", "profile-1",
 		"--host", "https://other.host.test",
 	})
-
-	_, err := cli.ExecuteContextC(ctx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.test", which conflicts with --host "https://other.host.test"`)
 }
@@ -124,20 +120,42 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	require.NoError(t, os.WriteFile(configPath, fixture, 0o600))
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	ctx := cmdctx.GenerateExecId(t.Context())
-	cli := root.New(ctx)
-	cli.AddCommand(New())
+	ctx := t.Context()
+	cli := root.NewTree(ctx)
+	cli.Add(Spec)
 
-	cli.SetArgs([]string{
+	err = cli.Execute(ctx, []string{
 		"auth", "login",
 		"--profile", "profile-1",
 		"--host", "https://www.host1.test",
 	})
-
-	_, err = cli.ExecuteContextC(ctx)
 	// The command may fail for other reasons (no browser, non-interactive, etc.)
 	// but it should NOT fail with a conflict error.
 	if err != nil {
 		assert.NotContains(t, err.Error(), "conflicts with --host")
 	}
+}
+
+func TestPromptForHostRejectsEmptyHost(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type(termtest.KeyEnter)
+	tm.Golden("01-empty")
+	tm.Type("  " + termtest.KeyEnter)
+	tm.Golden("02-spaces")
+	tm.Type("https://workspace.test " + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test", host)
+}
+
+func TestPromptForHostRejectsHostEmptyAfterNormalization(t *testing.T) {
+	tm := termtest.Run(t, promptForHost)
+	tm.WaitFor("Databricks host")
+	tm.Type("?o=123" + termtest.KeyEnter)
+	tm.Golden("01-query-params")
+	tm.Type(strings.Repeat(termtest.KeyBackspace, len("?o=123")) + "https://workspace.test/?o=123" + termtest.KeyEnter)
+	host, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace.test/?o=123", host)
 }

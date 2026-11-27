@@ -1,0 +1,73 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    # run_as is not set in config, so the backend defaults it to the deployer.
+    no_run_as:
+      name: no-run-as-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # The remote run_as names the owner, which is what no run_as means.
+    run_as_to_owner:
+      name: run-as-to-owner-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # Ownership moves to another user, who becomes the default run_as.
+    transferred_owner:
+      name: transferred-owner-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # run_as is removed from config and deployed; the job keeps it remotely.
+    removed_run_as:
+      name: removed-run-as-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    # run_as is added to config locally and not deployed.
+    pending_add:
+      name: pending-add-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    user_to_user:
+      name: user-to-user-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    user_to_creator:
+      name: user-to-creator-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+    user_to_sp:
+      name: user-to-sp-$UNIQUE_NAME
+      run_as:
+        user_name: first-user@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook

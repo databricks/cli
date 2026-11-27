@@ -20,22 +20,22 @@ $CLI secrets put-secret ssh-scope client-public-key --string-value "$(cat client
 # delay makes the server exit on its own once it is set up.
 SERVER_HOME="$PWD/server-home"
 mkdir -p "$SERVER_HOME"
-title "Serverless server\n"
+title "Serverless server"
 env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
   $CLI ssh server --serverless --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
   --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.server
 
 # One variable per line; no value here contains a space.
-title "SetEnv appends the launcher directory to PATH\n"
+title "SetEnv appends the launcher directory to PATH"
 grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n'
 
-title "Each supported agent has a launcher that delegates to the agent shim\n"
+title "Each supported agent has a launcher that delegates to the agent shim"
 trace ls server-home/.agent-shim/bin
 trace cat server-home/.agent-shim/bin/claude
 
 # A non-interactive session, as "ssh connect -- <cmd>" or an IDE's remote exec opens:
 # ssh runs the command through the login shell without a PTY.
-title "A non-interactive session finds the launchers on PATH\n"
+title "A non-interactive session finds the launchers on PATH"
 ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
   -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
@@ -44,17 +44,17 @@ ssh -F /dev/null -i client_key -l "$(id -un)" \
 # Dedicated clusters get the same launchers and PATH entry as serverless.
 rm -rf "$SERVER_HOME"
 mkdir -p "$SERVER_HOME"
-title "Dedicated server\n"
+title "Dedicated server"
 env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
   $CLI ssh server --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
   --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.dedicated-server
 
-title "SetEnv appends the launcher directory to PATH\n"
+title "SetEnv appends the launcher directory to PATH"
 grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n' | grep '^PATH='
 
 trace ls server-home/.agent-shim/bin
 
-title "A non-interactive session finds the launchers on PATH\n"
+title "A non-interactive session finds the launchers on PATH"
 ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
   -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \

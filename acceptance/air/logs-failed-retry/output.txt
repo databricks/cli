@@ -1,0 +1,7 @@
+
+=== logs of a failed retry with no logs point to earlier retries
+
+>>> [CLI] air logs 123
+No logs available for run 123. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry N (0 through 1) to see them
+
+Exit code: 1

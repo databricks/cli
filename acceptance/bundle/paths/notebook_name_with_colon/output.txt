@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle validate -o json
+"/Workspace/Users/[USERNAME]/.bundle/notebook_name_with_colon/default/files/New Notebook 12:17:43"

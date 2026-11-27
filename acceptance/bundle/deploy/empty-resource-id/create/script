@@ -1,0 +1,8 @@
+title "A successful create response without an ID fails the deployment"
+trace musterr $CLI bundle deploy
+
+title "The failed create does not save resource state"
+trace print_state.py | jq -s '.[0].state // {}'
+
+title "The next plan still creates the resource"
+trace $CLI bundle plan

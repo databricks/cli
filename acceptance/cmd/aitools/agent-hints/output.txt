@@ -1,0 +1,55 @@
+
+=== Codex is hinted once per thread
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-2 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents codex --scope global
+
+=== Cursor exposes no session id, so it is hinted once per machine
+
+>>> CURSOR_AGENT=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents cursor --scope global
+
+>>> CURSOR_AGENT=1 [CLI] jobs list
+
+=== Copilot CLI maps to the copilot registry agent
+
+>>> COPILOT_CLI=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install --agents copilot --scope global
+
+=== Gemini CLI with its own Databricks skills is not hinted
+
+>>> GEMINI_CLI=1 [CLI] jobs list
+
+=== Agents the CLI cannot install for are not hinted
+
+>>> WINDSURF_AGENT=1 [CLI] jobs list
+
+>>> VSCODE_AGENT=1 [CLI] jobs list
+
+=== Nested agents are not hinted
+
+>>> CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 [CLI] jobs list
+
+=== With skill hints on, Codex is hinted with the skills list command once per thread
+
+>>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-4 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
+>>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-4 [CLI] jobs list
+
+=== With skill hints on, Cursor is hinted once per machine with the skills list command
+
+>>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
+>>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 [CLI] jobs list
+
+=== With skill hints on, skills commands print no hint
+
+>>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-5 [CLI] skills list
+Error: databricks skills list is not implemented yet

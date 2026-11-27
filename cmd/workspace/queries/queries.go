@@ -3,6 +3,7 @@
 package queries
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,21 +19,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "queries",
-		Short: `The queries API can be used to perform CRUD operations on queries.`,
-		Long: `The queries API can be used to perform CRUD operations on queries. A query is
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "queries",
+	Short:   `The queries API can be used to perform CRUD operations on queries.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The queries API can be used to perform CRUD operations on queries. A query is
   a Databricks SQL object that includes the target SQL warehouse, query text,
   name, description, tags, and parameters. Queries can be scheduled using the
-  sql_task type of the Jobs API, e.g. :method:jobs/create.`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  sql_task type of the Jobs API, e.g. :method:jobs/create.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -74,7 +77,7 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a query.`
 	cmd.Long = `Create a query.
 
-  Creates a query.`
+  Creates a query. The caller becomes the owner of the new query.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -144,7 +147,10 @@ func newDelete() *cobra.Command {
   Moves a query to the trash. Trashed queries immediately disappear from
   searches and list views, and cannot be used for alerts. You can restore a
   trashed query through the UI. A trashed query is permanently deleted after 30
-  days.`
+  days.
+
+  Arguments:
+    ID: UUID of the query to move to the trash.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -163,14 +169,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "UUID of the query to move to the trash")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have uuid of the query to move to the trash")
 		}
 		deleteReq.Id = args[0]
 
@@ -211,7 +217,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a query.`
 	cmd.Long = `Get a query.
 
-  Gets a query.`
+  Gets a query.
+
+  Arguments:
+    ID: UUID of the query to fetch.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -230,14 +239,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "UUID of the query to fetch")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have uuid of the query to fetch")
 		}
 		getReq.Id = args[0]
 
@@ -279,7 +288,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of queries to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -437,18 +446,24 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
+	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update a query.`
 	cmd.Long = `Update a query.
 
-  Updates a query.
+  Updates the fields of a query named in update_mask. Changing
+  owner_user_name requires workspace admin privileges. Changing run_as_mode
+  requires CAN MANAGE permission on the query, and only the query owner can
+  switch it to OWNER.
 
   Arguments:
-    ID:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+    ID: UUID of the query to update.
+    UPDATE_MASK: Comma-separated list of the query fields to update, such as the display
+      name or query text. Fields not listed keep their current values.
+
+      The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as

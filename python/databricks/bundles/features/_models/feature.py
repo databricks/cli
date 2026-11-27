@@ -11,18 +11,12 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.features._models.data_source import (
-    DataSource,
-    DataSourceParam,
-)
+from databricks.bundles.features._models.data_source import DataSource, DataSourceParam
 from databricks.bundles.features._models.entity_column import (
     EntityColumn,
     EntityColumnParam,
 )
-from databricks.bundles.features._models.function import (
-    Function,
-    FunctionParam,
-)
+from databricks.bundles.features._models.function import Function, FunctionParam
 from databricks.bundles.features._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.features._models.lineage_context import (
     LineageContext,

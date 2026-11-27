@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+STATE=.databricks/bundle/default/resources.json
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog //jobs &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a volume and a job that reads fields of it the config does not set"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog //jobs &> LOG.deploy_requests
+
+title "Drop schema_id and volume_id from the state, as a CLI from before they were recorded wrote it"
+jq 'del(.state["resources.schemas.schema1"].state.schema_id, .state["resources.volumes.volume1"].state.volume_id)' "$STATE" > tmp.json
+mv tmp.json "$STATE"
+
+title "The volume only records its id; the job still reads the volume's fields and is unchanged"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog //jobs
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

@@ -21,3 +21,9 @@ New = '[VERSION_TIMESTAMP]'
 [[Repls]]
 Old = '\\'
 New = '/'
+
+[[Repls]]
+# Cloud runs pass the workspace ID as DATABRICKS_WORKSPACE_ID, so templates add ?w=<id> to the host. Local runs don't.
+Old = '\?[ow]=\[WORKSPACE_ID\]'
+New = ''
+Order = 1000

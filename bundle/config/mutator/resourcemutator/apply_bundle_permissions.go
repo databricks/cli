@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -102,7 +101,7 @@ func ApplyBundlePermissions() bundle.Mutator {
 	return &bundlePermissions{}
 }
 
-func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *bundlePermissions) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := validatePermissions(b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -119,10 +118,8 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			field := reflect.ValueOf(group.Resources[name]).Elem().FieldByName("Permissions")
 			permissions := readPermissions(field)
 			permissions = append(permissions, convertPermissions(
-				ctx,
 				b.Config.Permissions,
 				permissions,
-				key,
 				lm,
 			)...)
 			writePermissions(field, permissions)
@@ -182,10 +179,8 @@ func (m *bundlePermissions) Name() string {
 }
 
 func convertPermissions(
-	ctx context.Context,
 	bundlePermissions []resources.Permission,
 	resourcePermissions []resources.Permission,
-	resourceName string,
 	lm map[string]string,
 ) []resources.Permission {
 	var permissions []resources.Permission
@@ -197,7 +192,7 @@ func convertPermissions(
 			continue
 		}
 
-		if notifyForPermissionOverlap(ctx, p, resourcePermissions, resourceName) {
+		if isPermissionOverlap(p, resourcePermissions) {
 			continue
 		}
 
@@ -215,42 +210,20 @@ func convertPermissions(
 func isPermissionOverlap(
 	permission resources.Permission,
 	resourcePermissions []resources.Permission,
-	resourceName string,
-) (bool, diag.Diagnostics) {
-	var diagnostics diag.Diagnostics
+) bool {
 	for _, rp := range resourcePermissions {
 		if rp.GroupName != "" && rp.GroupName == permission.GroupName {
-			diagnostics = diagnostics.Extend(
-				diag.Warningf("'%s' already has permissions set for '%s' group", resourceName, rp.GroupName),
-			)
+			return true
 		}
 
 		if rp.UserName != "" && rp.UserName == permission.UserName {
-			diagnostics = diagnostics.Extend(
-				diag.Warningf("'%s' already has permissions set for '%s' user name", resourceName, rp.UserName),
-			)
+			return true
 		}
 
 		if rp.ServicePrincipalName != "" && rp.ServicePrincipalName == permission.ServicePrincipalName {
-			diagnostics = diagnostics.Extend(
-				diag.Warningf("'%s' already has permissions set for '%s' service principal name", resourceName, rp.ServicePrincipalName),
-			)
+			return true
 		}
 	}
 
-	return len(diagnostics) > 0, diagnostics
-}
-
-func notifyForPermissionOverlap(
-	ctx context.Context,
-	permission resources.Permission,
-	resourcePermissions []resources.Permission,
-	resourceName string,
-) bool {
-	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	for _, d := range diagnostics {
-		logdiag.LogDiag(ctx, d)
-	}
-
-	return isOverlap
+	return false
 }

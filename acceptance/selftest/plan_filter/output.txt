@@ -1,0 +1,75 @@
+
+=== Whole plan: remote_state and the deployment stamp are dropped from every entry
+
+>>> plan_filter.py
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "0.0.0-dev",
+  "lineage": "lineage-1",
+  "serial": 3,
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "name": "new name"
+        }
+      },
+      "changes": {
+        "name": {
+          "action": "update",
+          "old": "old name",
+          "new": "new name",
+          "remote": "old name"
+        }
+      }
+    },
+    "resources.jobs.bar": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "name": "bar"
+        }
+      }
+    }
+  }
+}
+
+=== One entry
+
+>>> plan_filter.py resources.jobs.foo
+{
+  "action": "update",
+  "new_state": {
+    "value": {
+      "name": "new name"
+    }
+  },
+  "changes": {
+    "name": {
+      "action": "update",
+      "old": "old name",
+      "new": "new name",
+      "remote": "old name"
+    }
+  }
+}
+
+=== A missing entry is an error, not an empty golden
+
+>>> errcode plan_filter.py resources.jobs.missing
+plan_filter.py: no plan entry 'resources.jobs.missing'; entries: ['resources.jobs.bar', 'resources.jobs.foo']
+
+Exit code: 1
+
+=== Input that is not a plan is an error
+
+>>> errcode plan_filter.py
+plan_filter.py: input is not a plan: no 'plan' object
+
+Exit code: 1
+
+>>> errcode plan_filter.py
+plan_filter.py: input is not JSON (Expecting value: line 1 column 1 (char 0)): ''
+
+Exit code: 1

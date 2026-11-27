@@ -12,6 +12,7 @@ const (
 	BundleConfigRemoteSyncErrorCategorySaveFailed          BundleConfigRemoteSyncErrorCategory = "SAVE_FAILED"
 	BundleConfigRemoteSyncErrorCategoryOutputFailed        BundleConfigRemoteSyncErrorCategory = "OUTPUT_FAILED"
 	BundleConfigRemoteSyncErrorCategoryResourceNotInConfig BundleConfigRemoteSyncErrorCategory = "RESOURCE_NOT_IN_CONFIG"
+	BundleConfigRemoteSyncErrorCategoryNoMatchingSelector  BundleConfigRemoteSyncErrorCategory = "NO_MATCHING_SELECTOR"
 )
 
 // BundleConfigRemoteSyncEvent is emitted on every execution of the
@@ -63,6 +64,13 @@ type BundleConfigRemoteSyncEvent struct {
 	// during change detection, which never reaches ChangesTotal.
 	SkippedChangesCount int64 `json:"skipped_changes_count,omitempty"`
 
+	// Number of selected resources left entirely unchanged because the cluster
+	// policy attached to one of their clusters could not be read, by cause. A
+	// nonzero value means the run finished with a "partial" status.
+	ClusterPolicyNotFoundCount         int64 `json:"cluster_policy_not_found_count,omitempty"`
+	ClusterPolicyPermissionDeniedCount int64 `json:"cluster_policy_permission_denied_count,omitempty"`
+	ClusterPolicyReadFailedCount       int64 `json:"cluster_policy_read_failed_count,omitempty"`
+
 	// Variable-reference restoration counts for the two mechanisms that can
 	// write a current-target-scoped reference into a shared file (the source of
 	// the cross-target "reference does not exist" failures).
@@ -105,12 +113,18 @@ type BundleConfigRemoteSyncEvent struct {
 	StateResourceIDs    *BundleConfigRemoteSyncResourceIds `json:"state_resource_ids,omitempty"`
 	SelectedResourceIDs *BundleConfigRemoteSyncResourceIds `json:"selected_resource_ids,omitempty"`
 
+	// Whether the bundle root is inside a git repository. Same semantics as
+	// BundleDeployEvent.InGitRepo.
+	InGitRepo *bool `json:"in_git_repo,omitempty"`
+
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
 	// stays in-region and is stripped from centralized logfood. Unset on success.
 	ErrorMessage string `json:"error_message,omitempty"`
 
-	// Category of the failure when the command exits with an error.
+	// Category of the failure when the command exits with an error, or
+	// NO_MATCHING_SELECTOR when no selector matched (reported as skipped in JSON
+	// output).
 	// Unset on success.
 	ErrorCategory BundleConfigRemoteSyncErrorCategory `json:"error_category,omitempty"`
 }

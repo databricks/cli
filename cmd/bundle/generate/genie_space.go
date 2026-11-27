@@ -24,7 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 const genieSpaceWatchInterval = 1 * time.Second

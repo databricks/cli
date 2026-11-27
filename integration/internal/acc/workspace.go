@@ -2,8 +2,10 @@ package acc
 
 import (
 	"context"
+	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
@@ -19,14 +21,44 @@ type WorkspaceT struct {
 	exec *compute.CommandExecutorV2
 }
 
+// sharedWorkspaceClientState holds the workspace client shared by all tests in
+// the process. A client per test repeats OIDC endpoint discovery for every
+// test, and the SDK does not retry that request on timeout. When the workspace
+// is briefly slow, every test starting at that moment fails with "cannot
+// configure default credentials". A shared client authenticates once and
+// refreshes its token in the background. The SDK does not cache a failed
+// authentication, so the next call on the shared client tries again.
+//
+// Being shared, it also shares one connection pool for the whole test process,
+// hence the health-checked transport (see libs/httptransport).
+var sharedWorkspaceClientState struct {
+	mu     sync.Mutex
+	client *databricks.WorkspaceClient
+}
+
+func sharedWorkspaceClient(t testutil.TestingT) *databricks.WorkspaceClient {
+	s := &sharedWorkspaceClientState
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.client == nil {
+		// Set before the config is resolved, so the token-refresh client uses it too. With a
+		// transport set, the SDK ignores skip_verify; the integration tests don't use it.
+		cfg := &databricks.Config{HTTPTransport: httptransport.HealthChecked(false)}
+		w, err := databricks.NewWorkspaceClient(cfg)
+		require.NoError(t, err)
+		s.client = w
+	}
+	return s.client
+}
+
 func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	t.Helper()
 	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	w := sharedWorkspaceClient(t)
 
 	wt := &WorkspaceT{
 		TestingT: t,

@@ -1,0 +1,15 @@
+RecordRequests = true
+IncludeRequestHeaders = ["X-Databricks-Org-Id"]
+
+[[Server]]
+Pattern = "GET /api/2.0/lakebox/sandboxes/happy-panda-1234"
+Response.Body = '{"sandboxId": "happy-panda-1234", "status": "Running"}'
+
+[[Server]]
+Pattern = "POST /sandbox-proxy/sandboxes/happy-panda-1234/ports/10080/{path...}"
+Response.Body = 'hello from the sandbox app'
+
+# The local port is allocated per run.
+[[Repls]]
+Old = '127\.0\.0\.1:\d+'
+New = '127.0.0.1:[LOCAL_PORT]'

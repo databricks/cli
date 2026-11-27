@@ -4,7 +4,8 @@
     "ttl": {
       "action": "update",
       "old": "604800s",
-      "new": "259200s"
+      "new": "259200s",
+      "remote": "604800s"
     }
   }
 }

@@ -1,5 +1,6 @@
 
 === Service principal, genie space without name: fails before writing files
+
 >>> errcode [CLI] apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
 Error: missing value for genie.genie-space.name (needed by the genie_space binding); use --set genie.genie-space.name=value
 
@@ -7,6 +8,7 @@ Exit code: 1
 app-sp was not created
 
 === Service principal with --set name: the binding variables have values
+
 >>> [CLI] apps init --template ./template --skip-install --name app-sp-name --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --set genie.genie-space.name=space
 ✔ Creating project
 
@@ -73,6 +75,7 @@ Workspace:
 Validation OK!
 
 === On behalf of the user, genie space without name: no binding, nothing to check
+
 >>> [CLI] apps init --template ./template --skip-install --name app-obo --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --auth-mode obo
 ✔ Creating project
 
@@ -115,6 +118,7 @@ Workspace:
 Validation OK!
 
 === Mixed: warehouse on the service principal, genie space on behalf of the user
+
 >>> [CLI] apps init --template ./template --skip-install --name app-mixed --features analytics,genie --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g123 --set genie.genie-space.authMode=obo
 ✔ Creating project
 

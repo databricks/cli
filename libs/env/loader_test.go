@@ -24,3 +24,22 @@ func TestLoader(t *testing.T) {
 	assert.Equal(t, "abc", cfg.Profile)
 	assert.Equal(t, "cli-env", loader.Name())
 }
+
+func TestLoaderParsesNonStringAttributes(t *testing.T) {
+	ctx := t.Context()
+	ctx = env.Set(ctx, "DATABRICKS_DEBUG_HEADERS", "true")
+	ctx = env.Set(ctx, "DATABRICKS_RATE_LIMIT", "42")
+
+	cfg := &config.Config{}
+	err := env.NewConfigLoader(ctx).Configure(cfg)
+	assert.NoError(t, err)
+
+	assert.True(t, cfg.DebugHeaders)
+	assert.Equal(t, 42, cfg.RateLimitPerSecond)
+}
+
+func TestLoaderReturnsErrorForInvalidValue(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_RATE_LIMIT", "fast")
+	err := env.NewConfigLoader(ctx).Configure(&config.Config{})
+	assert.ErrorContains(t, err, "DATABRICKS_RATE_LIMIT")
+}

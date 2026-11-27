@@ -1,8 +1,15 @@
 package cmdio
 
 import (
+	"bytes"
+	"io"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
@@ -33,4 +40,54 @@ func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
 	}
 
 	c.releaseTeaProgram()
+}
+
+func TestIsInputTTY(t *testing.T) {
+	// Prompts are not supported without stderr as a terminal,
+	// but a user can still type into stdin.
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stdinIsTTY: true}})
+	assert.True(t, IsInputTTY(ctx))
+	assert.False(t, IsPromptSupported(ctx))
+
+	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
+	assert.False(t, IsInputTTY(ctx))
+}
+
+func TestHasTerminal(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		in      io.Reader
+		out     io.Writer
+		err     io.Writer
+		noColor bool
+		want    bool
+	}{
+		{name: "no terminal", out: io.Discard, err: io.Discard},
+		{name: "stdin", in: FakeTTYReader(&bytes.Buffer{}), out: io.Discard, err: io.Discard, want: true},
+		{name: "stdout", out: FakeTTY(io.Discard), err: io.Discard, want: true},
+		{name: "stderr", out: io.Discard, err: FakeTTY(io.Discard), want: true},
+		{name: "stderr with NO_COLOR", out: io.Discard, err: FakeTTY(io.Discard), noColor: true, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			if tc.noColor {
+				ctx = env.Set(ctx, "NO_COLOR", "1")
+			}
+			ctx = InContext(ctx, NewIO(ctx, flags.OutputText, tc.in, tc.out, tc.err, "", ""))
+			assert.Equal(t, tc.want, HasTerminal(ctx))
+		})
+	}
+}
+
+func TestIsLinePromptSupported(t *testing.T) {
+	ctx := t.Context()
+	terminal := InContext(ctx, NewIO(ctx, flags.OutputText, FakeTTYReader(strings.NewReader("")), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.True(t, IsLinePromptSupported(terminal))
+
+	piped := InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader(""), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.False(t, IsLinePromptSupported(piped))
+
+	t.Cleanup(func() { stdinReadInBackground.Store(false) })
+	MarkStdinReadInBackground()
+	assert.False(t, IsLinePromptSupported(terminal), "another goroutine reads stdin")
 }

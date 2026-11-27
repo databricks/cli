@@ -141,6 +141,9 @@ jobs:
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-${{ matrix.deployment.name }}
+          # Coverage runs (below) build with -cover, so a cache they saved would lack the
+          # plain objects every other Linux run needs; the nightly run saves it instead.
+          save-cache: ${{ !(matrix.os.name == 'linux' && github.event_name == 'push') }}
 
       # Make origin/main available with enough history for `git diff --merge-base
       # origin/main`, which the acceptance subset selector uses to always run the
@@ -157,8 +160,25 @@ jobs:
             git fetch --no-tags --unshallow origin
           fi
 
+      # Coverage for the CI dashboard: on Linux, for every push to main, and for a PR
+      # whose head commit message has "with-coverage" (to try a change to it). The
+      # directories are outside the checkout, so that the check for new files below
+      # does not see them. The PR's head commit is there after the fetch above.
+      - name: Decide whether to collect coverage
+        id: cover
+        if: ${{ matrix.os.name == 'linux' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ] || git log -1 --format=%B "$HEAD_SHA" | grep -q 'with-coverage'; then
+            echo "unit=$RUNNER_TEMP/cover-unit" >> "$GITHUB_OUTPUT"
+            echo "acc=$RUNNER_TEMP/cover-acc" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run tests
         env:
+          CLI_GOCOVERDIR_UNIT: ${{ steps.cover.outputs.unit }}
+          CLI_GOCOVERDIR: ${{ steps.cover.outputs.acc }}
           ENVFILTER: ${{ matrix.deployment.envfilter }}
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
@@ -174,12 +194,45 @@ jobs:
       - name: Upload gotestsum JSON output
         # Always upload so we can inspect timing even if tests fail.
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        # The artifact is only a debugging aid; a transient artifact-service error
+        # (e.g. ENOTFOUND) must not fail a job whose tests passed.
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-output-${{ matrix.os.name }}-${{ matrix.deployment.name }}
           path: test-output.json
           if-no-files-found: warn
           retention-days: 7
+
+      # Failed tests count too: their coverage is as real as that of the ones that passed.
+      - name: Pack coverage
+        if: ${{ always() && steps.cover.outputs.acc != '' }}
+        # Coverage is for the dashboard; failing to collect it must not fail the tests.
+        continue-on-error: true
+        env:
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          OS: ${{ matrix.os.name }}
+          CELL: ${{ matrix.deployment.name }}
+          UNIT_DIR: ${{ steps.cover.outputs.unit }}
+          ACC_DIR: ${{ steps.cover.outputs.acc }}
+        run: |
+          go -C tools run ./coverpack -root "$GITHUB_WORKSPACE" -unit "$UNIT_DIR" -acc "$ACC_DIR" \
+            -o "$RUNNER_TEMP/coverage.bin.zst" \
+            -meta "{\"sha\": \"$SHA\", \"os\": \"$OS\", \"cell\": \"$CELL\", \"pr\": ${PR_NUMBER:-null}}"
+
+      - name: Upload coverage
+        if: ${{ always() && steps.cover.outputs.acc != '' }}
+        # Coverage is for the dashboard; failing to collect it must not fail the tests.
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-${{ matrix.os.name }}-${{ matrix.deployment.name }}
+          path: ${{ runner.temp }}/coverage.bin.zst
+          if-no-files-found: warn
+          retention-days: 7
+          # Already compressed.
+          compression-level: 0
 
       # `task test` prints a lot of output that GitHub is slow to render, so
       # surface just the failed test names on the job summary page (and in this
@@ -511,7 +564,7 @@ jobs:
           (github.event_name == 'merge_group') ||
           (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))
         id: generate-check-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
           private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
@@ -589,7 +642,7 @@ jobs:
     steps:
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}

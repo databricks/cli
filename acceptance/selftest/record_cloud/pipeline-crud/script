@@ -6,7 +6,6 @@ print_requests() {
 # Verify that the entire crud lifecycle of a pipeline works.
 title "Create a pipeline"
 export pipeline_id=$($CLI pipelines create --json @pipeline1.json | jq -r .pipeline_id)
-echo ""
 
 trace print_requests
 

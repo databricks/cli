@@ -1,0 +1,11 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py "$TESTDIR/../terraform-requests.json" "$TESTDIR/../terraform.tfstate"
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+
+title "Deploy where the local terraform state disappears between the pull and the migration"
+trace musterr $CLI bundle deploy
+trace print_migration_telemetry
+trace print_request_paths

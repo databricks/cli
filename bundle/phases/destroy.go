@@ -18,12 +18,17 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	w := b.WorkspaceClient(ctx)
-	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	// The read has no side effects, so a transient failure is safe to replay instead of failing destroy.
+	_, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
+		return w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	})
 
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
@@ -31,20 +36,6 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	}
 
 	return true, err
-}
-
-var destroyApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteSchemaMessage},
-	// Pipelines are handled separately in approvalForDestroy so the message reflects each
-	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
-	{group: "volumes", message: deleteVolumeMessage},
-	{group: "database_instances", message: deleteDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deletePostgresProjectMessage},
-	{group: "postgres_branches", message: deletePostgresBranchMessage},
-	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteGenieSpaceMessage},
 }
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
@@ -91,7 +82,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	// operation) are not destructive, so they are not listed as deletions and need no
 	// approval. In particular this makes prevent_destroy inert for state-only
 	// resources: nothing is destroyed.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnly() })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
@@ -117,7 +108,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	if !quiet {
-		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups(), true, deployplan.Delete)
 	}
 	// Called even when quiet: the cascade lookup can fail, and that error must surface.
 	if err := logPipelineDeleteApproval(ctx, b, deleteActions, quiet); err != nil {
@@ -191,7 +182,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 		// a destruction to report.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnly() {
 				deleted++
 			}
 		}

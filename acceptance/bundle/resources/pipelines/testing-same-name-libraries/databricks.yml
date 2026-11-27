@@ -1,0 +1,21 @@
+bundle:
+  name: pipeline-testing-same-name-libraries
+
+resources:
+  pipelines:
+    orders:
+      name: orders
+      libraries:
+        - file:
+            path: ./transformations/orders.py
+      environment:
+        dependencies:
+          - ./pipeline/test_helpers-0.1-py3-none-any.whl
+      testing:
+        sources:
+          - glob:
+              include: ./tests/**
+        environment:
+          dependencies:
+            # A different wheel with the same file name would be uploaded to the same path.
+            - ./tests/test_helpers-0.1-py3-none-any.whl

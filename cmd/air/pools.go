@@ -20,9 +20,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// A "GPU pool" is a pre-provisioned AI Runtime accelerator reservation — the
-// same reservation a run targets via compute.provisioned_capacity_id. "GPU
-// pool" (or "pool") is the product-facing name used across the Compute page and
+// A "GPU Pool" is a pre-provisioned AI Runtime accelerator reservation — the
+// same reservation a run targets via compute.accelerator_pool_id. "GPU
+// Pool" (or "pool") is the product-facing name used across the Compute page and
 // this CLI. The backend still models and serves these as AiWorkflowService
 // ProvisionedCapacity resources, so the endpoint path and the wire structs
 // below keep the API's name; only the user-facing surface says "pool".
@@ -58,7 +58,7 @@ func (n *apiInt64) UnmarshalJSON(b []byte) error {
 }
 
 // The wire structs below mirror the ProvisionedCapacity proto's JSON (the
-// backend name for a GPU pool).
+// backend name for a GPU Pool).
 type provisionedCapacity struct {
 	Name   string                     `json:"name"`
 	Spec   *provisionedCapacitySpec   `json:"spec"`
@@ -122,7 +122,7 @@ func poolAPIError(ctx context.Context, cmd *cobra.Command, action string, err er
 	// specific than the generic 403 it may arrive as, so check it first.
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "FEATURE_DISABLED" {
 		return renderError(ctx, cmd, "FEATURE_DISABLED", "PERMANENT", false,
-			errors.New("the GPU pools API is not enabled for this workspace"))
+			errors.New("the GPU Pools API is not enabled for this workspace"))
 	}
 	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
 		return authError(ctx, cmd, err)
@@ -184,8 +184,13 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 func newPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pools",
-		Short: "View provisioned GPU pools",
-		RunE:  root.ReportUnknownSubcommand,
+		Short: "View provisioned GPU Pools, if any (not required to run)",
+		Long: `View GPU Pools provisioned for your workspace.
+
+A GPU Pool is dedicated accelerator capacity that your Databricks account team
+provisions. Pools are optional: a run uses one only when its YAML sets
+compute.accelerator_pool_id.`,
+		RunE: root.ReportUnknownSubcommand,
 	}
 
 	cmd.AddCommand(newGetPoolCommand())
@@ -198,7 +203,7 @@ func newListPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List the GPU pools available to the current workspace",
+		Short: "List the GPU Pools available to the current workspace",
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -215,7 +220,7 @@ func newListPoolsCommand() *cobra.Command {
 
 		pools, err := listPools(ctx, w)
 		if err != nil {
-			return poolAPIError(ctx, cmd, "list GPU pools", err)
+			return poolAPIError(ctx, cmd, "list GPU Pools", err)
 		}
 
 		data := poolListData{Rows: make([]poolRow, 0, len(pools))}
@@ -237,7 +242,10 @@ func newGetPoolCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [POOL_ID]",
 		Args:  root.MaximumNArgs(1),
-		Short: "Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)",
+		Short: "Show a GPU Pool and its accelerator usage",
+		Long: `Show a GPU Pool and its accelerator usage.
+
+POOL_ID may be omitted when the workspace has exactly one pool.`,
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -274,9 +282,9 @@ func newGetPoolCommand() *cobra.Command {
 			// ErrNotFound covers a plain 404 as well as RESOURCE_DOES_NOT_EXIST.
 			if errors.Is(err, apierr.ErrNotFound) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
-					fmt.Errorf("GPU pool %q not found: check the id with `air pools list`", id))
+					fmt.Errorf("GPU Pool %q not found: check the id with `air pools list`", id))
 			}
-			return poolAPIError(ctx, cmd, fmt.Sprintf("get GPU pool %q", id), err)
+			return poolAPIError(ctx, cmd, fmt.Sprintf("get GPU Pool %q", id), err)
 		}
 
 		data := poolDetailFrom(*pool)
@@ -296,21 +304,21 @@ func newGetPoolCommand() *cobra.Command {
 func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *databricks.WorkspaceClient) (string, error) {
 	pools, err := listPools(ctx, w)
 	if err != nil {
-		return "", poolAPIError(ctx, cmd, "list GPU pools", err)
+		return "", poolAPIError(ctx, cmd, "list GPU Pools", err)
 	}
 	switch len(pools) {
 	case 1:
 		return poolID(pools[0].Name), nil
 	case 0:
 		return "", renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
-			errors.New("no GPU pools found in this workspace"))
+			errors.New("no GPU Pools found in this workspace"))
 	default:
 		ids := make([]string, len(pools))
 		for i, p := range pools {
 			ids[i] = poolID(p.Name)
 		}
 		return "", renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-			fmt.Errorf("workspace has %d GPU pools; specify one of: %s", len(pools), strings.Join(ids, ", ")))
+			fmt.Errorf("workspace has %d GPU Pools; specify one of: %s", len(pools), strings.Join(ids, ", ")))
 	}
 }
 
@@ -342,7 +350,7 @@ func poolDetailFrom(p provisionedCapacity) poolDetailData {
 // renderPoolTable prints the list as an aligned text table.
 func renderPoolTable(out io.Writer, rows []poolRow) {
 	if len(rows) == 0 {
-		fmt.Fprintln(out, "No GPU pools found.")
+		fmt.Fprintln(out, "No GPU Pools found.")
 		return
 	}
 	fmt.Fprintf(out, "%-40s %-14s %s\n", "ID", "ACCELERATOR", "RESERVED")

@@ -41,7 +41,7 @@ func requireRealProvision(t *testing.T) {
 // but a corporate mirror is declared in pip.conf.
 func realProvisionCtx(t *testing.T) context.Context {
 	ctx := env.Set(t.Context(), EnvAutoInstallUv, "1")
-	if idx := pipConfIndexURL(ctx); idx != "" {
+	if idx := PipConfIndexURL(ctx); idx != "" {
 		ctx = env.Set(ctx, "UV_INDEX_URL", idx)
 	}
 	return ctx

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
@@ -76,7 +77,7 @@ func TransformWheelTask() bundle.Mutator {
 }
 
 func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	isEnabled := b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 	b.Metrics.AddBoolValue(metrics.ExperimentalPythonWheelWrapperIsSet, isEnabled)
 	if !isEnabled {
 		return nil

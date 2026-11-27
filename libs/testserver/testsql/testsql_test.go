@@ -55,6 +55,19 @@ func TestFirstMatchWins(t *testing.T) {
 	assert.Equal(t, []string{"first"}, columnNames(resp))
 }
 
+func TestFallbackYieldsToMatchers(t *testing.T) {
+	e := testsql.New()
+	e.HandleFallbackPattern(regexp.MustCompile(`^CREATE`), func(testsql.Request) testsql.Result {
+		return testsql.Result{Columns: []string{"fallback"}}
+	})
+	e.Handle("CREATE TABLE foo", func(testsql.Request) testsql.Result {
+		return testsql.Result{Columns: []string{"matcher"}}
+	})
+
+	assert.Equal(t, []string{"matcher"}, columnNames(e.Submit("CREATE TABLE foo", "10s", nil)))
+	assert.Equal(t, []string{"fallback"}, columnNames(e.Submit("CREATE TABLE bar", "10s", nil)))
+}
+
 func TestUnsupportedStatement(t *testing.T) {
 	e := testsql.New()
 	resp := e.Submit("SELECT 1", "10s", nil)

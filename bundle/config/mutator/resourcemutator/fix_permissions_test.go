@@ -28,3 +28,15 @@ func TestGetMaxLevel(t *testing.T) {
 	assert.Equal(t, "UNKNOWN_B", resources.GetMaxLevel("UNKNOWN_A", "UNKNOWN_B"))
 	assert.Equal(t, "UNKNOWN_B", resources.GetMaxLevel("UNKNOWN_B", "UNKNOWN_A"))
 }
+
+func TestProcessPermissionsKeepsDeclaredEntries(t *testing.T) {
+	viewer := permission{level: "CAN_VIEW", userName: "viewer@example.com"}
+	lower := permission{level: "CAN_VIEW", groupName: "users"}
+	higher := permission{level: "CAN_MANAGE", groupName: "users"}
+
+	result, sources := processPermissions("me@example.com", "jobs", []permission{viewer, lower, higher})
+
+	assert.Equal(t, []permission{viewer, higher, {level: isOwner, userName: "me@example.com"}}, result)
+	// The kept entries come from inputs 0 and 2; the added owner is new.
+	assert.Equal(t, []int{0, 2, -1}, sources)
+}

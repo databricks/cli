@@ -1,0 +1,216 @@
+
+>>> [CLI] bundle validate --strict -t literal -o json
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:9:14
+
+{
+  "jobs": {
+    "root_job": [
+      {
+        "group_name": "developers",
+        "level": "CAN_MANAGE_RUN"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ],
+    "target_job": [
+      {
+        "group_name": "developers",
+        "level": "CAN_MANAGE_RUN"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  },
+  "pipelines": {
+    "root_pipeline": [
+      {
+        "group_name": "developers",
+        "level": "CAN_RUN"
+      },
+      {
+        "level": "CAN_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ],
+    "target_pipeline": [
+      {
+        "group_name": "developers",
+        "level": "CAN_RUN"
+      },
+      {
+        "level": "CAN_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle validate --strict -t complex -o json
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:43:18
+
+{
+  "jobs": {
+    "root_job": [
+      {
+        "group_name": "developers",
+        "level": "CAN_MANAGE_RUN"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ],
+    "target_job": [
+      {
+        "group_name": "developers",
+        "level": "CAN_MANAGE_RUN"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_MANAGE_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  },
+  "pipelines": {
+    "root_pipeline": [
+      {
+        "group_name": "developers",
+        "level": "CAN_RUN"
+      },
+      {
+        "level": "CAN_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ],
+    "target_pipeline": [
+      {
+        "group_name": "developers",
+        "level": "CAN_RUN"
+      },
+      {
+        "level": "CAN_RUN",
+        "user_name": "reader@example.test"
+      },
+      {
+        "level": "CAN_RUN",
+        "service_principal_name": "reader-sp"
+      },
+      {
+        "group_name": "inherited",
+        "level": "CAN_VIEW"
+      },
+      {
+        "level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

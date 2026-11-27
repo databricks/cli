@@ -1,0 +1,11 @@
+Env.DATABRICKS_BUNDLE_HTTP_TIMEOUT_SECONDS = "5"
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+SuppressLines.warn_retry = ""
+RecordRequests = true
+
+[[Server]]
+# Every lock create attempt outlives the 5s inactivity timeout, so the CLI retries it twice,
+# finds no lock when it reads it back, and fails with the timeout.
+Delay = "30s"
+Pattern = "POST /api/2.0/workspace-files/import-file/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state/deploy.lock"
+Response.StatusCode = 200

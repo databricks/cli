@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
 )
 
-// errCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
+// ErrCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
 // "^C" string matches the historical wire format; goldens depend on it.
-var errCtrlC = errors.New("^C")
+var ErrCtrlC = errors.New("^C")
 
 // runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
 // pagers can't fight a prompt for the terminal. Blocks until the model quits.
@@ -21,7 +23,7 @@ func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
 	p := tea.NewProgram(m,
 		tea.WithInput(c.in),
 		tea.WithOutput(c.err),
-		// Ctrl+C is delivered as a key event so the model can return errCtrlC.
+		// Ctrl+C is delivered as a key event so the model can return ErrCtrlC.
 		tea.WithoutSignalHandler(),
 	)
 	c.acquireTeaProgram(p)
@@ -83,6 +85,53 @@ func IsPromptSupported(ctx context.Context) bool {
 	return c.capabilities.SupportsPrompt()
 }
 
+// IsLinePromptSupported reports whether a plain-text line prompt ([Ask]) can
+// be shown and answered: stdin, stdout and stderr are terminals, this process
+// is in the terminal's foreground process group (a background job that reads
+// it is stopped), and no goroutine reads stdin in the background (see
+// [MarkStdinReadInBackground]). Unlike IsPromptSupported, it does not depend
+// on TERM=dumb or an MSYS2 pty pipe, which only matter for the TUI prompts.
+func IsLinePromptSupported(ctx context.Context) bool {
+	c := fromContext(ctx)
+	if !c.capabilities.SupportsLinePrompt() || stdinReadInBackground.Load() {
+		return false
+	}
+	f, ok := c.in.(*os.File)
+	return !ok || inForeground(f)
+}
+
+// stdinReadInBackground is set once a goroutine reads stdin for the rest of
+// the process.
+var stdinReadInBackground atomic.Bool
+
+// MarkStdinReadInBackground records that a goroutine reads os.Stdin and may
+// outlive the command, so later line prompts in this process are not asked:
+// that goroutine could take their answer.
+func MarkStdinReadInBackground() {
+	stdinReadInBackground.Store(true)
+}
+
+// DiscardInput discards what was typed at the stdin terminal but not read
+// yet, so that a prompt asked after a long-running command reads only what is
+// typed after the question.
+func DiscardInput(ctx context.Context) error {
+	c := fromContext(ctx)
+	f, ok := c.in.(*os.File)
+	if !ok || !c.capabilities.stdinIsTTY {
+		return nil
+	}
+	return discardInput(f)
+}
+
+// IsInputTTY reports whether stdin is a terminal, so that a user can type
+// input into the command. Unlike IsPromptSupported, it does not depend on
+// stderr or TERM=dumb, which only matter for rendering prompts, and it accepts
+// MSYS2 pty pipes, which carry line input but not keystrokes.
+func IsInputTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.stdinIsTTY
+}
+
 // IsPagerSupported reports whether stdin, stdout, and stderr are all interactive
 // terminals. This is the requirement for a full-screen or navigable output
 // program: unlike IsPromptSupported it also checks stdout, so it returns false
@@ -90,6 +139,13 @@ func IsPromptSupported(ctx context.Context) bool {
 func IsPagerSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPager()
+}
+
+// HasTerminal reports whether stdin, stdout or stderr is a terminal. Unlike
+// GetInteractiveMode it ignores TERM=dumb.
+func HasTerminal(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.stdinIsTTY || c.capabilities.stdoutIsTTY || c.capabilities.stderrIsTTY
 }
 
 // SupportsColor returns true if the given writer supports colored output.
@@ -157,8 +213,6 @@ func MockDiscard(ctx context.Context) context.Context {
 			stdinIsTTY:  false,
 			stdoutIsTTY: false,
 			stderrIsTTY: false,
-			color:       false,
-			isGitBash:   false,
 		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),

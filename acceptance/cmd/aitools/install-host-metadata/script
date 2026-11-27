@@ -1,0 +1,17 @@
+# Isolate HOME so the real machine's agents and skills are not seen. The
+# committed home/.claude is what agent detection finds.
+sethome home
+
+# The workspace host does not resolve, so the background telemetry auth
+# resolution fails to fetch host metadata and logs hostmetadata's warning.
+# The skills still come from the mock server (DATABRICKS_SKILLS_BASE_URL).
+export DATABRICKS_HOST=https://unreachable.test
+
+title "workspace unreachable: the background auth resolution prints nothing"
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code
+
+title "--debug still shows the hostmetadata line, at debug level"
+# A fresh cache, so the first run's negative-cache entry does not skip the fetch.
+export DATABRICKS_CACHE_DIR="$PWD/debug-cache"
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code --debug &> LOG.debug
+contains.py 'Debug: [hostmetadata] failed to fetch host metadata for https://unreachable.test' '!Warn: [hostmetadata]' < LOG.debug > /dev/null

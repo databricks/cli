@@ -17,29 +17,28 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SqlConditionConfiguration:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
-
-    sql_query_id: VariableOr[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The ID of the SQL query to evaluate as the trigger condition.
-    """
+    """"""
 
     warehouse_id: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The canonical identifier of the SQL warehouse to run the condition query against.
+    [Beta] The canonical identifier of the SQL warehouse to run the condition query against.
+    """
+
+    sql_query_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The ID of the SQL query to evaluate as the trigger condition.
+    Exactly one of `sql_query_id` or `file` must be set.
     """
 
     trigger_mode: VariableOrOptional[SqlConditionTriggerMode] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Determines how the SQL query result is interpreted to decide whether the condition fires.
+    [Beta] Determines how the SQL query result is interpreted to decide whether the condition fires.
     Must be set to a recognized value when provided.
     When unset on an existing serialized configuration, the server preserves the original
     semantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this
@@ -57,25 +56,26 @@ class SqlConditionConfiguration:
 class SqlConditionConfigurationDict(TypedDict, total=False):
     """"""
 
-    sql_query_id: VariableOr[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The ID of the SQL query to evaluate as the trigger condition.
-    """
-
     warehouse_id: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The canonical identifier of the SQL warehouse to run the condition query against.
+    [Beta] The canonical identifier of the SQL warehouse to run the condition query against.
+    """
+
+    sql_query_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The ID of the SQL query to evaluate as the trigger condition.
+    Exactly one of `sql_query_id` or `file` must be set.
     """
 
     trigger_mode: VariableOrOptional[SqlConditionTriggerModeParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Determines how the SQL query result is interpreted to decide whether the condition fires.
+    [Beta] Determines how the SQL query result is interpreted to decide whether the condition fires.
     Must be set to a recognized value when provided.
     When unset on an existing serialized configuration, the server preserves the original
     semantics by interpreting it as `QUERY_RETURNS_ROWS`. New configurations should set this

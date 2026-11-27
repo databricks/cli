@@ -3,6 +3,7 @@
 package consumer_providers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -17,18 +18,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "consumer-providers",
-		Short:   `Providers are the entities that publish listings to the Marketplace.`,
-		Long:    `Providers are the entities that publish listings to the Marketplace.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "consumer-providers",
+	Short:   `Providers are the entities that publish listings to the Marketplace.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Providers are the entities that publish listings to the Marketplace.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newBatchGet())
@@ -39,8 +44,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start batch-get command

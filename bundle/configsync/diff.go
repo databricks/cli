@@ -26,6 +26,8 @@ const (
 type ConfigChangeDesc struct {
 	Operation OperationType `json:"operation"`
 	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+	// Reason says why a skipped change was left unapplied.
+	Reason string `json:"reason,omitempty"`
 
 	// LocalEdit reports that the local config value for this field differs from
 	// the last-deployed state, so applying this change overwrites a not-yet-
@@ -125,17 +127,20 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, error) {
+// plan, and the resources whose remote permissions could not be read.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
+	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
+	remote, skipped := readRemotePermissions(ctx, b, plan)
+	owners := jobOwners(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
 		// ("resources.<type>.<name>.permissions" / ".grants"; see splitResourcePath
-		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
-		// to YAML: their fields (e.g. object_id) are server-populated with no source
-		// location, and bundle-level permissions have no per-resource YAML node at all,
-		// so resolving them would fail the whole sync. Skip them instead.
+		// in bundle/direct/bundle_plan.go). Their fields (e.g. object_id) are
+		// server-populated with no source location, so they cannot be written back
+		// as is; permissions are added below under their parent resource instead,
+		// and grants are skipped.
 		if isPermissionsOrGrantsSubResource(resourceKey) {
 			continue
 		}
@@ -144,26 +149,13 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
-					continue
-				}
-
-				fullPath := resourceKey + "." + path
-				change, err := convertChangeDesc(fullPath, changeDesc)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, owners[resourceKey], b.Config.Presets.NamePrefix)
 				if err != nil {
-					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
+					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
-				if change.Operation == OperationSkip {
-					continue
+				if change != nil {
+					resourceChanges[path] = change
 				}
-				// The state snapshot holds real per-field values, so New != Old
-				// means the local config diverged from the last deploy and this
-				// change overwrites that pending edit.
-				if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
-					change.LocalEdit = true
-				}
-				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
-				resourceChanges[path] = change
 			}
 		}
 
@@ -174,5 +166,46 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	return changes, nil
+	if err := addPermissionsChanges(changes, b, plan, remote); err != nil {
+		return nil, nil, err
+	}
+
+	return changes, skipped, nil
+}
+
+// convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
+// nothing to write back. owner is the principal the resource runs as by default, if it is a job.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, owner, namePrefix string) (*ConfigChangeDesc, error) {
+	fullPath := resourceKey + "." + path
+	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
+		!keepSkippedRunAsChange(fullPath, changeDesc) {
+		return nil, nil
+	}
+	// Runs before applyLifecycle, which lets every whole run_as through.
+	if skipJobRunAs(fullPath, changeDesc, owner) {
+		return nil, nil
+	}
+	synced, err := applyLifecycle(resourceKey, path, changeDesc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply lifecycle rules: %w", err)
+	}
+	if synced == nil {
+		return nil, nil
+	}
+
+	change, err := convertChangeDesc(fullPath, synced)
+	if err != nil {
+		return nil, err
+	}
+	if change.Operation == OperationSkip {
+		return nil, nil
+	}
+	// The state snapshot holds real per-field values, so New != Old
+	// means the local config diverged from the last deploy and this
+	// change overwrites that pending edit.
+	if !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+		change.LocalEdit = true
+	}
+	change.Value = stripNamePrefix(fullPath, change.Value, namePrefix)
+	return change, nil
 }

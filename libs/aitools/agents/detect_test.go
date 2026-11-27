@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// stubLookPath replaces the package lookPath with one that resolves only the
+// stubLookPath replaces the package LookPath with one that resolves only the
 // named binaries, restoring the original when the test finishes.
 func stubLookPath(t *testing.T, onPath ...string) {
 	t.Helper()
@@ -22,14 +22,14 @@ func stubLookPath(t *testing.T, onPath ...string) {
 	for _, name := range onPath {
 		set[name] = true
 	}
-	orig := lookPath
-	lookPath = func(name string) (string, error) {
+	orig := LookPath
+	LookPath = func(name string) (string, error) {
 		if set[name] {
 			return filepath.Join("/usr/bin", name), nil
 		}
 		return "", exec.ErrNotFound
 	}
-	t.Cleanup(func() { lookPath = orig })
+	t.Cleanup(func() { LookPath = orig })
 }
 
 // configDir returns a closure usable as Agent.ConfigDir. When create is true a
@@ -358,9 +358,9 @@ func TestProbePluginBinaryNotOnPath(t *testing.T) {
 func TestProbePluginRefusesDotRelativeBinary(t *testing.T) {
 	// LookPath returns ErrDot (with a path) when the binary resolves only
 	// relative to cwd. ProbePlugin must refuse to run it.
-	orig := lookPath
-	lookPath = func(name string) (string, error) { return filepath.Join(".", name), exec.ErrDot }
-	t.Cleanup(func() { lookPath = orig })
+	orig := LookPath
+	LookPath = func(name string) (string, error) { return filepath.Join(".", name), exec.ErrDot }
+	t.Cleanup(func() { LookPath = orig })
 
 	ctx, stub := process.WithStub(t.Context())
 	a := &Agent{Binary: "claude", Plugin: &PluginSpec{}}

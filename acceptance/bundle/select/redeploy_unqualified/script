@@ -6,10 +6,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Initial deploy\n"
+title "Initial deploy"
 trace $CLI bundle deploy
 
 # Redeploy selecting the resource by its unqualified name. It exists in both config
 # and state now; that must not read as an ambiguous match.
-title "Redeploy with unqualified --select\n"
+title "Redeploy with unqualified --select"
 trace $CLI bundle deploy --select my_job

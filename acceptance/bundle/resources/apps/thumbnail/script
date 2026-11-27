@@ -1,0 +1,43 @@
+print_requests() {
+    print_requests.py //apps '^//api/2.0/bundle'
+}
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace print_requests >> out.requests.json
+}
+trap cleanup EXIT
+
+cp blue.png thumbnail.png
+
+title "Deploy with a thumbnail: the image is uploaded after the app is created"
+trace $CLI bundle deploy
+trace print_requests > out.requests.json
+trace $CLI apps get myappname | jq .thumbnail_url
+
+title "State keeps only a hash of the image"
+trace jq '.state["resources.apps.mykey"].state.thumbnail' .databricks/bundle/default/resources.json
+
+title "Redeploy with an unchanged image: no thumbnail request"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests >> out.requests.json
+
+title "New content at the same path: only the thumbnail is uploaded"
+cp red.png thumbnail.png
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests >> out.requests.json
+
+title "Deploy from a saved plan: the plan carries the image, not its hash"
+cp blue.png thumbnail.png
+$CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //apps '^//api/2.0/bundle' | jq -r '.body.app_thumbnail.thumbnail | .[0:12]'
+
+title "Remove thumbnail_path: the thumbnail is deleted"
+update_file.py databricks.yml $'      thumbnail_path: ./thumbnail.png\n' ''
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests >> out.requests.json
+trace $CLI apps get myappname | jq .thumbnail_url

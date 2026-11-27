@@ -16,6 +16,10 @@ trace $CLI bundle plan
 
 trace $CLI bundle destroy --auto-approve
 
-errcode trace $CLI alerts-v2 get-alert $alert_id
+title "assert that the alert is gone"
+# The backend has returned more than one not-found message here, so check only the stable part.
+musterr $CLI alerts-v2 get-alert $alert_id &> LOG.get-alert
+contains.py "does not exist" < LOG.get-alert > /dev/null
+printf '\n%s\n' "OK: alert does not exist"
 
 trace $CLI bundle summary

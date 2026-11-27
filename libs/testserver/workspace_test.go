@@ -2,6 +2,7 @@ package testserver_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -104,6 +105,75 @@ func TestWorkspaceImportDetectsNotebookExtensionCaseInsensitively(t *testing.T) 
 	// Both land at the extension-stripped path, which only happens for notebooks.
 	assert.Equal(t, 200, getStatus(t, server.URL, "/test-dir/lower"))
 	assert.Equal(t, 200, getStatus(t, server.URL, "/test-dir/upper"))
+}
+
+// import-file turns a valid Jupyter notebook into a notebook without the .ipynb
+// extension, in the language its metadata names. Other files keep their name.
+func TestWorkspaceImportFileJupyter(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	mkdirs(t, server.URL, "/test-dir")
+
+	const kernelOnly = `{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	const databricksSQL = `{"cells":[],"metadata":{"application/vnd.databricks.v1+notebook":{"language":"sql"},"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	files := map[string]string{
+		"kernel.ipynb":     kernelOnly,
+		"sql.ipynb":        databricksSQL,
+		"broken.ipynb":     `{"cells": [`,
+		"d.designer.ipynb": kernelOnly,
+		"q.lwquery.ipynb":  kernelOnly,
+	}
+	for name, body := range files {
+		require.Equal(t, 200, importFile(t, server.URL, "/test-dir/"+name, body), name)
+	}
+
+	kernel := getStatusBody(t, server.URL, "/test-dir/kernel", false)
+	assert.Equal(t, "NOTEBOOK", kernel["object_type"])
+	assert.Equal(t, "PYTHON", kernel["language"])
+
+	sql := getStatusBody(t, server.URL, "/test-dir/sql", false)
+	assert.Equal(t, "NOTEBOOK", sql["object_type"])
+	assert.Equal(t, "SQL", sql["language"])
+
+	for _, name := range []string{"broken.ipynb", "d.designer.ipynb", "q.lwquery.ipynb"} {
+		assert.Equal(t, "FILE", getStatusBody(t, server.URL, "/test-dir/"+name, false)["object_type"], name)
+	}
+	assert.Equal(t, 404, getStatus(t, server.URL, "/test-dir/broken"))
+}
+
+// The Files API stores a notebook as uploaded, so it reads back at its own path.
+func TestFilesUploadKeepsNotebookAsFile(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	const nb = `{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	url := server.URL + "/api/2.0/fs/files/Volumes/main/default/vol/n.ipynb"
+	do := func(method, body string) (int, string) {
+		req, _ := http.NewRequest(method, url, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer test-token")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		out, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		return resp.StatusCode, string(out)
+	}
+
+	req, _ := http.NewRequest(http.MethodPut, server.URL+"/api/2.0/fs/directories/Volumes/main/default/vol", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, 200, resp.StatusCode)
+
+	status, _ := do(http.MethodPut, nb)
+	require.Equal(t, 200, status)
+	status, _ = do(http.MethodHead, "")
+	assert.Equal(t, 200, status)
+	status, body := do(http.MethodGet, "")
+	assert.Equal(t, 200, status)
+	assert.Equal(t, nb, body)
 }
 
 // mkdirs creates all intermediate directories, matching "mkdir -p".

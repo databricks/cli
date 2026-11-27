@@ -6,4 +6,11 @@ alert_id=$($CLI alerts-v2 create-alert --json @alert.json | jq -r '.id')
 add_repl "$alert_id" ALERT_ID
 rm alert.json
 
+# Purge the alert: deleting its parent dir in script.cleanup only trashes it, and a
+# trashed alert lingers for 30 days. Leaked alerts exhaust the workspace alert quota.
+cleanup_alert() {
+    trace $CLI alerts-v2 trash-alert $alert_id --purge
+}
+trap cleanup_alert EXIT
+
 trace $CLI bundle generate alert --existing-id $alert_id --source-dir out/alert --config-dir out/resource

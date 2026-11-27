@@ -1,0 +1,11 @@
+bundle:
+  name: config-remote-sync-telemetry-default-target
+
+targets:
+  bad:
+    default: true
+    variables:
+      undefined_var: value
+  other:
+    workspace:
+      host: https://other.test

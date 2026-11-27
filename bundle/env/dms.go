@@ -2,19 +2,19 @@ package env
 
 import "context"
 
-// DeploymentHistoryVariable enables recording without setting the config field.
-// Exists for CLI acceptance tests so the whole bundle suite runs with recording on.
-// Deliberately undocumented.
+// DeploymentHistoryVariable sets recording without the config field: "true" turns it on, any other
+// non-empty value off. Exists for CLI acceptance tests; deliberately undocumented.
 const DeploymentHistoryVariable = "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY"
 
-// RecordsDeploymentHistory reports whether recording is on, from config or env var. Single predicate
-// for all recording code paths, keeping them in sync. Explicit config takes priority over the env var.
-// The env var only counts as "true": anything
-// else - a typo like "TRUE" or "yes" - leaves recording off rather than silently enabling it.
-func RecordsDeploymentHistory(ctx context.Context, configured *bool) bool {
+// DeploymentHistoryChoice returns the bundle's recording setting (config, then env var) and whether
+// it has one. Unset or empty is no choice, leaving recording to the workspace's enrollment.
+func DeploymentHistoryChoice(ctx context.Context, configured *bool) (enabled, explicit bool) {
 	if configured != nil {
-		return *configured
+		return *configured, true
 	}
 	value, _ := get(ctx, []string{DeploymentHistoryVariable})
-	return value == "true"
+	if value == "" {
+		return false, false
+	}
+	return value == "true", true
 }

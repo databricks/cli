@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle
+
+experimental:
+  python_wheel_wrapper: true
+
+sync:
+  exclude:
+    - tmp.plan.json
+
+resources:
+  jobs:
+    whl:
+      name: wheel-job
+      tasks:
+        - task_key: test_task
+          python_wheel_task:
+            package_name: my_package
+            entry_point: my_module.my_function
+          existing_cluster_id: "0123-456789-abcdef"
+          libraries:
+            - whl: /Workspace/Shared/my_package-0.1-py3-none-any.whl

@@ -114,7 +114,8 @@ func (r *ResourcePostgresSnapshotSchedule) DoCreate(ctx context.Context, config 
 	// means setting its cadences via UpdateSnapshotSchedule.
 	result, err := r.updateSnapshotSchedule(ctx, snapshotScheduleName(config.Branch), config.Schedule)
 	if err != nil {
-		return "", nil, err
+		// Setting the cadences again has the same effect, so a failed request can be repeated.
+		return "", nil, retrySafe(err)
 	}
 	remote := makePostgresSnapshotScheduleRemote(result)
 	return remote.Name, remote, nil

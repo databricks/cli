@@ -1,0 +1,8 @@
+Badness = "A catalog renamed outside the bundle is not found by the plan (unlike schemas and volumes, it has no id to look it up by), so the plan creates it again and deploy fails with CATALOG_ALREADY_EXISTS; destroy then deletes nothing and leaves the renamed catalog, schema and volume behind. The plan should detect the rename instead of recreating the catalog."
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

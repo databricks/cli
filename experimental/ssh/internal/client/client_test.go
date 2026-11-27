@@ -91,8 +91,18 @@ func TestValidate(t *testing.T) {
 			wantErr: "environment version must be >= 4, got 3",
 		},
 		{
+			name:    "negative environment version",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", EnvironmentVersion: -1},
+			wantErr: "environment version must be >= 4, got -1",
+		},
+		{
 			name: "valid environment version",
-			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
+			opts: client.ClientOptions{ConnectionName: "my-conn", EnvironmentVersion: 4},
+		},
+		{
+			name:    "environment version with cluster",
+			opts:    client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 5},
+			wantErr: "--environment-version can only be used with serverless compute",
 		},
 		{
 			name:    "base environment with environment version",
@@ -220,43 +230,74 @@ func TestValidateServerLifecycle(t *testing.T) {
 
 func TestGenerateDefaultConnectionName(t *testing.T) {
 	tests := []struct {
-		name        string
-		host        string
-		accelerator string
-		want        string
+		name               string
+		host               string
+		accelerator        string
+		environmentVersion int
+		want               string
 	}{
 		{
 			name: "no accelerator",
 			host: "https://my-workspace.cloud.databricks.com",
-			want: "databricks-cpu-961dabbd",
+			want: "databricks-cpu-3be751d8",
 		},
 		{
+			name:               "no accelerator with the CPU default set explicitly",
+			host:               "https://my-workspace.cloud.databricks.com",
+			environmentVersion: client.DefaultCPUEnvironmentVersion,
+			want:               "databricks-cpu-3be751d8",
+		},
+		{
+			// The CPU default name from before the default moved to 5, so
+			// --environment-version 4 still reaches a server started back then.
+			name:               "no accelerator with environment version 4",
+			host:               "https://my-workspace.cloud.databricks.com",
+			environmentVersion: 4,
+			want:               "databricks-cpu-2db656b0",
+		},
+		{
+			// GPU names must stay byte-for-byte what they were before the CPU default
+			// moved, or GPU users would be moved to a new server for no reason.
 			name:        "GPU_1xA10 accelerator",
 			host:        "https://my-workspace.cloud.databricks.com",
 			accelerator: "GPU_1xA10",
-			want:        "databricks-gpu-1xa10-961dabbd",
+			want:        "databricks-gpu-1xa10-2db656b0",
+		},
+		{
+			name:               "GPU_1xA10 accelerator with the GPU default set explicitly",
+			host:               "https://my-workspace.cloud.databricks.com",
+			accelerator:        "GPU_1xA10",
+			environmentVersion: client.DefaultGPUEnvironmentVersion,
+			want:               "databricks-gpu-1xa10-2db656b0",
+		},
+		{
+			name:               "GPU_1xA10 accelerator with environment version 5",
+			host:               "https://my-workspace.cloud.databricks.com",
+			accelerator:        "GPU_1xA10",
+			environmentVersion: 5,
+			want:               "databricks-gpu-1xa10-3be751d8",
 		},
 		{
 			name:        "GPU_8xH100 accelerator",
 			host:        "https://my-workspace.cloud.databricks.com",
 			accelerator: "GPU_8xH100",
-			want:        "databricks-gpu-8xh100-961dabbd",
+			want:        "databricks-gpu-8xh100-2db656b0",
 		},
 		{
 			name: "different host produces different name",
 			host: "https://other-workspace.cloud.databricks.com",
-			want: "databricks-cpu-e8a8ec19",
+			want: "databricks-cpu-9698f25b",
 		},
 		{
 			name: "deterministic for same input",
 			host: "https://my-workspace.cloud.databricks.com",
-			want: "databricks-cpu-961dabbd",
+			want: "databricks-cpu-3be751d8",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := client.GenerateDefaultConnectionName(tt.host, tt.accelerator, "")
+			got := client.GenerateDefaultConnectionName(tt.host, tt.accelerator, "", tt.environmentVersion)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -266,12 +307,33 @@ func TestGenerateDefaultConnectionName(t *testing.T) {
 	// ignored when an existing server for the default name is reused).
 	t.Run("base environment differentiates the name", func(t *testing.T) {
 		const host = "https://my-workspace.cloud.databricks.com"
-		base := client.GenerateDefaultConnectionName(host, "", "")
-		withEnv := client.GenerateDefaultConnectionName(host, "", "my-env")
-		otherEnv := client.GenerateDefaultConnectionName(host, "", "other-env")
+		base := client.GenerateDefaultConnectionName(host, "", "", 0)
+		withEnv := client.GenerateDefaultConnectionName(host, "", "my-env", 0)
+		otherEnv := client.GenerateDefaultConnectionName(host, "", "other-env", 0)
 		assert.NotEqual(t, base, withEnv, "setting --base-environment must change the default name")
 		assert.NotEqual(t, withEnv, otherEnv, "different environments must produce different names")
-		assert.Equal(t, withEnv, client.GenerateDefaultConnectionName(host, "", "my-env"), "must be deterministic")
+		assert.Equal(t, withEnv, client.GenerateDefaultConnectionName(host, "", "my-env", 0), "must be deterministic")
+	})
+
+	// Same for an explicit environment version: without it, a connection asking for
+	// version 6 would reuse a running server started on the default version.
+	t.Run("environment version differentiates the name", func(t *testing.T) {
+		const host = "https://my-workspace.cloud.databricks.com"
+		base := client.GenerateDefaultConnectionName(host, "", "", 0)
+		v4 := client.GenerateDefaultConnectionName(host, "", "", 4)
+		v6 := client.GenerateDefaultConnectionName(host, "", "", 6)
+		assert.NotEqual(t, base, v4, "a non-default --environment-version must change the default name")
+		assert.NotEqual(t, base, v6, "a non-default --environment-version must change the default name")
+		assert.NotEqual(t, v4, v6, "different versions must produce different names")
+		assert.NotEqual(t, v6, client.GenerateDefaultConnectionName(host, "", "6", 0), "a version must not collide with a base environment named like it")
+		assert.Equal(t, v6, client.GenerateDefaultConnectionName(host, "", "", 6), "must be deterministic")
+	})
+
+	t.Run("base environment takes precedence over environment version", func(t *testing.T) {
+		const host = "https://my-workspace.cloud.databricks.com"
+		withEnv := client.GenerateDefaultConnectionName(host, "", "my-env", 4)
+		assert.Equal(t, withEnv, client.GenerateDefaultConnectionName(host, "", "my-env", 5))
+		assert.NotEqual(t, withEnv, client.GenerateDefaultConnectionName(host, "", "other-env", 4))
 	})
 }
 
@@ -288,7 +350,7 @@ func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
 	for _, host := range hosts {
 		for _, acc := range accelerators {
 			for _, env := range environments {
-				name := client.GenerateDefaultConnectionName(host, acc, env)
+				name := client.GenerateDefaultConnectionName(host, acc, env, 0)
 				assert.Regexp(t, nameRegex, name, "host=%q accelerator=%q environment=%q name=%q", host, acc, env, name)
 			}
 		}

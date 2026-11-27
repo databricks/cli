@@ -36,7 +36,7 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 	require.NotEmpty(t, version)
 
 	// Read the OpenAPI SHA from the Go SDK at the version tag.
-	url := fmt.Sprintf("https://raw.githubusercontent.com/databricks/databricks-sdk-go/%s/.codegen/_openapi_sha", version)
+	url := fmt.Sprintf("https://raw.githubusercontent.com/databricks/databricks-sdk-go/%s/.codegen/_last_sha", version)
 	resp, err := http.Get(url) //nolint:gosec
 	require.NoError(t, err)
 	defer resp.Body.Close()

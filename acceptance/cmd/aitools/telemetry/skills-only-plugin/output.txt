@@ -1,0 +1,41 @@
+
+=== a named agent that already has the plugin gets no skill files, and the run fails
+
+>>> [CLI] aitools install --skills-only --scope=global --agents=claude-code
+Skipped Claude Code: already has the databricks plugin; skill files next to it would show every skill twice
+  To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@claude-plugins-official --scope user' (this CLI did not install it), then run: databricks aitools install --scope=global --agents=claude-code --skills-only
+Error: Claude Code: already has the databricks plugin; skill files next to it would show every skill twice
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"UNCATEGORIZED","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CLAUDE_CODE"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CLAUDE_CODE"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"UNCATEGORIZED"}]}}
+
+=== a detected agent that already has the plugin is skipped; the other agents get skill files
+
+>>> [CLI] aitools install --skills-only --scope=global
+Installing Databricks skills for Cursor...
+Using skills version test-ref
+Fetching skills manifest...
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
+Skipped Claude Code: already has the databricks plugin; skill files next to it would show every skill twice
+  To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@claude-plugins-official --scope user' (this CLI did not install it), then run: databricks aitools install --scope=global --agents=claude-code --skills-only
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SKILLS_INSTALLED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"UNCATEGORIZED"}]}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL"}}
+
+=== Claude Code still has only the plugin
+
+>>> ls [TEST_TMP_DIR]/home/.claude
+plugins

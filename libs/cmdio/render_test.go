@@ -192,7 +192,7 @@ func TestRenderJSONColorGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
 			c := &cmdIO{
-				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, color: tt.color},
+				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, noColor: !tt.color},
 				outputFormat: flags.OutputJSON,
 				out:          out,
 				err:          out,
@@ -241,7 +241,7 @@ func TestRenderJSONBytesColorGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
 			c := &cmdIO{
-				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, color: tt.color},
+				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, noColor: !tt.color},
 				out:          out,
 				err:          out,
 			}

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -44,6 +45,11 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 		t: t,
 	}
 
+	// The proxies of all tests share the transport's connection pool, so a dead connection
+	// would otherwise fail requests of every test that follows (see libs/httptransport). Set
+	// before the config is resolved, so the token-refresh client uses it too. With a transport
+	// set, the SDK ignores skip_verify; the proxy doesn't use it.
+	upstream.HTTPTransport = httptransport.HealthChecked(false)
 	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
 	s.apiClient = httpclient.NewApiClient(clientCfg)

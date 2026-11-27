@@ -12,16 +12,16 @@ EOF
 title "Deploy with bundle.engine: direct and an empty terraform state — migrate (0 resources)"
 trace $CLI bundle deploy 2>&1 | contains.py 'Migrated 0 resources to direct deployment engine.'
 
-title "Empty state migrated: resources.json written, local terraform state backed up\n"
+title "Empty state migrated: resources.json written, local terraform state backed up"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 
-title "Migration is recorded in telemetry as via-config\n"
+title "Migration is recorded in telemetry as via-config"
 trace print_migration_telemetry
 
-title "The remote had no terraform state, so nothing terraform-related is backed up remotely\n"
+title "The remote had no terraform state, so nothing terraform-related is backed up remotely"
 trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py '!terraform.tfstate'
 
-title "debug states confirms no terraform.tfstate anywhere; only the local .backup remains\n"
+title "debug states confirms no terraform.tfstate anywhere; only the local .backup remains"
 trace $CLI bundle debug states --force-pull
 
 title "Next deploy uses direct engine by default (no more mismatch warning, no re-migration)"

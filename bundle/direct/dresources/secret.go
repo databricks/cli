@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -73,9 +74,35 @@ func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret
 
 // DoCreate creates a new UC secret.
 func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (string, *catalog.Secret, error) {
-	response, err := r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
-		Secret: *state,
-	})
+	create := func(ctx context.Context) (*catalog.Secret, error) {
+		return r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
+			Secret: *state,
+		})
+	}
+	start := time.Now()
+	response, err := create(ctx)
+	if err != nil {
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := state.CatalogName + "." + state.SchemaName + "." + state.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.Secret, *catalog.Secret]{
+			name:  "secret " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.Secret, error) {
+				return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+					FullName:        fullName,
+					IncludeValue:    true,
+					ForceSendFields: nil,
+				})
+			},
+			createTime:    func(found *catalog.Secret) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.Secret) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.Secret],
+			create: repeatCreate(create),
+		}, err)
+	}
 	if err != nil || response == nil {
 		return "", nil, err
 	}
@@ -102,6 +129,20 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 		return nil, err
 	}
 	return remapSecretRemote(response), nil
+}
+
+// IDFromState returns the full name, which is the ID.
+func (*ResourceSecret) IDFromState(state *catalog.Secret) string {
+	return state.CatalogName + "." + state.SchemaName + "." + state.Name
+}
+
+// DoUpdateWithID updates a secret whose catalog or schema was renamed: UC moved the secret with its
+// parent, so it is addressed at its new ID. A secret cannot be renamed itself, so this is the only
+// way its ID changes.
+func (r *ResourceSecret) DoUpdateWithID(ctx context.Context, _ string, state *catalog.Secret, entry *PlanEntry) (string, *catalog.Secret, error) {
+	newID := r.IDFromState(state)
+	remote, err := r.DoUpdate(ctx, newID, state, entry)
+	return newID, remote, err
 }
 
 // DoDelete deletes the secret.

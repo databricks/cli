@@ -1,0 +1,84 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.inherited_to_sp
+Created jobs.inherited_to_user
+Created jobs.inherited_unchanged
+Created jobs.target_override_to_group
+Created jobs.variable_to_user
+Files: 2 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change run_as remotely
+
+=== Detect and save changes
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 4 resource(s):
+
+Resource: resources.jobs.inherited_to_sp
+  run_as.service_principal_name: add
+  run_as.user_name: remove
+
+Resource: resources.jobs.inherited_to_user
+  run_as.user_name: add
+
+Resource: resources.jobs.target_override_to_group
+  run_as.group_name: add
+  run_as.user_name: remove
+
+Resource: resources.jobs.variable_to_user
+  run_as.user_name: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -26,4 +26,6 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      run_as:
++        user_name: second-user@example.com
+     inherited_to_sp:
+       name: inherited-to-sp-[UNIQUE_NAME]
+@@ -33,8 +35,10 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      run_as:
++        service_principal_name: [UUID]
+     variable_to_user:
+       name: variable-to-user-[UNIQUE_NAME]
+       run_as:
+-        user_name: ${var.runner}
++        user_name: second-user@example.com
+       tasks:
+         - task_key: main
+@@ -55,3 +59,3 @@
+         target_override_to_group:
+           run_as:
+-            user_name: target-user@example.com
++            group_name: data-engineers
+
+=== Second sync is a no-op
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Plan after sync
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.inherited_to_sp
+  delete resources.jobs.inherited_to_user
+  delete resources.jobs.inherited_unchanged
+  delete resources.jobs.target_override_to_group
+  delete resources.jobs.variable_to_user
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 5 deleted

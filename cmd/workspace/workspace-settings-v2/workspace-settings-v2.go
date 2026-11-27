@@ -3,6 +3,7 @@
 package workspace_settings_v2
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,18 +18,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "workspace-settings-v2",
-		Short:   `APIs to manage workspace level settings.`,
-		Long:    `APIs to manage workspace level settings`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-settings-v2",
+	Short:   `APIs to manage workspace level settings.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `APIs to manage workspace level settings`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetPublicWorkspaceSetting())
@@ -39,8 +44,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-public-workspace-setting command
@@ -62,11 +65,11 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	cmd.Long = `Get a workspace setting.
 
   Get a setting value at workspace level. See
-  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs.
+  :method:settingsv2/listworkspacesettingsmetadata for the list of settings
+  available via public APIs.
 
   Arguments:
-    NAME: Name of the setting`
+    NAME: Name of the setting to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -211,6 +214,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
 	// TODO: complex arg: effective_string_val
+	// TODO: complex arg: effective_workspace_dashboard_theme
 	// TODO: complex arg: effective_workspace_label
 	// TODO: complex arg: integer_val
 	cmd.Flags().StringVar(&patchPublicWorkspaceSettingReq.Setting.Name, "name", patchPublicWorkspaceSettingReq.Setting.Name, `Name of the setting.`)
@@ -218,6 +222,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
 	// TODO: complex arg: string_val
+	// TODO: complex arg: workspace_dashboard_theme
 	// TODO: complex arg: workspace_label
 
 	cmd.Use = "patch-public-workspace-setting NAME"
@@ -225,15 +230,15 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	cmd.Long = `Update a workspace setting.
 
   Patch a setting value at workspace level. See
-  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs at workspace level. To determine the correct field to include
-  in a patch request, refer to the type field of the setting returned in the
-  :method:settingsv2/listworkspacesettingsmetadata response.
+  :method:settingsv2/listworkspacesettingsmetadata for the list of settings
+  available via public APIs at workspace level. To determine the correct field
+  to include in a patch request, refer to the type field of the setting returned
+  in the :method:settingsv2/listworkspacesettingsmetadata response.
 
   Note: Page refresh is required for changes to take effect in UI.
 
   Arguments:
-    NAME: Name of the setting`
+    NAME: Name of the setting to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

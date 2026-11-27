@@ -1,0 +1,16 @@
+# A single statement followed by a comment after its terminating ';' is one
+# statement as far as Postgres is concerned, so the pre-flight check must let
+# it through. The instance is STOPPED, so an accepted input fails at target
+# resolution instead of the multi-statement check.
+
+title "Trailing line comment after ';'"
+trace musterr $CLI experimental postgres query --target my-instance "SELECT 1; -- done"
+
+title "Trailing block comment after ';'"
+trace musterr $CLI experimental postgres query --target my-instance "SELECT 1; /* done */"
+
+title "File ending with a comment line after the statement"
+trace musterr $CLI experimental postgres query --target my-instance --file q.sql
+
+title "Two statements are still rejected"
+trace musterr $CLI experimental postgres query --target my-instance "SELECT 1; -- one" "SELECT 1; SELECT 2"

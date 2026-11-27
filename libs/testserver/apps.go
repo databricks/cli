@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,16 @@ func setUcSecurableKinds(app *apps.App) {
 	}
 }
 
+// maskInputOnly clears the fields the Apps API accepts on write but never echoes
+// on read (source_code_path, git_source are input_only per the API spec; the read
+// side exposes default_source_code_path / default_git_source instead). The stored
+// app keeps the real values so deployments can resolve the configured source.
+func maskInputOnly(app apps.App) apps.App {
+	app.SourceCodePath = ""
+	app.GitSource = nil
+	return app
+}
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -37,8 +48,20 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		}
 	}
 
-	// The real API rejects source_code_path in the UpdateApp body at any value.
+	// The real API rejects source_code_path on UpdateApp both in the update mask
+	// (production returns 400 INVALID_PARAMETER_VALUE "Invalid update mask", see
+	// https://github.com/databricks/cli/pull/6399) and in the body at any value (#6401:
+	// the CLI sent "source_code_path": "" and got a 400).
 	if updateReq.App != nil {
+		if slices.Contains(strings.Split(updateReq.UpdateMask, ","), "source_code_path") {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "Invalid update mask: source_code_path cannot be updated.",
+				},
+			}
+		}
 		var rawBody struct {
 			App json.RawMessage `json:"app"`
 		}
@@ -147,8 +170,16 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		Message: "Deployment succeeded",
 	}
 
+	// The backend returns env vars with their name only: value and value_from are never
+	// read back, neither from get-deployment nor from the app's active_deployment. Mask
+	// them before storing so every read path agrees. See https://github.com/databricks/cli/issues/7301
+	for i, ev := range deployment.EnvVars {
+		deployment.EnvVars[i] = apps.EnvVar{Name: ev.Name}
+	}
+
 	app.ActiveDeployment = &deployment
 	app.DefaultSourceCodePath = deployment.SourceCodePath
+	app.DefaultGitSource = deployment.GitSource
 	s.Apps[name] = app
 
 	return Response{Body: deployment}
@@ -166,19 +197,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 		return Response{StatusCode: 404}
 	}
 
-	// Return a copy so the masking below does not mutate the stored deployment.
-	deployment := *app.ActiveDeployment
-
-	// The real GET response strips env var values, returning only the name of
-	// each variable. Reproduce that masking so the local golden matches
-	// recorded cloud behavior.
-	maskedEnvVars := make([]apps.EnvVar, len(deployment.EnvVars))
-	for i, ev := range deployment.EnvVars {
-		maskedEnvVars[i] = apps.EnvVar{Name: ev.Name}
-	}
-	deployment.EnvVars = maskedEnvVars
-
-	return Response{Body: deployment}
+	return Response{Body: app.ActiveDeployment}
 }
 
 func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
@@ -187,6 +206,16 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	app, ok := s.Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
+	}
+
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateActive {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    fmt.Sprintf("Cannot start app %s as its compute is in ACTIVE state. App compute needs to be STOPPED to start.", name),
+			},
+		}
 	}
 
 	app.ComputeStatus = &apps.ComputeStatus{
@@ -200,7 +229,7 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	}
 	s.Apps[name] = app
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
 }
 
 func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
@@ -226,7 +255,35 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	app.PendingDeployment = nil
 	s.Apps[name] = app
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
+}
+
+// AppsUpdateThumbnail sets thumbnail_url, the only trace of the image the real API returns.
+func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = "/ajax-api/2.0/thumbnails/raw/apps/" + app.Id + "/SMALL_DEFAULT.png"
+	s.Apps[name] = app
+
+	return Response{Body: apps.AppThumbnail{}}
+}
+
+// AppsDeleteThumbnail clears thumbnail_url.
+func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = ""
+	s.Apps[name] = app
+
+	return Response{}
 }
 
 // AppsGet returns the app, keeping DELETING resources visible so callers can
@@ -242,7 +299,7 @@ func (s *FakeWorkspace) AppsGet(name string) Response {
 		}
 	}
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
 }
 
 // AppsDelete simulates the real Apps DELETE lifecycle: the first DELETE flips
@@ -341,9 +398,17 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			Message: "App compute is active.",
 		}
 
-		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
+		// Simulate the apps platform side effect: when an app with running compute
+		// is created, it is deployed from its configured source. source_code_path and
+		// git_source now arrive on the Create request; fall back to the default path
+		// for apps that configure neither.
+		sourceCodePath := app.SourceCodePath
+		if sourceCodePath == "" && app.GitSource == nil {
+			sourceCodePath = "/Workspace/Users/tester@databricks.com/" + name
+		}
 		deployment := apps.AppDeployment{
-			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+			SourceCodePath: sourceCodePath,
+			GitSource:      app.GitSource,
 		}
 
 		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
@@ -354,6 +419,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 		app.ActiveDeployment = &deployment
 		app.DefaultSourceCodePath = deployment.SourceCodePath
+		app.DefaultGitSource = app.GitSource
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
@@ -394,6 +460,6 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	s.Apps[name] = app
 	return Response{
-		Body: app,
+		Body: maskInputOnly(app),
 	}
 }

@@ -66,3 +66,26 @@ func TestDumpSkillsToPathFallsBackWhenLatestUnknown(t *testing.T) {
 		assert.FileExists(t, filepath.Join(dest, name, "SKILL.md"))
 	}
 }
+
+// A dump where every skill is filtered out fails before it claims to have
+// written anything.
+func TestDumpSkillsToPathWithNoSkillToWrite(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	src := &mockManifestSource{manifest: &Manifest{
+		Version:   "1",
+		UpdatedAt: "2024-01-01",
+		Skills: map[string]SkillMeta{
+			"databricks-preview": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+		},
+	}}
+
+	dest := filepath.Join(t.TempDir(), "out")
+	n, err := DumpSkillsToPath(ctx, src, dest, InstallOptions{})
+	require.ErrorIs(t, err, ErrNoSkillsResolved)
+	assert.Zero(t, n)
+	assert.NotContains(t, stderr.String(), "Wrote")
+	_, err = os.Stat(dest)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}

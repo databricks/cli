@@ -3,6 +3,8 @@
 package lakeview_embedded
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,18 +16,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "lakeview-embedded",
-		Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
-		Long:    `Token-based Lakeview APIs for embedding dashboards in external applications.`,
-		GroupID: "dashboards",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "lakeview-embedded",
+	Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
+	GroupID: "dashboards",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Token-based Lakeview APIs for embedding dashboards in external applications.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetPublishedDashboardTokenInfo())
@@ -34,8 +40,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-published-dashboard-token-info command
@@ -52,8 +56,8 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 	var getPublishedDashboardTokenInfoReq dashboards.GetPublishedDashboardTokenInfoRequest
 
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim.`)
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Value to carry in the token for this viewer, such as a tenant or region key.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Identifier of the viewer in the external application.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `*Public Preview* Read information of a published dashboard to mint an OAuth token.`
@@ -61,14 +65,20 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 Read information of a published dashboard to mint an OAuth token.
 
-  Get a required authorization details and scopes of a published dashboard to
-  mint an OAuth token.
+  Get the OAuth scope and authorization details needed to mint a token that is
+  scoped to viewing the published dashboard, for example to embed it in an
+  external application. Pass the response fields, with authorization_details
+  serialized as a JSON string, to the workspace OAuth token endpoint with the
+  client_credentials grant to mint the token. See [Embedding for external
+  users].
 
   The caller must be a workspace user with one of the following entitlements:
   Workspace access, Databricks SQL access, or Consumer access.
 
   Account-level users who are not members of the workspace cannot call this
   endpoint, even if the dashboard has been shared with them.
+
+  [Embedding for external users]: https://docs.databricks.com/dashboards/share/embedding/external-embed
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`

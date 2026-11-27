@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="1234" tests="1" failures="0" errors="1" skipped="0">
+    <testcase name="pipelines test">
+      <error message="unsupported pytest argument &#34;-x&#34;: only -k and -m are supported">unsupported pytest argument &#34;-x&#34;: only -k and -m are supported</error>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -3,6 +3,7 @@
 package sandbox
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,27 +23,32 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "sandbox",
-		Short: `*Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "sandbox",
+	Short:   `*Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.`,
+	GroupID: "sandbox",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 Create, manage, and control the lifecycle of sandboxes -- isolated,
-  pre-configured, low-latency Serverless compute environments for running code.`,
-		GroupID: "sandbox",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  pre-configured, low-latency Serverless compute environments for running code.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectory())
 	cmd.AddCommand(newCreateSandbox())
 	cmd.AddCommand(newDeletePath())
 	cmd.AddCommand(newDeleteSandbox())
+	cmd.AddCommand(newDownloadFile())
 	cmd.AddCommand(newExecuteCommandSync())
 	cmd.AddCommand(newGetMetadata())
 	cmd.AddCommand(newGetSandbox())
@@ -58,8 +64,6 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-directory command
@@ -182,11 +186,18 @@ func newCreateSandbox() *cobra.Command {
 
 Create a sandbox.
 
-  Creates a new Sandbox.
+  Creates a sandbox with the given sandbox_id and starts provisioning it.
+  Provisioning is asynchronous: the response usually shows the sandbox in
+  SANDBOX_STATE_PENDING, so poll GetSandbox until the state is
+  SANDBOX_STATE_RUNNING before running commands in it. A sandbox that fails to
+  provision ends in SANDBOX_STATE_STOPPED. Returns ALREADY_EXISTS if a sandbox
+  with the same ID already exists in the workspace.
 
   Arguments:
     SANDBOX_ID: Client-supplied ID that becomes the final path segment of the resource
-      name.`
+      name. It must start with a lowercase letter, contain only lowercase
+      letters, digits and hyphens, end with a letter or digit, and be at most 63
+      characters long. Values shaped like a UUID are rejected.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -347,7 +358,14 @@ func newDeleteSandbox() *cobra.Command {
 
 Delete a sandbox.
 
-  Deletes a Sandbox.`
+  Deletes a sandbox, including the data in its home directory. A pending or
+  running sandbox is stopped first and is removed once the teardown completes,
+  after which GetSandbox returns NOT_FOUND. Deleting a sandbox that is already
+  being deleted succeeds.
+
+  Arguments:
+    NAME: Resource name of the sandbox to delete, in the form
+      sandboxes/{sandbox_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -379,6 +397,95 @@ Delete a sandbox.
 	// Apply optional overrides to this command.
 	for _, fn := range deleteSandboxOverrides {
 		fn(cmd, &deleteSandboxReq)
+	}
+
+	return cmd
+}
+
+// start download-file command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var downloadFileOverrides []func(
+	*cobra.Command,
+	*sandbox.DownloadFileRequest,
+)
+
+func newDownloadFile() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var downloadFileReq sandbox.DownloadFileRequest
+
+	cmd.Flags().StringVar(&downloadFileReq.ByteRange, "byte-range", downloadFileReq.ByteRange, `A single byte range, such as bytes=0-1023 or bytes=-1024.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfMatch, "if-match", downloadFileReq.IfMatch, `Entity tags or *.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfModifiedSince, "if-modified-since", downloadFileReq.IfModifiedSince, `An HTTP-date.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfNoneMatch, "if-none-match", downloadFileReq.IfNoneMatch, `Entity tags or *.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfRange, "if-range", downloadFileReq.IfRange, `A strong entity tag.`)
+	cmd.Flags().StringVar(&downloadFileReq.IfUnmodifiedSince, "if-unmodified-since", downloadFileReq.IfUnmodifiedSince, `An HTTP-date.`)
+
+	cmd.Use = "download-file PARENT PATH"
+	cmd.Short = `Download a sandbox file.`
+	cmd.Long = `Download a sandbox file.
+
+  Downloads a regular file from a sandbox as an application/octet-stream body.
+  The sandbox starts automatically if it is stopped. Filesystem access uses the
+  sandbox user's permissions and follows symbolic links.
+
+  A full download returns 200 OK. A satisfiable single byte range returns 206
+  Partial Content. Multiple byte ranges are unsupported and return 400. Invalid
+  ranges are ignored; an unsatisfiable range returns 416 with Content-Range
+  describing the file length. Range is ignored for empty files.
+
+  Conditional requests can return 304 Not Modified or 412 Precondition Failed.
+  If-Range selects a partial response only when its strong entity tag matches;
+  otherwise, the entire file is returned. HTTP-date validators in If-Range cause
+  a full download. Reads are not snapshots: concurrent in-place writes can
+  affect the returned bytes. HEAD is unsupported.
+
+  Range and conditional options may be supplied as query parameters or HTTP
+  headers. A parameter and one header may both be supplied when their values
+  match exactly. Conflicting values or repeated parameters return 400.
+
+  Arguments:
+    PARENT: The sandbox resource name, in the form sandboxes/{sandbox_id}.
+    PATH: The absolute UTF-8 path of the file inside the sandbox.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		downloadFileReq.Parent = args[0]
+		downloadFileReq.Path = args[1]
+
+		response, err := w.Sandbox.DownloadFile(ctx, downloadFileReq)
+		if err != nil {
+			return err
+		}
+
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range downloadFileOverrides {
+		fn(cmd, &downloadFileReq)
 	}
 
 	return cmd
@@ -572,7 +679,11 @@ func newGetSandbox() *cobra.Command {
 
 Get a sandbox.
 
-  Retrieves a Sandbox by name.`
+  Retrieves a Sandbox by name.
+
+  Arguments:
+    NAME: Resource name of the sandbox to retrieve, in the form
+      sandboxes/{sandbox_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -773,7 +884,7 @@ func newListSandboxes() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listSandboxesLimit int
 
-	cmd.Flags().IntVar(&listSandboxesReq.PageSize, "page-size", listSandboxesReq.PageSize, ``)
+	cmd.Flags().IntVar(&listSandboxesReq.PageSize, "page-size", listSandboxesReq.PageSize, `Maximum number of sandboxes to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSandboxesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -788,7 +899,8 @@ func newListSandboxes() *cobra.Command {
 
 List sandboxes.
 
-  Lists all Sandboxes.`
+  Lists the sandboxes in the workspace that are visible to the caller, including
+  stopped sandboxes. Sandboxes that are being deleted are not returned.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -940,8 +1052,12 @@ func newStartSandbox() *cobra.Command {
 
 Start a sandbox.
 
-  Starts a previously stopped Sandbox under the same sandbox name. Returns
-  NOT_FOUND if there is no stopped sandbox to start for the given name.
+  Starts a previously stopped sandbox under the same sandbox name, with the data
+  in its home directory intact. Starting is asynchronous: the response usually
+  shows the sandbox in SANDBOX_STATE_PENDING, so poll GetSandbox until the
+  state is SANDBOX_STATE_RUNNING. Returns NOT_FOUND if the sandbox does not
+  exist, FAILED_PRECONDITION if it is pending or running, and ABORTED while it
+  is still stopping.
 
   Arguments:
     NAME: Resource name of the sandbox to start, in the form
@@ -1003,8 +1119,12 @@ func newStopSandbox() *cobra.Command {
 
 Stop a sandbox.
 
-  Stops a running Sandbox, preserving it so it can later be restarted with a
-  Start request.
+  Stops a running sandbox, preserving it so it can later be restarted with a
+  Start request. Stopping is asynchronous: the response usually shows the
+  sandbox in SANDBOX_STATE_STOPPING, and it settles to SANDBOX_STATE_STOPPED
+  once the shutdown completes. The data in the home directory is kept; other
+  local changes are discarded. Stopping a sandbox that is already stopped or
+  stopping succeeds without changes.
 
   Arguments:
     NAME: Resource name of the sandbox to stop, in the form

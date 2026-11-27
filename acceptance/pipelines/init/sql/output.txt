@@ -1,5 +1,6 @@
 
 === Test pipelines init with SQL configuration
+
 >>> [CLI] pipelines init --config-file ./input.json --output-dir output
 Welcome to the template for Lakeflow Spark Declarative Pipelines!
 

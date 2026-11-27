@@ -11,8 +11,7 @@ const (
 	// alive. Matches the keepalive interval of the vite bridge (libs/apps/vite/bridge.go), and sits
 	// well under both the ~9 minutes after which idle sessions were observed to drop and the
 	// 30 second SSH-level keepalive that was verified to prevent it.
-	defaultKeepaliveInterval  = 20 * time.Second
-	defaultEnvironmentVersion = 4
+	defaultKeepaliveInterval = 20 * time.Second
 	// Default cap on how long an SSH tunnel server is allowed to live. Fixed when the
 	// server job is submitted, so it is only settable by the invocation that starts it.
 	defaultServerTimeout = 24 * time.Hour

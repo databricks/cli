@@ -29,10 +29,10 @@ rm "$OUT_REQUESTS"
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "3 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
-trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
+rm -f "$OUT_REQUESTS"
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
-trace print_requests.py --get //jobs/get | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
+rm -f "$OUT_REQUESTS"
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate

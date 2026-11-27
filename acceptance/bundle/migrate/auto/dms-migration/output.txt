@@ -1,8 +1,10 @@
 
 === Replay a prior terraform deployment (captured from a real terraform run)
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Terraform state migrates to file-backed direct state with shadow history
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

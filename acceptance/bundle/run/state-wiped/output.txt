@@ -16,6 +16,7 @@ Run URL: [DATABRICKS_URL]/jobs/[FOO_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 [TIMESTAMP] "foo" TERMINATED SUCCESS
 
 === Testing that clean state that affect run command -- it'll fetch the state
+
 >>> rm -fr .databricks
 
 >>> [CLI] bundle run foo

@@ -207,6 +207,15 @@ __all__ = [
     "PipelinePermissionLevel",
     "PipelinePermissionLevelParam",
     "PipelinePermissionParam",
+    "PipelineTestEnvironment",
+    "PipelineTestEnvironmentDict",
+    "PipelineTestEnvironmentParam",
+    "PipelineTestSource",
+    "PipelineTestSourceDict",
+    "PipelineTestSourceParam",
+    "PipelineTesting",
+    "PipelineTestingDict",
+    "PipelineTestingParam",
     "PipelinesEnvironment",
     "PipelinesEnvironmentDict",
     "PipelinesEnvironmentParam",
@@ -644,6 +653,21 @@ from databricks.bundles.pipelines._models.pipeline_permission import (
 from databricks.bundles.pipelines._models.pipeline_permission_level import (
     PipelinePermissionLevel,
     PipelinePermissionLevelParam,
+)
+from databricks.bundles.pipelines._models.pipeline_test_environment import (
+    PipelineTestEnvironment,
+    PipelineTestEnvironmentDict,
+    PipelineTestEnvironmentParam,
+)
+from databricks.bundles.pipelines._models.pipeline_test_source import (
+    PipelineTestSource,
+    PipelineTestSourceDict,
+    PipelineTestSourceParam,
+)
+from databricks.bundles.pipelines._models.pipeline_testing import (
+    PipelineTesting,
+    PipelineTestingDict,
+    PipelineTestingParam,
 )
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,

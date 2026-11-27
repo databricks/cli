@@ -44,6 +44,18 @@ func stripANSI(s string) string {
 	return ansiStripPattern.ReplaceAllString(s, "")
 }
 
+// screenLines returns the lines a terminal would show for s: tea redraws
+// its view (spinner, prompt) by returning to column 0 with \r and
+// erasing, so only the text after a line's last \r is still visible.
+func screenLines(s string) []string {
+	lines := strings.Split(stripANSI(s), "\n")
+	for i, line := range lines {
+		line = strings.TrimRight(line, "\r")
+		lines[i] = line[strings.LastIndex(line, "\r")+1:]
+	}
+	return lines
+}
+
 // pagedOutput runs a full paged render, feeding ENTER to auto-drain,
 // and returns the ANSI-stripped output.
 func pagedOutput(
@@ -64,24 +76,33 @@ func pagedOutput(
 	return stripANSI(out.String())
 }
 
-func countContentLines(s string) int {
-	count := 0
-	for line := range strings.SplitSeq(s, "\n") {
+// contentLines returns the visible rows, without the pager's prompt and
+// spinner lines.
+func contentLines(s string) []string {
+	var rows []string
+	for _, line := range screenLines(s) {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.Contains(trimmed, pagerPromptText) {
+		if trimmed == "" || strings.Contains(trimmed, pagerPromptText) || strings.Contains(trimmed, pagerLoadingText) {
 			continue
 		}
-		count++
+		rows = append(rows, trimmed)
 	}
-	return count
+	return rows
+}
+
+func countContentLines(s string) int {
+	return len(contentLines(s))
 }
 
 func TestPagedTemplateDrainsFullIterator(t *testing.T) {
 	out := pagedOutput(t, MockDiscard(t.Context()), &numberIterator{n: 23}, "", "{{range .}}{{.}}\n{{end}}", 5)
 	assert.Equal(t, 23, countContentLines(out))
+	// Pages must come out in order, not just all present.
+	var want []string
 	for i := 1; i <= 23; i++ {
-		assert.Contains(t, out, strconv.Itoa(i))
+		want = append(want, strconv.Itoa(i))
 	}
+	assert.Equal(t, want, contentLines(out))
 }
 
 func TestPagedTemplateRespectsLimit(t *testing.T) {
@@ -183,7 +204,7 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 		100,
 	))
 
-	assertSameContentLines(t, expected.String(), stripANSI(actual.String()))
+	assertSameContentLines(t, expected.String(), strings.Join(screenLines(actual.String()), "\n"))
 }
 
 func assertSameContentLines(t *testing.T, want, got string) {

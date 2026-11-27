@@ -235,6 +235,25 @@ func TestPromptForWorkspaceSelectionListError(t *testing.T) {
 	}
 }
 
+func TestPromptForWorkspaceSelectionGivesUpQuicklyOnUnavailable(t *testing.T) {
+	t.Cleanup(authcmd.SetWorkspaceListTimeoutSeconds(1))
+	args, requests := newWorkspaceListServer(t, http.StatusServiceUnavailable, nil)
+	start := time.Now()
+	tm := termtest.Run(t, func(ctx context.Context) (string, error) {
+		return authcmd.PromptForWorkspaceSelection(ctx, args, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: workspaceTestToken}))
+	})
+	tm.WaitFor(workspaceIDPrompt)
+	// The SDK's default retry budget is 5 minutes; the lookup must fall back well before that.
+	assert.Less(t, time.Since(start), 30*time.Second)
+	tm.Type("123456" + termtest.KeyEnter)
+	id, err := tm.Result()
+	require.NoError(t, err)
+	assert.Equal(t, "123456", id)
+	assert.Positive(t, requests.Load())
+	assert.Contains(t, tm.Raw(), "Looking up workspaces")
+	assert.Contains(t, tm.Raw(), "?w=<workspace_id>")
+}
+
 // newWorkspaceListServer exercises the SDK's actual list decoding without a live account.
 func newWorkspaceListServer(t *testing.T, status int, workspaces []provisioning.Workspace) (*auth.AuthArguments, *atomic.Int32) {
 	t.Helper()

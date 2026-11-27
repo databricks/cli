@@ -41,8 +41,9 @@ var varPrefix = structpath.NewStringKey(nil, "var")
 // a new task appended to the tasks array). Within the new element, a leaf is
 // restored only when a sibling element in the same sequence has a pure
 // variable reference at the exact same relative path whose resolved value
-// matches the leaf value. Non-sequence Adds (new map fields) are left
-// untouched.
+// matches the leaf value. A field Add is restored like a Replace when the config
+// defines the field, as for one inherited through a merge key that is written next
+// to it; other non-sequence Adds (new map fields) are left untouched.
 //
 // The caller supplies preResolved (see LoadPreResolvedConfig): the merged
 // config where ${var.X} and ${resources.X.Y.id} references are still literal
@@ -93,6 +94,10 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
+			if fieldValue, ok := definedField(preResolved, fc.originalPath); ok {
+				newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
+				break
+			}
 			siblings, ok := sequenceSiblings(preResolved, fc.originalPath)
 			if !ok {
 				continue
@@ -530,26 +535,39 @@ func preResolvedValueAt(preResolved structvar.View, fieldPath string) (structvar
 	return v, v.IsValid()
 }
 
-// parentIsVariableReference reports whether the parent of fieldPath resolves to a
+// ancestorIsVariableReference reports whether an ancestor of fieldPath resolves to a
 // scalar variable reference in the pre-resolved config (e.g. spark_conf:
 // ${var.spark_conf}). A nested key or index cannot be written into such a scalar,
 // so config-remote-sync skips the change. fieldPath is a merged-index path, the
 // same space as FieldChange.originalPath.
-func parentIsVariableReference(preResolved structvar.View, fieldPath string) bool {
+func ancestorIsVariableReference(preResolved structvar.View, fieldPath string) bool {
 	node, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return false
 	}
-	parent := node.Parent()
-	if parent == nil {
-		return false
+	for parent := node.Parent(); parent != nil; parent = parent.Parent() {
+		v, ok := preResolvedValueAt(preResolved, parent.String())
+		if !ok {
+			continue
+		}
+		s, ok := v.AsString()
+		return ok && structvar.ContainsVariableReference(s)
 	}
-	v, ok := preResolvedValueAt(preResolved, parent.String())
-	if !ok {
-		return false
+	return false
+}
+
+// definedField returns the field a key path addresses in the pre-resolved config.
+// Index paths are left to the sibling lookup: an added element is new even when
+// another one sits at its position.
+func definedField(preResolved structvar.View, fieldPath string) (structvar.View, bool) {
+	node, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return structvar.View{}, false
 	}
-	s, ok := v.AsString()
-	return ok && structvar.ContainsVariableReference(s)
+	if _, ok := node.StringKey(); !ok {
+		return structvar.View{}, false
+	}
+	return preResolvedValueAt(preResolved, fieldPath)
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when
@@ -566,12 +584,8 @@ func sequenceSiblings(preResolved structvar.View, fieldPath string) ([]structvar
 	if !hasIndex && !node.BracketStar() {
 		return nil, false
 	}
-	p, err := structpath.ParsePath(node.Parent().String())
-	if err != nil {
-		return nil, false
-	}
-	parentValue := preResolved.Lookup(p)
-	if parentValue.Kind() != structvar.KindSequence {
+	parentValue, ok := preResolvedValueAt(preResolved, node.Parent().String())
+	if !ok || parentValue.Kind() != structvar.KindSequence {
 		return nil, false
 	}
 	var seq []structvar.View

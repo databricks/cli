@@ -6,9 +6,11 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Delete the resource out of band
+
 >>> [CLI] ai-gateway delete-model-service model-services/main.myschema.myservice
 
 === Plan should detect the resource is gone and re-create it
+
 >>> [CLI] bundle plan
 create model_services.ms1
 

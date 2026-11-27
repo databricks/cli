@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -92,7 +93,7 @@ func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*Postg
 }
 
 func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
-	waiter, err := r.client.Postgres.CreateCatalog(ctx, postgres.CreateCatalogRequest{
+	req := postgres.CreateCatalogRequest{
 		CatalogId: config.CatalogId,
 		Catalog: postgres.Catalog{
 			Spec: &config.CatalogCatalogSpec,
@@ -106,16 +107,60 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *Postgres
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateCatalog(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
+	}
+	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a catalog that a create request returned.
+func (r *ResourcePostgresCatalog) waitCreated(ctx context.Context, waiter postgres.CreateCatalogOperationInterface) (*PostgresCatalogRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresCatalogRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Catalog
+// creates are answered with 500 INTERNAL_ERROR now and then (observed on AWS and GCP, 2026-11),
+// and the request may have created the catalog anyway, so look for it before repeating the request.
+func (r *ResourcePostgresCatalog) recoverFailedCreate(ctx context.Context, req postgres.CreateCatalogRequest, start time.Time, createErr error) (string, *PostgresCatalogRemote, error) {
+	if req.CatalogId == "" {
+		return "", nil, createErr
 	}
 
-	result, err := waiter.Wait(ctx)
+	name := "catalogs/" + req.CatalogId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Catalog, *PostgresCatalogRemote]{
+		name:  "catalog " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Catalog, error) {
+			return r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Catalog) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(_ context.Context, found *postgres.Catalog) (*PostgresCatalogRemote, error) {
+			return makePostgresCatalogRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresCatalogRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateCatalog(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresCatalogRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresCatalogRemote(result)
 	return remote.Name, remote, nil
 }
 

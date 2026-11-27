@@ -7,6 +7,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id
+
 >>> print_requests.py //policies/clusters //jobs --nostamp
 {
   "method": "POST",
@@ -45,6 +46,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update both the policy and the job
+
 >>> update_file.py databricks.yml my_policy my_policy_2
 
 >>> update_file.py databricks.yml my_job my_job_2
@@ -98,6 +100,7 @@ Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 }
 
 === Destroy: job delete precedes policy delete
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.pol

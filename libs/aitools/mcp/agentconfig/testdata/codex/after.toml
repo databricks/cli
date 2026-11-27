@@ -1,0 +1,13 @@
+# Codex settings. This comment is kept.
+model = "gpt-5"
+
+[projects."/work"]
+trust_level = "trusted"
+
+[mcp_servers.other]
+command = "npx"
+args = ["-y", "other-mcp"]
+
+[mcp_servers.genie_one_mcp-dogfood]
+args = ["aitools", "mcp", "serve", "--profile", "dogfood", "--service", "system.ai.genie_one_mcp", "--agent", "codex"]
+command = "/opt/databricks/bin/databricks"

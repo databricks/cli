@@ -1,0 +1,16 @@
+{
+    "welcome_message": "Initializing for {{ .workspace.URL }}",
+    "properties": {
+        "path": {
+            "type": "string",
+            "description": "Path to open on {{ .workspace.Hostname }}",
+            "default": "/jobs?view=list#top"
+        },
+        "jobs_url": {
+            "type": "string",
+            "description": "Jobs page",
+            "default": "{{ $ws := .workspace }}{{ $ws.URL \"/jobs\" }}"
+        }
+    },
+    "success_message": "Open {{ .workspace.URL .path }}"
+}

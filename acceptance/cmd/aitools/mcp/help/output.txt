@@ -1,0 +1,81 @@
+
+=== list and remove help show their examples
+
+>>> [CLI] aitools mcp list --help
+List Databricks managed MCP servers installed by this CLI, grouped by profile, with the
+coding agents each one is in. Entries that drifted from their profile or from the agent config are
+reported. Entries in agent configs that this CLI did not write are listed as unmanaged and never changed.
+Entries that run 'aitools mcp serve' but have no install record are listed as unmanaged too.
+
+Each agent of a server has one of these statuses. The JSON output uses the same names, with underscores:
+  installed        the entry is the one this CLI wrote
+  changed          the entry still serves the server, but differs from what 'add' writes, for example in
+                   an argument; running 'add' again repairs it
+  modified         the entry was changed outside this CLI, so it no longer serves the server
+  missing on disk  the entry is not in the agent config
+  path changed     the agent now reads its config from another file
+  unknown          the entry or the config could not be checked
+
+--profile lists the servers of that profile only. Unmanaged entries have no profile, so they are not
+listed then.
+
+Without --check this command makes no network calls. With --check, a token is requested for each profile,
+the sign-in state of each sign-in-required server is read, and the recorded binary is checked. It always exits 0
+when entries have drifted or cannot be checked; an entry or agent config that cannot be checked is a warning.
+
+Usage:
+  databricks aitools mcp list [flags]
+
+Examples:
+  databricks aitools mcp list
+  databricks aitools mcp list --profile logfood
+  databricks aitools mcp list --output json
+
+Flags:
+      --check[=true|false]   Also check tokens, sign-in state and the recorded binary (uses the network)
+  -h, --help[=true|false]    help for list
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools mcp remove --help
+Remove Databricks managed MCP servers that this CLI installed.
+
+Choose servers with --names (server names as listed by 'aitools mcp list', or service names; the
+last part of a service name, such as github, is enough when only one schema has it), --profile
+(every server of one profile), or --all. --profile also narrows --names or --all to one profile, and
+--agents narrows any of them to some agents.
+In a terminal, with none of --names, --profile or --all, the command shows the installed servers to
+choose from. Without a terminal, one of them is required.
+With --profile or --all and nothing installed to remove, the command succeeds and removes nothing.
+
+Only entries this CLI wrote are removed. An entry that this CLI did not write, and that is not a Databricks
+entry, is left in place, and the install record for its agent is dropped. A Databricks entry that was changed outside
+this CLI is left in place and reported, and a --names run that names its server is refused. When an agent's config
+moved, the entry is removed from the file it was written to and from the file the agent reads now.
+Entries that run 'aitools mcp serve' without an install record are not chosen by any flag;
+'aitools mcp list' shows them as unmanaged. Your sign-ins to services are kept; 'aitools mcp logout'
+removes one.
+
+Usage:
+  databricks aitools mcp remove [flags]
+
+Examples:
+  databricks aitools mcp remove --names github-logfood
+  databricks aitools mcp remove --profile logfood --agents cursor
+  databricks aitools mcp remove --all
+
+Flags:
+      --agents string       Agents to remove from, comma-separated (default: every agent the server is installed for)
+      --all[=true|false]    Remove every server this CLI installed
+  -h, --help[=true|false]   help for remove
+      --names string        Servers to remove: server names or service names, comma-separated
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)

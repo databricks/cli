@@ -4,7 +4,8 @@
     "expire_time": {
       "action": "update",
       "old": "[EXPIRE_TIME_BEFORE]",
-      "new": "[EXPIRE_TIME_AFTER]"
+      "new": "[EXPIRE_TIME_AFTER]",
+      "remote": "[EXPIRE_TIME_BEFORE]"
     }
   }
 }

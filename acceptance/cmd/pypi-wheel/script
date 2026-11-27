@@ -1,0 +1,15 @@
+# Package the CLI under test the way release-build does, then run it through uvx
+# to check that a wheel built by build_cli_wheels.py is usable by Python tooling.
+trace python3 make_archives.py $CLI archives
+trace ls archives
+trace python3 $TESTROOT/../tools/build_cli_wheels.py archives wheels $TESTROOT/../LICENSE
+# Offline, so packaging comes from the vendored packages rather than the
+# tools/requirements.txt pin (they can differ after a Dependabot bump).
+trace uv run -q --no-project --with packaging python $TESTROOT/../tools/validate_cli_wheels.py wheels
+trace python3 show_wheels.py wheels
+
+# uv must pick the wheel for this platform: the other wheels hold a placeholder
+# instead of the binary (see make_archives.py), so a wrong pick fails here.
+trace uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
+
+rm -fr archives wheels

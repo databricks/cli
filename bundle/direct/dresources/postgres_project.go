@@ -3,8 +3,10 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -52,10 +54,9 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		ProjectId:       input.ProjectId,
-		PurgeOnDelete:   input.PurgeOnDelete,
-		ProjectSpec:     input.ProjectSpec,
-		ForceSendFields: input.ForceSendFields,
+		ProjectId:     input.ProjectId,
+		PurgeOnDelete: input.PurgeOnDelete,
+		ProjectSpec:   input.ProjectSpec,
 	}
 }
 
@@ -65,16 +66,15 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 		ProjectSpec: remote.ProjectSpec,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
+		// returns it, so RemapState leaves it unset.
+		PurgeOnDelete: nil,
 	}
 }
 
 // makePostgresProjectRemote converts the SDK Project into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_projects.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_projects.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote {
 	var spec postgres.ProjectSpec
 	if project.Spec != nil {
@@ -103,7 +103,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 }
 
 func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
-	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+	req := postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
@@ -121,19 +121,87 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateProject(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
-
-	// Wait for the project to be ready (long-running operation)
-	result, err := waiter.Wait(ctx)
-	if err != nil {
-		return "", nil, err
-	}
-
-	remote := makePostgresProjectRemote(result)
 	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a project that a create request returned.
+func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgres.CreateProjectOperationInterface) (*PostgresProjectRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresProjectRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Repeating
+// the request without looking first fails with "already exists" when the failed request did create
+// the project, so look for it before repeating. Without a project_id there is no name to look up;
+// the API rejects such a request with 400 anyway.
+func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req postgres.CreateProjectRequest, start time.Time, createErr error) (string, *PostgresProjectRemote, error) {
+	if req.ProjectId == "" {
+		return "", nil, createErr
+	}
+
+	name := "projects/" + req.ProjectId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Project, *PostgresProjectRemote]{
+		name:  "project " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Project, error) {
+			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
+			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
+				return nil, err
+			}
+			return makePostgresProjectRemote(project), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresProjectRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateProject(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresProjectRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
+	return remote.Name, remote, nil
+}
+
+// waitDefaultBranchReady stands in for the create operation that a recovered project's failed
+// request would have waited for: dependent resources are created on the default branch, so wait
+// for it to leave INIT. The project is ours either way, so a wait that ends early, or a default
+// branch that cannot be read, only warns: state still records the project, and the next deploy
+// does not fail with "already exists".
+func (r *ResourcePostgresProject) waitDefaultBranchReady(ctx context.Context, project *postgres.Project) error {
+	if project.Status == nil || project.Status.DefaultBranch == "" {
+		return nil
+	}
+	name := project.Status.DefaultBranch
+	branch, err := readBranch(ctx, r.client, name)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		log.Warnf(ctx, "waiting for branch %s to become ready: %s", name, err)
+		return nil
+	}
+	_, err = waitBranchReady(ctx, r.client, branch)
+	return err
 }
 
 // The default endpoint settings carry the same suspension oneof as an endpoint does;
@@ -200,7 +268,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
 		Name:            id,
-		Purge:           state.PurgeOnDelete,
+		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

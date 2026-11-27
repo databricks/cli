@@ -1,6 +1,4 @@
 Cloud = true
-CloudEnvs.gcp = false
-CloudEnvs.azure = false
 Ignore = [
     ".databricks",
 ]

@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	libsync "github.com/databricks/cli/libs/sync"
 )
 
 // Every diagnostic below is reported against an on_file_change entry.
@@ -85,15 +84,7 @@ func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, erro
 	// additionally drops files whose notebook type it cannot determine, such as a
 	// malformed .ipynb. Those stay watched on purpose - editing one is exactly when the
 	// run should re-fire - so a pattern can hash a file that this deploy will not upload.
-	includes, err := b.GetSyncIncludePatterns(ctx)
-	if err != nil {
-		return nil, err
-	}
-	fl, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
-	if err != nil {
-		return nil, err
-	}
-	files, err := fl.Files(ctx)
+	files, err := b.GetSyncFiles(ctx)
 	if err != nil {
 		return nil, err
 	}

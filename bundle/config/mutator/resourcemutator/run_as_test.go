@@ -39,16 +39,19 @@ func allResourceTypes(t *testing.T) []string {
 			"cluster_policies",
 			"clusters",
 			"dashboards",
+			"data_quality_monitors",
 			"database_catalogs",
 			"database_instances",
 			"experiments",
 			"external_locations",
+			"feature_specs",
 			"features",
 			"genie_spaces",
 			"instance_pools",
 			"internal_immutable_snapshots",
 			"job_runs",
 			"jobs",
+			"materialization_sets",
 			"mcp_services",
 			"model_provider_services",
 			"model_services",
@@ -57,6 +60,7 @@ func allResourceTypes(t *testing.T) []string {
 			"pipelines",
 			"postgres_branches",
 			"postgres_catalogs",
+			"postgres_data_apis",
 			"postgres_databases",
 			"postgres_endpoints",
 			"postgres_projects",
@@ -183,6 +187,7 @@ var allowList = []string{
 	"external_locations",
 	"synced_database_tables",
 	"jobs",
+	"materialization_sets",
 	"pipelines",
 	"models",
 	"model_services",
@@ -190,6 +195,7 @@ var allowList = []string{
 	"model_provider_services",
 	"postgres_branches",
 	"postgres_catalogs",
+	"postgres_data_apis",
 	"postgres_databases",
 	"postgres_endpoints",
 	"postgres_projects",
@@ -198,6 +204,7 @@ var allowList = []string{
 	"postgres_synced_tables",
 	"registered_models",
 	"experiments",
+	"feature_specs",
 	"features",
 	"genie_spaces",
 	"instance_pools",
@@ -317,6 +324,23 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", rt)
+	}
+}
+
+func TestRunAsSupportListsAreComplete(t *testing.T) {
+	supported := config.SupportedResources()
+
+	// Every resource type needs an explicit decision: either it accepts a different
+	// run_as identity (allowList) or it is rejected (runAsUnsupportedResources).
+	for key := range supported {
+		inAllowList := slices.Contains(allowList, key)
+		inUnsupported := slices.Contains(runAsUnsupportedResources, key)
+		assert.NotEqual(t, inAllowList, inUnsupported, "%s must be in exactly one of allowList or runAsUnsupportedResources", key)
+	}
+
+	for _, key := range slices.Concat(allowList, runAsUnsupportedResources) {
+		_, ok := supported[key]
+		assert.True(t, ok, "%s is listed for run_as but is not a supported resource type", key)
 	}
 }
 

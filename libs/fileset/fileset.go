@@ -1,6 +1,7 @@
 package fileset
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	pathlib "path"
@@ -88,6 +89,11 @@ func (w *FileSet) Files() (out []File, err error) {
 func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out []File, err error) {
 	err = fs.WalkDir(w.root, path, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
+			// An entry under path can be removed between listing its parent and reading it,
+			// e.g. while sync --watch runs. Skip it; the next listing reflects the removal.
+			if name != path && errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
 			return err
 		}
 

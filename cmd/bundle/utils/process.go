@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -31,7 +31,6 @@ import (
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry"
@@ -39,7 +38,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
@@ -87,10 +85,10 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, and loads the plan from
-	// the file instead of calculating it. Artifact uploads are handled directly
-	// inside Deploy by reading the remote paths from the plan's new_state and
-	// finding the matching local files.
+	// When set, skips Build and PreDeployChecks phases (except the deployment state
+	// pull), and loads the plan from the file instead of calculating it. Artifact
+	// uploads are handled directly inside Deploy by reading the remote paths from
+	// the plan's new_state and finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -134,6 +132,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		ctx = logdiag.InitContext(ctx)
 		cmd.SetContext(ctx)
 	}
+
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+
+	// needsState is narrower than shouldReadState: it drops the pull-only flags
+	// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
+	// and display the state without triggering a migration, and adds PostStateFunc for
+	// commands that operate on the state (destroy, run). It gates migrating and opening
+	// the direct state.
+	needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 
 	// Load bundle config and apply target
 	b = root.MustConfigureBundle(cmd)
@@ -244,9 +251,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+	// Whether a deploy or plan records history. Decided before the state pull, so an enrollment
+	// check with the service runs alongside it.
+	var recordsHistory <-chan bool
 
 	if shouldReadState {
+		if opts.Deploy || opts.PreDeployChecks {
+			recordsHistory = recordsDeploymentHistory(ctx, b)
+		}
+
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
@@ -255,13 +268,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		b.MigratingToDirect = !stateDesc.Engine.IsDirect()
 
-		// Tag the user agent with the engine this run actually uses. On the auto-migration
-		// path the engine is only final after the migration runs (below), so leave it unset
-		// here and tag there; setting it once rather than appending avoids a stale
-		// engine/terraform tag alongside engine/direct.
-		if !b.MigratingToDirect {
-			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
-		}
 		ctx = WithLineage(ctx, stateDesc)
 		cmd.SetContext(ctx)
 
@@ -270,8 +276,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 	}
 
-	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
-	// deploy builds and runs the predeploy checks. These only flip opts (no state access),
+	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks (it still
+	// pulls the deployment state, see below); a plain deploy builds and runs the
+	// predeploy checks. These only flip opts (no state access),
 	// so they run before phases.Build; the plan file itself is loaded during state
 	// resolution after the build, once the engine is known and the state is open.
 	if opts.ReadPlanPath != "" {
@@ -333,13 +340,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// and state opening still happen in this single block.
 	var plan *deployplan.Plan
 	if shouldReadState {
-		// needsState is narrower than shouldReadState: it drops the pull-only flags
-		// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
-		// and display the state without triggering a migration, and adds PostStateFunc for
-		// commands that operate on the state (destroy, run). It gates migrating and opening
-		// the direct state.
-		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
-
 		// Migrate a Terraform state to the direct engine: the direct engine is the only engine,
 		// so when the existing state still uses Terraform, convert it so the run proceeds on the
 		// direct engine. Migrate is in-memory and reversible - nothing is written or pushed - so
@@ -352,15 +352,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-		}
-
-		// Tag the user agent with the engine this run actually uses. The tag is left unset
-		// after the pull on the auto-migration path (see above) because the engine is only
-		// final here, after the migration ran, was skipped, or fell back. Setting it once
-		// (rather than appending) avoids a stale engine/terraform tag alongside engine/direct.
-		if b.MigratingToDirect {
-			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
-			cmd.SetContext(ctx)
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
@@ -384,7 +375,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
-			if configuresDeploymentHistory(ctx, b) {
+			if <-recordsHistory {
 				stateMode = dstate.WritingDeploymentHistoryShadow
 				if b.DeploymentBundle.StateDB.Data.Features == nil {
 					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
@@ -411,7 +402,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		if needDirectState && stateMode == dstate.WritingDeploymentHistoryOnly {
 			var err error
-			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+			dmsDeploymentID, dmsDeployment, err = dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -523,6 +514,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+	} else if opts.ReadPlanPath != "" {
+		// A saved plan is often applied from a fresh checkout (a separate CI job). The
+		// deployment state's file list is what lets the file sync delete files removed
+		// from the bundle, and its seq must keep increasing, so pull it here as well.
+		bundle.ApplyContext(ctx, b, deploy.StatePullForSavedPlan())
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
 	}
 
 	// The predeploy script can generate or rewrite files that on_file_change
@@ -591,17 +591,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // On success it advances stateDesc and metrics to the direct engine. Any failure (parse,
 // conversion, plan check) is fatal and returns an error: the Terraform engine was removed, so there
 // is no engine to fall back to. Nothing is committed here - deploy calls statemgmt.CommitMigration
-// after approval, destroy commits as part of its teardown. The caller tags the user agent with the
-// resolved stateDesc.Engine afterwards.
+// after approval, destroy commits as part of its teardown.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-	migrated, err := statemgmt.Migrate(ctx, b)
-	if err != nil {
+	if err := statemgmt.Migrate(ctx, b); err != nil {
 		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}
-	if migrated {
-		stateDesc.Engine = engine.EngineDirect
-		b.Metrics.StateEngine = engine.EngineDirect
-	}
+	stateDesc.Engine = engine.EngineDirect
+	b.Metrics.StateEngine = engine.EngineDirect
 	return nil
 }
 
@@ -637,40 +633,6 @@ func ValidateEngineSetting(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
-//
-// TODO: a deployment is only usable when both the node and the service's record exist, and a
-// half-created one - node present, record missing - blocks the bundle here even though
-// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
-// that returns an empty id and version unless both halves are there, leaving the caller to call
-// CreateDeployment to create or finalize it.
-//
-// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
-// workspace lookup to turn the node into an id, then a get by that id.
-func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
-	nodePath := path.Join(statePath, dms.DeploymentNodeName)
-
-	obj, err := retry.With(ctx, retry.IsTransientRead, func() (*workspace.ObjectInfo, error) {
-		return w.Workspace.GetStatusByPath(ctx, nodePath)
-	})
-	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-		return "", nil, nil
-	}
-	if err != nil {
-		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
-	}
-	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
-	deployment, err := retry.With(ctx, retry.IsTransientRead, func() (*bundledeployments.Deployment, error) {
-		return w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-			Name: dms.DeploymentName(deploymentID),
-		})
-	})
-	if err != nil {
-		return "", nil, err
-	}
-	return deploymentID, deployment, nil
-}
-
 // parseLastVersionID parses the deployment's last recorded version, which the service reports
 // as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
 func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
@@ -696,7 +658,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		return nil
 	}
 
-	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	dmsDeploymentID, dmsDeployment, err := dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err
 	}
@@ -716,7 +678,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 
 // prepareDeploymentHistoryShadow reads version metadata, never resource state, from DMS.
 func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bundledeployments.Deployment, error) {
-	id, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	id, deployment, err := dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}
@@ -737,12 +699,44 @@ func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bun
 	return deployment, nil
 }
 
-func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+// recordsDeploymentHistory delivers whether this deploy or plan records history: the bundle's own
+// setting when it has one, otherwise the workspace's enrollment, asked in the background.
+func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) <-chan bool {
 	var configured *bool
 	if b.Config.Experimental != nil {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
-	return bundleenv.RecordsDeploymentHistory(ctx, configured)
+	if enabled, explicit := bundleenv.DeploymentHistoryChoice(ctx, configured); explicit {
+		result := make(chan bool, 1)
+		result <- enabled
+		return result
+	}
+	return checkAutoEnrollment(ctx, b.WorkspaceClient(ctx), enrollmentCheckTimeout)
+}
+
+// enrollmentCheckTimeout caps the wait for the enrollment answer, so a slow service cannot
+// hold up a deploy.
+const enrollmentCheckTimeout = 5 * time.Second
+
+// checkAutoEnrollment asks, in the background, whether the workspace records deployment history
+// by default. Any failure reads as not enrolled; only an unexpected one warns.
+func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient, timeout time.Duration) <-chan bool {
+	result := make(chan bool, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		enrollments, err := dms.CheckEnrollments(ctx, w, dms.FeatureRecordHistoryAuto)
+		switch {
+		case err == nil:
+		case errors.Is(err, apierr.ErrPermissionDenied), errors.Is(err, apierr.ErrNotFound):
+			// The service does not serve this workspace, or predates the API.
+			log.Debugf(ctx, "Deployment history enrollment: %s", err)
+		default:
+			log.Warnf(ctx, "Skipping deployment history: could not check whether this workspace is enrolled: %s", err)
+		}
+		result <- enrollments[dms.FeatureRecordHistoryAuto]
+	}()
+	return result
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

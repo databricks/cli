@@ -65,3 +65,51 @@ func TestHasChange(t *testing.T) {
 		})
 	}
 }
+
+func TestHasOnlySingleReason(t *testing.T) {
+	parentRenamed := &deployplan.ChangeDesc{Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed}
+	tests := []struct {
+		name    string
+		changes deployplan.Changes
+		want    bool
+	}{
+		{
+			name:    "parent renamed",
+			changes: deployplan.Changes{"schema_name": parentRenamed},
+			want:    true,
+		},
+		{
+			name: "skip change is ignored",
+			changes: deployplan.Changes{
+				"schema_name":      parentRenamed,
+				"storage_location": {Action: deployplan.Skip, Reason: "immutable_backend_value"},
+			},
+			want: true,
+		},
+		{
+			name: "own field also changes",
+			changes: deployplan.Changes{
+				"schema_name": parentRenamed,
+				"comment":     {Action: deployplan.Update},
+			},
+			want: false,
+		},
+		{
+			name:    "own rename",
+			changes: deployplan.Changes{"name": {Action: deployplan.UpdateWithID, Reason: "id_changes"}},
+			want:    false,
+		},
+		{
+			name: "only skipped changes",
+			changes: deployplan.Changes{
+				"name": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAlreadySet},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.changes.HasOnlySingleReason(deployplan.ReasonParentRenamed))
+		})
+	}
+}

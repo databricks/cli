@@ -1,0 +1,220 @@
+
+=== Deploy a catalog with a schema and a registered model in it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created catalogs.catalog1
+Created registered_models.model1
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the catalog and the schema in one deploy
+
+>>> update_file.py databricks.yml test_catalog_ test_catalog_renamed_
+
+>>> update_file.py databricks.yml name: myschema name: myschema2
+
+=== Both of the model's parents are renamed, so both its catalog_name and schema_name follow them
+
+>>> [CLI] bundle plan --output json
+{
+  "resources.catalogs.catalog1": {
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "name": "test_catalog_renamed_[UNIQUE_NAME]"
+      }
+    },
+    "remote_state": {
+      "catalog_type": "MANAGED_CATALOG",
+      "created_by": "[USERNAME]",
+      "full_name": "test_catalog_[UNIQUE_NAME]",
+      "name": "test_catalog_[UNIQUE_NAME]",
+      "owner": "[USERNAME]"
+    },
+    "changes": {
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]",
+        "remote": "test_catalog_[UNIQUE_NAME]"
+      }
+    }
+  },
+  "resources.registered_models.model1": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.catalog1",
+        "label": "${resources.catalogs.catalog1.name}"
+      },
+      {
+        "node": "resources.schemas.schema1",
+        "label": "${resources.schemas.schema1.name}"
+      }
+    ],
+    "action": "update_id",
+    "state_only": true,
+    "new_state": {
+      "value": {
+        "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+        "name": "mymodel",
+        "schema_name": "myschema2"
+      }
+    },
+    "remote_state": {
+      "catalog_name": "test_catalog_[UNIQUE_NAME]",
+      "created_by": "[USERNAME]",
+      "full_name": "test_catalog_[UNIQUE_NAME].myschema.mymodel",
+      "name": "mymodel",
+      "owner": "[USERNAME]",
+      "schema_name": "myschema"
+    },
+    "changes": {
+      "catalog_name": {
+        "action": "update_id",
+        "reason": "parent_renamed",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]",
+        "remote": "test_catalog_[UNIQUE_NAME]"
+      },
+      "created_by": {
+        "action": "skip",
+        "reason": "output_only",
+        "remote": "[USERNAME]"
+      },
+      "full_name": {
+        "action": "skip",
+        "reason": "backend_default",
+        "remote": "test_catalog_[UNIQUE_NAME].myschema.mymodel"
+      },
+      "owner": {
+        "action": "skip",
+        "reason": "backend_default",
+        "remote": "[USERNAME]"
+      },
+      "schema_name": {
+        "action": "update_id",
+        "reason": "parent_renamed",
+        "old": "myschema",
+        "new": "myschema2",
+        "remote": "myschema"
+      }
+    }
+  },
+  "resources.schemas.schema1": {
+    "depends_on": [
+      {
+        "node": "resources.catalogs.catalog1",
+        "label": "${resources.catalogs.catalog1.name}"
+      }
+    ],
+    "action": "update_id",
+    "new_state": {
+      "value": {
+        "catalog_name": "test_catalog_renamed_[UNIQUE_NAME]",
+        "name": "myschema2"
+      }
+    },
+    "remote_state": {
+      "catalog_name": "test_catalog_[UNIQUE_NAME]",
+      "catalog_type": "MANAGED_CATALOG",
+      "created_by": "[USERNAME]",
+      "full_name": "test_catalog_[UNIQUE_NAME].myschema",
+      "name": "myschema",
+      "owner": "[USERNAME]",
+      "schema_id": "[UUID]"
+    },
+    "changes": {
+      "catalog_name": {
+        "action": "update_id",
+        "reason": "parent_renamed",
+        "old": "test_catalog_[UNIQUE_NAME]",
+        "new": "test_catalog_renamed_[UNIQUE_NAME]",
+        "remote": "test_catalog_[UNIQUE_NAME]"
+      },
+      "name": {
+        "action": "update_id",
+        "reason": "id_changes",
+        "old": "myschema",
+        "new": "myschema2",
+        "remote": "myschema"
+      },
+      "schema_id": {
+        "action": "skip",
+        "reason": "internal_id",
+        "old": "[UUID]",
+        "remote": "[UUID]"
+      }
+    }
+  }
+}
+
+=== Deploy renames the catalog, then the schema under it. UC moves the model both times, so it gets no request
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated catalogs.catalog1
+Updated schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/catalogs/test_catalog_[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "test_catalog_renamed_[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/test_catalog_renamed_[UNIQUE_NAME].myschema",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "myschema2"
+  }
+}
+
+=== The model is under the new names and was not recreated
+
+>>> [CLI] registered-models get test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel
+{
+  "full_name": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel",
+  "created_at": [MODEL_CREATED_AT]
+}
+
+>>> [CLI] bundle summary --output json
+{
+  "catalogs": {
+    "catalog1": "test_catalog_renamed_[UNIQUE_NAME]"
+  },
+  "registered_models": {
+    "model1": "test_catalog_renamed_[UNIQUE_NAME].myschema2.mymodel"
+  },
+  "schemas": {
+    "schema1": "test_catalog_renamed_[UNIQUE_NAME].myschema2"
+  }
+}
+
+=== Redeploy is a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.catalog1
+  delete resources.registered_models.model1
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

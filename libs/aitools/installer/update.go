@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"golang.org/x/mod/semver"
 )
 
@@ -30,6 +31,19 @@ type UpdateOptions struct {
 	Check   bool     // dry run: show what would change without downloading
 	Skills  []string // empty = all installed
 	Scope   string   // ScopeGlobal or ScopeProject (default: global)
+
+	// KeepModified keeps an installed skill at its version when its files are
+	// not exactly the ones the CLI recorded (the user edited them, or there is
+	// no record to check against), instead of replacing it. Automatic updates
+	// set it: they must never overwrite what the user changed.
+	KeepModified bool
+
+	// NoDowngrade refuses a release older than the installed one even when
+	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
+	// manifest). A pinned branch or commit SHA is still installed. Automatic
+	// updates set it: a newer release the user installed is theirs to roll
+	// back.
+	NoDowngrade bool
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -39,6 +53,9 @@ type UpdateResult struct {
 	Removed   []SkillUpdate // skills pruned because they vanished from the manifest
 	Unchanged []string      // skills at current version (or kept despite vanishing)
 	Skipped   []string      // skills skipped (experimental, version constraint)
+	// CheckErr is set in check mode when the manifest could not be fetched: the
+	// check is skipped with a warning, so nothing was checked.
+	CheckErr error
 }
 
 // SkillUpdate describes a single skill version change.
@@ -69,6 +86,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 		incompatible := incompatibleAgentNames(targetAgents)
 		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 && len(incompatible) == 0 {
+			return nil, errors.New("no agents have project-scoped skills to update. Run 'databricks aitools install --scope project' to install them; Codex CLI gets project skill files only with --skills-only --agents=codex")
+		}
 		if len(targetAgents) == 0 {
 			return nil, fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
 		}
@@ -81,13 +101,13 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
+			return nil, fmt.Errorf("%w; run 'databricks aitools install' to refresh before updating", ErrLegacyInstall)
 		}
-		return nil, errors.New("no skills or plugins installed. Run 'databricks aitools install' to install")
+		return nil, fmt.Errorf("%w. Run 'databricks aitools install' to install", ErrNothingInstalled)
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)
-	latestTag, explicit, err := getSkillsRef(ctx, allowFallback)
+	latestTag, explicit, err := skills.ResolveSkillsRef(ctx, allowFallback)
 	if err != nil {
 		return nil, err
 	}
@@ -100,11 +120,17 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
+	// A pinned ref is the ref installed, so it is compared before fetching its
+	// manifest. A branch or commit SHA has no release order to compare.
+	if explicit && opts.NoDowngrade && semver.IsValid(latestTag) && semver.Compare(latestTag, installedRef) < 0 {
+		return nil, &RefusedError{Err: fmt.Errorf("keeping the installed skills %s, which are newer than the pinned %s; run 'databricks aitools update' to install %s", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(latestTag), DisplaySkillsVersion(latestTag))}
+	}
+
 	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)
-			return &UpdateResult{}, nil
+			return &UpdateResult{CheckErr: err}, nil
 		}
 		return nil, err
 	}
@@ -141,6 +167,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
+		// Keep the installed copy of a skill this CLI cannot install portably,
+		// as for one that needs a newer CLI.
+		if reason := unportableSkill(name, meta.Files); reason != "" {
+			log.Warnf(ctx, "Skipping skill %q: %s", name, reason)
+			result.Skipped = append(result.Skipped, name)
+			continue
+		}
+
 		// Filter experimental skills unless state opted in.
 		if meta.IsExperimental() && !state.IncludeExperimental {
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
@@ -158,6 +192,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		oldVersion, wasInstalled := state.Skills[name]
 
 		if meta.Version == oldVersion && stateRepoDir(state, name) == meta.RepoDir && !opts.Force {
+			result.Unchanged = append(result.Unchanged, name)
+			continue
+		}
+
+		if wasInstalled && opts.KeepModified && !skillPrunable(ctx, baseDir, name, scope, cwd, state) {
+			log.Warnf(ctx, "Warning: keeping %q at %s: its installed files were modified.", name, oldVersion)
 			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}
@@ -198,7 +238,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		sp.Update("Installing " + change.Name + "...")
-		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
+		// The update result has no per-agent entry to report a failed agent
+		// in, and update reinstalls only the skills whose version changed, so
+		// it cannot repair an agent that is missing other skills. An agent
+		// that cannot get the skill stays a logged warning: install, which
+		// reinstalls a skill for every agent that is missing it (see
+		// allAgentsHaveSkill), is the fix, and auto-install retries its first
+		// install with it (see planTools in cmd/aitools).
+		records, _, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err
 		}
@@ -272,6 +319,27 @@ func buildUpdateSkillSet(state *InstallState, manifest *Manifest, opts UpdateOpt
 	return skillSet
 }
 
+// HasUntrackedSkills reports whether the global scope has skills on disk but no
+// state file: from an install that predates state tracking, or from a first
+// install that failed before it saved state. Only the global scope is checked,
+// so a first project install interrupted the same way is not detected. A state
+// file that can't be read counts as no: the caller's next state load reports
+// that error itself.
+func HasUntrackedSkills(ctx context.Context, cliScope string) bool {
+	if cliScope != ScopeGlobal {
+		return false
+	}
+	dir, err := GlobalSkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	state, err := LoadState(dir)
+	if err != nil {
+		return false
+	}
+	return state == nil && hasLegacyInstall(ctx, dir)
+}
+
 // hasLegacyInstall checks both canonical and legacy dirs for skills on disk without state.
 func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 	if hasSkillsOnDisk(globalDir) {
@@ -298,7 +366,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 		return false
 	}
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -318,7 +386,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) {
 	canonicalDir := filepath.Join(baseDir, skillName)
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -337,6 +405,27 @@ func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd st
 	if err := os.RemoveAll(canonicalDir); err != nil {
 		log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 	}
+}
+
+// HasOwnSkillsIn reports whether agentDir holds a databricks skill the CLI
+// wrote from baseDir: a symlink into baseDir or an unmodified copy (see
+// exposureRemovable). A databricks skill another tool put in a shared
+// directory such as .agents/skills does not count.
+func HasOwnSkillsIn(agentDir, baseDir string, state *InstallState) bool {
+	entries, err := os.ReadDir(agentDir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, "databricks") {
+			continue
+		}
+		if exposureRemovable(filepath.Join(agentDir, name), filepath.Join(baseDir, name), name, state) {
+			return true
+		}
+	}
+	return false
 }
 
 // exposureRemovable reports whether an agent's skill entry is ours and safe to
@@ -422,16 +511,21 @@ func dirMatchesRecords(dir, skillName string, state *InstallState) bool {
 	return seen == len(recorded)
 }
 
-// PluginUpdate records that a plugin was updated for an agent.
+// PluginUpdate records a plugin update for an agent. Err is set when the
+// update failed and the plugin was skipped with a warning.
 type PluginUpdate struct {
 	Agent   string
 	Version string
+	Err     error
 }
 
 // UpdateInstalledPlugins runs the plugin update for every plugin recorded in the
-// given scope's state, bumping each record's version to ref. A plugin that can't
+// given scope's state, bumping each record's version to ref, or clearing it
+// (version unknown) when the marketplace refresh failed and the record did not
+// already hold ref. A plugin that can't
 // be updated (CLI missing, etc.) is skipped with a warning, never failed, to
-// keep the non-interactive update prompt-free and exit-0 on partial success.
+// keep the non-interactive update prompt-free and exit-0 on partial success;
+// it is returned after the updated ones with Err set.
 func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpdate, error) {
 	dir, err := skillsDir(ctx, scope)
 	if err != nil {
@@ -446,21 +540,33 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 	}
 
 	version := DisplaySkillsVersion(ref)
-	var updated []PluginUpdate
+	var updated, failed []PluginUpdate
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		agent := agents.ByName(name)
 		if agent == nil {
 			log.Warnf(ctx, "Skipping unknown agent %q in state", name)
+			failed = append(failed, PluginUpdate{Agent: name, Err: unknownAgentInStateError(name)})
 			continue
 		}
 		rec := state.Plugins[name]
-		if err := UpdatePluginForAgent(ctx, agent, rec); err != nil {
+		refreshErr, err := UpdatePluginForAgent(ctx, agent, rec)
+		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+			failed = append(failed, PluginUpdate{Agent: agent.DisplayName, Err: err})
 			continue
 		}
-		rec.Version = version
+		// After a failed refresh the update ran from the local copy, so its
+		// version is unknown, unless the record already holds this release: the
+		// local copy can only have moved forward since the refresh that wrote it.
+		// Warn only when the version is cleared, as install does.
+		if refreshErr == nil || rec.Version == version {
+			rec.Version = version
+		} else {
+			warnLocalMarketplaceCopy(ctx, agent, recordedMarketplace(agent, rec), "rerun `databricks aitools update` later", refreshErr)
+			rec.Version = ""
+		}
 		state.Plugins[name] = rec
-		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})
+		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: rec.Version})
 	}
 
 	if len(updated) > 0 {
@@ -469,7 +575,7 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 			return nil, err
 		}
 	}
-	return updated, nil
+	return append(updated, failed...), nil
 }
 
 // FormatUpdateResult returns a human-readable summary of the update result.

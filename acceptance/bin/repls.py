@@ -29,7 +29,7 @@ def read_entries():
 
 
 def read_repls():
-    """Return (pattern, replacement) pairs in the order they must be applied."""
+    """Return (pattern, replacement, distinct) tuples in application order."""
     entries = []
 
     for item in read_entries():
@@ -38,35 +38,57 @@ def read_repls():
         literal = item.get("Literal")
 
         if literal is None:
-            # "Distinct" is not honoured here; unlike the harness, we do not number the matches.
-            entries.append((order, item["Old"], new))
+            entries.append((order, item["Old"], new, item["Distinct"]))
             continue
 
         # Set() in libs/testdiff also registers the JSON-encoded form of the value, so that
         # values with quotes or backslashes are replaced inside JSON output as well.
         encoded = json.dumps(literal, ensure_ascii=False)[1:-1]
         if encoded != literal:
-            entries.append((order, re.escape(encoded), new))
-        entries.append((order, re.escape(literal), new))
+            entries.append((order, re.escape(encoded), new, False))
+        entries.append((order, re.escape(literal), new, False))
 
     # Stable sort: replacements with the same order are applied in the order they were added.
     entries.sort(key=lambda entry: entry[0])
 
-    return [(old, new) for _, old, new in entries]
+    return [(old, new, distinct) for _, old, new, distinct in entries]
 
 
 def compile_repls():
     """Same as read_repls(), with patterns compiled. Invalid patterns are reported and skipped."""
     result = []
-    for old, new in read_repls():
+    for old, new, distinct in read_repls():
         try:
-            result.append((re.compile(old), new))
+            result.append((re.compile(old), new, distinct))
         except re.error as e:
             print(f"Regex error for pattern {old}: {e}", file=sys.stderr)
     return result
 
 
 def replace_all(patterns, s):
-    for comp, new in patterns:
+    r"""Apply replacements with the same per-output numbering as the Go harness.
+
+    >>> distinct = [(re.compile(r"item-\w+"), "[ITEM]", True)]
+    >>> replace_all(distinct, "item-b item-a item-b")
+    '[ITEM][0] [ITEM][1] [ITEM][0]'
+    >>> replace_all(distinct, "item-a item-a")
+    '[ITEM] [ITEM]'
+    >>> replace_all(distinct, "no matches")
+    'no matches'
+    >>> replace_all(distinct, "[ITEM][0] [ITEM][1] [ITEM][0]")
+    '[ITEM][0] [ITEM][1] [ITEM][0]'
+    >>> replace_all([(re.compile(r"item-\w+"), "[ITEM]", False)], "item-a item-b")
+    '[ITEM] [ITEM]'
+    """
+    for comp, new, distinct in patterns:
+        if distinct:
+            seen = {}
+            for match in comp.finditer(s):
+                value = match.group(0)
+                if value not in seen:
+                    seen[value] = len(seen)
+            if len(seen) > 1:
+                s = comp.sub(lambda match, new=new, seen=seen: match.expand(new) + f"[{seen[match.group(0)]}]", s)
+                continue
         s = comp.sub(new, s)
     return s

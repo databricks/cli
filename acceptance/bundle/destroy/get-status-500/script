@@ -1,0 +1,9 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+
+# Destroy first checks that the bundle root path exists. A 500 from that read (seen on cloud as
+# "unexpected EOF" when the connection is cut) is retried instead of failing the destroy.
+title "A 500 on the root path get-status is retried"
+fault.py "GET /api/2.0/workspace/get-status" 500 0 1
+trace $CLI bundle destroy --auto-approve

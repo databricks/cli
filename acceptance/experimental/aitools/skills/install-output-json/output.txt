@@ -1,5 +1,6 @@
 
 === install --output json emits only the JSON document; progress is silenced
+
 >>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --output json
 {
   "scope": "global",

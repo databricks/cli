@@ -3,6 +3,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,25 +20,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "database",
-		Short: `*Public Preview* Database Instances provide access to a database via REST API or direct SQL.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "database",
+	Short:   `*Public Preview* Database Instances provide access to a database via REST API or direct SQL.`,
+	GroupID: "database",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Database Instances provide access to a database via REST API or direct SQL.
 
   For new workloads, Databricks recommends the [Postgres API], which supports
   the latest Lakebase features.
 
-  [Postgres API]: https://docs.databricks.com/api/postgres/v1/postgres`,
-		GroupID: "database",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Postgres API]: https://docs.databricks.com/api/postgres/v1/postgres`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateDatabaseCatalog())
@@ -69,8 +74,6 @@ Database Instances provide access to a database via REST API or direct SQL.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-database-catalog command
@@ -91,7 +94,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, `If true, the database named in database_name is created in the instance when it does not already exist, with the calling user as its owner.`)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `*Public Preview* Create a Database Catalog.`
@@ -107,9 +110,12 @@ Create a Database Catalog.
   [Create a catalog]: https://docs.databricks.com/api/postgres/v1/create-catalog
 
   Arguments:
-    NAME: The name of the catalog in UC.
+    NAME: The name of the catalog in Unity Catalog.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
+    DATABASE_NAME: The name of the Postgres database in the instance that the catalog
+      registers. The database must already exist unless
+      create_database_if_not_exists is true. The system databases postgres,
+      databricks_system, template0 and template1 cannot be registered.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -224,7 +230,9 @@ Create a Database Instance.
   [Create a project]: https://docs.databricks.com/api/postgres/v1/create-project
 
   Arguments:
-    NAME: The name of the instance. This is the unique identifier for the instance.`
+    NAME: The name of the instance. This is the unique identifier for the instance.
+      Must be 1 to 63 characters long, contain only letters, digits and hyphens,
+      start with a letter, and not contain consecutive hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -415,8 +423,8 @@ func newCreateDatabaseTable() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `Name of the target database instance.`)
-	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.DatabaseInstanceName, "database-instance-name", createDatabaseTableReq.Table.DatabaseInstanceName, `The name of the database instance that hosts the Postgres table.`)
+	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `The name of the Postgres database in the instance that contains the table.`)
 
 	cmd.Use = "create-database-table NAME"
 	cmd.Short = `*Public Preview* Create a Database Table.`
@@ -424,12 +432,22 @@ func newCreateDatabaseTable() *cobra.Command {
 
 Create a Database Table.
 
-  Create a Database Table. Useful for registering pre-existing PG tables in UC.
-  See CreateSyncedDatabaseTable for creating synced tables in PG from a source
-  table in UC.
+  Create a Database Table. This registers a table that already exists in a
+  Postgres database of a database instance as a table in Unity Catalog. The
+  Postgres database, schema and table must already exist; the request does not
+  create them. Repeating the request for the same table succeeds, and a request
+  for a name that is already registered from a different database or instance
+  fails. To create a Postgres table from a Unity Catalog source table instead,
+  use [Create a Synced Database Table].
+
+  [Create a Synced Database Table]: https://docs.databricks.com/api/workspace/database/createsynceddatabasetable
 
   Arguments:
-    NAME: Full three-part (catalog, schema, table) name of the table.`
+    NAME: Full three-part (catalog, schema, table) name of the table in Unity
+      Catalog. The catalog must be a standard or default storage catalog;
+      database tables cannot be registered in a database catalog. The schema and
+      table parts must match the schema and table names of the Postgres table
+      that is registered.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -519,6 +537,11 @@ Create a Synced Database Table.
 
   Create a Synced Database Table.
 
+  The table and its data synchronization pipeline are provisioned
+  asynchronously. The response reflects the initial state; use Get a Synced
+  Database Table to follow the data synchronization status until the table is
+  online.
+
   For new workloads, Databricks recommends the Postgres API equivalent: [Create
   a synced table].
 
@@ -604,12 +627,16 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 
 Delete a Database Catalog.
 
-  Delete a Database Catalog.
+  Delete a Database Catalog. This removes the catalog from Unity Catalog, while
+  the Postgres database and its tables remain in the instance.
 
   For new workloads, Databricks recommends the Postgres API equivalent: [Delete
   a catalog].
 
-  [Delete a catalog]: https://docs.databricks.com/api/postgres/v1/delete-catalog`
+  [Delete a catalog]: https://docs.databricks.com/api/postgres/v1/delete-catalog
+
+  Arguments:
+    NAME: The Unity Catalog name of the catalog to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -661,7 +688,7 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	var deleteDatabaseInstanceReq database.DeleteDatabaseInstanceRequest
 
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Force, "force", deleteDatabaseInstanceReq.Force, `By default, an instance cannot be deleted if it has descendant instances created via PITR.`)
-	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
+	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated: omitting the field or setting it to true hard deletes the instance.`)
 
 	cmd.Use = "delete-database-instance NAME"
 	cmd.Short = `*Public Preview* Delete a Database Instance.`
@@ -799,7 +826,18 @@ func newDeleteDatabaseTable() *cobra.Command {
 	cmd.Short = `*Public Preview* Delete a Database Table.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Delete a Database Table.`
+Delete a Database Table.
+
+  Delete a Database Table. This removes the table from Unity Catalog only; the
+  Postgres table and its data are kept. Tables in a database catalog cannot be
+  deleted with this method, and synced tables must be deleted with [Delete a
+  Synced Database Table].
+
+  [Delete a Synced Database Table]: https://docs.databricks.com/api/workspace/database/deletesynceddatabasetable
+
+  Arguments:
+    NAME: Specifies the database table by its full three-part (catalog, schema,
+      table) name.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -850,7 +888,7 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 
 	var deleteSyncedDatabaseTableReq database.DeleteSyncedDatabaseTableRequest
 
-	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `Optional.`)
+	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `When true, the Postgres table is also dropped from the database.`)
 
 	cmd.Use = "delete-synced-database-table NAME"
 	cmd.Short = `*Public Preview* Delete a Synced Database Table.`
@@ -863,7 +901,11 @@ Delete a Synced Database Table.
   For new workloads, Databricks recommends the Postgres API equivalent: [Delete
   a synced table].
 
-  [Delete a synced table]: https://docs.databricks.com/api/postgres/v1/delete-synced-table`
+  [Delete a synced table]: https://docs.databricks.com/api/postgres/v1/delete-synced-table
+
+  Arguments:
+    NAME: Specifies the synced table by its full three-part (catalog, schema, table)
+      name.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -914,13 +956,15 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 
 	var findDatabaseInstanceByUidReq database.FindDatabaseInstanceByUidRequest
 
-	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
+	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the instance to get, as returned in the uid field of the instance.`)
 
 	cmd.Use = "find-database-instance-by-uid"
 	cmd.Short = `*Public Preview* Find a Database Instance by uid.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Find a Database Instance by uid.`
+Find a Database Instance by uid.
+
+  Find a Database Instance by its uid rather than by name.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -975,7 +1019,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 
 	// TODO: array: claims
 	// TODO: array: instance_names
-	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
+	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, `A client-generated identifier for this request, such as a UUID.`)
 
 	cmd.Use = "generate-database-credential"
 	cmd.Short = `*Public Preview* Generates a credential that can be used to access database instances.`
@@ -983,11 +1027,15 @@ func newGenerateDatabaseCredential() *cobra.Command {
 
 Generates a credential that can be used to access database instances.
 
-  Generates a credential that can be used to access database instances.
+  Generates a short-lived OAuth token for connecting to database instances.
+  Connect with the caller's Databricks identity as the Postgres user and the
+  returned token as the password. For details about OAuth token authentication,
+  see [About authentication].
 
   For new workloads, Databricks recommends the Postgres API equivalent:
   [Generate a database credential].
 
+  [About authentication]: https://docs.databricks.com/aws/en/oltp/projects/authentication
   [Generate a database credential]: https://docs.databricks.com/api/postgres/v1/generate-database-credential`
 
 	cmd.Annotations = make(map[string]string)
@@ -1062,7 +1110,10 @@ Get a Database Catalog.
   For new workloads, Databricks recommends the Postgres API equivalent: [Get a
   catalog].
 
-  [Get a catalog]: https://docs.databricks.com/api/postgres/v1/get-catalog`
+  [Get a catalog]: https://docs.databricks.com/api/postgres/v1/get-catalog
+
+  Arguments:
+    NAME: The Unity Catalog name of the catalog to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1128,7 +1179,7 @@ Get a Database Instance.
   [Get a project]: https://docs.databricks.com/api/postgres/v1/get-project
 
   Arguments:
-    NAME: Name of the cluster to get.`
+    NAME: Name of the instance to get.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1249,7 +1300,17 @@ func newGetDatabaseTable() *cobra.Command {
 	cmd.Short = `*Public Preview* Get a Database Table.`
 	cmd.Long = `This command is in Public Preview and may change without notice.
 
-Get a Database Table.`
+Get a Database Table.
+
+  Get a Database Table. The request fails if the name refers to a synced table
+  or to a table that is not a database table; for synced tables, use [Get a
+  Synced Database Table].
+
+  [Get a Synced Database Table]: https://docs.databricks.com/api/workspace/database/getsynceddatabasetable
+
+  Arguments:
+    NAME: Specifies the database table by its full three-part (catalog, schema,
+      table) name.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1312,7 +1373,11 @@ Get a Synced Database Table.
   For new workloads, Databricks recommends the Postgres API equivalent: [Get a
   synced table].
 
-  [Get a synced table]: https://docs.databricks.com/api/postgres/v1/get-synced-table`
+  [Get a synced table]: https://docs.databricks.com/api/postgres/v1/get-synced-table
+
+  Arguments:
+    NAME: Specifies the synced table by its full three-part (catalog, schema, table)
+      name.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1681,7 +1746,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
+	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, `If true, the database named in database_name is created in the instance when it does not already exist, with the calling user as its owner.`)
 
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`
@@ -1690,10 +1755,13 @@ func newUpdateDatabaseCatalog() *cobra.Command {
   This API is currently unimplemented, but exposed for Terraform support.
 
   Arguments:
-    NAME: The name of the catalog in UC.
+    NAME: The name of the catalog in Unity Catalog.
     UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.
     DATABASE_INSTANCE_NAME: The name of the DatabaseInstance housing the database.
-    DATABASE_NAME: The name of the database (in an instance) associated with the catalog.`
+    DATABASE_NAME: The name of the Postgres database in the instance that the catalog
+      registers. The database must already exist unless
+      create_database_if_not_exists is true. The system databases postgres,
+      databricks_system, template0 and template1 cannot be registered.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1806,9 +1874,11 @@ Update a Database Instance.
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.
+      Must be 1 to 63 characters long, contain only letters, digits and hyphens,
+      start with a letter, and not contain consecutive hyphens.
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible. To wipe out custom_tags, specify custom_tags in the
-      update_mask with an empty custom_tags map.`
+      when possible. Use "*" to update every field. To wipe out custom_tags,
+      specify custom_tags in the update_mask with an empty custom_tags list.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -1890,7 +1960,8 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 
   Arguments:
     NAME: Full three-part (catalog, schema, table) name of the table.
-    UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.`
+    UPDATE_MASK: The list of fields to update. Updatable paths include
+      spec.accelerated_sync and *.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

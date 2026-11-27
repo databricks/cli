@@ -20,6 +20,9 @@ class EndpointTags:
     """"""
 
     custom_tags: VariableOrList[EndpointTagPair] = field(default_factory=list)
+    """
+    User-defined tags, applied in addition to the tags Databricks sets automatically.
+    """
 
     @classmethod
     def from_dict(cls, value: "EndpointTagsDict") -> "Self":
@@ -33,6 +36,9 @@ class EndpointTagsDict(TypedDict, total=False):
     """"""
 
     custom_tags: VariableOrList[EndpointTagPairParam]
+    """
+    User-defined tags, applied in addition to the tags Databricks sets automatically.
+    """
 
 
 EndpointTagsParam = EndpointTagsDict | EndpointTags

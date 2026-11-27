@@ -1,0 +1,9 @@
+# Local only: simulates an out-of-band delete with fixed object IDs that don't
+# exist in a real workspace.
+Cloud = false
+
+RecordRequests = false
+
+Ignore = [
+    ".databricks",
+]

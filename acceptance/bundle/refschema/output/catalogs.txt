@@ -12,7 +12,7 @@ resources.catalogs.*.effective_predictive_optimization_flag.value	catalog.Enable
 resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
 resources.catalogs.*.full_name	string	REMOTE
 resources.catalogs.*.id	string	INPUT
-resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
+resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	ALL
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
 resources.catalogs.*.lifecycle.depends_on	[]resources.DependsOn	INPUT
 resources.catalogs.*.lifecycle.depends_on[*]	resources.DependsOn	INPUT

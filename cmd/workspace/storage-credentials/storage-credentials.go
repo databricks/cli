@@ -3,6 +3,7 @@
 package storage_credentials
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "storage-credentials",
-		Short: `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.`,
-		Long: `A storage credential represents an authentication and authorization mechanism
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "storage-credentials",
+	Short:   `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A storage credential represents an authentication and authorization mechanism
   for accessing data stored on your cloud tenant. Each storage credential is
   subject to Unity Catalog access-control policies that control which users and
   groups can access the credential. If a user does not have access to a storage
@@ -34,14 +40,13 @@ func New() *cobra.Command {
 
   To create storage credentials, you must be a Databricks account admin. The
   account admin who creates the storage credential can delegate ownership to
-  another user or group to manage permissions on it.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  another user or group to manage permissions on it.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -169,7 +172,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteStorageCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force an update even if there are dependent external locations or external tables (when purpose is **STORAGE**) or dependent services (when purpose is **SERVICE**).`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a credential.`
@@ -487,9 +490,6 @@ func newValidate() *cobra.Command {
   for validation. And if both are provided, the __url__ will be used for
   validation, and __external_location_name__ will be ignored when checking
   overlapping urls.
-
-  Either the __storage_credential_name__ or the cloud-specific credential must
-  be provided.
 
   The caller must be a metastore admin or the storage credential owner or have
   the **CREATE_EXTERNAL_LOCATION** privilege on the metastore and the storage

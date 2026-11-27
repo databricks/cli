@@ -79,7 +79,7 @@ func (r *Resources) IterateJobEnvironmentDependencies(fn func(p *structpath.Path
 	}
 }
 
-// IteratePipelineEnvironmentDependencies calls fn for the environment dependencies of
+// IteratePipelineEnvironmentDependencies calls fn for the environment and test environment dependencies of
 // all pipelines, until fn returns false.
 func (r *Resources) IteratePipelineEnvironmentDependencies(fn func(p *structpath.PathNode, deps *[]string) bool) {
 	for _, name := range sortedKeys(r.Pipelines) {
@@ -88,6 +88,16 @@ func (r *Resources) IteratePipelineEnvironmentDependencies(fn func(p *structpath
 			continue
 		}
 		if !fn(structpath.NewPath(nil, "resources", "pipelines", name, "environment", "dependencies"), &pl.Environment.Dependencies) {
+			return
+		}
+	}
+	// Test dependencies take the same forms as the pipeline's environment dependencies.
+	for _, name := range sortedKeys(r.Pipelines) {
+		pl := r.Pipelines[name]
+		if pl == nil || pl.Testing == nil || pl.Testing.Environment == nil || pl.Testing.Environment.Dependencies == nil {
+			continue
+		}
+		if !fn(structpath.NewPath(nil, "resources", "pipelines", name, "testing", "environment", "dependencies"), &pl.Testing.Environment.Dependencies) {
 			return
 		}
 	}

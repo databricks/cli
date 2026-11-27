@@ -1,0 +1,14 @@
+
+=== a 401 from config:validate is rejected credentials (json)
+
+>>> [CLI] air run -f [TESTROOT]/air/run-rejected-credentials/validate-401/../valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "authentication was not successful: failed to validate config: Invalid access token.",
+    "retryable": false
+  }
+}

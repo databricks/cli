@@ -27,10 +27,10 @@ echo "reused-name ssh-ed25519 $STALE_KEY" >known-hosts/reused-name
 # The remote command's output is the assertion (see out.connect-*.txt); the tunnel's own
 # progress and teardown messages go to stderr, where the order of the last few lines
 # depends on which side closes the websocket first.
-title "CLI ssh connect over a stale host key for the connection name\n"
+title "CLI ssh connect over a stale host key for the connection name"
 errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.connect-1.txt 2>LOG.connect-1
 
-title "The stale key is replaced by the one the workspace published\n"
+title "The stale key is replaced by the one the workspace published"
 if grep -q "$STALE_KEY" known-hosts/reused-name; then
   echo "stale key still pinned"
 else
@@ -38,5 +38,5 @@ else
 fi
 trace grep -c "^reused-name ssh-" known-hosts/reused-name
 
-title "Reconnecting to the running server keeps working\n"
+title "Reconnecting to the running server keeps working"
 errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.connect-2.txt 2>LOG.connect-2

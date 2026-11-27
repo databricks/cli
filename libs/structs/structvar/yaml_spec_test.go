@@ -250,7 +250,7 @@ func TestYAMLSpecExample_2_10(t *testing.T) {
 
 func TestYAMLSpecExample_2_11(t *testing.T) {
 	file := "testdata/yaml/spec_example_2.11.yml"
-	// Note: non-string mapping keys are not supported by "go.yaml.in/yaml/v3".
+	// Note: non-string mapping keys are not supported by "go.yaml.in/yaml/v4".
 	_, _, err := decodeFile(t, file)
 	assert.ErrorContains(t, err, `: key is not a scalar`)
 }
@@ -514,7 +514,7 @@ func TestYAMLSpecExample_2_22(t *testing.T) {
 			),
 			"spaced": nv(
 				// This is parsed as a string, not a timestamp,
-				// both by "go.yaml.in/yaml/v3" and by our implementation.
+				// both by "go.yaml.in/yaml/v4" and by our implementation.
 				"2001-12-14 21:59:43.10 -5",
 				[]diag.Location{{File: file, Line: 5, Column: 9}},
 			),

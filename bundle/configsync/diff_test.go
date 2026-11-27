@@ -1,10 +1,20 @@
 package configsync
 
 import (
+	"errors"
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -249,10 +259,11 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
-// ExtractChanges must skip permissions/grants sub-resources: they are emitted as
-// their own plan keys but cannot be written back to YAML, and resolving them
-// (e.g. the server-populated object_id field, or a bundle-level permissions entry
-// with no per-resource YAML node) otherwise fails the whole sync.
+// ExtractChanges must not return permissions/grants sub-resources under their own
+// plan keys: their fields (e.g. the server-populated object_id) have no source
+// location, so resolving them would fail the whole sync. Permissions are written
+// under their parent resource instead (see TestExtractChangesDeclaredPermissions),
+// and grants are skipped.
 func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	ctx := t.Context()
 
@@ -282,7 +293,7 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 		},
 	}}
 
-	changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
+	changes, _, err := ExtractChanges(ctx, &bundle.Bundle{}, plan)
 	require.NoError(t, err)
 
 	_, hasPerms := changes["resources.jobs.my_job.permissions"]
@@ -297,4 +308,314 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 	namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
 	require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
 	assert.Contains(t, namedPerms, "description")
+}
+
+func TestExtractChangesDeclaredPermissions(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    my_job:
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+        - level: CAN_VIEW
+          user_name: gone@example.com
+`))
+	require.NoError(t, diags.Error())
+	b := &bundle.Bundle{Config: *root}
+	// FixPermissions adds the current user's entry, with no location.
+	job := b.Config.Resources.Jobs["my_job"]
+	job.Permissions = append(job.Permissions, resources.JobPermission{Level: "IS_OWNER", UserName: "me@example.com"})
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.my_job": {},
+		"resources.jobs.my_job.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/jobs/123"},
+			Changes: deployplan.Changes{
+				"[user_name='viewer@example.com'].level": {
+					Action: deployplan.Update, Old: "CAN_VIEW", New: "CAN_VIEW", Remote: "CAN_MANAGE",
+				},
+				"[group_name='data-team']": {
+					Action: deployplan.Update,
+					Remote: dresources.StatePermission{Level: iam.PermissionLevelCanView, GroupName: "data-team"},
+				},
+				"[user_name='gone@example.com']": {
+					Action: deployplan.Update,
+					Old:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+					New:    dresources.StatePermission{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+				},
+				"[user_name='me@example.com'].level": {
+					Action: deployplan.Update, Old: "IS_OWNER", New: "IS_OWNER", Remote: "CAN_MANAGE",
+				},
+				"object_id": {Action: deployplan.Update, Remote: "/jobs/456"},
+			},
+		},
+	}}
+
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.jobs.my_job": {
+			"permissions[user_name='viewer@example.com'].level": {Operation: OperationReplace, Value: "CAN_MANAGE"},
+			"permissions[group_name='data-team']": {
+				Operation: OperationAdd,
+				Value:     map[string]any{"level": "CAN_VIEW", "group_name": "data-team"},
+			},
+			"permissions[user_name='gone@example.com']": {Operation: OperationRemove},
+		},
+	}, changes)
+}
+
+func TestWithoutCurrentUserDefaults(t *testing.T) {
+	permissions := []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
+		{Level: iam.PermissionLevelCanManage, ServicePrincipalName: "me@example.com"},
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}
+
+	assert.Equal(t, []dresources.StatePermission{
+		{Level: iam.PermissionLevelIsOwner, UserName: "owner@example.com"},
+		{Level: iam.PermissionLevelCanManage, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+	}, withoutCurrentUserDefaults(permissions, "me@example.com", "jobs"))
+}
+
+func TestWithoutCurrentUserDefaultsClusterPolicy(t *testing.T) {
+	permissions := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, ServicePrincipalName: "me@example.com"},
+		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
+	}
+
+	assert.Equal(t, []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, UserName: "other@example.com"},
+		{Level: iam.PermissionLevelCanUse, GroupName: "users"},
+	}, withoutCurrentUserDefaults(permissions, "me@example.com", "cluster_policies"))
+
+	creatorOnly := []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanUse, UserName: "me@example.com"},
+	}
+	assert.Empty(t, withoutCurrentUserDefaults(creatorOnly, "me@example.com", "cluster_policies"))
+}
+
+func TestPermissionsReadSkip(t *testing.T) {
+	denied := &apierr.APIError{StatusCode: 403, ErrorCode: "PERMISSION_DENIED", Message: "no access"}
+	assert.Equal(t, SkippedChange{
+		ResourceKey: "resources.jobs.my_job",
+		Reason:      SkipReasonPermissionsPermissionDenied,
+		Error:       "no access",
+	}, permissionsReadSkip("resources.jobs.my_job", denied))
+
+	assert.Equal(t, SkippedChange{
+		ResourceKey: "resources.jobs.my_job",
+		Reason:      SkipReasonPermissionsReadFailed,
+		Error:       "unexpected object_id",
+	}, permissionsReadSkip("resources.jobs.my_job", errors.New("unexpected object_id")))
+}
+
+func TestUnreadPermissionsAdapters(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.Adapters = adapters
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.unmanaged":                {Action: deployplan.Skip},
+		"resources.jobs.declared":                 {Action: deployplan.Skip},
+		"resources.jobs.declared.permissions":     {Action: deployplan.Skip},
+		"resources.jobs.removed":                  {Action: deployplan.Update},
+		"resources.jobs.removed.permissions":      {Action: deployplan.Delete},
+		"resources.jobs.undeployed":               {Action: deployplan.Skip},
+		"resources.jobs.undeployed.permissions":   {Action: deployplan.Create},
+		"resources.jobs.not_deployed":             {Action: deployplan.Create},
+		"resources.jobs.not_deployed.permissions": {Action: deployplan.Create},
+		"resources.pipelines.unmanaged":           {Action: deployplan.Skip},
+		"resources.secret_scopes.scope":           {Action: deployplan.Skip},
+		"resources.schemas.schema":                {Action: deployplan.Skip},
+		"resources.schemas.schema.grants":         {Action: deployplan.Skip},
+	}}
+
+	assert.ElementsMatch(t,
+		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.jobs.undeployed", "resources.pipelines.unmanaged"},
+		slices.Collect(maps.Keys(unreadPermissionsAdapters(b, plan))),
+	)
+}
+
+func TestAddUndeployedPermissionsChanges(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    my_job:
+      permissions:
+        - level: CAN_MANAGE
+          user_name: viewer@example.com
+        - level: CAN_VIEW
+          user_name: gone@example.com
+        - level: CAN_VIEW
+          group_name: users
+`))
+	require.NoError(t, diags.Error())
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	b := &bundle.Bundle{Config: *root}
+	// FixPermissions adds the current user's entry, with no location.
+	job := b.Config.Resources.Jobs["my_job"]
+	job.Permissions = append(job.Permissions, resources.JobPermission{Level: "IS_OWNER", UserName: "me@example.com"})
+	b.DeploymentBundle.Adapters = adapters
+	b.DeploymentBundle.StateCache.Store("resources.jobs.my_job.permissions", &structvar.StructVar{
+		Value: &dresources.PermissionsState{EmbeddedSlice: []dresources.StatePermission{
+			{Level: iam.PermissionLevelCanManage, UserName: "viewer@example.com"},
+			{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+			{Level: iam.PermissionLevelCanView, GroupName: "users"},
+			{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
+		}},
+	})
+
+	changes := make(Changes)
+	err = addUndeployedPermissionsChanges(changes, b, "resources.jobs.my_job", []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanManage, UserName: "me@example.com"},
+		{Level: iam.PermissionLevelCanView, UserName: "viewer@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+		{Level: iam.PermissionLevelCanManageRun, UserName: "late@example.com"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.jobs.my_job": {
+			"permissions[user_name='viewer@example.com'].level": {Operation: OperationReplace, Value: "CAN_VIEW", LocalEdit: true},
+			"permissions[user_name='gone@example.com']":         {Operation: OperationRemove, LocalEdit: true},
+			"permissions[user_name='late@example.com']": {
+				Operation: OperationAdd,
+				Value:     map[string]any{"level": "CAN_MANAGE_RUN", "user_name": "late@example.com"},
+			},
+		},
+	}, changes)
+}
+
+func TestLookupDeployedFieldReadsRemoteState(t *testing.T) {
+	b := &bundle.Bundle{}
+	b.DeploymentBundle.RemoteStateCache.Store("resources.model_serving_endpoints.my_endpoint",
+		&dresources.ModelServingEndpointRemote{EndpointId: "abc123"})
+
+	value, err := lookupDeployedField(b, "resources.model_serving_endpoints.my_endpoint", "endpoint_id")
+	require.NoError(t, err)
+	assert.Equal(t, "abc123", value)
+}
+
+func TestExtractChangesEmptyRemotePermissions(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  apps:
+    my_app:
+      permissions:
+        - level: CAN_USE
+          group_name: users
+`))
+	require.NoError(t, diags.Error())
+	b := &bundle.Bundle{Config: *root}
+
+	declared := []dresources.StatePermission{{Level: "CAN_USE", GroupName: "users"}}
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.apps.my_app": {},
+		"resources.apps.my_app.permissions": {
+			Action:      deployplan.Update,
+			RemoteState: &dresources.PermissionsState{ObjectID: "/apps/my_app"},
+			Changes: deployplan.Changes{
+				"": {Action: deployplan.Update, Old: declared, New: declared},
+			},
+		},
+	}}
+
+	changes, _, err := ExtractChanges(t.Context(), b, plan)
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.apps.my_app": {
+			"permissions[group_name='users']": {Operation: OperationRemove},
+		},
+	}, changes)
+}
+
+func TestExtractChangesSkipsLifecycleFields(t *testing.T) {
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.genie_spaces.my_space": {
+			Changes: deployplan.Changes{
+				// OverrideChangeDesc promotes etag drift to an update for deploy.
+				"etag":  {Action: deployplan.Update, Old: "1", Remote: "2"},
+				"title": {Action: deployplan.Update, Old: "a", New: "a", Remote: "b"},
+			},
+		},
+		"resources.pipelines.my_pipeline": {
+			Changes: deployplan.Changes{
+				// Not one of the backend default's allowed values, so it is a real edit.
+				"configuration['spark.sql.ansi.enabled']": {Action: deployplan.Update, Old: "true", Remote: "false"},
+			},
+		},
+		"resources.pipelines.other_pipeline": {
+			Changes: deployplan.Changes{
+				// A remote-only map holding a backend default next to a real addition.
+				"configuration": {Action: deployplan.Update, Remote: map[string]string{
+					"spark.sql.ansi.enabled": "true",
+					"custom.key":             "value",
+				}},
+			},
+		},
+		"resources.model_serving_endpoints.my_endpoint": {
+			Changes: deployplan.Changes{
+				// GET returns no telemetry_config, so the plan reports the whole
+				// object, and table_names under it is input_only.
+				"telemetry_config": {
+					Action: deployplan.Update,
+					Old:    &serving.TelemetryConfig{TableNames: &serving.UnityCatalogTableNames{LogsTable: "main.default.logs"}},
+					New:    &serving.TelemetryConfig{TableNames: &serving.UnityCatalogTableNames{LogsTable: "main.default.logs"}},
+				},
+			},
+		},
+		"resources.jobs.my_job": {
+			Changes: deployplan.Changes{
+				// A task added remotely keeps its fields, including node_type_id, minus the
+				// backend-managed ones and defaults pinned to a value.
+				"tasks[task_key='loop']": {Action: deployplan.Update, Remote: map[string]any{
+					"task_key": "loop",
+					"for_each_task": map[string]any{"task": map[string]any{"new_cluster": map[string]any{
+						"spark_version":  "16.4.x-scala2.12",
+						"node_type_id":   "i3.xlarge",
+						"aws_attributes": map[string]any{"availability": "SPOT"},
+					}}},
+					"run_if": "ALL_SUCCESS",
+				}},
+				// input_only: never returned by GET, so a local edit would be removed.
+				"trigger.table_update.condition": {Action: deployplan.Update, Old: "ANY_UPDATED", New: "ALL_UPDATED"},
+				// Backend default the config no longer sets.
+				"format": {Action: deployplan.Update, Old: "MULTI_TASK", Remote: "MULTI_TASK"},
+				// A principal kind switch must still be synced.
+				"run_as.service_principal_name": {Action: deployplan.Skip, Reason: deployplan.ReasonBackendDefault, Remote: "sp"},
+			},
+		},
+	}}
+
+	changes, _, err := ExtractChanges(t.Context(), &bundle.Bundle{}, plan)
+	require.NoError(t, err)
+
+	assert.Equal(t, ResourceChanges{
+		"title": {Operation: OperationReplace, Value: "b"},
+	}, changes["resources.genie_spaces.my_space"])
+	assert.Equal(t, ResourceChanges{
+		"configuration['spark.sql.ansi.enabled']": {Operation: OperationAdd, Value: "false", LocalEdit: true},
+	}, changes["resources.pipelines.my_pipeline"])
+	assert.Equal(t, ResourceChanges{
+		"configuration": {Operation: OperationAdd, Value: map[string]any{"custom.key": "value"}},
+	}, changes["resources.pipelines.other_pipeline"])
+	assert.NotContains(t, changes, "resources.model_serving_endpoints.my_endpoint")
+	assert.Equal(t, ResourceChanges{
+		"tasks[task_key='loop']": {Operation: OperationAdd, Value: map[string]any{
+			"task_key": "loop",
+			"for_each_task": map[string]any{"task": map[string]any{"new_cluster": map[string]any{
+				"spark_version": "16.4.x-scala2.12",
+				"node_type_id":  "i3.xlarge",
+			}}},
+		}},
+		"run_as.service_principal_name": {Operation: OperationAdd, Value: "sp"},
+	}, changes["resources.jobs.my_job"])
 }

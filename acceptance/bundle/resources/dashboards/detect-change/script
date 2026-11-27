@@ -29,7 +29,7 @@ rm out.summary.json
 title "Load the dashboard by its ID and confirm its display name: "
 echo "$DASHBOARD" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
 
-title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
+title "Make an out of band modification to the dashboard and confirm that it is detected:"
 RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')
 DASHBOARD_JSON="{\"serialized_dashboard\": \"{}\", \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\"}"
 UPDATE_RESP=$($CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}")

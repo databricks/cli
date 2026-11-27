@@ -1,12 +1,22 @@
 RecordRequests = true
 
-# Workspaces that are not enrolled in the device code preview do not advertise
-# a device_authorization_endpoint in their OIDC discovery document.
+# Workspaces and accounts that are not enrolled in the device code preview do
+# not advertise a device_authorization_endpoint in their OIDC discovery
+# document.
 [[Server]]
 Pattern = "GET /oidc/.well-known/oauth-authorization-server"
 Response.Body = '''
 {
     "authorization_endpoint": "https://workspace.test/oidc/v1/authorize",
     "token_endpoint": "https://workspace.test/oidc/v1/token"
+}
+'''
+
+[[Server]]
+Pattern = "GET /oidc/accounts/spog-acct-123/.well-known/oauth-authorization-server"
+Response.Body = '''
+{
+    "authorization_endpoint": "https://spog.test/oidc/accounts/spog-acct-123/v1/authorize",
+    "token_endpoint": "https://spog.test/oidc/accounts/spog-acct-123/v1/token"
 }
 '''

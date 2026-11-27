@@ -8,6 +8,9 @@ from databricks.bundles.alerts._models.alert_v2_operand_column import (
 from databricks.bundles.alerts._models.alert_v2_run_as import AlertV2RunAs
 from databricks.bundles.alerts._models.comparison_operator import ComparisonOperator
 from databricks.bundles.alerts._models.cron_schedule import CronSchedule
+from databricks.bundles.alerts._models.custom_template_format import (
+    CustomTemplateFormat,
+)
 from databricks.bundles.alerts._models.lifecycle import Lifecycle
 from databricks.bundles.alerts._models.permission import Permission
 from databricks.bundles.alerts._models.permission_level import PermissionLevel
@@ -21,6 +24,7 @@ def _test_case():
         ResourceTestCase(
             add_resource=Resources.add_alert,
             dict_example={
+                "custom_template_format": "HTML",
                 "display_name": "display_name",
                 "evaluation": {
                     "comparison_operator": "LESS_THAN",
@@ -37,6 +41,7 @@ def _test_case():
                 "warehouse_id": "warehouse_id",
             },
             dataclass_example=Alert(
+                custom_template_format=CustomTemplateFormat.HTML,
                 display_name="display_name",
                 evaluation=AlertV2Evaluation(
                     comparison_operator=ComparisonOperator.LESS_THAN,

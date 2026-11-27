@@ -3,14 +3,15 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
+from databricks.bundles.catalogs._models.catalog_isolation_mode import (
+    CatalogIsolationMode,
+    CatalogIsolationModeParam,
+)
 from databricks.bundles.catalogs._models.encryption_settings import (
     EncryptionSettings,
     EncryptionSettingsParam,
 )
-from databricks.bundles.catalogs._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.catalogs._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,
@@ -35,7 +36,8 @@ class Catalog(Resource):
 
     name: VariableOr[str]
     """
-    Name of catalog.
+    The name of the catalog is stored in lowercase, can be at most 255 characters long, and cannot
+    contain periods, spaces, forward slashes, or control characters.
     """
 
     comment: VariableOrOptional[str] = None
@@ -45,17 +47,27 @@ class Catalog(Resource):
 
     connection_name: VariableOrOptional[str] = None
     """
-    The name of the connection to an external data source.
+    Naming a connection to an external data source creates a foreign catalog that mirrors a database in
+    that source, which requires ownership of or the CREATE FOREIGN CATALOG privilege on the connection.
+    Connection-specific settings, such as the database to mirror, go in options. The connection cannot be
+    changed after creation.
     """
 
     custom_max_retention_hours: VariableOrOptional[int] = None
     """
-    [Public Preview] Custom maximum retention period in hours for the catalog
+    [Public Preview] Dropped objects in the catalog remain recoverable for this number of hours before they are permanently
+    purged. The value applies to standard catalogs only, must be 0 or within the range allowed for the
+    metastore, and is inherited by schemas and tables that do not set their own value.
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
     """
     The Unity Catalog privileges to grant to principals on this securable.
+    """
+
+    isolation_mode: VariableOrOptional[CatalogIsolationMode] = None
+    """
+    Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -65,7 +77,7 @@ class Catalog(Resource):
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettings] = None
     """
-    Control CMK encryption for managed catalog data
+    Customer-managed key (CMK) settings control the encryption at rest of the catalog's managed data.
     """
 
     options: VariableOrDict[str] = field(default_factory=dict)
@@ -80,19 +92,23 @@ class Catalog(Resource):
 
     provider_name: VariableOrOptional[str] = None
     """
-    The name of delta sharing provider.
-    
-    A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+    The Delta Sharing provider that owns the share must be named here, together with share_name, to
+    create a Delta Sharing catalog that exposes the data of the share on a remote sharing server. The
+    provider cannot be changed after creation.
     """
 
     share_name: VariableOrOptional[str] = None
     """
-    The name of the share under the share provider.
+    The share under the Delta Sharing provider must be named here, together with provider_name, to
+    create a Delta Sharing catalog. The share cannot be changed after creation.
     """
 
     storage_root: VariableOrOptional[str] = None
     """
-    Storage root URL for managed tables within catalog.
+    Managed tables and volumes in the catalog are stored under this storage root URL. The path must be
+    inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+    managed data is stored under the metastore's root storage location, which must then be configured.
+    Delta Sharing catalogs cannot have a storage root.
     """
 
     @classmethod
@@ -108,7 +124,8 @@ class CatalogDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    Name of catalog.
+    The name of the catalog is stored in lowercase, can be at most 255 characters long, and cannot
+    contain periods, spaces, forward slashes, or control characters.
     """
 
     comment: VariableOrOptional[str]
@@ -118,17 +135,27 @@ class CatalogDict(TypedDict, total=False):
 
     connection_name: VariableOrOptional[str]
     """
-    The name of the connection to an external data source.
+    Naming a connection to an external data source creates a foreign catalog that mirrors a database in
+    that source, which requires ownership of or the CREATE FOREIGN CATALOG privilege on the connection.
+    Connection-specific settings, such as the database to mirror, go in options. The connection cannot be
+    changed after creation.
     """
 
     custom_max_retention_hours: VariableOrOptional[int]
     """
-    [Public Preview] Custom maximum retention period in hours for the catalog
+    [Public Preview] Dropped objects in the catalog remain recoverable for this number of hours before they are permanently
+    purged. The value applies to standard catalogs only, must be 0 or within the range allowed for the
+    metastore, and is inherited by schemas and tables that do not set their own value.
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
     """
     The Unity Catalog privileges to grant to principals on this securable.
+    """
+
+    isolation_mode: VariableOrOptional[CatalogIsolationModeParam]
+    """
+    Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -138,7 +165,7 @@ class CatalogDict(TypedDict, total=False):
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettingsParam]
     """
-    Control CMK encryption for managed catalog data
+    Customer-managed key (CMK) settings control the encryption at rest of the catalog's managed data.
     """
 
     options: VariableOrDict[str]
@@ -153,19 +180,23 @@ class CatalogDict(TypedDict, total=False):
 
     provider_name: VariableOrOptional[str]
     """
-    The name of delta sharing provider.
-    
-    A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+    The Delta Sharing provider that owns the share must be named here, together with share_name, to
+    create a Delta Sharing catalog that exposes the data of the share on a remote sharing server. The
+    provider cannot be changed after creation.
     """
 
     share_name: VariableOrOptional[str]
     """
-    The name of the share under the share provider.
+    The share under the Delta Sharing provider must be named here, together with provider_name, to
+    create a Delta Sharing catalog. The share cannot be changed after creation.
     """
 
     storage_root: VariableOrOptional[str]
     """
-    Storage root URL for managed tables within catalog.
+    Managed tables and volumes in the catalog are stored under this storage root URL. The path must be
+    inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+    managed data is stored under the metastore's root storage location, which must then be configured.
+    Delta Sharing catalogs cannot have a storage root.
     """
 
 

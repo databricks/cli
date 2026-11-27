@@ -31,7 +31,8 @@ class ModelServiceConfig:
 
     inference_table: VariableOrOptional[InferenceTableConfig] = None
     """
-    Inference table configuration for payload logging.
+    Configuration for logging request and response payloads to a Unity
+    Catalog inference table. Omit this field to leave payload logging off.
     """
 
     rate_limits: VariableOrList[RateLimit] = field(default_factory=list)
@@ -41,7 +42,8 @@ class ModelServiceConfig:
 
     routing: VariableOrOptional[ModelServiceConfigRoutingConfig] = None
     """
-    Routing configuration: destinations and fallback.
+    Routing configuration: the primary destinations that receive traffic and
+    the fallback destinations tried when a primary destination fails.
     """
 
     @classmethod
@@ -57,7 +59,8 @@ class ModelServiceConfigDict(TypedDict, total=False):
 
     inference_table: VariableOrOptional[InferenceTableConfigParam]
     """
-    Inference table configuration for payload logging.
+    Configuration for logging request and response payloads to a Unity
+    Catalog inference table. Omit this field to leave payload logging off.
     """
 
     rate_limits: VariableOrList[RateLimitParam]
@@ -67,7 +70,8 @@ class ModelServiceConfigDict(TypedDict, total=False):
 
     routing: VariableOrOptional[ModelServiceConfigRoutingConfigParam]
     """
-    Routing configuration: destinations and fallback.
+    Routing configuration: the primary destinations that receive traffic and
+    the fallback destinations tried when a primary destination fails.
     """
 
 

@@ -1,0 +1,10 @@
+bundle:
+  name: config-remote-sync-telemetry-same-host
+
+workspace:
+  host: $DATABRICKS_HOST
+
+targets:
+  bad:
+    variables:
+      undefined_var: value

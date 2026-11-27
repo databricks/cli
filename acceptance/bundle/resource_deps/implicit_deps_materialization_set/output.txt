@@ -1,0 +1,46 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "materialization_sets": {
+    "set1": {
+      "materialized_features": [
+        {
+          "feature_name": "mycatalog.myschema.feat",
+          "offline_store_config": {
+            "catalog_name": "${resources.catalogs.my_catalog.name}",
+            "schema_name": "${resources.schemas.my_schema.name}",
+            "table_name_prefix": "feat_off"
+          }
+        },
+        {
+          "feature_name": "mycatalog.myschema.feat",
+          "online_store_config": {
+            "catalog_name": "${resources.catalogs.my_catalog.name}",
+            "online_store_name": "store",
+            "schema_name": "${resources.schemas.my_schema.name}",
+            "table_name_prefix": "feat"
+          }
+        },
+        {
+          "feature_name": "other.other.feat",
+          "offline_store_config": {
+            "catalog_name": "other",
+            "schema_name": "other",
+            "table_name_prefix": "feat_off"
+          }
+        }
+      ]
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  }
+}

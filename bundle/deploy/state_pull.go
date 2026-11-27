@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -20,6 +22,10 @@ import (
 
 type statePull struct {
 	filerFactory FilerFactory
+
+	// keepInternalFiles leaves files under the bundle's internal directory out of
+	// the restored snapshot, so the file sync does not delete their remote copies.
+	keepInternalFiles bool
 }
 
 func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -76,8 +82,13 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
+	fileList := state.Files
+	if s.keepInternalFiles {
+		fileList = withoutInternalFiles(b.Config.Bundle.Target, fileList)
+	}
+
 	log.Infof(ctx, "Creating new snapshot")
-	snapshot, err := sync.NewSnapshot(state.Files.toSlice(b.SyncRoot), opts)
+	snapshot, err := sync.NewSnapshot(fileList.toSlice(b.SyncRoot), opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -113,7 +124,30 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
+// withoutInternalFiles drops the entries under a "<target>/.internal" directory. It
+// matches that shape anywhere in the path rather than this process's InternalDir,
+// because the deploy that wrote the state may have used another cache directory
+// (DATABRICKS_BUNDLE_TMP).
+func withoutInternalFiles(target string, fl Filelist) Filelist {
+	marker := "/" + target + "/" + bundle.InternalDirName + "/"
+	var out Filelist
+	for _, f := range fl {
+		if !strings.Contains("/"+filepath.ToSlash(f.LocalPath), marker) {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
 // StatePull returns a mutator that pulls the deployment state from the Databricks workspace
 func StatePull() bundle.Mutator {
-	return &statePull{StateFiler}
+	return &statePull{filerFactory: StateFiler}
+}
+
+// StatePullForSavedPlan is StatePull for applying a saved plan. Applying a plan skips
+// the build, which is what generates the files in the bundle's internal directory
+// (such as python_wheel_wrapper notebooks), while the plan's resources still refer to
+// them; their remote copies must survive the file sync.
+func StatePullForSavedPlan() bundle.Mutator {
+	return &statePull{filerFactory: StateFiler, keepInternalFiles: true}
 }

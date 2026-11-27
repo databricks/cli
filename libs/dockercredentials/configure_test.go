@@ -5,10 +5,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	inspectRegistry = dockercredentials.Registry{WorkspaceID: workspaceID, Host: "registry.test"}
+	inspectProfiler = profile.InMemoryProfiler{Profiles: profile.Profiles{workspaceProfile("workspace")}}
 )
 
 func TestConfigure(t *testing.T) {
@@ -21,29 +27,116 @@ func TestConfigure(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, configPath, result.ConfigPath)
 	assert.FileExists(t, result.Shim.Path)
-	status, err := dockercredentials.Inspect(ctx, "registry.test")
+	status, err := dockercredentials.Inspect(ctx, inspectProfiler, inspectRegistry, "", "workspace")
 	require.NoError(t, err)
 	assert.True(t, status.Configured)
 	assert.Equal(t, "registry.test", status.Host)
 }
 
-func TestInspectRequiresHelperOnPath(t *testing.T) {
+func TestInspect(t *testing.T) {
+	onlyProd := profile.Profiles{workspaceProfile("prod")}
+	sharedWorkspace := profile.Profiles{workspaceProfile("prod"), workspaceProfile("dev")}
+	otherWorkspace := workspaceProfile("other")
+	otherWorkspace.WorkspaceID = "987654321"
 	for _, tc := range []struct {
-		name      string
-		installed bool
-		onPath    bool
-		want      bool
+		name         string
+		dockerConfig bool
+		installed    bool
+		onPath       bool
+		profiles     profile.Profiles
+		recorded     string
+		selected     string
+		want         dockercredentials.Status
 	}{
-		{name: "missing"},
-		{name: "outside PATH", installed: true},
-		{name: "on PATH", installed: true, onPath: true, want: true},
+		{
+			name:         "helper missing",
+			dockerConfig: true,
+			profiles:     onlyProd,
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test", Profile: "prod"},
+		},
+		{
+			name:         "helper outside PATH",
+			dockerConfig: true,
+			installed:    true,
+			profiles:     onlyProd,
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test", Profile: "prod"},
+		},
+		{
+			name:      "Docker config does not use the helper",
+			installed: true,
+			onPath:    true,
+			profiles:  onlyProd,
+			selected:  "prod",
+			want:      dockercredentials.Status{Host: "registry.test", Profile: "prod"},
+		},
+		{
+			name:         "only profile",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     onlyProd,
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test", Configured: true, Profile: "prod"},
+		},
+		{
+			name:         "recorded profile",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     sharedWorkspace,
+			recorded:     "prod",
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test", Configured: true, Profile: "prod"},
+		},
+		{
+			name:         "another profile is recorded",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     sharedWorkspace,
+			recorded:     "prod",
+			selected:     "dev",
+			want:         dockercredentials.Status{Host: "registry.test", Profile: "prod"},
+		},
+		{
+			name:         "no profile is recorded",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     sharedWorkspace,
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test"},
+		},
+		{
+			name:         "recorded profile is missing",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     sharedWorkspace,
+			recorded:     "gone",
+			selected:     "prod",
+			want:         dockercredentials.Status{Host: "registry.test"},
+		},
+		{
+			name:         "profile is for another workspace",
+			dockerConfig: true,
+			installed:    true,
+			onPath:       true,
+			profiles:     profile.Profiles{workspaceProfile("prod"), otherWorkspace},
+			selected:     "other",
+			want:         dockercredentials.Status{Host: "registry.test", Profile: "prod"},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
 			binDir := filepath.Join(dir, "bin")
 			configPath := filepath.Join(dir, "docker", "config.json")
 			ctx := env.Set(t.Context(), "DOCKER_CONFIG", filepath.Dir(configPath))
-			require.NoError(t, dockercredentials.SetCredentialHelper(configPath, "registry.test"))
+			if tc.dockerConfig {
+				require.NoError(t, dockercredentials.SetCredentialHelper(configPath, "registry.test"))
+			}
 			if tc.onPath {
 				t.Setenv("PATH", binDir)
 			} else {
@@ -55,10 +148,9 @@ func TestInspectRequiresHelperOnPath(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			status, err := dockercredentials.Inspect(ctx, "registry.test")
+			status, err := dockercredentials.Inspect(ctx, profile.InMemoryProfiler{Profiles: tc.profiles}, inspectRegistry, tc.recorded, tc.selected)
 			require.NoError(t, err)
-			assert.Equal(t, "registry.test", status.Host)
-			assert.Equal(t, tc.want, status.Configured)
+			assert.Equal(t, tc.want, status)
 		})
 	}
 }

@@ -1,23 +1,26 @@
 
 === install only one specific stable skill via --skills
+
 >>> [CLI] experimental aitools install --skills-only --global --skills test-stable-a
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 === install a specific experimental skill
+
 >>> [CLI] experimental aitools install --skills-only --global --skills test-exp --experimental
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 === asking for an experimental skill without --experimental flag errors out
+
 >>> [CLI] experimental aitools install --skills-only --global --skills test-exp
 Command "install" is deprecated, use "databricks aitools install" instead.
 Flag --global has been deprecated, use --scope=global

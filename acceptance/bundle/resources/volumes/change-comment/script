@@ -8,7 +8,7 @@ trace $CLI bundle deploy
 
 trace print_requests.py //unity
 
-title "Summary should now show id and url\n"
+title "Summary should now show id and url"
 $CLI bundle summary -o json | jq .resources.volumes.volume1.id
 $CLI bundle summary -o json | jq .resources.volumes.volume1.url
 
@@ -18,7 +18,7 @@ trace $CLI volumes read main.myschema.myvolume
 title "Update comment"
 trace update_file.py databricks.yml COMMENT1 COMMENT2
 
-title "Summary should show modified_status=modified and show the same id\n"
+title "Summary should show modified_status=modified and show the same id"
 $CLI bundle summary -o json | jq .resources.volumes.volume1
 
 trace $CLI bundle deploy

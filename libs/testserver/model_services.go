@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -33,11 +35,22 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_service_id")
 
+	if _, exists := s.ModelServices[key]; exists {
+		return Response{
+			StatusCode: http.StatusConflict,
+			Body: map[string]string{
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("ModelService '%s' already exists", key),
+			},
+		}
+	}
+
 	ms.Name = "model-services/" + key
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
 	ms.MetastoreId = nextUUID()
+	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
 	s.ModelServices[key] = ms
 	return Response{

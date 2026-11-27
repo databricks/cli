@@ -4,16 +4,20 @@ import (
 	"context"
 
 	"github.com/databricks/cli/cmd/labs/project"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "labs",
-		Short: "Manage Databricks Labs installations",
-		Long:  `Manage experimental Databricks Labs apps`,
-	}
+// Spec declares the labs command.
+var Spec = root.CommandSpec{
+	Use:   "labs",
+	Short: "Manage Databricks Labs installations",
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage experimental Databricks Labs apps`
 
 	cmd.AddGroup(&cobra.Group{
 		ID:    "labs",
@@ -32,10 +36,9 @@ func New(ctx context.Context) *cobra.Command {
 	all, err := project.Installed(ctx)
 	if err != nil {
 		log.Errorf(ctx, "Cannot retrieve installed labs: %s", err)
-		return cmd
+		return
 	}
 	for _, v := range all {
 		v.Register(cmd)
 	}
-	return cmd
 }

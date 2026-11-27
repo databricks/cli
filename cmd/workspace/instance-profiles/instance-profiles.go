@@ -3,6 +3,7 @@
 package instance_profiles
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,23 +19,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "instance-profiles",
-		Short: `The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch clusters with.`,
-		Long: `The Instance Profiles API allows admins to add, list, and remove instance
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "instance-profiles",
+	Short:   `The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch clusters with.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Instance Profiles API allows admins to add, list, and remove instance
   profiles that users can launch clusters with. Regular users can list the
   instance profiles available to them. See [Secure access to S3 buckets] using
   instance profiles for more information.
 
-  [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAdd())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start add command

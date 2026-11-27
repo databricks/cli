@@ -67,6 +67,7 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 not selected
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Destroy
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.keep

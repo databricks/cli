@@ -1,0 +1,18 @@
+
+=== update: STARTED, FINISHED with SUCCESS
+
+>>> [CLI] aitools update --scope=global
+Already up to date.
+
+>>> print_telemetry
+{"command":"aitools_update","exit_code":0,"aitools_command_event":{"command":"UPDATE","stage":"STARTED","interactive":false}}
+{"command":"aitools_update","exit_code":0,"aitools_command_event":{"command":"UPDATE","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"scope":"GLOBAL"}}
+
+=== uninstall: STARTED, FINISHED with SUCCESS
+
+>>> [CLI] aitools uninstall --scope=global
+Uninstalled 1 skill.
+
+>>> print_telemetry
+{"command":"aitools_uninstall","exit_code":0,"aitools_command_event":{"command":"UNINSTALL","stage":"STARTED","interactive":false}}
+{"command":"aitools_uninstall","exit_code":0,"aitools_command_event":{"command":"UNINSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"scope":"GLOBAL"}}

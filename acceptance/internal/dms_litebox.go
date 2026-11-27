@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
@@ -22,8 +23,8 @@ const dmsAPIPath = "/api/2.0/bundle/deployments"
 // Deployment TreeNodes use the generic workspace-objects permissions API.
 var liteboxPermissionTypes = []string{"directories", "files", "notebooks", "workspace-objects"}
 
-// configureDMSLitebox routes DMS to the local service and workspace files/ACLs
-// to its shared fakes, retaining request recording and mocks for other APIs.
+// configureDMSLitebox routes DMS and workspace hierarchy/ACLs to Litebox while
+// keeping ordinary file content in testserver.
 func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	t.Helper()
 	settings := loadDMSLiteboxSettings(t)
@@ -101,9 +102,18 @@ func isDMSPath(path string) bool {
 }
 
 func isLiteboxPath(path string) bool {
-	if isDMSPath(path) ||
-		strings.HasPrefix(path, "/api/2.0/workspace/") ||
-		strings.HasPrefix(path, "/api/2.0/workspace-files/") {
+	if isDMSPath(path) {
+		return true
+	}
+	if strings.HasPrefix(path, "/api/2.0/workspace-files/") {
+		return false
+	}
+	if strings.HasPrefix(path, "/api/2.0/workspace/") {
+		switch path {
+		case "/api/2.0/workspace/import", "/api/2.0/workspace/export", "/api/2.0/workspace/list":
+			// File sync must list the same files that testserver stores.
+			return false
+		}
 		return true
 	}
 	for _, objectType := range liteboxPermissionTypes {
@@ -121,8 +131,45 @@ func routeLitebox(server *testserver.Server, handler testserver.HandlerFunc) {
 	}
 	dispatch := server.Dispatch
 	server.Dispatch = func(w http.ResponseWriter, r *http.Request, h testserver.HandlerFunc, vars map[string]string) {
-		if isLiteboxPath(r.URL.Path) {
-			h = handler
+		switch r.URL.Path {
+		case "/api/2.0/workspace/mkdirs":
+			local := h
+			h = func(req testserver.Request) any {
+				response := handler(req).(testserver.Response)
+				if response.StatusCode >= 200 && response.StatusCode < 300 {
+					// DMS needs the hierarchy; testserver needs parents for file imports.
+					local(req)
+				}
+				return response
+			}
+		case "/api/2.0/workspace/get-status":
+			local := h
+			h = func(req testserver.Request) any {
+				if req.Workspace.FileExists(req.URL.Query().Get("path")) {
+					return local(req)
+				}
+				return handler(req)
+			}
+		case "/api/2.0/workspace/delete":
+			local := h
+			h = func(req testserver.Request) any {
+				var input struct {
+					Path string `json:"path"`
+				}
+				if json.Unmarshal(req.Body, &input) == nil && req.Workspace.FileExists(input.Path) {
+					return local(req)
+				}
+				response := handler(req).(testserver.Response)
+				if response.StatusCode >= 200 && response.StatusCode < 300 {
+					// Removing a LITE directory must clear its testserver file contents.
+					local(req)
+				}
+				return response
+			}
+		default:
+			if isLiteboxPath(r.URL.Path) {
+				h = handler
+			}
 		}
 		dispatch(w, r, h, vars)
 	}

@@ -1,0 +1,39 @@
+use_home home
+gate true
+
+# end_retry_wait moves the last failed attempt back in time, as if the wait
+# before the next attempt were over.
+end_retry_wait() {
+    local path="${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+    jq '.last_attempt = "2000-01-01T00:00:00Z"' "$path" > "$path.tmp"
+    mv "$path.tmp" "$path"
+}
+
+title "a failed attempt is silent, and the commands right after it do not retry"
+DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+trace print_telemetry
+trace DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+
+title "once the wait is over, the next run retries, up to 10 attempts"
+end_retry_wait
+for i in 2 3 4 5 6 7 8 9; do
+    DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+    end_retry_wait
+done
+# One line per distinct event with its count (uniq -c pads differently by platform).
+trace print_telemetry | sort | uniq -c | sed 's/^ *//'
+trace DATABRICKS_SKILLS_REF=broken-ref $CLI jobs list
+trace print_telemetry
+end_retry_wait
+
+title "after 10 attempts the version gets no more"
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+
+title "a new version starts over"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
+trace print_telemetry
+trace auto_install_state

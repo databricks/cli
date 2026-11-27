@@ -1,0 +1,2 @@
+# Nothing reaches the mock server's telemetry endpoint, so there is nothing to record.
+RecordRequests = false

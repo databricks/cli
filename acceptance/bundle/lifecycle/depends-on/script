@@ -3,8 +3,8 @@ trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
 
 title "Deploy creates dependencies first"
 trace $CLI bundle deploy
-# z_job and z_pipeline are unordered relative to each other, so only check that a_job is last.
-trace print_requests.py //jobs //pipelines | jq -r '.method + " " + .path + " " + (.body.name // "")' | tail -n 1
+# The dependencies of a_job are unordered relative to each other, so only check that a_job is last.
+trace print_requests.py //jobs //pipelines //unity-catalog | jq -r '.method + " " + .path + " " + (.body.name // "")' | tail -n 1
 
 rm -f out.requests.txt
 

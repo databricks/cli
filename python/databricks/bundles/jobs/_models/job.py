@@ -11,10 +11,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.jobs._models.continuous import (
-    Continuous,
-    ContinuousParam,
-)
+from databricks.bundles.jobs._models.continuous import Continuous, ContinuousParam
 from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
@@ -131,8 +128,9 @@ class Job(Resource):
     """
     A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
     
-    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the `environment_key` is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using `environment_key` in the task settings.
     """
 
     git_source: VariableOrOptional[GitSource] = None
@@ -188,7 +186,9 @@ class Job(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    [Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     performance_target: VariableOrOptional[PerformanceTarget] = None
@@ -326,8 +326,9 @@ class JobDict(TypedDict, total=False):
     """
     A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.
     
-    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.
+    For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the `environment_key` is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+    
+    For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using `environment_key` in the task settings.
     """
 
     git_source: VariableOrOptional[GitSourceParam]
@@ -383,7 +384,9 @@ class JobDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    [Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     performance_target: VariableOrOptional[PerformanceTargetParam]

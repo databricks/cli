@@ -1,0 +1,22 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_materialization_set"
+
+resources:
+  materialization_sets:
+    my_materialization_set_1:
+      materialized_features:
+        - feature_name: main.default.my_feature_1
+          offline_store_config:
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: my_feature_1_off
+          cron_schedule_trigger:
+            mode: DERIVED

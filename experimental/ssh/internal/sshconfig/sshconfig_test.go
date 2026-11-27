@@ -17,6 +17,7 @@ func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
 	// `ssh setup` and `--ide` reach ssh through this block and nothing else, so the option has to
 	// be in it.
 	assert.Contains(t, config, fmt.Sprintf("\n    ServerAliveInterval %d\n", ServerAliveIntervalSeconds))
+	assert.Contains(t, config, "\n    ConnectTimeout 360\n")
 
 	// The interval has to fire well inside the ~8 minute reap window, and ServerAliveCountMax
 	// (OpenSSH default 3) intervals have to outlast the longest legitimate pause on a healthy

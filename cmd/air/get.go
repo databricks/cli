@@ -5,11 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"slices"
 	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -21,41 +27,86 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID             string  `json:"run_id"`
-	Status            string  `json:"status"`
-	StartedAt         *string `json:"started_at"`
-	DurationSeconds   *int64  `json:"duration_seconds"`
-	AttemptNumber     int     `json:"attempt_number"`
-	ExperimentName    *string `json:"experiment_name"`
-	DashboardURL      string  `json:"dashboard_url"`
-	MLflowURL         *string `json:"mlflow_url"`
+	RunID string `json:"run_id"`
+	// TaskKey is the AI runtime task shown (see selectAirTask), or null for a
+	// run without one.
+	TaskKey         *string `json:"task_key"`
+	Status          string  `json:"status"`
+	StartedAt       *string `json:"started_at"`
+	DurationSeconds *int64  `json:"duration_seconds"`
+	AttemptNumber   int     `json:"attempt_number"`
+	ExperimentName  *string `json:"experiment_name"`
+	DashboardURL    string  `json:"dashboard_url"`
+	MLflowURL       *string `json:"mlflow_url"`
+	// MLflowExperimentID and MLflowRunID identify the MLflow run MLflowURL links
+	// to. For a finished run whose last retry never started an MLflow run, they
+	// come from the newest earlier retry that has one, which MLflowRetry names.
+	// Like MLflowURL, they are null whenever no MLflow run is found, including
+	// when a get-output call fails.
+	MLflowExperimentID *string `json:"mlflow_experiment_id"`
+	MLflowRunID        *string `json:"mlflow_run_id"`
+	// MLflowRetry is the retry the MLflow IDs above came from when it isn't the
+	// run's latest (see mlflowIDsFromRetries), else absent.
+	MLflowRetry       *int    `json:"mlflow_retry,omitempty"`
 	TerminationReason *string `json:"termination_reason,omitempty"`
+	// StatusMessage is the progress message the text view shows as the status,
+	// set only while the run is unfinished.
+	StatusMessage *string `json:"status_message,omitempty"`
 	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
 	// estimate for a running run, or null when one can't be made (see
 	// estimateTrainingETA).
 	ESTRemainingSeconds *int64 `json:"est_remaining_seconds"`
 	ESTPercentComplete  *int   `json:"est_percent_complete"`
 
-	// The fields below are pre-rendered text-view cells, excluded from JSON
-	// (matching `air get --json`). Each shows "N/A" when its value is
-	// missing. The styled single-run renderer (render.go) consumes them; the
-	// Run ID, Status, and MLflow Run cells it draws are styled and hyperlinked
-	// there rather than stored here.
+	// The fields below carry the values of the text view's Configuration and
+	// Metadata boxes and its sweep summary. Missing values are null; config-based
+	// retry limits require opting in to reading the stored config.
+	User            *string `json:"user"`
+	AcceleratorType *string `json:"accelerator_type"`
+	NumAccelerators *int    `json:"num_accelerators"`
+	// EnvironmentVersion and BaseEnvironment come from the run's serverless
+	// environment spec; at most one is set.
+	EnvironmentVersion *string `json:"environment_version"`
+	BaseEnvironment    *string `json:"base_environment"`
+	// MaxRetries is the run's retry limit and its source (see resolveMaxRetries).
+	MaxRetries *runMaxRetries `json:"max_retries"`
+	// Config is the stored run config the Configuration box shows, before display
+	// reformatting. ConfigSource names where it came from: "uploaded" (the
+	// training_config.yaml `air run` uploads after applying overrides and
+	// stripping comments), or "yaml_parameters" / "yaml_parameters_file" (legacy
+	// runs, a different schema). A config synthesized for display is not exposed.
+	Config       *string `json:"-"`
+	ConfigSource *string `json:"-"`
+	// MLflowRunName is the MLflow run's name, which the MLflow Run cell shows.
+	MLflowRunName *string `json:"mlflow_run_name"`
+	// Sweep is set for foreach runs; its table replaces the single-run view.
+	Sweep *sweepInfo `json:"sweep"`
+
+	// configBody is the Configuration box body, which may be synthesized for a
+	// legacy run without stored parameters.
+	configBody string
+	// detailsResolved records that enrichRunDetails has run.
+	detailsResolved bool
+
+	// The fields below are pre-rendered text-view cells, excluded from JSON.
+	// Each shows "N/A" when its value is missing. The styled single-run renderer
+	// (render.go) consumes them; the Run ID, Status, and MLflow Run cells it draws
+	// are styled and hyperlinked there rather than stored here.
+	// TaskDisplay is the "Task" cell, set only when the run has several AI
+	// runtime tasks, so the view says which one it shows.
+	TaskDisplay         string `json:"-"`
 	SubmittedDisplay    string `json:"-"`
 	DurationDisplay     string `json:"-"`
 	ExperimentDisplay   string `json:"-"`
 	UserDisplay         string `json:"-"`
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
-	MaxRetriesDisplay   string `json:"-"`
 	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
 	// set only for a running run with an estimable remaining time.
 	ProgressDisplay string `json:"-"`
 	DisplayStatus   string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
-	// Sweep replaces the single-run view for foreach runs.
-	Sweep *sweepInfo `json:"-"`
 }
 
 // getTemplate is the text-mode layout for a sweep (foreach) run. Single runs are
@@ -99,20 +150,44 @@ func authError(ctx context.Context, cmd *cobra.Command, err error) error {
 		fmt.Errorf("failed to verify authentication: %w", err))
 }
 
+// credentialError tells a bad credential apart from missing access after a call
+// fails with 401/403. MustWorkspaceClient only attaches credentials (it does not
+// check a PAT server-side), so the Me() probe runs here, only on failure. It
+// returns the probe's error when the credentials themselves fail, or nil.
+func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err error) error {
+	if !errors.Is(err, apierr.ErrUnauthenticated) && !errors.Is(err, apierr.ErrPermissionDenied) {
+		return nil
+	}
+	_, meErr := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	return meErr
+}
+
 // newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
 // configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
+	var includeConfig bool
+	var taskKey string
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show status, configuration, and timing details for a specified run",
-		Long: `Show status, configuration, and timing details for a specified run.
+		Short: "Show a run's status, configuration, and timing",
+		Long: `Show a run's status, configuration, and timing.
 
-JOB_RUN_ID is the job run ID returned by "air run".`,
+JOB_RUN_ID is the job run ID returned by "databricks air run".
+
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one. The status is that task's own, except that a task whose latest attempt
+failed shows RUNNING while another task of the run is still active, since it
+may yet be retried.`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},
 	}
+
+	cmd.Flags().BoolVar(&includeConfig, "include-config", false, "Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)")
+	cmd.Flags().StringVar(&taskKey, "task-key", "", "Show this AI Runtime task of the run (default: the first in task order)")
 
 	// Resolve and authenticate the workspace client up front so an auth failure
 	// fails fast here, before any run status or config is fetched or printed.
@@ -128,6 +203,9 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		if includeConfig && root.OutputType(cmd) == flags.OutputText {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, errors.New("--include-config requires -o json"))
+		}
 		w := cmdctx.WorkspaceClient(ctx)
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
@@ -136,17 +214,11 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// Validate authentication against the workspace before fetching or
-		// rendering anything. MustWorkspaceClient's Config.Authenticate only
-		// attaches credentials (e.g. it does not check a PAT server-side), so
-		// without this a bad credential would surface as a confusing failure
-		// mid-render instead of a clear "not authenticated" error here.
-		if _, err := w.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
-			return authError(ctx, cmd, err)
-		}
-
 		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 		if err != nil {
+			if credErr := credentialError(ctx, w, err); credErr != nil {
+				return authError(ctx, cmd, credErr)
+			}
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
@@ -156,19 +228,34 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				fmt.Errorf("failed to get status for run %d: %w", runID, err))
 		}
 
-		workspaceID, err := w.CurrentWorkspaceID(ctx)
+		// From here on, run holds only the selected AI runtime task's task runs,
+		// so the status, timing, MLflow and config lookups all read that task.
+		run, data, err := taskView(run, taskKey)
+		if err != nil {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+		}
+
+		// Prefer the configured workspace ID; only look it up when it is unset.
+		id, err := auth.ResolveWorkspaceID(ctx, w)
 		if err != nil {
 			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 				fmt.Errorf("failed to get workspace id for run %d: %w", runID, err))
 		}
+		workspaceID, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("configured workspace_id %q is not a numeric workspace ID", id))
+		}
 
-		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
-		ids := mlflowIDsFromOutput(taskOutput)
+		taskOutput, taskOutputErr := latestTaskOutput(ctx, w, run.Tasks)
+		ids := mlflowIDsFromRetries(ctx, w, run.Tasks, isTerminal(run), taskOutput, taskOutputErr)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
+			data.MLflowExperimentID = &ids.ExperimentID
+			data.MLflowRunID = &ids.RunID
+			data.MLflowRetry = ids.OlderRetry
 			// A remaining-time estimate only makes sense while the run is still
 			// training; a terminal run is either done or stopped mid-progress.
 			if isRunning(run) {
@@ -181,13 +268,36 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 				}
 			}
 		}
+		statusMessage := ""
+		if taskOutput != nil && run.State != nil && run.State.ResultState == "" {
+			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+		}
+		if statusMessage != "" {
+			data.StatusMessage = &statusMessage
+		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
-		} else if genAIComputeTask(run) == nil {
-			enrichFromAiRuntimeTask(run, &data)
+		} else {
+			if genAIComputeTask(run) == nil {
+				enrichFromAiRuntimeTask(run, &data)
+			}
+			enrichCtx := ctx
+			if root.OutputType(cmd) != flags.OutputText {
+				// A failed read already shows as a null field; keep stderr quiet
+				// for callers that merge it into stdout.
+				enrichCtx = withQuietEnrichment(ctx)
+			}
+			enrichRunDetails(enrichCtx, w, run, &data, ids, root.OutputType(cmd) == flags.OutputText || includeConfig)
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
+			if includeConfig {
+				return renderEnvelope(ctx, struct {
+					getData
+					Config       *string `json:"config"`
+					ConfigSource *string `json:"config_source"`
+				}{data, data.Config, data.ConfigSource})
+			}
 			return renderEnvelope(ctx, data)
 		}
 
@@ -198,10 +308,6 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 			return renderEnvelope(ctx, data)
 		}
-		statusMessage := ""
-		if taskOutput != nil {
-			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
-		}
 		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
 		renderRunText(ctx, out, w, run, &data, ids)
@@ -209,6 +315,45 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 	}
 
 	return cmd
+}
+
+// selectAirTask narrows run (see taskRun) to the AI runtime task named by key,
+// or to its first AI runtime task in task order when key is empty, so the rest
+// of the command reads that task alone. A run with no AI runtime task is
+// returned unchanged when no key is given. The error names the run's AI runtime
+// tasks when key is not one of them.
+func selectAirTask(run *jobs.Run, key string) (*jobs.Run, error) {
+	if key == "" {
+		return defaultTaskRun(run), nil
+	}
+	keys := airTaskKeys(run)
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("run %d has no AI Runtime tasks", run.RunId)
+	}
+	if !slices.Contains(keys, key) {
+		return nil, fmt.Errorf("run %d has no AI Runtime task %q; its AI Runtime tasks are: %s", run.RunId, key, strings.Join(keys, ", "))
+	}
+	return taskRun(run, key), nil
+}
+
+// taskView narrows run to the AI runtime task named by key (see selectAirTask)
+// and builds its getData, recording the task shown: the shared start of
+// `air get` and the list picker's detail pane, so the two stay in step.
+// TaskKey stays null for a run without an AI runtime task; the Task cell is
+// set only when the run has several to tell apart.
+func taskView(run *jobs.Run, key string) (*jobs.Run, getData, error) {
+	selected, err := selectAirTask(run, key)
+	if err != nil {
+		return nil, getData{}, err
+	}
+	data := buildGetData(selected)
+	if k := airTaskKey(selected); k != "" {
+		data.TaskKey = &k
+		if len(airTaskKeys(run)) > 1 {
+			data.TaskDisplay = k
+		}
+	}
+	return selected, data, nil
 }
 
 // enrichFromAiRuntimeTask fills the config path, experiment, and accelerators
@@ -224,9 +369,7 @@ func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
 		if d.CommandPath != "" {
 			data.TrainingConfigPath = path.Join(path.Dir(d.CommandPath), trainingConfigName)
 		}
-		if a := acceleratorLabel(string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount); a != "" {
-			data.AcceleratorsDisplay = a
-		}
+		setAccelerators(data, string(d.Compute.AcceleratorType), d.Compute.AcceleratorCount)
 	}
 	if task.Experiment != "" {
 		exp := stripExperimentUserPrefix(task.Experiment)
@@ -237,10 +380,11 @@ func enrichFromAiRuntimeTask(run *jobs.Run, data *getData) {
 
 // aiRuntimeTaskOf returns the run's first ai_runtime_task, or nil.
 func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
-	if len(run.Tasks) == 0 {
+	t := firstTask(run)
+	if t == nil {
 		return nil
 	}
-	return run.Tasks[0].AiRuntimeTask
+	return t.AiRuntimeTask
 }
 
 // buildGetData extracts the fields we display from a run. The text-view cells
@@ -249,7 +393,7 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 func buildGetData(run *jobs.Run) getData {
 	data := getData{
 		RunID:             strconv.FormatInt(run.RunId, 10),
-		Status:            runStatus(run.State),
+		Status:            displayRunStatus(run),
 		DisplayStatus:     displayRunStatus(run),
 		TerminationReason: terminationReason(run),
 		StartedAt:         startedAt(run),
@@ -266,12 +410,92 @@ func buildGetData(run *jobs.Run) getData {
 	if data.ExperimentName != nil {
 		data.ExperimentDisplay = *data.ExperimentName
 	}
+	data.User = nilIfEmpty(run.CreatorUserName)
 	data.UserDisplay = orNA(run.CreatorUserName)
-	data.AcceleratorsDisplay = orNA(accelerators(run))
+	data.AcceleratorsDisplay = na
+	accelType, count := jobCompute(run)
+	setAccelerators(&data, accelType, count)
 	// EnvironmentDisplay is resolved at render time: the serverless environment
 	// version needs a raw GetRun read (the typed SDK Run drops it), so it is not
 	// filled here alongside the fields read straight off the run.
 	data.EnvironmentDisplay = na
-	data.MaxRetriesDisplay = maxRetries(run)
 	return data
+}
+
+// setAccelerators records GPU compute in the same nullable shape as air list.
+func setAccelerators(data *getData, accelType string, count int) {
+	data.AcceleratorType = nilIfEmpty(accelType)
+	if count != 0 {
+		data.NumAccelerators = new(count)
+	} else {
+		data.NumAccelerators = nil
+	}
+	data.AcceleratorsDisplay = orNA(acceleratorLabel(accelType, count))
+}
+
+// enrichRunDetails resolves the single-run values that need requests beyond the
+// typed GetRun: the environment (raw GetRun), the stored config (download) and
+// the retry limit and the MLflow run name. When readConfig is false, only a
+// server-reported retry limit is available. Each read is best-effort.
+func enrichRunDetails(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, data *getData, ids *mlflowIdentifiers, readConfig bool) {
+	data.detailsResolved = true
+
+	// The reads are independent, so run them concurrently.
+	var (
+		wg            sync.WaitGroup
+		version, base string
+		body          string
+		raw           []byte
+		mlflowName    string
+	)
+	wg.Go(func() { version, base = aiRuntimeEnvironment(ctx, w, run.RunId, taskEnvironmentKey(run)) })
+	if readConfig {
+		wg.Go(func() { body, raw = resolveConfigYAML(ctx, w, run, data) })
+	}
+	if ids != nil {
+		wg.Go(func() { mlflowName = fetchMLflowRunName(ctx, w, ids.RunID) })
+	}
+	wg.Wait()
+
+	data.EnvironmentVersion = nilIfEmpty(version)
+	data.BaseEnvironment = nilIfEmpty(base)
+	data.EnvironmentDisplay = orNA(environmentLabel(version, base))
+	data.configBody = body
+	if len(raw) > 0 {
+		// Normalize CRLF so the machine-readable output is identical for the
+		// same config uploaded from Windows and Unix checkouts.
+		cfg := strings.ReplaceAll(string(raw), "\r\n", "\n")
+		data.Config = &cfg
+		data.ConfigSource = configSource(run, data)
+	}
+	data.MaxRetries = resolveMaxRetries(run, raw)
+	data.MLflowRunName = nilIfEmpty(mlflowName)
+}
+
+// configSource names where resolveConfigYAML read a stored config from.
+func configSource(run *jobs.Run, data *getData) *string {
+	source := "uploaded"
+	if task := genAIComputeTask(run); task != nil && data.TrainingConfigPath == "" {
+		source = "yaml_parameters_file"
+		if task.YamlParameters != "" {
+			source = "yaml_parameters"
+		}
+	}
+	return &source
+}
+
+type quietEnrichmentKey struct{}
+
+// withQuietEnrichment demotes best-effort enrichment failures from warnings to
+// debug logs.
+func withQuietEnrichment(ctx context.Context) context.Context {
+	return context.WithValue(ctx, quietEnrichmentKey{}, true)
+}
+
+func enrichmentWarnf(ctx context.Context, format string, v ...any) {
+	if quiet, _ := ctx.Value(quietEnrichmentKey{}).(bool); quiet {
+		log.Debugf(ctx, format, v...)
+		return
+	}
+	log.Warnf(ctx, format, v...)
 }

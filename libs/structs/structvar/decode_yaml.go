@@ -11,7 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // LocationError is a YAML syntax error with the location it occurred at.

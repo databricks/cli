@@ -1,0 +1,9 @@
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '''
+{
+    "error_code": "UNAUTHENTICATED",
+    "message": "Invalid access token."
+}
+'''
+Response.StatusCode = 401

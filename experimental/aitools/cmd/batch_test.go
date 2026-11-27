@@ -187,10 +187,13 @@ func TestExecuteBatchSetsOnWaitTimeoutContinue(t *testing.T) {
 }
 
 func TestExecuteBatchPreservesInputOrder(t *testing.T) {
-	// Index 0 is slow (PENDING then SUCCEEDED on first poll); 1 and 2 are
-	// immediate. Despite the staggered completion, results stay in input order.
+	// Index 0 is slow (PENDING, then SUCCEEDED on first poll); 1 and 2 are
+	// immediate. With two slots, the 'fast2' submission can only start after
+	// 'fast1' has finished, and the slow poll blocks until that submission
+	// starts. So 'slow' always completes last, yet results stay in input order.
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	fast2Submitted := make(chan struct{})
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
 		return req.Statement == "SELECT 'slow'"
@@ -199,23 +202,31 @@ func TestExecuteBatchPreservesInputOrder(t *testing.T) {
 		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
 	}, nil).Once()
 
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-slow").Return(&sql.StatementResponse{
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-slow").Run(func(context.Context, string) {
+		<-fast2Submitted
+	}).Return(&sql.StatementResponse{
 		StatementId: "stmt-slow",
 		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
 	}, nil).Once()
 
-	for i, sqlStr := range []string{"SELECT 'fast1'", "SELECT 'fast2'"} {
-		sid := fmt.Sprintf("stmt-fast-%d", i+1)
-		mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-			return req.Statement == sqlStr
-		})).Return(&sql.StatementResponse{
-			StatementId: sid,
-			Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		}, nil).Once()
-	}
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
+		return req.Statement == "SELECT 'fast1'"
+	})).Return(&sql.StatementResponse{
+		StatementId: "stmt-fast-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	}, nil).Once()
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
+		return req.Statement == "SELECT 'fast2'"
+	})).Run(func(context.Context, sql.ExecuteStatementRequest) {
+		close(fast2Submitted)
+	}).Return(&sql.StatementResponse{
+		StatementId: "stmt-fast-2",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	}, nil).Once()
 
 	sqls := []string{"SELECT 'slow'", "SELECT 'fast1'", "SELECT 'fast2'"}
-	results := executeBatch(ctx, mockAPI, "wh-1", sqls, nil, 8)
+	results := executeBatch(ctx, mockAPI, "wh-1", sqls, nil, 2, fastPoll)
 
 	require.Len(t, results, 3)
 	for i, r := range results {

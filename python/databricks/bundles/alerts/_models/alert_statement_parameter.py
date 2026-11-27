@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AlertStatementParameter:
     """
-    :meta private: [EXPERIMENTAL]
-
     A named parameter bound to the alert query. Only flat, named scalar parameters are
     supported; complex types such as ARRAY, MAP, and STRUCT are not.
     """
@@ -24,7 +22,7 @@ class AlertStatementParameter:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name of the parameter. Reference it in the query text as `:name`. Required, must be
+    [Beta] The name of the parameter. Reference it in the query text as `:name`. Required, must be
     non-empty, and must be unique across the alert's parameters.
     """
 
@@ -32,7 +30,7 @@ class AlertStatementParameter:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
+    [Beta] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
     the type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.
     """
 
@@ -40,7 +38,7 @@ class AlertStatementParameter:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
+    [Beta] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
     """
 
     @classmethod
@@ -58,7 +56,7 @@ class AlertStatementParameterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name of the parameter. Reference it in the query text as `:name`. Required, must be
+    [Beta] The name of the parameter. Reference it in the query text as `:name`. Required, must be
     non-empty, and must be unique across the alert's parameters.
     """
 
@@ -66,7 +64,7 @@ class AlertStatementParameterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
+    [Beta] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
     the type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.
     """
 
@@ -74,7 +72,7 @@ class AlertStatementParameterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
+    [Beta] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
     """
 
 

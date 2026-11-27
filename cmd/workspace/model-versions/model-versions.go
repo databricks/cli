@@ -3,6 +3,7 @@
 package model_versions
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,24 +18,28 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "model-versions",
-		Short: `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
-		Long: `Databricks provides a hosted version of MLflow Model Registry in Unity
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "model-versions",
+	Short:   `Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Databricks provides a hosted version of MLflow Model Registry in Unity
   Catalog. Models in Unity Catalog provide centralized access control, auditing,
   lineage, and discovery of ML models across Databricks workspaces.
 
   This API reference documents the REST endpoints for managing model versions in
   Unity Catalog. For more details, see the [registered models API
-  docs](/api/workspace/registeredmodels).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  docs](/api/workspace/registeredmodels).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command
@@ -78,7 +81,8 @@ func newDelete() *cobra.Command {
   privilege on the parent schema.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the model version
+    FULL_NAME: The three-level (fully qualified) name of the parent registered model, in
+      the form catalog_name.schema_name.model_name.
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
@@ -149,7 +153,8 @@ func newGet() *cobra.Command {
   catalog and the **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the model version
+    FULL_NAME: The three-level (fully qualified) name of the parent registered model, in
+      the form catalog_name.schema_name.model_name.
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
@@ -374,7 +379,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: aliases
 	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog containing the model version.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version.`)
-	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
+	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Time at which the model version was created, in epoch milliseconds.`)
 	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the model version.`)
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The unique identifier of the model version.`)
 	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore containing the model version.`)
@@ -386,7 +391,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version.`)
 	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY]`)
 	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
-	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
+	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Time at which the model version was last updated, in epoch milliseconds.`)
 	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time.`)
 
 	cmd.Use = "update FULL_NAME VERSION"
@@ -403,7 +408,8 @@ func newUpdate() *cobra.Command {
   Currently only the comment of the model version can be updated.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the model version
+    FULL_NAME: The three-level (fully qualified) name of the parent registered model, in
+      the form catalog_name.schema_name.model_name.
     VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)

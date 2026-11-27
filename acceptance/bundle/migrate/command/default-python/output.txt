@@ -167,6 +167,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
    "resources.jobs.sample_job": {
 
 === Extra plan: should have no drift
+
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
 Building python_artifact...
 update jobs.sample_job

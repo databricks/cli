@@ -30,6 +30,7 @@ Main Commands
   run                   Run a pipeline
   show                  Preview a table's columns and sample rows
   stop                  Stop a pipeline
+  test                  *Beta* Run the tests of a pipeline
 
 Management Commands
   apply-environment     *Public Preview* Apply the latest environment to the pipeline.
@@ -51,13 +52,13 @@ Permission Commands
   update-permissions    Update pipeline permissions.
 
 Flags:
-  -h, --help          help for pipelines
-      --var strings   set values for variables defined in project config. Example: --var="foo=bar"
+  -h, --help[=true|false]   help for pipelines
+      --var strings         set values for variables defined in project config. Example: --var="foo=bar"
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks pipelines [command] --help" for more information about a command.

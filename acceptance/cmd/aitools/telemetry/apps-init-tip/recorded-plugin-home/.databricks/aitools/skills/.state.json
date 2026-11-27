@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "release": "v0.2.32",
+  "last_updated": "2026-01-01T00:00:00Z",
+  "skills": {},
+  "scope": "global",
+  "plugins": {
+    "codex": {"marketplace": "databricks-agent-skills", "plugin": "databricks", "scope": "user", "version": "0.2.32"},
+    "copilot": {"marketplace": "databricks-agent-skills", "plugin": "databricks", "scope": "user", "version": "0.2.32"}
+  }
+}

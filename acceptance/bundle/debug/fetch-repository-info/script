@@ -1,5 +1,7 @@
-# The fake workspace reports "main", which is this repo's default branch too.
-url=https://github.com/databricks/bundle-examples
+# A tiny repo: Repos clones synchronously inside POST /api/2.0/repos, and
+# cloning a larger one (bundle-examples) intermittently exceeded the client's
+# 90s inactivity timeout, mostly on GCP.
+url=https://github.com/databricks/databricks-empty-ide-project
 
 # A Git folder under /Repos and one outside it. Once a Git folder has Git CLI
 # access the workspace API reports no git metadata for it, so both resolve
@@ -20,14 +22,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "the root of a Git folder under /Repos\n"
+title "the root of a Git folder under /Repos"
 trace $CLI bundle debug fetch-repository-info --path "$repo"
 
-title "a subdirectory of it, which resolves to the same root\n"
+title "a subdirectory of it, which resolves to the same root"
 trace $CLI bundle debug fetch-repository-info --path "$repo/subdir"
 
-title "the root of a Git folder outside /Repos\n"
+title "the root of a Git folder outside /Repos"
 trace $CLI bundle debug fetch-repository-info --path "$folder"
 
-title "a path in no Git folder at all\n"
+title "a path in no Git folder at all"
 trace $CLI bundle debug fetch-repository-info --path "/Workspace/Users/$CURRENT_USER_NAME"

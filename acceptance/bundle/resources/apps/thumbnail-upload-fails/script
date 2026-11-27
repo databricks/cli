@@ -1,0 +1,12 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "A failed upload after create keeps the app in state and leaves the thumbnail out of it"
+trace $CLI bundle deploy
+trace jq '.state["resources.apps.mykey"].state.thumbnail' .databricks/bundle/default/resources.json
+
+title "The next deploy retries the upload"
+trace $CLI bundle plan
+trace musterr $CLI bundle deploy

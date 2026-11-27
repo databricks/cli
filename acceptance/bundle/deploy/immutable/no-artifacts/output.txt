@@ -8,52 +8,6 @@ Workspace:
 
 Validation OK!
 
->>> [CLI] bundle plan -o json
-
->>> jq .plan["resources.jobs.my_job"].new_state.value.tasks plan.json
-[
-  {
-    "notebook_task": {
-      "base_parameters": {
-        "path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/some_path"
-      },
-      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/notebook"
-    },
-    "task_key": "notebook_task"
-  },
-  {
-    "environment_key": "env",
-    "spark_python_task": {
-      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py"
-    },
-    "task_key": "spark_python_task"
-  }
-]
-
->>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
-{
-  "action": "create",
-  "new_state": {
-    "value": {
-      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot",
-      "bundle_id": "[SNAPSHOT_HASH]",
-      "acl": [
-        {
-          "user_name": "[USERNAME]",
-          "permission_level": "CAN_READ"
-        }
-      ],
-      "can_manage": [
-        {
-          "service_principal_name": "[USERNAME]"
-        }
-      ],
-      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip"
-    }
-  }
-}
-
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.my_job
@@ -61,25 +15,26 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/main.py"
+"/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files/src/main.py"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/src/notebook"
+"/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files/src/notebook"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files/some_path"
+"/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files/some_path"
 
 >>> title Check snapshot plan after deploy: 
 
 === Check snapshot plan after deploy: 
+
 >>> [CLI] bundle plan -o json
 
 >>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
 {
   "action": "skip",
   "remote_state": {
-    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]",
-    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot"
+    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]",
+    "full_path": "/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot"
   },
   "changes": {
     "acl": {
@@ -108,7 +63,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     },
     "can_manage": {
       "action": "skip",
-      "reason": "missing_in_remote",
+      "reason": "spec:output_only",
       "old": [
         {
           "service_principal_name": "[USERNAME]"
@@ -123,8 +78,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "zip_path": {
       "action": "skip",
       "reason": "missing_in_remote",
-      "old": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip",
-      "new": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID].zip",
+      "old": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID][1].zip",
+      "new": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH]-[UUID][1].zip",
       "remote": ""
     }
   }

@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "feature_specs": {
+    "my_feature_spec": {
+      "features": [
+        {
+          "feature_lookup": {
+            "feature_names": [
+              "age"
+            ],
+            "lookup_keys": [
+              "user_id"
+            ],
+            "table": "mycatalog.myschema.user_features"
+          }
+        }
+      ],
+      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myspec"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  }
+}

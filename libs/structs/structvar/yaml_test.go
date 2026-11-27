@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // ev is an expected value with the locations it is expected to have.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"runtime"
 	"slices"
 	"strconv"
@@ -54,6 +55,9 @@ func promptForProfile(ctx context.Context, defaultValue string, takenNames []str
 			if err := databrickscfg.ValidateProfileName(input); err != nil {
 				return err
 			}
+			if err := validateLoginProfileName(input); err != nil {
+				return err
+			}
 			if slices.Contains(takenNames, input) {
 				return fmt.Errorf("profile %s already exists. Choose a different name, or rerun with --profile %s to use it", input, input)
 			}
@@ -76,9 +80,6 @@ const (
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
-	// deviceCodeEnvVar enables the experimental device code login flow
-	// (--use-device-code) while it is experimental.
-	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -123,6 +124,9 @@ func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
 	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
+		// This includes storage.ErrAccessTokenNotStored, which a refresh treats
+		// as stored: a failed login can be run again, while a refresh has to
+		// keep the refresh token that the server just replaced.
 		storeErr := fmt.Errorf("store token: %w", err)
 		// The profile is already saved, but the old token may still be present.
 		// Delete it so later commands cannot use it with the updated profile.
@@ -156,6 +160,9 @@ information, see:
 If no host is provided, the CLI opens login.databricks.com where you can
 authenticate and select a workspace.
 
+On a machine that cannot open a browser, use --use-device-code to approve
+the login in a browser on another device.
+
 The positional argument is resolved as a profile name first. If no profile
 with that name exists and the argument looks like a URL, it is used as a
 host. The positional argument cannot be combined with --host or --profile;
@@ -182,6 +189,8 @@ a new profile is created.
 	var clientID string
 	var resources []string
 	var useDeviceCode bool
+	var userCode string
+	var confirmationCode string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -197,9 +206,16 @@ a new profile is created.
 	cmd.Flags().StringArrayVar(&resources, "resource", nil,
 		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
 	cmd.Flags().BoolVar(&useDeviceCode, "use-device-code", false,
-		"Log in with a device code, using a browser on another device (experimental)")
-	// Hidden while device code login is experimental.
-	cmd.Flags().MarkHidden("use-device-code")
+		"Log in with a device code, using a browser on another device")
+	// The non-interactive device code login tells the user to rerun the
+	// command with these flags, which completes the login. Hidden because only
+	// that rerun uses them.
+	cmd.Flags().StringVar(&userCode, "user-code", "",
+		"User code of the device code login to complete")
+	cmd.Flags().StringVar(&confirmationCode, "confirmation-code", "",
+		"Confirmation code that completes a device code login")
+	cmd.Flags().MarkHidden("user-code")
+	cmd.Flags().MarkHidden("confirmation-code")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -232,9 +248,35 @@ a new profile is created.
 			}
 		}
 
-		if useDeviceCode {
-			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
+		// setHostAndAccountId normalizes the host only after the keyring probe and the
+		// profile name prompt, so reject an invalid host before them. Only trim
+		// it here: an account ID from the query params would make the prompt
+		// suggest ACCOUNT-<id> for a workspace login.
+		if authArguments.Host != "" {
+			if err := normalizeLoginHost(&auth.AuthArguments{Host: authArguments.Host}); err != nil {
 				return err
+			}
+			authArguments.Host = strings.TrimSpace(authArguments.Host)
+		}
+
+		if err := validateDeviceCodeCompletionFlags(cmd); err != nil {
+			return err
+		}
+		completeLogin := cmd.Flags().Changed("confirmation-code")
+		// Device code login reads the confirmation code from stdin. When stdin
+		// is not a terminal, e.g. when an AI agent runs the login as a one-off
+		// command, nobody can type the code in. The non-interactive login then
+		// stores the device code, and a rerun of the command with --user-code
+		// and --confirmation-code completes the login. Neither step prompts
+		// for the profile or the host.
+		var nonInteractive bool
+		if useDeviceCode {
+			if err := validateDeviceCodeLogin(cmd); err != nil {
+				return err
+			}
+			nonInteractive = completeLogin || !cmdio.IsInputTTY(ctx)
+			if nonInteractive && configureCluster {
+				return errDeviceCodeNonInteractiveCluster
 			}
 		}
 
@@ -256,7 +298,7 @@ a new profile is created.
 		// discovery, so its "Create a new profile" asks for the host after the
 		// profile name.
 		var takenProfileNames []string
-		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) && !nonInteractive {
 			matchProfiles := profile.MatchAllProfiles
 			if useDeviceCode {
 				matchProfiles = matchDeviceCodeProfiles
@@ -286,11 +328,6 @@ a new profile is created.
 				if err != nil {
 					return err
 				}
-				// Fail here rather than prompting for the host again after
-				// the profile name.
-				if useDeviceCode && host == "" {
-					return errDeviceCodeNeedsHost
-				}
 				authArguments.Host = host
 			case profilePickerCreateNew:
 				// Reject the names of existing profiles, including those the
@@ -310,19 +347,15 @@ a new profile is created.
 		// only populated by setHostAndAccountId further down, which runs after
 		// the profile-name prompt.
 		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
-			params := auth.ExtractHostQueryParams(authArguments.Host)
-			authArguments.Host = params.Host
-			if authArguments.AccountID == "" {
-				authArguments.AccountID = params.AccountID
-			}
-			if authArguments.WorkspaceID == "" {
-				authArguments.WorkspaceID = params.WorkspaceID
+			if err := normalizeLoginHost(authArguments); err != nil {
+				return err
 			}
 			runHostDiscovery(ctx, authArguments)
 		}
 
-		// If the user has not specified a profile name, prompt for one.
-		if profileName == "" {
+		// If the user has not specified a profile name, prompt for one. Without
+		// a profile, the non-interactive login stores the token under the host.
+		if profileName == "" && !nonInteractive {
 			var err error
 			profileName = getProfileName(authArguments)
 			if profileName == "" {
@@ -332,6 +365,9 @@ a new profile is created.
 			if err != nil {
 				return err
 			}
+		}
+		if err := validateLoginProfileName(profileName); err != nil {
+			return err
 		}
 
 		// Load parameters from the existing profile if any.
@@ -351,10 +387,15 @@ a new profile is created.
 			}
 		}
 
+		// The non-interactive login cannot answer the host prompt of setHostAndAccountId.
+		if nonInteractive && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
+			return errDeviceCodeNeedsHost
+		}
+
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com. Discovery opens a browser on this machine,
 		// and device code login is meant for machines without one, so it skips
-		// discovery and setHost resolves the host instead.
+		// discovery and setHostAndAccountId resolves the host instead.
 		if !useDeviceCode && shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
@@ -372,24 +413,7 @@ a new profile is created.
 			})
 		}
 
-		err = setHost(ctx, existingProfile, authArguments, args)
-		if err != nil {
-			return err
-		}
-		// Check the host once it is resolved, before setAccountID prompts for
-		// an account ID for account and unified hosts. A workspace without
-		// device code login enabled is rejected later by deviceCodeLogin.
-		if useDeviceCode {
-			// The host prompt accepts an empty answer. Without this check,
-			// login would resolve the host from DATABRICKS_HOST instead.
-			if authArguments.Host == "" {
-				return errDeviceCodeNeedsHost
-			}
-			if !isDeviceCodeSupportedForHost(authArguments.Host, authArguments.DiscoveryURL) {
-				return errDeviceCodeWorkspaceOnly
-			}
-		}
-		err = setAccountID(ctx, existingProfile, authArguments)
+		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
 		}
@@ -434,10 +458,25 @@ a new profile is created.
 		}
 		defer persistentAuth.Close()
 
+		nonInteractiveLogin := nonInteractiveDeviceCodeLogin{
+			persistentAuth: persistentAuth,
+			tokenStore:     tokenStore,
+			key:            pendingLoginKey(oauthArgument.GetCacheKey()),
+			profile:        profileName,
+			host:           (&config.Config{Host: authArguments.Host}).CanonicalHostName(),
+			accountID:      oauthAccountID(oauthArgument),
+			clientID:       clientID,
+			scopes:         slices.Sorted(slices.Values(scopesList)),
+		}
 		var token *oauth2.Token
-		if useDeviceCode {
+		switch {
+		case completeLogin:
+			token, err = nonInteractiveLogin.complete(ctx, userCode, confirmationCode)
+		case nonInteractive:
+			return nonInteractiveLogin.start(ctx)
+		case useDeviceCode:
 			token, err = deviceCodeLogin(ctx, persistentAuth)
-		} else {
+		default:
 			token, err = persistentAuth.Challenge()
 		}
 		if err != nil {
@@ -452,16 +491,22 @@ a new profile is created.
 		// 3. Saving the profile.
 
 		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
-			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
-			if wsErr != nil {
-				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
-			} else if wsID != "" {
-				authArguments.WorkspaceID = wsID
+			// The non-interactive login never prompts, even when its second
+			// step runs in a terminal.
+			if nonInteractive {
+				cmdio.LogString(ctx, workspaceIDHint)
+			} else {
+				wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
+				if wsErr != nil {
+					log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
+				} else if wsID != "" {
+					authArguments.WorkspaceID = wsID
+				}
+				// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
+				// SaveToProfile omits the workspace_id key entirely for account-level
+				// profiles; MatchAccountProfiles treats absent workspace_id the same
+				// as the legacy "none" sentinel.
 			}
-			// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
-			// SaveToProfile omits the workspace_id key entirely for account-level
-			// profiles; MatchAccountProfiles treats absent workspace_id the same
-			// as the legacy "none" sentinel.
 		}
 
 		var clusterID, serverlessComputeID string
@@ -569,20 +614,75 @@ func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *p
 	return true
 }
 
-// setHostAndAccountId calls setHost and then setAccountID.
-func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
-	if err := setHost(ctx, existingProfile, authArguments, args); err != nil {
-		return err
+var errInvalidHost = errors.New("invalid host")
+
+const exampleHost = "https://<databricks-instance>.cloud.databricks.com"
+
+// normalizeLoginHost strips the trailing slash and the query params from the
+// host and moves the workspace and account ID query params into WorkspaceID and
+// AccountID unless they are set.
+// It fails if the host is not a URL with a hostname, e.g. for "/", "?o=123",
+// "https://" or "https://my workspace.test", because login would then use discovery
+// or DATABRICKS_HOST, connect to a host named "https", or fail later.
+func normalizeLoginHost(authArguments *auth.AuthArguments) error {
+	params, err := parseLoginHost(authArguments.Host)
+	if err != nil {
+		// The host may come from a profile or DATABRICKS_HOST, so say what
+		// shape is expected.
+		return fmt.Errorf("%w. Expected a URL like %s", err, exampleHost)
 	}
-	return setAccountID(ctx, existingProfile, authArguments)
+	authArguments.Host = params.Host
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
+	return nil
 }
 
-// Sets the host in the persistentAuth object based on the provided arguments and flags.
-// Follows the following precedence:
+// parseLoginHost trims host and extracts its query params. It returns
+// errInvalidHost if host is not a URL with a hostname.
+func parseLoginHost(host string) (auth.HostParams, error) {
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(strings.TrimSuffix(strings.TrimSpace(host), "/"))
+	if !hasHostname(params.Host) {
+		return auth.HostParams{}, fmt.Errorf("%w %q", errInvalidHost, host)
+	}
+	return params, nil
+}
+
+// hasHostname reports whether host, with or without a scheme, is an http or
+// https URL with a hostname.
+func hasHostname(host string) bool {
+	u, err := url.Parse(host)
+	// url.Parse can't read a host without a scheme, e.g. "localhost:8080", so
+	// check it as an https host. A host with "//" has a scheme, possibly a
+	// malformed one like in "https//x.test", so it is checked as is.
+	if (err != nil || !isHTTPScheme(u.Scheme)) && !strings.Contains(host, "//") {
+		u, err = url.Parse("https://" + host)
+	}
+	return err == nil && isHTTPScheme(u.Scheme) && u.Hostname() != ""
+}
+
+func isHTTPScheme(scheme string) bool {
+	return scheme == "http" || scheme == "https"
+}
+
+// setHostAndAccountId sets the host and, for account and unified hosts, the
+// account ID of authArguments.
+//
+// The host is taken in this precedence:
 // 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
 // 2. Profile host, if available.
 // 3. Prompt the user for the host.
-func setHost(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
+//
+// The account ID is taken in this precedence:
+// 1. --account-id flag.
+// 2. account-id from the specified profile, if available.
+// 3. Prompt the user for the account-id.
+func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
 	host := authArguments.Host
 	if len(args) > 0 && host != "" {
@@ -608,17 +708,8 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 		}
 	}
 
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
-
-	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
-	// URL params from explicit --host override stale profile values.
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	if authArguments.WorkspaceID == "" {
-		authArguments.WorkspaceID = params.WorkspaceID
-	}
-	if authArguments.AccountID == "" {
-		authArguments.AccountID = params.AccountID
+	if err := normalizeLoginHost(authArguments); err != nil {
+		return err
 	}
 
 	// Inherit workspace_id from the existing profile AFTER URL param extraction.
@@ -632,15 +723,7 @@ func setHost(ctx context.Context, existingProfile *profile.Profile, authArgument
 	// .well-known/databricks-config endpoint. This is best-effort: failures
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
-	return nil
-}
 
-// Set the account in the persistentAuth object based on the flags.
-// Follows the following precedence:
-// 1. --account-id flag.
-// 2. account-id from the specified profile, if available.
-// 3. Prompt the user for the account-id.
-func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArguments *auth.AuthArguments) error {
 	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
@@ -660,13 +743,6 @@ func setAccountID(ctx context.Context, existingProfile *profile.Profile, authArg
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
 // for unified hosts detected via account-scoped DiscoveryURL.
 func needsAccountIDPrompt(host, discoveryURL string) bool {
-	return isAccountOrUnifiedHost(host, discoveryURL)
-}
-
-// isAccountOrUnifiedHost reports whether host is a classic account host
-// (accounts.* or accounts-dod.*) or a unified host with an account-scoped
-// discoveryURL.
-func isAccountOrUnifiedHost(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if auth.IsClassicAccountHost(canonicalHost) {
 		return true
@@ -960,13 +1036,21 @@ func u2mResourcesFromProfile(p *profile.Profile) []string {
 	return splitScopes(p.Resources)
 }
 
+// workspaceIDHint tells the user how to use workspace commands after an
+// account-level login on a unified host.
+const workspaceIDHint = "To use workspace commands, set workspace_id in your profile or pass --workspace-id."
+
+// workspaceListTimeoutSeconds bounds the optional workspace lookup during login.
+// It is a variable only so tests can shorten it.
+var workspaceListTimeoutSeconds = 5
+
 // promptForWorkspaceSelection lists workspaces for a SPOG account and lets the
 // user pick one. Returns the selected workspace ID or empty string if skipped.
 // This is best-effort: errors are returned to the caller for logging, not shown
 // to the user.
 func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, tokenSource oauth2.TokenSource) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
-		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
+		cmdio.LogString(ctx, workspaceIDHint)
 		return "", nil
 	}
 
@@ -974,14 +1058,21 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
 		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
+
+		// The workspace list is only a convenience with a manual fallback, so
+		// don't spend the SDK's default 5 minute retry budget on a 503 here.
+		HTTPTimeoutSeconds:  workspaceListTimeoutSeconds,
+		RetryTimeoutSeconds: workspaceListTimeoutSeconds,
 	})
 	if err != nil {
 		return "", err
 	}
 
+	cmdio.LogString(ctx, "Looking up workspaces for your account...")
 	workspaces, err := a.Workspaces.List(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		cmdio.LogString(ctx, "Could not list workspaces for this account. To skip this step, pass a host with the workspace ID, e.g. --host \"<host>?w=<workspace_id>\".")
 		return promptForWorkspaceID(ctx)
 	}
 

@@ -1,0 +1,57 @@
+sethome home
+mkdir -p "${USERPROFILE:-$HOME}/.cursor"
+
+title "nothing stored yet"
+trace auto_install_state
+
+title "disable stores the opt-out"
+trace $CLI aitools auto-install disable
+trace auto_install_state
+
+title "enable stores the consent in its place"
+trace $CLI aitools auto-install enable
+trace auto_install_state
+
+title "enable says when the environment still turns it off"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL=false $CLI aitools auto-install enable
+
+title "disable replaces a state file it cannot read"
+echo "not json" > "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+trace $CLI aitools auto-install disable
+trace auto_install_state
+$CLI aitools auto-install enable &> LOG.enable-reset-1
+
+title "a global uninstall that removes nothing leaves it on"
+errcode trace $CLI aitools uninstall --scope=global
+trace auto_install_state
+
+title "a global uninstall of a mistyped skill leaves it on"
+$CLI aitools install --skills-only --scope=global --agents=cursor &> LOG.install-global
+errcode trace $CLI aitools uninstall --scope=global --skills databricks-tset
+trace auto_install_state
+
+title "a global uninstall turns it off"
+trace $CLI aitools uninstall --scope=global
+trace auto_install_state
+$CLI aitools auto-install enable &> LOG.enable-reset-2
+
+title "a project uninstall leaves it on"
+mkdir -p "${USERPROFILE:-$HOME}/project"
+cd "${USERPROFILE:-$HOME}/project"
+$CLI aitools install --skills-only --scope=project --agents=claude-code &> LOG.install-project
+trace $CLI aitools uninstall --scope=project
+trace auto_install_state
+
+title "a project install stores no consent"
+rm "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+$CLI aitools install --skills-only --scope=project --agents=claude-code &> LOG.install-project-2
+trace auto_install_state
+
+title "a global install stores the consent"
+$CLI aitools install --skills-only --scope=global --agents=cursor &> LOG.install-global-2
+trace auto_install_state
+
+title "a global install keeps an opt-out"
+$CLI aitools auto-install disable &> LOG.disable
+$CLI aitools install --skills-only --scope=global --agents=cursor &> LOG.install-global-3
+trace auto_install_state

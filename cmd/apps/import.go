@@ -12,7 +12,7 @@ import (
 	"slices"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
@@ -305,7 +305,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			SkipInitContext: true,
 			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = false
+				b.Config.Bundle.Deployment.Lock.Force = new(false)
 			},
 		})
 		if err != nil {

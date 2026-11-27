@@ -1,0 +1,45 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -qq
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy -qq
+
+for key in 'job with spaces' "job's\"quotes"; do
+  job_id="$(read_id.py "$key")"
+
+  title "Edit $key remotely"
+  edit_resource.py jobs "$job_id" <<'PYEDIT'
+r["tasks"][0]["timeout_seconds"] = 900
+r["tasks"][0]["notebook_task"]["notebook_path"] += "_updated"
+r["description"] = "Remote description"
+PYEDIT
+
+  title "Sync only $key"
+  cp databricks.yml databricks.yml.backup
+  trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" --save
+  trace diff.py databricks.yml.backup databricks.yml
+  rm databricks.yml.backup
+
+  title "Syncing $key again is idempotent"
+  trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" --save | contains.py "No changes detected."
+
+  title "Add a sibling task in $key"
+  edit_resource.py jobs "$job_id" <<'PYEDIT'
+r["tasks"].append({
+    "task_key": "added",
+    "notebook_task": {
+        "notebook_path": r["tasks"][0]["notebook_task"]["notebook_path"] + "_sibling"
+    },
+})
+PYEDIT
+
+  cp databricks.yml databricks.yml.backup
+  trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" --save
+  trace diff.py databricks.yml.backup databricks.yml
+  rm databricks.yml.backup
+done

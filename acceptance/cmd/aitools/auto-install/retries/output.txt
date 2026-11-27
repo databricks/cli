@@ -1,0 +1,57 @@
+
+=== a failed attempt is silent, and the commands right after it do not retry
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
+
+>>> DATABRICKS_SKILLS_REF=broken-ref [CLI] jobs list
+
+>>> print_telemetry
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "attempts": 1,
+  "last_attempt": "[LAST_ATTEMPT]",
+  "installing": true,
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}
+
+=== once the wait is over, the next run retries, up to 10 attempts
+
+>>> print_telemetry
+8 {"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
+8 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
+
+>>> DATABRICKS_SKILLS_REF=broken-ref [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"RETRIES_EXHAUSTED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
+
+=== after 10 attempts the version gets no more
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+
+>>> cursor_skills
+(no skills)
+
+=== a new version starts over
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 [CLI] jobs list
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> auto_install_state
+{
+  "last_version": "1.31.0",
+  "installed_without_consent": true,
+  "id": "treatment-machine"
+}

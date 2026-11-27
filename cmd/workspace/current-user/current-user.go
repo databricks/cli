@@ -3,6 +3,8 @@
 package current_user
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,21 +16,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "current-user",
-		Short: `*Public Preview* This API allows retrieving information about currently authenticated user or service principal.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "current-user",
+	Short:   `*Public Preview* This API allows retrieving information about currently authenticated user or service principal.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 This API allows retrieving information about currently authenticated user or
-  service principal.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  service principal.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newMe())
@@ -37,8 +43,6 @@ This API allows retrieving information about currently authenticated user or
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start me command

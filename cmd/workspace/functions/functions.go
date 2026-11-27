@@ -3,6 +3,7 @@
 package functions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,23 +19,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "functions",
-		Short: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
-		Long: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "functions",
+	Short:   `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
 
   The function implementation can be any SQL expression or Query, and it can be
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
-  the form __catalog_name__.__schema_name__.__function_name__.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  the form __catalog_name__.__schema_name__.__function_name__.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -47,8 +52,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -138,7 +141,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteFunctionRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is not empty.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a function.`
@@ -153,7 +156,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__) .`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -172,14 +175,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		deleteReq.Name = args[0]
 
@@ -232,7 +235,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -251,14 +254,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		getReq.Name = args[0]
 
@@ -409,7 +412,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -440,14 +443,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		updateReq.Name = args[0]
 

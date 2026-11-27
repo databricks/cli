@@ -28,9 +28,9 @@ const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
 // it discarded after the login expired.
 const invalidDeviceCodeDescription = "Invalid device code"
 
-// ErrDeviceCodeNotSupported is returned when the workspace does not advertise
-// a device authorization endpoint in its OIDC discovery document.
-var ErrDeviceCodeNotSupported = errors.New("device code login is not enabled for this workspace")
+// ErrDeviceCodeNotSupported is returned when the workspace or account does not
+// advertise a device authorization endpoint in its OIDC discovery document.
+var ErrDeviceCodeNotSupported = errors.New("device code login is not enabled for this host")
 
 // ErrInvalidConfirmationCode matches the token exchange error for a
 // confirmation code the server rejects. The device code stays valid, so the
@@ -41,6 +41,10 @@ var ErrInvalidConfirmationCode = errors.New("invalid confirmation code")
 // server does not know, e.g. one it discarded after the login expired. The
 // login has to be started again.
 var ErrInvalidDeviceCode = errors.New("invalid device code")
+
+// ErrDeviceCodeRateLimited matches the token exchange error for a device code
+// the server received too many token requests for.
+var ErrDeviceCodeRateLimited = errors.New("device code rate limited")
 
 // DeviceAuthorization holds what the user needs to approve a device code
 // login from another device, and the device code to exchange afterwards.
@@ -58,9 +62,6 @@ type DeviceAuthorization struct {
 // deviceCodeConfig returns the OAuth config for device code login, or an
 // error if the host does not support it.
 func (a *PersistentAuth) deviceCodeConfig(ctx context.Context) (*oauth2.Config, error) {
-	if _, ok := a.oAuthArgument.(WorkspaceOAuthArgument); !ok {
-		return nil, errors.New("device code login is only supported for workspace hosts")
-	}
 	// Resource indicators are only sent on the browser authorization request,
 	// so the token would not be scoped to them.
 	if len(a.resources) > 0 {
@@ -69,6 +70,15 @@ func (a *PersistentAuth) deviceCodeConfig(ctx context.Context) (*oauth2.Config, 
 	cfg, err := a.oauth2Config(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching oauth config: %w", err)
+	}
+	// The endpoints of classic account hosts are built without fetching the
+	// discovery document, so they lack the device authorization endpoint.
+	if arg, ok := a.oAuthArgument.(AccountOAuthArgument); ok {
+		endpoints, err := a.endpointSupplier.GetEndpointsFromURL(ctx, accountDiscoveryURL(arg.GetAccountHost(), arg.GetAccountId()))
+		if err != nil {
+			return nil, fmt.Errorf("fetching the OIDC configuration of account %s: %w", arg.GetAccountId(), err)
+		}
+		cfg.Endpoint.DeviceAuthURL = endpoints.DeviceAuthorizationEndpoint
 	}
 	if cfg.Endpoint.DeviceAuthURL == "" {
 		return nil, ErrDeviceCodeNotSupported
@@ -85,8 +95,7 @@ type DeviceCodeLogin struct {
 }
 
 // NewDeviceCodeLogin fetches the OAuth endpoints for a device code login, or
-// returns an error if the host does not support it. Only workspace hosts are
-// supported.
+// returns an error if the host does not support it.
 func (a *PersistentAuth) NewDeviceCodeLogin(ctx context.Context) (*DeviceCodeLogin, error) {
 	cfg, err := a.deviceCodeConfig(ctx)
 	if err != nil {
@@ -113,11 +122,12 @@ func (l *DeviceCodeLogin) RequestDeviceAuthorization(ctx context.Context) (*Devi
 // RequestDeviceAccessToken completes the login with a single token request.
 // The confirmation code is accepted the way the browser displays it. An error
 // matches ErrInvalidConfirmationCode or ErrInvalidDeviceCode when the server
-// rejects one of the codes. A rejected confirmation code leaves the device
-// code valid, so the exchange can be retried with the right code. The caller
-// is responsible for storing the returned token.
+// rejects one of the codes, and ErrDeviceCodeRateLimited when it rate limits
+// the token requests for the device code. A rejected confirmation code leaves
+// the device code valid, so the exchange can be retried with the right code.
+// The caller is responsible for storing the returned token.
 func (l *DeviceCodeLogin) RequestDeviceAccessToken(ctx context.Context, deviceCode, confirmationCode string) (*oauth2.Token, error) {
-	t, err := l.auth.exchangeDeviceCode(ctx, l.cfg, deviceCode, normalizeCode(confirmationCode))
+	t, err := l.auth.exchangeDeviceCode(ctx, l.cfg, deviceCode, NormalizeCode(confirmationCode))
 	if err == nil {
 		return t, nil
 	}
@@ -131,6 +141,8 @@ func (l *DeviceCodeLogin) RequestDeviceAccessToken(ctx context.Context, deviceCo
 	status, errCode, description := oauthErrorResponse(err)
 	err = oauthError(err)
 	switch {
+	case status == http.StatusTooManyRequests:
+		return nil, &codeRejectedError{err: err, sentinel: ErrDeviceCodeRateLimited}
 	case status != http.StatusBadRequest || errCode != "invalid_request":
 		return nil, err
 	case description == invalidDeviceCodeDescription:
@@ -266,10 +278,10 @@ func (a *PersistentAuth) postForm(ctx context.Context, endpoint string, form url
 	return body, nil
 }
 
-// normalizeCode lets users enter a code the way it is displayed. Databricks
+// NormalizeCode lets users enter a code the way it is displayed. Databricks
 // codes consist of 8 uppercase alphanumeric characters and are compared
 // case-sensitively, but are often shown as two groups of four separated by a
 // dash (e.g. FTFA-QQKY).
-func normalizeCode(code string) string {
+func NormalizeCode(code string) string {
 	return strings.NewReplacer("-", "", " ", "").Replace(strings.ToUpper(strings.TrimSpace(code)))
 }

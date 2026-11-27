@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-git-telemetry/default/files...
+Created jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "in_git_repo": true
+}
