@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
@@ -265,7 +264,7 @@ func sandboxFromSDK(sb *sdk.Sandbox) *sandboxEntry {
 }
 
 func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
-	id := "sandbox-" + uuid.New().String()
+	id := generateSandboxID()
 	sb, err := a.sandboxes.CreateSandbox(arm503Budget(ctx), sdk.CreateSandboxRequest{
 		SandboxId: id,
 		Sandbox: sdk.Sandbox{

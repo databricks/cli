@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -44,31 +43,33 @@ func newPublicAPI(t *testing.T, workspaceID string, handler http.HandlerFunc) *s
 const publicRunning = `{"name":"sandboxes/test-id","display_name":"project","status":{"state":"SANDBOX_STATE_RUNNING"},"spec":{"compute":{"inactivity_timeout":"900s"}}}`
 
 func TestPublicSandboxCreateAndJSON(t *testing.T) {
-	for _, name := range []string{"", "project"} {
+	for _, name := range []string{"", "project", "My Project/Label"} {
 		t.Run(name, func(t *testing.T) {
+			var requestedID string
 			api := newPublicAPI(t, "123", func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, http.MethodPost, r.Method)
 				assert.Equal(t, "/api/2.0/sandboxes", r.URL.Path)
 				assert.Equal(t, "123", r.Header.Get(auth.WorkspaceIDHeader))
 				id := r.URL.Query().Get("sandbox_id")
-				assert.True(t, strings.HasPrefix(id, "sandbox-"))
-				_, err := uuid.Parse(strings.TrimPrefix(id, "sandbox-"))
-				assert.NoError(t, err)
+				requestedID = id
+				assert.Regexp(t, `^[a-z]+-[a-z]+-[1-9][0-9]{3}$`, id)
+				assert.LessOrEqual(t, len(id), 63)
+				assert.NotEqual(t, name, id)
 				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 				want := `{"spec":{"compute":{"inactivity_timeout":"600s"}}}`
 				if name != "" {
-					want = `{"display_name":"project","spec":{"compute":{"inactivity_timeout":"600s"}}}`
+					want = `{"display_name":"` + name + `","spec":{"compute":{"inactivity_timeout":"600s"}}}`
 				}
 				// Comparing the complete body also protects omitted persistence settings.
 				assert.JSONEq(t, want, string(body))
-				_, _ = io.WriteString(w, publicRunning)
+				_, _ = io.WriteString(w, `{"name":"sandboxes/`+id+`","status":{"state":"SANDBOX_STATE_RUNNING"}}`)
 			})
 			got, err := api.create(t.Context(), name)
 			require.NoError(t, err)
 			data, err := json.Marshal(got)
 			require.NoError(t, err)
-			assert.JSONEq(t, `{"sandboxId":"test-id","status":"Running"}`, string(data))
+			assert.JSONEq(t, `{"sandboxId":"`+requestedID+`","status":"Running"}`, string(data))
 		})
 	}
 }
@@ -316,17 +317,39 @@ func TestPublicSandboxRejectsInvalidIDsBeforeRequests(t *testing.T) {
 
 func TestPublicSandboxCreateFailureIncludesGeneratedID(t *testing.T) {
 	var id string
+	calls := 0
 	api := newPublicAPI(t, "", func(w http.ResponseWriter, r *http.Request) {
+		calls++
 		id = r.URL.Query().Get("sandbox_id")
 		w.WriteHeader(http.StatusConflict)
 		_, _ = io.WriteString(w, `{"error_code":"RESOURCE_ALREADY_EXISTS","message":"already exists"}`)
 	})
 	_, err := createAndWait(t.Context(), api, "project", nil)
 	require.Error(t, err)
+	assert.Regexp(t, `^[a-z]+-[a-z]+-[1-9][0-9]{3}$`, id)
 	assert.ErrorContains(t, err, id)
 	var apiError *apierr.APIError
 	require.ErrorAs(t, err, &apiError)
 	assert.Equal(t, http.StatusConflict, apiError.StatusCode)
+	assert.Equal(t, 1, calls, "a collision must remain an actionable error without creating another sandbox")
+}
+
+func TestPublicSandboxCancelledCreateIncludesRequestedID(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	release := make(chan struct{})
+	defer close(release)
+	var id string
+	api := newPublicAPI(t, "", func(w http.ResponseWriter, r *http.Request) {
+		id = r.URL.Query().Get("sandbox_id")
+		cancel()
+		<-release
+	})
+	_, err := api.create(ctx, "project")
+	require.Error(t, err)
+	assert.Regexp(t, `^[a-z]+-[a-z]+-[1-9][0-9]{3}$`, id)
+	assert.ErrorContains(t, err, id)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestPublicSandboxSentinelCopyPreservesAccountAndOriginalConfig(t *testing.T) {
