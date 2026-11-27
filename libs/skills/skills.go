@@ -23,7 +23,7 @@ var (
 	// ErrSourceUnreachable reports a source whose release cannot be read.
 	ErrSourceUnreachable = errors.New("skills source unreachable")
 
-	// ErrNoSize reports a listed path that has no size, such as a folder.
+	// ErrNoSize reports a listed path that has no known size, such as a folder.
 	ErrNoSize = errors.New("skill path has no size")
 )
 
@@ -43,9 +43,10 @@ type Skill struct {
 	Experimental bool
 }
 
-// FileSizer is implemented by a source that knows the size of a skill file
-// without reading the file. A source that does not implement it lists files
-// without sizes. A path with no size, such as a folder, returns ErrNoSize.
+// FileSizer is implemented by a source that can size a skill file without
+// reading it. A source that does not implement it lists files without sizes.
+// A path with no size returns ErrNoSize: a folder, or a source that cannot stat
+// its files, such as a release fetched over HTTP.
 type FileSizer interface {
 	FileSize(ctx context.Context, skill, path string) (int64, error)
 }

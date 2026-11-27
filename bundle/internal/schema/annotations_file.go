@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	yaml3 "go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/diag"
@@ -265,9 +265,9 @@ func saveAnnotationsFile(path string, data annotation.File, g *typeGraph) ([]str
 
 	// Style every top-level key so all nested scalars render in literal block
 	// style, matching the formatting of the previous annotation files.
-	style := map[string]yaml3.Style{}
+	style := map[string]yaml.Style{}
 	for k := range root {
-		style[k] = yaml3.LiteralStyle
+		style[k] = yaml.LiteralStyle
 	}
 	err = yamlsaver.NewSaverWithStyle(style).SaveAsYAML(root, path, true)
 	if err != nil {

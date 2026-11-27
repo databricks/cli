@@ -204,10 +204,14 @@ func TestReformatYAMLForDisplay(t *testing.T) {
 	// A single-line command is left as a plain scalar.
 	assert.Equal(t, "command: bash train.sh\n", reformatYAMLForDisplay([]byte("command: bash train.sh\n")))
 
-	// A multi-line value with trailing whitespace can't be a block literal, so the
-	// encoder falls back to a quoted style rather than emitting invalid YAML.
+	// Trailing whitespace on a line survives in a block literal.
 	got := reformatYAMLForDisplay([]byte("command: \"trailing space \\nsecond\"\n"))
-	assert.Equal(t, "command: \"trailing space \\nsecond\"\n", got)
+	assert.Equal(t, "command: |-\n  trailing space \n  second\n", got)
+
+	// A multi-line value with a control character can't be a block literal, so the
+	// encoder falls back to a quoted style rather than emitting invalid YAML.
+	got = reformatYAMLForDisplay([]byte("command: \"bell \\a\\nsecond\"\n"))
+	assert.Equal(t, "command: \"bell \\a\\nsecond\"\n", got)
 
 	// Unparseable content is returned unchanged.
 	assert.Equal(t, "\tnot: valid: yaml:", reformatYAMLForDisplay([]byte("\tnot: valid: yaml:")))

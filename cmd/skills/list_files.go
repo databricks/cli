@@ -57,7 +57,7 @@ func runListFiles(cmd *cobra.Command, args []string) error {
 			size, err := sizer.FileSize(ctx, skill.Name, file)
 			switch {
 			case errors.Is(err, libskills.ErrNoSize):
-				// A folder is listed without a size.
+				// The file is listed without a size.
 			case err != nil:
 				return err
 			default:

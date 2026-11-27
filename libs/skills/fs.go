@@ -3,6 +3,7 @@ package skills
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
@@ -14,24 +15,31 @@ import (
 const manifestFile = "manifest.json"
 
 type fsSource struct {
-	fsys  fs.FS
+	read func(ctx context.Context, name string) ([]byte, error)
+	// stat reports the info of a file in the release. It is nil when the
+	// source cannot stat its files, as for a release fetched over HTTP.
+	stat  func(name string) (fs.FileInfo, error)
 	label string
 }
 
 // NewFSSource returns a Source over fsys, laid out like a skills release:
 // manifest.json at the root, and each skill's files under its repo_dir.
 func NewFSSource(fsys fs.FS, label string) Source {
-	return &fsSource{fsys: fsys, label: label}
+	return &fsSource{read: func(_ context.Context, name string) ([]byte, error) {
+		return fs.ReadFile(fsys, name)
+	}, stat: func(name string) (fs.FileInfo, error) {
+		return fs.Stat(fsys, name)
+	}, label: label}
 }
 
-func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
-	m, err := s.manifest()
+func (s *fsSource) Catalog(ctx context.Context) (*Catalog, error) {
+	m, err := s.manifest(ctx)
 	if err != nil {
 		return nil, err
 	}
 	catalog := &Catalog{Version: m.Version, Label: s.label, FetchedAt: time.Now()}
 	if m.CatalogRules != "" {
-		data, err := fs.ReadFile(s.fsys, m.CatalogRules)
+		data, err := s.read(ctx, m.CatalogRules)
 		if err != nil {
 			return nil, fmt.Errorf("read catalog_rules: %w", err)
 		}
@@ -52,24 +60,29 @@ func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
 	return catalog, nil
 }
 
-func (s *fsSource) ReadFile(_ context.Context, skill, file string) ([]byte, error) {
-	name, err := s.filePath(skill, file)
+func (s *fsSource) ReadFile(ctx context.Context, skill, file string) ([]byte, error) {
+	name, err := s.filePath(ctx, skill, file)
 	if err != nil {
 		return nil, err
 	}
-	data, err := fs.ReadFile(s.fsys, name)
+	data, err := s.read(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("read %q in skill %q: %w", file, skill, err)
 	}
 	return data, nil
 }
 
-func (s *fsSource) FileSize(_ context.Context, skill, file string) (int64, error) {
-	name, err := s.filePath(skill, file)
+// FileSize returns the size of a skill file. It returns ErrNoSize for a folder,
+// and for a source that cannot stat its files.
+func (s *fsSource) FileSize(ctx context.Context, skill, file string) (int64, error) {
+	name, err := s.filePath(ctx, skill, file)
 	if err != nil {
 		return 0, err
 	}
-	info, err := fs.Stat(s.fsys, name)
+	if s.stat == nil {
+		return 0, fmt.Errorf("%w: %q in skill %q", ErrNoSize, file, skill)
+	}
+	info, err := s.stat(name)
 	if err != nil {
 		return 0, fmt.Errorf("stat %q in skill %q: %w", file, skill, err)
 	}
@@ -81,8 +94,8 @@ func (s *fsSource) FileSize(_ context.Context, skill, file string) (int64, error
 
 // filePath returns the path of a skill file in the release. The manifest must
 // list the file for the skill.
-func (s *fsSource) filePath(skill, file string) (string, error) {
-	m, err := s.manifest()
+func (s *fsSource) filePath(ctx context.Context, skill, file string) (string, error) {
+	m, err := s.manifest(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -98,10 +111,13 @@ func (s *fsSource) filePath(skill, file string) (string, error) {
 
 // manifest reads and checks the release manifest. Every path it names, the
 // skill files, repo_dir and catalog_rules, must stay inside the release.
-func (s *fsSource) manifest() (*Manifest, error) {
-	data, err := fs.ReadFile(s.fsys, manifestFile)
+func (s *fsSource) manifest(ctx context.Context) (*Manifest, error) {
+	data, err := s.read(ctx, manifestFile)
+	if errors.Is(err, ErrManifestTooLarge) || errors.Is(err, errReleaseNotFound) {
+		return nil, err
+	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
