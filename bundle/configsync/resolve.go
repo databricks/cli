@@ -213,6 +213,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 	skipped := 0
 	targetName := b.Config.Bundle.Target
 	blocks := newBlockResolver(ctx, b)
+	docs := sourceDocs{}
 
 	resourceKeys := slices.Sorted(maps.Keys(configChanges))
 
@@ -346,7 +347,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 
-			for _, destination := range destinations {
+			// Decided for every destination before any index bookkeeping, so a change
+			// that cannot be written everywhere is skipped as a whole and shifts nothing.
+			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved, configChange.Operation, rename.keyField, destinations)
+			if !written {
+				leaveUnapplied(ctx, configChange, fullPath, "the file does not write it where it is defined")
+				skipped++
+				if isRename {
+					resourceChanges[rename.addPath].Operation = OperationSkip
+					skipped++
+				}
+				continue
+			}
+
+			for i, destination := range destinations {
 				block := destination.block
 				resolvedPath := destination.path
 				// Each destination gets its own copy: the operation and the value
@@ -371,6 +385,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
 
 				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
+				if addPaths[i] != "" {
+					// Written next to the merge key, the key overrides the inherited value
+					// for this mapping only.
+					destChange.Operation = OperationAdd
+					configChange.Operation = OperationAdd
+					writePath, altWritePath = addPaths[i], ""
+				}
 
 				// A change routed to a block has a known destination file even when the leaf
 				// itself is new, but "defined in the config" must still be decided by
@@ -448,6 +469,61 @@ func leaveUnapplied(ctx context.Context, change *ConfigChangeDesc, fullPath, rea
 	log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
 	change.Operation = OperationSkip
 	change.Reason = reason
+}
+
+// writtenDestinations checks each destination against the file it is written to. The
+// merged config can locate a key the file does not write at that path, e.g. one
+// inherited through a merge key ('<<: *anchor'), which the patcher cannot reach. Such a
+// replaced key can still be added next to the merge key: addPaths holds where, per
+// destination. Anything else unwritten makes written false. renameKey is the key field
+// a rename rewrites, empty for any other change.
+func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, resolved resolvedChange, operation OperationType, renameKey string, destinations []routeDestination) (addPaths []string, written bool) {
+	addPaths = make([]string, len(destinations))
+	for i, destination := range destinations {
+		block := destination.block
+		file := resolved.leaf.Location().File
+		isDefinedInConfig := file != ""
+		path := destination.path
+		_, addressesKey := path.StringKey()
+		switch {
+		case isDefinedInConfig && (operation == OperationRemove || operation == OperationReplace):
+			if block != nil {
+				file = block.file
+			}
+		case !isDefinedInConfig && operation == OperationAdd && !addressesKey && block != nil:
+			// A new element goes into its sequence, which the block has to write.
+			file = block.file
+		default:
+			continue
+		}
+		if !addressesKey {
+			// An element is never inherited on its own, but its sequence can be.
+			path = path.Parent()
+		}
+		writePath, altWritePath := writeAddress(blocks, block, target, path)
+		// The target override wins the target merge, so a top-level key it also supplies
+		// would not take effect.
+		shadowed := addressesKey && operation == OperationReplace && (block == nil || !block.override) &&
+			blocks != nil && blocks.overrideSupplies(resolved)
+		if shadowed && block != nil && len(resolved.steps) == 0 {
+			// Routed to the top-level copy: the target can take the key instead.
+			altWritePath = targetPrefixedPath(target, path)
+		}
+		key, parentPath := docs.written(file, writePath, altWritePath, shadowed)
+		if key && renameKey != "" {
+			// The element can be written while the key it is renamed by is inherited.
+			keyPath, altKeyPath := writeAddress(blocks, block, target, structpath.NewPatternStringKey(destination.path, renameKey))
+			key, _ = docs.written(file, keyPath, altKeyPath, false)
+		}
+		switch {
+		case key:
+		case addressesKey && operation == OperationReplace && parentPath != "":
+			addPaths[i] = parentPath
+		default:
+			return nil, false
+		}
+	}
+	return addPaths, true
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative

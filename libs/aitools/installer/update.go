@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"golang.org/x/mod/semver"
 )
 
@@ -106,7 +107,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	}
 
 	installedRef, allowFallback := installedSkillsRelease(state)
-	latestTag, explicit, err := getSkillsRef(ctx, allowFallback)
+	latestTag, explicit, err := skills.ResolveSkillsRef(ctx, allowFallback)
 	if err != nil {
 		return nil, err
 	}
