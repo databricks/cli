@@ -4,6 +4,15 @@ export DATABRICKS_SKILLS_DIR=$TESTDIR/../release
 title "A skill with a supporting file: SKILL.md, then the file list"
 trace $CLI skills read guide-skill
 
+title "A file whose name starts with a hyphen: the printed command ends the flags and runs as printed"
+databricks() { "$CLI" "$@"; }
+line="databricks skills read-file -- guide-skill -notes.md"
+$CLI skills read guide-skill | contains.py "  $line" > /dev/null
+trace eval "$line"
+
+title "read-file accepts -- before a leading-hyphen file name"
+trace $CLI skills read-file -- guide-skill -notes.md
+
 title "A skill without supporting files"
 trace $CLI skills read demo-skill
 
