@@ -34,7 +34,9 @@ type Skill struct {
 	// Files lists the skill's files relative to the skill directory, SKILL.md included.
 	Files []string
 
-	// Commands lists the CLI command groups the skill covers.
+	// Commands lists the CLI command groups the skill covers. Each entry is a
+	// group's path below the root command, such as "fs" or "bundle deployment".
+	// The match is exact: a skill for "bundle" is not shown on "bundle deployment".
 	Commands []string
 
 	Experimental bool

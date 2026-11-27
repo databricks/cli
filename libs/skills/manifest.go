@@ -48,7 +48,9 @@ type SkillMeta struct {
 	// RepoDir is "skills" or "experimental" (manifest field repo_dir).
 	RepoDir string `json:"repo_dir,omitempty"`
 
-	// Commands lists the CLI command groups the skill covers (manifest field commands).
+	// Commands lists the CLI command groups the skill covers (manifest field
+	// commands). Each entry is a group's path below the root command, such as
+	// "fs" or "bundle deployment"; the match is exact.
 	Commands []string `json:"commands,omitempty"`
 
 	// SourceName is the upstream skill directory name within RepoDir.
