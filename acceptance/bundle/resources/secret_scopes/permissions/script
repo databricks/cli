@@ -33,8 +33,9 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     # The local test server has no group delete; on cloud the group would otherwise leak.
-    if [ -n "$CLOUD_ENV" ]; then
-        $CLI groups-v2 delete "$(jq -r .id LOG.group.json)" &> LOG.group-delete || true
+    group_id=$(jq -r '.id // empty' LOG.group.json)
+    if [ -n "$CLOUD_ENV" ] && [ -n "$group_id" ]; then
+        errcode $CLI groups-v2 delete "$group_id" &> LOG.group-delete
     fi
 }
 trap cleanup EXIT

@@ -1,6 +1,3 @@
-provided_id_fields:
-  - field: catalog_name
-    reason: id_field
 parent_id_fields:
   - field: catalog_name
     reason: parent

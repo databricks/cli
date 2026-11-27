@@ -186,7 +186,7 @@ func newCancelRun() *cobra.Command {
   still be running when this request completes.
 
   Arguments:
-    RUN_ID: This field is required.`
+    RUN_ID: The canonical identifier of the run to cancel.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -228,14 +228,14 @@ func newCancelRun() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
-				id, err := cmdio.Select(ctx, names, "This field is required")
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run to cancel")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return errors.New("expected to have this field is required")
+				return errors.New("expected to have the canonical identifier of the run to cancel")
 			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
@@ -569,7 +569,9 @@ func newExportRun() *cobra.Command {
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
 
-  Export and retrieve the job run task.
+  Export and retrieve the job run task. Only notebook task runs can be exported.
+  For a multi-task job run, pass the run_id of the individual notebook task
+  run rather than the ID of the job run.
 
   Arguments:
     RUN_ID: The canonical identifier for the run. This field is required.`

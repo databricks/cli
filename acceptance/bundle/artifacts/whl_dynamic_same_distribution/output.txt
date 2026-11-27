@@ -1,0 +1,24 @@
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py310-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Each task references its own patched wheel
+
+>>> print_requests.py //api/2.2/jobs/create
+{
+  "task_key": "TestTask",
+  "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+}
+{
+  "task_key": "TestTask310",
+  "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+1577836800000000000-py310-none-any.whl"
+}
+
+=== Both patched wheels are in the cache
+
+>>> find.py .databricks/.*whl
+.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py3-none-any.whl
+.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py310-none-any.whl

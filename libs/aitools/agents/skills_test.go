@@ -236,15 +236,20 @@ func TestHasDatabricksToolingInstalled(t *testing.T) {
 
 // TestHasDatabricksToolingInstalledRecordedPlugins covers agents without a
 // plugin manifest reader (Codex, Copilot): a plugin recorded in the CLI
-// install state counts for them, and every detected agent still needs one.
+// install state or in the agent's own config counts for them, and every
+// detected agent still needs one.
 func TestHasDatabricksToolingInstalledRecordedPlugins(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		agentDirs    []string
 		claudePlugin bool
-		recorded     []string
-		want         bool
+		// codexPlugin writes the records `codex plugin add` leaves.
+		codexPlugin bool
+		recorded    []string
+		want        bool
 	}{
+		{name: "codex plugin in its config, copilot plugin recorded", agentDirs: []string{".codex", ".copilot"}, codexPlugin: true, recorded: []string{NameCopilot}, want: true},
+		{name: "codex plugin in its config, nothing for copilot", agentDirs: []string{".codex", ".copilot"}, codexPlugin: true, want: false},
 		{name: "codex and copilot plugins recorded", agentDirs: []string{".codex", ".copilot"}, recorded: []string{NameCodex, NameCopilot}, want: true},
 		{name: "only the codex plugin recorded", agentDirs: []string{".codex", ".copilot"}, recorded: []string{NameCodex}, want: false},
 		{name: "nothing recorded", agentDirs: []string{".codex", ".copilot"}, want: false},
@@ -261,6 +266,10 @@ func TestHasDatabricksToolingInstalledRecordedPlugins(t *testing.T) {
 			}
 			if tc.claudePlugin {
 				writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user","version":"0.2.6"}]}}`)
+			}
+			if tc.codexPlugin {
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".codex", "config.toml"), []byte("[plugins.\"databricks@databricks-agent-skills\"]\n"), 0o600))
+				require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"), 0o755))
 			}
 			installedPlugins := func(context.Context) []string { return tc.recorded }
 

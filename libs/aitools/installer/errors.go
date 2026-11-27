@@ -4,6 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // ErrNothingInstalled reports that update or uninstall found no install state
@@ -82,7 +86,7 @@ var ErrManifestTooLarge = fmt.Errorf("skills manifest is larger than %d MiB", ma
 // ErrUnsafeManifestPath reports a skills manifest that names a skill or file
 // outside the skills directory. The command layer classifies it like a
 // manifest that does not parse.
-var ErrUnsafeManifestPath = errors.New("skills manifest names a path outside the skills directory")
+var ErrUnsafeManifestPath = skills.ErrUnsafeManifestPath
 
 // Stages of fetching skills content, recorded on FetchError so a failed
 // release lookup can be told apart from a failed download.
@@ -146,6 +150,62 @@ type StateError struct {
 
 func (e *StateError) Error() string { return e.Err.Error() }
 func (e *StateError) Unwrap() error { return e.Err }
+
+// AgentSkillsError reports agents that did not get every skill, because their
+// skills directory could not be written. The skills are still installed in
+// the canonical directory and recorded in the install state, and every agent
+// not listed got them.
+type AgentSkillsError struct {
+	Failures []AgentSkillsFailure
+}
+
+// AgentSkillsFailure is one agent that did not get some of the skills: Skills
+// is how many, Total is how many the install had, and Err is the first error.
+type AgentSkillsFailure struct {
+	Agent  *agents.Agent
+	Skills int
+	Total  int
+	Err    error
+}
+
+// Partial reports whether the agent got some of the skills.
+func (f AgentSkillsFailure) Partial() bool { return f.Skills < f.Total }
+
+// Reason describes the failure without naming the agent.
+func (f AgentSkillsFailure) Reason() string {
+	if f.Partial() {
+		return fmt.Sprintf("could not install %d of %d skills: %v", f.Skills, f.Total, f.Err)
+	}
+	noun := "skills"
+	if f.Skills == 1 {
+		noun = "skill"
+	}
+	return fmt.Sprintf("could not install %d %s: %v", f.Skills, noun, f.Err)
+}
+
+// Notice is the line that reports the failure under the agent's name.
+func (f AgentSkillsFailure) Notice() string {
+	if f.Partial() {
+		return fmt.Sprintf("%s is missing %d of %d skills: %v", f.Agent.DisplayName, f.Skills, f.Total, f.Err)
+	}
+	return fmt.Sprintf("Skipped %s: %s", f.Agent.DisplayName, f.Reason())
+}
+
+func (e *AgentSkillsError) Error() string {
+	msgs := make([]string, len(e.Failures))
+	for i, f := range e.Failures {
+		msgs[i] = f.Agent.DisplayName + ": " + f.Reason()
+	}
+	return strings.Join(msgs, "; ")
+}
+
+func (e *AgentSkillsError) Unwrap() []error {
+	errs := make([]error, len(e.Failures))
+	for i, f := range e.Failures {
+		errs[i] = f.Err
+	}
+	return errs
+}
 
 // RefusedError reports an install the installer declines to run in the
 // current state, such as a downgrade or a targeted install over untracked

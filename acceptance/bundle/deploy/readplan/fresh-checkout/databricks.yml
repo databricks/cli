@@ -1,0 +1,6 @@
+bundle:
+  name: test-bundle
+
+sync:
+  exclude:
+    - tmp.plan.json

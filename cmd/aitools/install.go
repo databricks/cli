@@ -174,10 +174,8 @@ By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
 (` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files, and so does a
 detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
-install) and is not named with --agents, unless it already has the plugin. For
-Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
-only a plugin installed by 'databricks aitools' is known, so one installed
-another way shows every skill twice next to the skill files. A named agent
+install) and is not named with --agents, unless it already has the plugin,
+which is read from the agent's own plugin list or config. A named agent
 whose CLI is not on PATH fails; add --skills-only to give it skill files.
 
 Escape hatches:
@@ -699,7 +697,7 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
 		// support project-scoped skills, so skip the rest up front instead of
 		// offering an option that fails at install time.
-		if scope == installer.ScopeProject && !a.SupportsProjectScope {
+		if scope == installer.ScopeProject && !a.SupportsProjectSkills {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
 			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
@@ -745,7 +743,9 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 // manifest, the manifest decides, as in agents.DatabricksTooling: a plugin
 // removed with the agent's own CLI leaves the CLI's record behind. Otherwise,
 // or when the manifest exists but cannot be read, the CLI's install state for
-// the scope does.
+// the scope does, together with the plugin the agent's own config records for
+// the scope (see configPluginMarketplaces), which covers one installed without
+// the CLI.
 func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) bool {
 	if a.HasPluginManifestReader() {
 		active, err := manifestPluginActive(ctx, a, scope)
@@ -754,7 +754,37 @@ func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) 
 		}
 		log.Debugf(ctx, "Could not read the plugin manifest of %s, using the install state: %v", a.DisplayName, err)
 	}
-	return installer.PluginRecorded(ctx, scope, a.Name)
+	return len(configPluginMarketplaces(ctx, a, scope)) > 0 || installer.PluginRecorded(ctx, scope, a.Name)
+}
+
+// configPluginMarketplaces returns the marketplaces of the databricks plugins
+// the agent's own config records (Codex, Copilot; see
+// agents.Agent.DatabricksPluginConfigured) that serve this install scope. Those
+// agents install plugins for the user only, so their plugin serves a global
+// install. A project install is shared through the repository, which a
+// personal plugin does not cover, as in manifestPluginActive. An unreadable
+// config has none.
+func configPluginMarketplaces(ctx context.Context, a *agents.Agent, scope string) []string {
+	if scope != installer.ScopeGlobal {
+		return nil
+	}
+	marketplaces, err := a.DatabricksPluginConfigMarketplaces(ctx)
+	if err != nil {
+		log.Debugf(ctx, "Could not read the plugin config of %s: %v", a.DisplayName, err)
+	}
+	return marketplaces
+}
+
+// agentRecordsPlugin reports whether the agent's own records show a databricks
+// plugin that serves this install scope: its plugin manifest (see
+// manifestPluginActive) or, for Codex and Copilot, its config (see
+// configPluginMarketplaces). Unlike pluginAlreadyInstalled, the CLI's install
+// state does not count, as it outlives a removal with the agent's own CLI.
+func agentRecordsPlugin(ctx context.Context, a *agents.Agent, scope string) bool {
+	if active, err := manifestPluginActive(ctx, a, scope); err == nil && active {
+		return true
+	}
+	return len(configPluginMarketplaces(ctx, a, scope)) > 0
 }
 
 // manifestPluginActive reports whether the agent's own plugin manifest has a
@@ -840,6 +870,11 @@ const (
 // are printed above it, so the message only has to make the exit code non-zero.
 var errNoAgentSetUp = errors.New("nothing was installed; follow the steps above")
 
+// errAgentsPartlySetUp is returned instead of errNoAgentSetUp when an agent
+// that failed still got some of the skills, so the message does not claim that
+// nothing was installed.
+var errAgentsPartlySetUp = errors.New("some skills were not installed; follow the steps above")
+
 // agentErrors wraps failures that are already reported in the per-agent
 // outcomes: those of agents named via --agents, and errNoAgentSetUp when no
 // detected agent was set up. Wrapping lets the JSON and telemetry
@@ -888,12 +923,13 @@ func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents
 }
 
 // forgetStalePluginRecords drops the CLI's plugin records of plugin agents
-// that just got skill files: those whose CLI is missing, and those under
-// --skills-only. They have no plugin (see pluginAlreadyInstalled and
-// planItemFor), so a record left by a removal with the agent's own CLI, or in
-// the agent itself, is stale, and list and update would keep treating them as
-// plugin agents and never refresh their skill files. The skills are already
-// installed, so a failure here is only a warning.
+// that were just given skill files, whether or not every file could be
+// written: those whose CLI is missing, and those under --skills-only. They
+// have no plugin (see pluginAlreadyInstalled and planItemFor), so a record
+// left by a removal with the agent's own CLI, or in the agent itself, is
+// stale, and list and update would keep treating them as plugin agents and
+// never refresh their skill files. The skills are already installed, so a
+// failure here is only a warning.
 func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPlanItem) {
 	if len(items) == 0 {
 		return
@@ -930,18 +966,22 @@ func topLevelFailure(runErr error) error {
 
 // executePlan carries out the plan and returns each agent's outcome. Skills
 // installs, including those of agents whose CLI is missing, go through the
-// existing skills path as one group. A failed plugin install is a warning,
-// unless the agent was explicitly named via --agents, which is an error. A run
-// that sets up no agent at all is an error too, so callers never mistake it for
-// success. The per-agent recovery steps repeat rerun for the agent at hand.
+// existing skills path as one group. An agent whose plugin or skill files
+// could not be installed is a warning, unless the agent was explicitly named
+// via --agents, which is an error. A run that sets up no agent at all is an
+// error too, so callers never mistake it for success. The per-agent recovery
+// steps repeat rerun for the agent at hand.
 func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
-	var fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
+	var skillsItems, fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
 	skillsExplicit := false
+	// partlySetUp is set when a skills agent that failed got some skills.
+	partlySetUp := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
 			skillsAgents = append(skillsAgents, it.agent)
+			skillsItems = append(skillsItems, it)
 			skillsExplicit = skillsExplicit || it.explicit
 			if it.cliMissing {
 				fallbackItems = append(fallbackItems, it)
@@ -984,11 +1024,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		// twice next to the plugin, so remove them as a plugin install does.
 		// This runs before the skills batch: a newer release there replaces the
 		// recorded checksums, and older copies would then look user-modified
-		// and stay. Only the agent's own manifest is proof enough: for Codex and
-		// Copilot the CLI's record is the only evidence, and it outlives a
-		// removal with the agent's own CLI, so removing the skills then would
-		// leave the agent with neither.
-		if active, err := manifestPluginActive(ctx, it.agent, opts.Scope); err == nil && active {
+		// and stay. Only the agent's own records are proof enough: the CLI's
+		// record outlives a removal with the agent's own CLI, so removing the
+		// skills then would leave the agent with neither.
+		if agentRecordsPlugin(ctx, it.agent, opts.Scope) {
 			if err := cleanupLegacyFn(ctx, it.agent, opts.Scope); err != nil {
 				log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", it.agent.DisplayName, err)
 			}
@@ -1004,10 +1043,43 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
 		skillsErr = installSkillsForAgentsFn(ctx, src, skillsAgents, opts)
-		if skillsErr == nil {
-			for _, a := range skillsAgents {
-				outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+		failed := map[*agents.Agent]installer.AgentSkillsFailure{}
+		if agentsErr, ok := errors.AsType[*installer.AgentSkillsError](skillsErr); ok {
+			// The skills were installed and recorded; only these agents did not
+			// get them, so each is reported like a failed plugin agent.
+			for _, f := range agentsErr.Failures {
+				failed[f.Agent] = f
 			}
+			skillsErr = nil
+		}
+		if skillsErr == nil {
+			for _, it := range skillsItems {
+				f, ok := failed[it.agent]
+				if !ok {
+					outcomes = append(outcomes, agentOutcome{agent: it.agent, delivery: deliverySkills, status: outcomeInstalled})
+					continue
+				}
+				reason := f.Reason()
+				recovery := installRecovery(ctx, skillsAgentRerun(rerun, it), f.Err)
+				if !quiet {
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
+					cmdio.LogString(ctx, "  "+recovery)
+				}
+				outcomes = append(outcomes, agentOutcome{
+					agent:         it.agent,
+					delivery:      deliverySkills,
+					status:        outcomeFailed,
+					errorCategory: classifyInstallError(f.Err),
+					message:       reason,
+					recovery:      recovery,
+				})
+				if it.explicit {
+					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: f.Err})
+				}
+				partlySetUp = partlySetUp || f.Partial()
+			}
+			// A failed agent has no plugin either, and keeping its record would
+			// keep update from refreshing the skill files it did get.
 			forgetStalePluginRecords(ctx, opts.Scope, staleRecordItems)
 		}
 	}
@@ -1162,6 +1234,9 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
 	}
 	if !anyInstalled(outcomes) {
+		if partlySetUp {
+			return outcomes, &agentErrors{err: errAgentsPartlySetUp}
+		}
 		return outcomes, &agentErrors{err: errNoAgentSetUp}
 	}
 	return outcomes, nil

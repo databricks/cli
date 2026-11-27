@@ -194,7 +194,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "compute_size": {
-                        "description": "Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more\nCPU and memory at a higher hourly cost. See\nhttps://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.",
+                        "description": "Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more\nCPU and memory at a higher hourly cost. Leave unset for an app in a space: apps in a space always\nrun on space compute and reject any other size. See\nhttps://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1851,12 +1851,6 @@
                       "materialized_features": {
                         "description": "[Private Preview] The materialized features in this set. Order is not significant.\nAn `UpdateMaterializationSet` request with `materialized_features` or `*`\nin its update mask deletes omitted materialized features.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.MaterializedFeature",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
-                      },
-                      "notifications": {
-                        "description": "[Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are\napplied to every job and pipeline that materializes a feature in this set. Features which are\nmaterialized in the same pipeline will share the same notification.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.MaterializationNotifications",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
                       }
@@ -4195,7 +4189,7 @@
                   "type": "object",
                   "properties": {
                     "deployment_history": {
-                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
+                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments. When not set, history is recorded if Databricks has enrolled the workspace.",
                       "$ref": "#/$defs/bool"
                     },
                     "immutable_folder": {
