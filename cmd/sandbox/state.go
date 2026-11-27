@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
 
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
@@ -136,31 +135,6 @@ func getGatewayHost(ctx context.Context, profile string) string {
 		return ""
 	}
 	return state.GatewayHosts[profile]
-}
-
-// allGatewayHosts returns the deduplicated set of gateway hosts cached
-// across every profile, sorted for deterministic output. Used by the
-// SSH-config writer to emit one Host stanza per unique gateway so a
-// user with multiple workspaces in different regions doesn't lose
-// IDE Remote-SSH config for the earlier-registered ones when they
-// register against a new workspace.
-func allGatewayHosts(ctx context.Context) []string {
-	state, err := loadState(ctx)
-	if err != nil {
-		return nil
-	}
-	seen := make(map[string]struct{}, len(state.GatewayHosts))
-	for _, h := range state.GatewayHosts {
-		if h != "" {
-			seen[h] = struct{}{}
-		}
-	}
-	out := make([]string, 0, len(seen))
-	for h := range seen {
-		out = append(out, h)
-	}
-	slices.Sort(out)
-	return out
 }
 
 // setGatewayHost caches the SSH gateway hostname for `profile`. No-op when

@@ -1,0 +1,25 @@
+title "Retired commands reject requests without touching existing SSH files"
+mkdir -p "$TEST_TMP_DIR/.ssh"
+cp legacy-ssh/* "$TEST_TMP_DIR/.ssh/"
+trace musterr $CLI sandbox register
+trace musterr $CLI sandbox register --name test-machine
+trace musterr $CLI sandbox ssh-key list
+trace musterr $CLI sandbox ssh-key delete legacy-key-hash
+for file in config databricks-sandbox sandbox_ed25519 sandbox_ed25519.pub; do
+    trace cmp "legacy-ssh/$file" "$TEST_TMP_DIR/.ssh/$file"
+done
+
+trace test ! -s "$OUT_REQUESTS"
+
+title "Sandbox help describes the supported connection path"
+trace $CLI sandbox --help | contains.py 'ssh-setup' 'no separate SSH key registration is required' '!  register ' '!  ssh-key '
+trace $CLI sandbox ssh --help
+trace $CLI sandbox ssh-setup --help
+
+title "Retired commands leave a fresh SSH directory absent"
+mkdir "$TEST_TMP_DIR/fresh-home"
+sethome "$TEST_TMP_DIR/fresh-home"
+trace musterr $CLI sandbox register
+trace musterr $CLI sandbox ssh-key list
+trace musterr $CLI sandbox ssh-key delete legacy-key-hash
+trace test ! -e "$TEST_TMP_DIR/fresh-home/.ssh"

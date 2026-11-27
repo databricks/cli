@@ -1,1 +1,0 @@
-  No SSH keys registered. Run 'databricks sandbox register' to add one.

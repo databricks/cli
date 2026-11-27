@@ -1,8 +1,7 @@
 # Acceptance tests for `databricks sandbox` subcommands.
 #
 # Ignore the local state file the CLI writes (sandbox.json) and the
-# generated SSH key + managed SSH config — register-path tests would
-# otherwise produce these on every run.
+# SSH identities and alias files created by ssh-setup.
 Ignore = [".databricks", ".ssh"]
 
 # Sandbox commands are independent of the bundle engine. Pin to a single

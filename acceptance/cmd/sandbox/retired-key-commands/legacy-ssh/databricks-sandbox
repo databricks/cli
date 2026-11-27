@@ -1,0 +1,4 @@
+Host gateway.example.test
+    Port 2222
+    IdentityFile ~/.ssh/sandbox_ed25519
+    IdentitiesOnly yes

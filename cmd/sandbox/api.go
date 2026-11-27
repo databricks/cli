@@ -27,18 +27,14 @@ func sandboxPath(id string) string {
 	return sandboxAPIPath + "/" + url.PathEscape(id)
 }
 
-// sandboxAPIRoot is the service namespace under which the sandbox and
-// ssh-key sub-collections live. Still says "lakebox" because the
-// server-side rename is pending; this is the only place in the
+// sandboxAPIRoot is the service namespace under which sandboxes live.
+// Still says "lakebox" because the server-side rename is pending; this is the only place in the
 // codebase that string should appear, so a future server rename is
 // a one-line change.
 const sandboxAPIRoot = "/api/2.0/lakebox"
 
 // Sub-collections under the sandbox service namespace.
-const (
-	sandboxAPIPath     = sandboxAPIRoot + "/sandboxes"
-	sandboxKeysAPIPath = sandboxAPIRoot + "/ssh-keys"
-)
+const sandboxAPIPath = sandboxAPIRoot + "/sandboxes"
 
 // max503Attempts caps attempts when the server keeps answering 503; the
 // SDK's default budget would otherwise retry for up to 5 minutes.
@@ -209,12 +205,6 @@ type updateBody struct {
 	NoAutostop  *bool   `json:"no_autostop,omitempty"`
 }
 
-// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
-type registerKeyRequest struct {
-	PublicKey string `json:"public_key"`
-	Name      string `json:"name,omitempty"`
-}
-
 // newSandboxAPI returns a sandboxAPI bound to the workspace client's config.
 func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
@@ -365,52 +355,4 @@ func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 		return nil, err
 	}
 	return &resp, nil
-}
-
-// registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
-// omitted so the server records "unset" rather than an explicit empty string.
-// Returns the registered key, which carries the workspace's `GatewayHost` —
-// this is how `register` learns the gateway without a probe `list` /
-// `create` call.
-func (a *sandboxAPI) registerKey(ctx context.Context, publicKey, name string) (*sshKeyEntry, error) {
-	var resp sshKeyEntry
-	err := a.do(ctx, http.MethodPost, sandboxKeysAPIPath, registerKeyRequest{PublicKey: publicKey, Name: name}, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-// sshKeyEntry is a single item in the ssh-key list response. GatewayHost
-// is per-workspace (not per-key) — the server stamps the same value on
-// every response so callers can learn the SSH gateway without provisioning
-// a sandbox first.
-type sshKeyEntry struct {
-	KeyHash     string `json:"keyHash"`
-	Name        string `json:"name,omitempty"`
-	CreateTime  string `json:"createTime,omitempty"`
-	LastUseTime string `json:"lastUseTime,omitempty"`
-	GatewayHost string `json:"gatewayHost,omitempty"`
-}
-
-// listKeysResponse is the JSON body returned by GET /api/2.0/lakebox/ssh-keys.
-// Per-user keys are hard-capped server-side, so the full set fits in one
-// response — no pagination.
-type listKeysResponse struct {
-	SshKeys []sshKeyEntry `json:"sshKeys"`
-}
-
-// listKeys calls GET /api/2.0/lakebox/ssh-keys.
-func (a *sandboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
-	var resp listKeysResponse
-	err := a.do(ctx, http.MethodGet, sandboxKeysAPIPath, nil, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp.SshKeys, nil
-}
-
-// deleteKey calls DELETE /api/2.0/lakebox/ssh-keys/{key_hash}.
-func (a *sandboxAPI) deleteKey(ctx context.Context, keyHash string) error {
-	return a.do(ctx, http.MethodDelete, sandboxKeysAPIPath+"/"+url.PathEscape(keyHash), nil, nil)
 }
