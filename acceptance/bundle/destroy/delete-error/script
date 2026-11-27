@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+foo_id=$(read_id.py foo)
+bar_id=$(read_id.py bar)
+
+title "deploy: removing bar from config, its delete is rejected with 400"
+update_file.py databricks.yml "    bar:
+      name: bar-$UNIQUE_NAME
+" ""
+fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy
+trace $CLI jobs get $bar_id | gron.py | grep settings.name
+trace print_state.py | gron.py | grep __id__
+
+title "destroy: the delete of foo is rejected with 400"
+fault.py --body-contains "\"job_id\":$foo_id}" "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle destroy --auto-approve
+trace $CLI jobs get $foo_id | gron.py | grep settings.name
+trace print_state.py | gron.py | grep __id__

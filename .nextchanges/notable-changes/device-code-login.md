@@ -1,0 +1,1 @@
+* Introduce device code login: `databricks auth login --use-device-code` logs in from a machine that cannot open a browser, such as a headless server or an SSH session, by approving the login in a browser on another device. See [docs/device-code-login.md](https://github.com/databricks/cli/blob/main/docs/device-code-login.md). ([#8069](https://github.com/databricks/cli/pull/8069))

@@ -10,8 +10,10 @@ Env.DATABRICKS_AITOOLS_AUTO_INSTALL = "true"
 
 Ignore = [
     "home",
+    "hand-placed-home",
     "holdout-home",
     "no-agents-home",
+    "own-skill-home",
 ]
 
 [[Server]]

@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -205,7 +206,8 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 // the caller can record it: the command runs unattended, so a change that silently
 // disappears looks identical to one that was written. preResolved is the merged
 // config with ${...} references still literal, used to detect variable-reference
-// ancestors.
+// ancestors and to find fields a mutator cleared, which are replaced where the file
+// declares them.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
@@ -294,6 +296,39 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				configChange.Operation = OperationSkip
 				skipped++
 				continue
+			}
+
+			// A mutator can clear or rebuild a field the file declares (OverrideCompute
+			// drops job_cluster_key), leaving no source location. The pre-resolved config
+			// still has it, so the change replaces it in the block it is declared in.
+			// Only a key the block writes, with no anchor on or inside its value, counts: one
+			// inherited through a YAML merge key has no key of its own to replace there, so it
+			// is added as before.
+			if blocks != nil && resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove &&
+				!slices.ContainsFunc(resolved.steps, func(s sequenceStep) bool { return s.newElement }) {
+				if declared, ok := preResolvedValueAt(preResolved, mergedIndexPath.String()); ok {
+					// A complex variable (new_cluster: ${var.cluster}) cannot take the remote
+					// map or list without losing its reference, so it is left unapplied too.
+					if ref, isString := declared.AsString(); isString && dynvar.ContainsVariableReference(ref) && isContainer(configChange.Value) {
+						log.Debugf(ctx, "config-remote-sync: skipping %s: the field is a variable reference", fullPath)
+						configChange.Operation = OperationSkip
+						skipped++
+						continue
+					}
+					replaced := resolved
+					replaced.leaf = declared
+					replaced.operation = OperationReplace
+					if blocks.replacesKey(replaced) {
+						resolved = replaced
+						configChange.Operation = OperationReplace
+					} else if !blocks.addReachesWinner(resolved, replaced, b.Config.GetLocationOf(resourcePath).File) {
+						// The add would fail on the key, or write a copy that does not win,
+						// which changes nothing for this target and changes what others deploy.
+						log.Debugf(ctx, "config-remote-sync: skipping %s: the key it wins with cannot be replaced", fullPath)
+						skipped++
+						continue
+					}
+				}
 			}
 
 			destinations, err := routeChange(blocks, resolved, isRename)
@@ -465,4 +500,12 @@ func (c FieldChange) writePaths() []string {
 		return []string{c.WritePath}
 	}
 	return []string{c.WritePath, c.AltWritePath}
+}
+
+func isContainer(value any) bool {
+	switch value.(type) {
+	case map[string]any, []any:
+		return true
+	}
+	return false
 }

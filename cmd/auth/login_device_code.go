@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -55,12 +54,9 @@ func matchDeviceCodeProfiles(p profile.Profile) bool {
 	return len(u2mResourcesFromProfile(&p)) == 0
 }
 
-// validateDeviceCodeLogin returns an error if device code login is not enabled
-// or is combined with flags it cannot honor.
-func validateDeviceCodeLogin(ctx context.Context, cmd *cobra.Command) error {
-	if enabled, _ := env.GetBool(ctx, deviceCodeEnvVar); !enabled {
-		return fmt.Errorf("--use-device-code is experimental. Set %s=true to enable it", deviceCodeEnvVar)
-	}
+// validateDeviceCodeLogin returns an error if device code login is combined
+// with flags it cannot honor.
+func validateDeviceCodeLogin(cmd *cobra.Command) error {
 	for _, name := range deviceCodeIncompatibleFlags {
 		if cmd.Flag(name).Changed {
 			return fmt.Errorf("--use-device-code cannot be combined with --%s", name)
