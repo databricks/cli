@@ -269,7 +269,7 @@ next: value
 		{
 			name:     "folded block scalar empties tab lines",
 			input:    "key: >+\n  line1\n  \t\n  line2\n\nnext: value\n",
-			expected: "key: >+\n  line1\n\n  line2\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+			expected: "key: >+\n  line1\n\n  line2\n\nnext: value\n",
 		},
 		{
 			name: "keep chomping keeps trailing blanks",
@@ -302,6 +302,11 @@ next: value
 # __YAMLPATCH_BLANK_LINE__
 - next: value
 `),
+		},
+		{
+			name:     "keep chomping under a list item key",
+			input:    "- key: >+\n    line1\n\n  other: value\n- empty: |+\n\n  other: value\n",
+			expected: "- key: >+\n    line1\n\n  other: value\n- empty: |+\n\n  other: value\n",
 		},
 		{
 			name: "trailing blank line",
@@ -592,6 +597,19 @@ func TestApplyChangeNullParentComments(t *testing.T) {
 	}
 }
 
+// syncField runs the steps ApplyChangesToYAML runs on a file for one added field.
+func syncField(t *testing.T, content, path, value string) string {
+	change := FieldChange{
+		WritePath: path,
+		Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: value},
+	}
+	result, err := applyChange(t.Context(), preserveBlankLines([]byte(content)), change)
+	require.NoError(t, err)
+	result, err = clearAddedFlowStyle(result, []FieldChange{change})
+	require.NoError(t, err)
+	return string(restoreBlankLines(result))
+}
+
 func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -607,18 +625,10 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n\n\t\nthree", tags: {key: value}}`},
 		{"untouched keep block scalar", "script: |+\n  one\n\ntags: null\n", "value", `{script: "one\n\n", tags: {key: value}}`},
 		{"untouched block scalar at end of file", "tags: null\nscript: |\n  one\n  \t\n", "value", `{script: "one\n\t\n", tags: {key: value}}`},
+		{"untouched keep block scalars under list item keys", "items:\n  - script: >+\n      one\n\n    other: x\n  - script: |+\n\n    other: x\ntags: null\n", "value", `{items: [{script: "one\n\n", other: x}, {script: "\n", other: x}], tags: {key: value}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			change := FieldChange{
-				WritePath: "tags.key",
-				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: tc.value},
-			}
-			// The steps ApplyChangesToYAML runs on a file.
-			result, err := applyChange(t.Context(), preserveBlankLines([]byte(tc.content)), change)
-			require.NoError(t, err)
-			result, err = clearAddedFlowStyle(result, []FieldChange{change})
-			require.NoError(t, err)
-			out := string(restoreBlankLines(result))
+			out := syncField(t, tc.content, "tags.key", tc.value)
 			assert.YAMLEq(t, tc.want, out)
 			if strings.Contains(tc.content, "script: |") {
 				assert.Contains(t, out, "script: |")
@@ -628,25 +638,13 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 }
 
 func TestApplyChangeQuotesWhitespaceOnlyLinesUnderNullParent(t *testing.T) {
-	sync := func(content, path, value string) string {
-		change := FieldChange{
-			WritePath: path,
-			Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: value},
-		}
-		result, err := applyChange(t.Context(), preserveBlankLines([]byte(content)), change)
-		require.NoError(t, err)
-		result, err = clearAddedFlowStyle(result, []FieldChange{change})
-		require.NoError(t, err)
-		return string(restoreBlankLines(result))
-	}
+	assert.Equal(t, "tags:\n  key: |-\n    one\n    two\n", syncField(t, "tags: null\n", "tags.key", "one\ntwo"))
 
-	assert.Equal(t, "tags:\n  key: |-\n    one\n    two\n", sync("tags: null\n", "tags.key", "one\ntwo"))
-
-	out := sync("tags: null\n", "tags.key", "one\n    \nthree")
+	out := syncField(t, "tags: null\n", "tags.key", "one\n    \nthree")
 	assert.Equal(t, "tags:\n  key: \"one\\n    \\nthree\"\n", out)
 
 	// A later sync that rewrites the file keeps the value.
-	out = sync(out, "tags.other", "x")
+	out = syncField(t, out, "tags.other", "x")
 	assert.YAMLEq(t, `tags: {key: "one\n    \nthree", other: x}`, out)
 }
 

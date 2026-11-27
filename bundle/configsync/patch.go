@@ -608,7 +608,7 @@ func preserveBlankLines(content []byte) []byte {
 			// and keep chomping (+) keeps all of them.
 			n := 0
 			for j, blank := range pendingBlanks {
-				if keepsTabLines && (keepsTrailingLines || strings.HasSuffix(blank, "\t")) {
+				if keepsTrailingLines || keepsTabLines && strings.HasSuffix(blank, "\t") {
 					n = j + 1
 				}
 			}
@@ -636,7 +636,7 @@ func preserveBlankLines(content []byte) []byte {
 				blockScalarIndent = blockScalarParentIndent(line)
 				literalBlock = m[1] == "|"
 				keepsTabLines = false
-				keepsTrailingLines = literalBlock && strings.Contains(m[2], "+")
+				keepsTrailingLines = strings.Contains(m[2], "+")
 			}
 		}
 
