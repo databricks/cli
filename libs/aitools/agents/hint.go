@@ -130,11 +130,12 @@ type agentHint struct {
 
 	// text is the agent's install recommendation, the model-facing text unless
 	// skills.HintsEnabled is true (see message). It is printed at most once per
-	// text throttle (see textThrottle) per session (see sessionEnv), or per
-	// agent on this machine when there is no session id (see fallbackKey).
+	// text throttle (see message) per session (see sessionEnv), or per agent on
+	// this machine when there is no session id (see fallbackKey).
 	text string
 
-	// textKind tags the hint-shown event logged when text prints.
+	// textKind tags the hint-shown event logged when text prints. With
+	// skills.HintsEnabled on, message gives the skills list kind instead.
 	textKind protos.AitoolsHintKind
 
 	// sessionEnv names the env var carrying the agent's session id, which keys
@@ -262,7 +263,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if native != "" && nativeHintThrottle.seen(ctx, key) {
 		native = ""
 	}
-	textDue := !textThrottle(ctx).seen(ctx, key)
+	textDue := !hint.message(ctx).throttle.seen(ctx, key)
 	if native == "" && !textDue {
 		return nil
 	}
@@ -290,9 +291,10 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 // show prints the lines MaybeHint found due, records their throttle markers
 // and logs their hint-shown events.
 func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) {
+	msg := h.message(ctx)
 	// Only agents without a native line have a durable throttle, so a failed
 	// claim leaves nothing to print.
-	if textDue && !h.claim(ctx, key) {
+	if textDue && !h.claim(ctx, msg.throttle, key) {
 		return
 	}
 	if native != "" {
@@ -308,38 +310,38 @@ func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) 
 		nativeEventThrottle.set(ctx, key, false)
 	}
 	if textDue {
-		cmdio.LogString(ctx, h.message(ctx))
-		logHintShown(ctx, h.textKind)
+		cmdio.LogString(ctx, msg.text)
+		logHintShown(ctx, msg.kind)
 	}
 }
 
-// message returns the model-facing text: the skills list recommendation when
-// skills.HintsEnabled is true, else the agent's install text.
-func (h *agentHint) message(ctx context.Context) string {
+// hintMessage is the model-facing text of the hint, with the hint-shown kind
+// its event logs and the throttle that gates it.
+type hintMessage struct {
+	text     string
+	kind     protos.AitoolsHintKind
+	throttle hintThrottle
+}
+
+// message returns the text, kind and throttle of the hint: the skills list
+// ones when skills.HintsEnabled is true, else the agent's install text, its
+// kind and the install throttle. They are picked together behind one guard, so
+// the logged kind and the throttle always match the text that prints.
+func (h *agentHint) message(ctx context.Context) hintMessage {
 	if skills.HintsEnabled(ctx) {
-		return skillsHintText
+		return hintMessage{text: skillsHintText, kind: protos.AitoolsHintKindSkillsListText, throttle: skillsTextHintThrottle}
 	}
-	return h.text
+	return hintMessage{text: h.text, kind: h.textKind, throttle: textHintThrottle}
 }
 
 // claim records the text's throttle key and reports whether the text may
 // print. A durable throttle allows it only once the marker has persisted.
-func (h *agentHint) claim(ctx context.Context, key string) bool {
-	throttle := textThrottle(ctx)
+func (h *agentHint) claim(ctx context.Context, throttle hintThrottle, key string) bool {
 	if h.durableThrottle {
 		return claimHintMarker(ctx, throttle, key)
 	}
 	throttle.record(ctx, key)
 	return true
-}
-
-// textThrottle returns the throttle of the text message() prints: the skills
-// list text's own when skills.HintsEnabled is true, else the install text's.
-func textThrottle(ctx context.Context) hintThrottle {
-	if skills.HintsEnabled(ctx) {
-		return skillsTextHintThrottle
-	}
-	return textHintThrottle
 }
 
 // claudeNativeHintLine returns claudeNativeHint when Claude Code itself spawned
