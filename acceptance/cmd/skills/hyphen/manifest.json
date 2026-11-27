@@ -1,6 +1,0 @@
-{
-  "version": "0.0.1",
-  "skills": {
-    "demo-skill": {"version": "0.0.1", "description": "A skill with a file named with a leading hyphen.", "files": ["SKILL.md", "-notes.md"]}
-  }
-}
