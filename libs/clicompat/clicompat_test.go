@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -611,8 +612,7 @@ func TestFetchManifest_ForceEmbedded(t *testing.T) {
 func writeCachedManifestFile(t *testing.T, ctx context.Context, manifest string, modTime time.Time) {
 	t.Helper()
 	path := manifestLocalPath(ctx)
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
-	require.NoError(t, os.WriteFile(path, []byte(manifest), 0o600))
+	testutil.WriteFile(t, path, manifest)
 	require.NoError(t, os.Chtimes(path, modTime, modTime))
 }
 

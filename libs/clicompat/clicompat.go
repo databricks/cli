@@ -348,13 +348,13 @@ func freshLocalManifest(ctx context.Context) (Manifest, error) {
 	return local.manifest, nil
 }
 
-// forceEmbedded reports whether DATABRICKS_FORCE_EMBEDDED_COMPAT is set.
+// forceEmbedded reports whether DATABRICKS_FORCE_EMBEDDED_COMPAT is a true value.
 func forceEmbedded(ctx context.Context) bool {
 	force, ok := env.GetBool(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT")
 	return ok && force
 }
 
-// cacheEnabled reports whether DATABRICKS_CACHE_ENABLED allows the local cache.
+// cacheEnabled is true unless DATABRICKS_CACHE_ENABLED is a false value.
 func cacheEnabled(ctx context.Context) bool {
 	enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED")
 	return !ok || enabled

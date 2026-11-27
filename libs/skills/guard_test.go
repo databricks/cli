@@ -3,7 +3,6 @@ package skills
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -51,28 +50,30 @@ func TestHintsEnabled(t *testing.T) {
 		name     string
 		preview  string
 		hints    string
+		hintsSet bool
 		manifest string // written to the local cache; empty means no cache file
 		stale    bool
 		want     bool
 	}{
 		{name: "both unset", want: false},
-		{name: "preview off, hints on", preview: "false", hints: "true", want: false},
-		{name: "preview unset, hints on", hints: "true", want: false},
+		{name: "preview off, hints on", preview: "false", hints: "true", hintsSet: true, want: false},
+		{name: "preview unset, hints on", hints: "true", hintsSet: true, want: false},
 		{name: "preview off, entry on", manifest: entryOn, want: false},
-		{name: "preview off, hints on, entry on", hints: "true", manifest: entryOn, want: false},
+		{name: "preview off, hints on, entry on", hints: "true", hintsSet: true, manifest: entryOn, want: false},
 		{name: "preview on, hints unset", preview: "true", want: false},
-		{name: "preview on, hints false", preview: "true", hints: "false", want: false},
-		{name: "preview on, hints invalid", preview: "true", hints: "maybe", want: false},
-		{name: "preview on, hints true", preview: "true", hints: "true", want: true},
-		{name: "preview on, hints one", preview: "1", hints: "1", want: true},
+		{name: "preview on, hints false", preview: "true", hints: "false", hintsSet: true, want: false},
+		{name: "preview on, hints invalid", preview: "true", hints: "maybe", hintsSet: true, want: false},
+		{name: "preview on, hints empty, entry on", preview: "true", hints: "", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, hints true", preview: "true", hints: "true", hintsSet: true, want: true},
+		{name: "preview on, hints one", preview: "1", hints: "1", hintsSet: true, want: true},
 		{name: "preview on, no cache", preview: "true", want: false},
 		{name: "preview on, entry on", preview: "true", manifest: entryOn, want: true},
 		{name: "preview on, entry on, stale cache ignored", preview: "true", manifest: entryOn, stale: true, want: false},
 		{name: "preview on, entry without the field", preview: "true", manifest: entryOff, want: false},
-		{name: "preview on, env false over entry on", preview: "true", hints: "false", manifest: entryOn, want: false},
-		{name: "preview on, env invalid over entry on", preview: "true", hints: "maybe", manifest: entryOn, want: false},
-		{name: "preview on, env true over entry without the field", preview: "true", hints: "true", manifest: entryOff, want: true},
-		{name: "preview on, env true, no cache", preview: "true", hints: "true", want: true},
+		{name: "preview on, env false over entry on", preview: "true", hints: "false", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, env invalid over entry on", preview: "true", hints: "maybe", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, env true over entry without the field", preview: "true", hints: "true", hintsSet: true, manifest: entryOff, want: true},
+		{name: "preview on, env true, no cache", preview: "true", hints: "true", hintsSet: true, want: true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -81,7 +82,7 @@ func TestHintsEnabled(t *testing.T) {
 			if c.preview != "" {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
 			}
-			if c.hints != "" {
+			if c.hintsSet {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
 			}
 			if c.manifest != "" {
@@ -101,7 +102,6 @@ func TestHintsEnabled(t *testing.T) {
 func writeCachedManifest(t *testing.T, ctx context.Context, manifest string, modTime time.Time) {
 	t.Helper()
 	path := clicompat.LocalManifestPath(ctx)
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
-	require.NoError(t, os.WriteFile(path, []byte(manifest), 0o600))
+	testutil.WriteFile(t, path, manifest)
 	require.NoError(t, os.Chtimes(path, modTime, modTime))
 }
