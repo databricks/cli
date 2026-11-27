@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/auth"
@@ -36,6 +38,18 @@ and 'remove' to uninstall them. Some services use your account with an external 
 	cmd.AddCommand(NewMcpLogoutCmd())
 	cmd.AddCommand(NewMcpServeCmd())
 	return cmd
+}
+
+// lockMCP takes the lock that add and remove hold from before they read the install records until they have saved them,
+// so that one of them never plans or writes while another does. It fails while another one holds the lock rather than
+// waiting, as uninstall does for an automatic installation: the other run may be waiting at a prompt.
+func lockMCP(ctx context.Context) (unlock func(), err error) {
+	unlock, err = autoinstall.LockMCP(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("another databricks aitools mcp add or remove is running; run this command again when it finishes: %w", err)
+	}
+	// add releases the lock before its sign-in, and again when it returns.
+	return sync.OnceFunc(unlock), nil
 }
 
 // failure returns the message shown to the user, tagged with the category reported in JSON.

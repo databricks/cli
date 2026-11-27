@@ -1,0 +1,27 @@
+# Isolate HOME so the agent config files, the install records and the lock land in this test directory.
+sethome home
+mkdir -p home/.cursor
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The service, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+
+# with_lock.py runs a command while it holds the lock of add and remove, as another add or remove that is still running
+# does. The command fails at once, so the test does not depend on timing.
+lock=home/.databricks/aitools/mcp.lock
+
+title "add is refused while another add or remove runs, and writes nothing"
+trace musterr python3 with_lock.py $lock $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+trace ls home/.cursor
+
+title "remove is refused the same way, and the server stays"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+trace musterr python3 with_lock.py $lock $CLI aitools mcp remove --all
+trace jq -c '.mcpServers | keys' home/.cursor/mcp.json
+
+title "list only reads, so it does not take the lock"
+trace python3 with_lock.py $lock $CLI aitools mcp list
+
+title "the lock is free again when its holder exits"
+trace $CLI aitools mcp remove --all

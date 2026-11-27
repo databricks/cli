@@ -203,6 +203,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		}
 	}
 
+	// The lock is held from the first read of the install records until they are saved, as add holds it.
+	unlock, err := lockMCP(ctx)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err
