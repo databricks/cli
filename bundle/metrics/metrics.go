@@ -25,6 +25,10 @@ const (
 	// not a mutator.
 	SnapshotUploadDuration = "snapshot.upload"
 
+	// Foreground wait in the deployment history buffer's Drain calls, in
+	// bundle_mutator_execution_time_ms. Background upload time is excluded.
+	DeploymentHistoryDrainDuration = "dms.operation_buffer_drain"
+
 	// Outcome of an automatic migration of terraform state to the direct engine.
 	//   - migrate_error:        state conversion itself errored.
 	//   - migrate_commit_error: the state was converted, but committing it

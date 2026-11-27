@@ -25,6 +25,14 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "queue_size_in_range": true
 }
 
+=== Drain telemetry measures foreground wait, including zero milliseconds
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "measurement_count": 1,
+  "duration_is_nonnegative": true
+}
+
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FIVE_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[FOUR_ID]", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
@@ -192,6 +200,11 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 
 === A deploy with no version omits operation buffer telemetry
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+false
+
+=== A deploy with no buffer omits drain timing
 
 >>> cat [OUTPUT_DIR]/out.requests.txt
 false

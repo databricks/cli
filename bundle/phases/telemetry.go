@@ -428,6 +428,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		uploadFileSizers[i] = f
 	}
 
+	executionTimes := getExecutionTimes(b)
 	var deploymentHistory *protos.BundleDeploymentHistory
 	if stats := b.DeploymentBundle.StateDB.OperationBufferStats(); stats != nil {
 		deploymentHistory = &protos.BundleDeploymentHistory{
@@ -439,6 +440,14 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			OperationRecordingSuccessCount: int64(stats.OperationRecordingSuccessCount),
 			OperationRecordingFailureCount: int64(stats.OperationRecordingFailureCount),
 			OperationRecordingPendingCount: int64(stats.OperationRecordingPendingCount),
+		}
+		if stats.DrainCount > 0 {
+			// Preserve zero waits and keep this measurement outside the top-250
+			// mutator limit, so a missing entry means Drain was not called.
+			executionTimes = append(executionTimes, protos.IntMapEntry{
+				Key:   metrics.DeploymentHistoryDrainDuration,
+				Value: stats.DrainDuration.Milliseconds(),
+			})
 		}
 	}
 
@@ -488,7 +497,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
-				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+				BundleMutatorExecutionTimeMs: executionTimes,
 			},
 		},
 	})

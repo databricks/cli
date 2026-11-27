@@ -86,6 +86,35 @@ func TestDrainIsIdempotent(t *testing.T) {
 	require.NoError(t, b.Drain(t.Context()))
 }
 
+func TestDrainMeasuresForegroundWait(t *testing.T) {
+	for _, bestEffort := range []bool{false, true} {
+		t.Run(fmt.Sprintf("best_effort=%t", bestEffort), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				b := queued()
+				b.bestEffort = bestEffort
+				b.drainTimeout = 10 * time.Second
+				b.done = make(chan struct{})
+				b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
+				go func() {
+					time.Sleep(3 * time.Second)
+					close(b.done)
+				}()
+
+				// Uploads overlap one second of deployment before Drain starts.
+				time.Sleep(time.Second)
+				require.NoError(t, b.Drain(t.Context()))
+				assert.Equal(t, 2*time.Second, b.Stats().DrainDuration)
+				assert.Equal(t, 1, b.Stats().DrainCount)
+
+				// Draining an already-finished worker adds an explicit zero wait.
+				require.NoError(t, b.Drain(t.Context()))
+				assert.Equal(t, 2*time.Second, b.Stats().DrainDuration)
+				assert.Equal(t, 2, b.Stats().DrainCount)
+			})
+		})
+	}
+}
+
 func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
 	s := queued()
 
@@ -165,6 +194,8 @@ func TestHistoryDrainCancelsStalledWriter(t *testing.T) {
 		start := time.Now()
 		assert.ErrorIs(t, b.Drain(t.Context()), context.DeadlineExceeded)
 		assert.Equal(t, time.Second, time.Since(start))
+		assert.Equal(t, time.Second, b.Stats().DrainDuration)
+		assert.Equal(t, 1, b.Stats().DrainCount)
 		// Drain must also call cancel(), stopping any upload the writer would be doing.
 		assert.ErrorIs(t, ctx.Err(), context.Canceled)
 	})

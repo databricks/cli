@@ -40,6 +40,9 @@ type BufferOptions struct {
 
 // OperationBufferStats describes one deployment version's history uploads.
 type OperationBufferStats struct {
+	// Foreground time spent waiting in Drain, summed across calls. Background uploads are excluded.
+	DrainDuration                time.Duration
+	DrainCount                   int
 	StagedOperationCount         int
 	PeakPendingUpdateCount       int
 	QueuedUpdateCountAtTimeout   int
@@ -278,6 +281,15 @@ func (b *OperationBuffer) write(ctx context.Context, key string, entry *buffered
 // Shadow history cancels outstanding uploads when the timeout or ctx expires.
 // It returns the first recording error and is safe to call more than once.
 func (b *OperationBuffer) Drain(ctx context.Context) error {
+	start := time.Now()
+	defer func() {
+		elapsed := time.Since(start)
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		b.stats.DrainDuration += elapsed
+		b.stats.DrainCount++
+	}()
+
 	b.stopQueue()
 	if !b.bestEffort {
 		// DMS is authoritative: wait for all queued writes and return any recording error.
