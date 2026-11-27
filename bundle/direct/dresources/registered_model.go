@@ -91,7 +91,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 			createTime:    func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
 			alreadyExists: isAlreadyExists,
 			createdByCaller: func(ctx context.Context, found *catalog.RegisteredModelInfo) (bool, error) {
-				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+				return createdByCurrentUser(ctx, found.CreatedBy)
 			},
 			use:    useFound[catalog.RegisteredModelInfo],
 			create: repeatCreate(create),

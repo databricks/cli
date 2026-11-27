@@ -176,6 +176,7 @@ func TestCreateRecoveryCoverage(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		t.Run(resourceType, func(t *testing.T) {
 			ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+			ctx = WithCurrentUser(ctx, testserver.TestUser.UserName)
 
 			// Find the create request: the first mutating request a successful DoCreate sends. DoCreate
 			// may send it more than once on its way to success (a dashboard's is repeated after
