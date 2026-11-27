@@ -53,7 +53,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	if !cmdio.IsPromptSupported(ctx) {
 		return false, errors.New("the deployment requires destructive actions, but the current console does not support prompting.\n" +
 			DataLossWarning + "\n" +
-			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice())
+			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice(ctx))
 	}
 
 	cmdio.LogString(ctx, "")

@@ -3,12 +3,12 @@ package agents
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 // skillsTipText is the tip printed by PrintSkillsTip and MaybeVersionCheckTip.
@@ -32,7 +32,7 @@ func PrintSkillsTip(ctx context.Context) {
 // known version. No telemetry is logged: `databricks version` never resolves
 // auth, so the event would not be uploaded (see logHintShown).
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
-	if isHintedAgent(useragent.AgentProvider()) {
+	if isHintedAgent(agent.Provider(ctx)) {
 		return
 	}
 	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {

@@ -122,7 +122,7 @@ The command exits with code 1 when every removal it attempts fails.`,
 				// A coding agent on a terminal: say what is removed and why
 				// nobody was asked to confirm it.
 				cmdio.LogString(ctx, msg)
-				cmdio.LogString(ctx, noPromptsNote())
+				cmdio.LogString(ctx, noPromptsNote(ctx))
 			}
 
 			// With something installed the run removes files and runs agent CLIs,

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -29,7 +30,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -116,6 +116,11 @@ const autoInstallDisable = "databricks aitools auto-install disable"
 // that ran the command, as it would have without auto-install.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
+	// A run that does not notice agents (DATABRICKS_NOT_AN_AGENT) installs nothing and asks nothing, so an eval
+	// baseline keeps its machine as it is.
+	if agent.NotAnAgent(ctx) {
+		return nil
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)
@@ -203,7 +208,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 			log.Debugf(ctx, "auto-install: skipped: %s", tools.skipWhy)
 			return nil
 		}
-		if err == nil && autoInstallAsks() && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
+		if err == nil && autoInstallAsks(ctx) && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
 			skipUnaskable(ctx, in.State.ID)
 			return nil
 		}
@@ -272,7 +277,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		version:     version,
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
-		interactive: cmdio.HasTerminal(ctx) && autoInstallAsks(),
+		interactive: cmdio.HasTerminal(ctx) && autoInstallAsks(ctx),
 		now:         in.Now,
 	}
 	if !reason.Due() {
@@ -306,7 +311,7 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 	// once per version: a "yes" covers that version's retries. A planning
 	// failure is a failed attempt, and its retry asks.
 	asked := false
-	if err == nil && autoInstallAsks() && prior.AcceptedVersion != r.version && len(tools.newAgents()) > 0 {
+	if err == nil && autoInstallAsks(ctx) && prior.AcceptedVersion != r.version && len(tools.newAgents()) > 0 {
 		// autoInstall skips this case before the lock; the state it decided
 		// on may have changed since.
 		if !canAsk(ctx) {
@@ -468,8 +473,8 @@ func saveInstallStateDigest(ctx context.Context, globalDir string) {
 // autoInstallAsks reports whether auto-install asks before a first install:
 // no coding agent is detected. A run that cannot ask (see canAsk) skips;
 // coding agents install without a question.
-func autoInstallAsks() bool {
-	return useragent.AgentProvider() == ""
+func autoInstallAsks(ctx context.Context) bool {
+	return agent.Provider(ctx) == ""
 }
 
 // canAsk reports whether the question can be seen and answered: see

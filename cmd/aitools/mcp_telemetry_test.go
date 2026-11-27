@@ -213,6 +213,26 @@ func TestLogMcpEventLogsRejectedCredential(t *testing.T) {
 	assert.True(t, uploads)
 }
 
+// With DATABRICKS_NOT_AN_AGENT set, the event is logged without the calling agent.
+func TestLogMcpEventOmitsCallingAgentUnderNotAnAgent(t *testing.T) {
+	withHome(t)
+	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	telemetry.SetUploadConfig(ctx, &config.Config{Profile: "logfood", Host: "https://adb-1.test"})
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+	event := protos.AitoolsMcpEvent{
+		CallingAgent: protos.AitoolsAgentTypeClaudeCode,
+		Operation:    protos.AitoolsMcpOperationSignIn,
+		Servers: []protos.AitoolsMcpServerResult{{
+			Service: protos.AitoolsMcpServiceGitHub,
+			Outcome: protos.AitoolsTargetOutcomeFailed,
+		}},
+	}
+	require.True(t, logMcpEvent(ctx, event))
+	buffered := telemetry.BufferedEvents(ctx)
+	require.Len(t, buffered, 1)
+	assert.Equal(t, protos.AitoolsAgentTypeUnspecified, buffered[0].AitoolsMcpEvent.CallingAgent)
+}
+
 func TestLogMcpEventWithoutLogger(t *testing.T) {
 	withHome(t)
 	assert.False(t, logMcpEvent(t.Context(), proxyStartedEvent(protos.AitoolsAgentTypeCodex, "system.ai.github")))

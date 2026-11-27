@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,9 @@ func setHelpFunc(root *cobra.Command) {
 // skills catalog, so help never makes a network call.
 func WriteSkillsHint(c *cobra.Command) {
 	ctx := c.Context()
-	if !skills.HintsEnabled(ctx) {
+	// The footer and the root line address coding agents, so they stay out of output for a caller that
+	// DATABRICKS_NOT_AN_AGENT says is not one.
+	if !skills.HintsEnabled(ctx) || agent.NotAnAgent(ctx) {
 		return
 	}
 	w := c.OutOrStdout()

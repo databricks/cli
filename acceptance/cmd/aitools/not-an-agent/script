@@ -1,0 +1,25 @@
+# DATABRICKS_NOT_AN_AGENT makes agent detection report no agent, so a run that
+# has an agent variable set gets the human output. Claude Code's variable is set
+# throughout; the skills catalog is the one cmd/skills fixture, which maps the fs group.
+sethome ./home
+export DATABRICKS_SKILLS_DIR="$TESTDIR/../../skills/release"
+unset XDG_CONFIG_HOME
+
+title "Claude Code is hinted, and its help and quickstart are the agent ones"
+trace CLAUDECODE=1 $CLI jobs list
+trace CLAUDECODE=1 $CLI fs --help | tail -n 3
+trace CLAUDECODE=1 $CLI quickstart | contains.py 'databricks skills list' > /dev/null
+
+title "With the variable set, no hint is printed"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI jobs list
+
+title "With the variable set, the help has no skills footer"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI fs --help | tail -n 3
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI --help | tail -n 2
+
+title "With the variable set, quickstart prints the human guide"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | head -n 1
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | contains.py '!databricks skills list' > /dev/null
+
+title "A false value leaves agent detection on"
+trace DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list

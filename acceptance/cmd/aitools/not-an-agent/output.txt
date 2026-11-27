@@ -1,0 +1,39 @@
+
+=== Claude Code is hinted, and its help and quickstart are the agent ones
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
+>>> CLAUDECODE=1 [CLI] fs --help
+
+Coding agents: read the skills for this command group before you use it.
+  databricks skills read demo-skill
+
+>>> CLAUDECODE=1 [CLI] quickstart
+
+=== With the variable set, no hint is printed
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] jobs list
+
+=== With the variable set, the help has no skills footer
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] fs --help
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks fs [command] --help" for more information about a command.
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] --help
+
+Use "databricks [command] --help" for more information about a command.
+
+=== With the variable set, quickstart prints the human guide
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] quickstart
+# Welcome to Databricks
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] quickstart
+
+=== A false value leaves agent detection on
+
+>>> DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list

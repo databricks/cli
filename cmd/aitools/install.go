@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -18,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -55,18 +55,18 @@ var errNoAgentsSelected = errors.New("at least one agent must be selected")
 // An agent caller always gets the documented non-interactive behavior, as a
 // run without a terminal does.
 func promptsSupported(ctx context.Context) bool {
-	return cmdio.IsPromptSupported(ctx) && useragent.AgentProvider() == ""
+	return cmdio.IsPromptSupported(ctx) && agent.Provider(ctx) == ""
 }
 
 // noPromptsNote says that prompts were skipped because the caller is a coding
 // agent. It names the detected agent by its --agents value when it has one.
-func noPromptsNote() string {
-	provider := useragent.AgentProvider()
+func noPromptsNote(ctx context.Context) string {
+	provider := agent.Provider(ctx)
 	detected := "a coding agent was"
 	if provider == "multiple" {
 		detected = "more than one coding agent was"
-	} else if agent := agents.AgentForProvider(provider); agent != nil {
-		detected = fmt.Sprintf("a coding agent (%s) was", agent.Name)
+	} else if a := agents.AgentForProvider(provider); a != nil {
+		detected = fmt.Sprintf("a coding agent (%s) was", a.Name)
 	}
 	return fmt.Sprintf("No prompts shown because %s detected.", detected)
 }
@@ -78,7 +78,7 @@ func noPromptsNote() string {
 // prompts there.
 func logSkippedPromptNote(ctx context.Context) {
 	if cmdio.IsPromptSupported(ctx) && !promptsSupported(ctx) {
-		cmdio.LogString(ctx, noPromptsNote())
+		cmdio.LogString(ctx, noPromptsNote(ctx))
 	}
 }
 
@@ -87,8 +87,8 @@ func logSkippedPromptNote(ctx context.Context) {
 // flags of `databricks aitools install` that would have replaced the skipped
 // prompts. The command is named because the deprecated
 // `experimental aitools skills install` alias does not accept these flags.
-func agentCallerNote(missingFlags []string) string {
-	return fmt.Sprintf("%s Pass %s to databricks aitools install to choose what to install.", noPromptsNote(), strings.Join(missingFlags, " and "))
+func agentCallerNote(ctx context.Context, missingFlags []string) string {
+	return fmt.Sprintf("%s Pass %s to databricks aitools install to choose what to install.", noPromptsNote(ctx), strings.Join(missingFlags, " and "))
 }
 
 // delivery is how the databricks tools are delivered to one agent.
@@ -331,7 +331,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 					missing = append(missing, "--agents")
 				}
 				if len(missing) > 0 {
-					cmdio.LogString(ctx, agentCallerNote(missing))
+					cmdio.LogString(ctx, agentCallerNote(ctx, missing))
 				}
 			}
 

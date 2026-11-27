@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdio"
@@ -233,7 +234,7 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // is installed by then. A failed command, a gate that turns out off or a
 // failed install then still gets the hint. Otherwise it returns nil.
 func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) (deferred func()) {
-	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded)
+	hint := hintForAgent(agent.Provider(ctx), pluginRecorded)
 	if hint == nil {
 		return nil
 	}

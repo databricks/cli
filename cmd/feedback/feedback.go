@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry"
@@ -110,7 +111,7 @@ the reference ID.`
 		if err != nil {
 			return err
 		}
-		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && useragent.AgentProvider() != "" {
+		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && agent.Provider(cmd.Context()) != "" {
 			return errors.New("feedback was not sent because --yes=false")
 		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -170,7 +171,7 @@ func send(ctx context.Context, s submission) error {
 	if s.runID != "" {
 		ctx = useragent.InContext(ctx, runIDKey, s.runID)
 	}
-	if provider := useragent.AgentProvider(); provider != "" {
+	if provider := agent.Provider(ctx); provider != "" {
 		// The SDK adds the agent to HTTP request headers, but the feedback record
 		// needs it too so triage can distinguish agent reports.
 		ctx = useragent.InContext(ctx, useragent.AgentKey, provider)

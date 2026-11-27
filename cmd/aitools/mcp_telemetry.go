@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/auth"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 // setUploadConfig prepares telemetry after the command has resolved its workspace.
@@ -111,7 +113,7 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 
 // callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.
 func callingAgentType() protos.AitoolsAgentType {
-	a := agents.CallingAgent()
+	a := agents.AgentForProvider(useragent.AgentProvider())
 	if a == nil {
 		return protos.AitoolsAgentTypeUnspecified
 	}
@@ -134,6 +136,10 @@ func proxyAgentType(flag string) protos.AitoolsAgentType {
 func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) bool {
 	if telemetry.Disabled(ctx) || len(event.Servers) == 0 {
 		return false
+	}
+	// Every event passes here, so this is where the calling agent is left out while DATABRICKS_NOT_AN_AGENT holds.
+	if agent.NotAnAgent(ctx) {
+		event.CallingAgent = protos.AitoolsAgentTypeUnspecified
 	}
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
