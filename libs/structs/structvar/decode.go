@@ -120,7 +120,18 @@ func (sv *StructVar) Assign(path *structpath.PathNode, src View) (diag.Diagnosti
 	return d.diags, nil
 }
 
+// validate reports the first YAML error in the document, in the order loading it would
+// find them, also in values that decoding drops.
 func validate(s source) error {
+	ys, ok := s.(*yamlSource)
+	if !ok {
+		return validateSource(s)
+	}
+	return ys.validateAll()
+}
+
+// validateSource validates a source that is not YAML.
+func validateSource(s source) error {
 	switch s.kind() {
 	case KindMap:
 		pairs, err := s.pairs()
@@ -128,7 +139,7 @@ func validate(s source) error {
 			return err
 		}
 		for _, p := range pairs {
-			if err := validate(p.value); err != nil {
+			if err := validateSource(p.value); err != nil {
 				return err
 			}
 		}
@@ -138,7 +149,7 @@ func validate(s source) error {
 			return err
 		}
 		for _, e := range elems {
-			if err := validate(e); err != nil {
+			if err := validateSource(e); err != nil {
 				return err
 			}
 		}

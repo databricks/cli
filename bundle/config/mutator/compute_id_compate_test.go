@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +19,7 @@ func TestComputeIdToClusterId(t *testing.T) {
 		},
 	}
 
-	diags := bundletest.ApplyLoading(t, b, mutator.ComputeIdToClusterId())
+	diags := bundle.Apply(t.Context(), b, mutator.ComputeIdToClusterId())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, "compute-id", b.Config.Bundle.ClusterId)
 	assert.Empty(t, b.Config.Bundle.ComputeId)
@@ -41,11 +40,11 @@ func TestComputeIdToClusterIdInTargetOverride(t *testing.T) {
 		},
 	}
 
-	diags := bundletest.ApplyLoading(t, b, mutator.ComputeIdToClusterId())
+	diags := bundle.Apply(t.Context(), b, mutator.ComputeIdToClusterId())
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Targets["dev"].ComputeId)
 
-	diags = diags.Extend(bundletest.ApplyLoading(t, b, mutator.SelectTarget("dev")))
+	diags = diags.Extend(bundle.Apply(t.Context(), b, mutator.SelectTarget("dev")))
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, "compute-id-dev", b.Config.Bundle.ClusterId)

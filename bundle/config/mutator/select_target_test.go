@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +25,7 @@ func TestSelectTarget(t *testing.T) {
 			},
 		},
 	}
-	diags := bundletest.ApplyLoading(t, b, mutator.SelectTarget("default"))
+	diags := bundle.Apply(t.Context(), b, mutator.SelectTarget("default"))
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
@@ -39,6 +38,6 @@ func TestSelectTargetNotFound(t *testing.T) {
 			},
 		},
 	}
-	diags := bundletest.ApplyLoading(t, b, mutator.SelectTarget("doesnt-exist"))
+	diags := bundle.Apply(t.Context(), b, mutator.SelectTarget("doesnt-exist"))
 	require.Error(t, diags.Error(), "no targets defined")
 }
