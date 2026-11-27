@@ -47,7 +47,11 @@ func newAutoInstallToggleCmd(enable bool) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if err := autoinstall.SetOptedOut(ctx, !enable); err != nil {
+			consent := autoinstall.ConsentOptedOut
+			if enable {
+				consent = autoinstall.ConsentGiven
+			}
+			if _, err := autoinstall.SetConsent(ctx, consent); err != nil {
 				return fmt.Errorf("failed to save the auto-install setting: %w", err)
 			}
 			printAutoInstallSetting(ctx, enable)

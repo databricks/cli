@@ -53,6 +53,7 @@ Automatic installation of Databricks AI tools is enabled.
 >>> auto_install_state
 {
   "last_version": "1.32.0",
+  "consented": true,
   "id": "treatment-machine"
 }
 
@@ -68,6 +69,7 @@ Automatic installation of Databricks AI tools is enabled.
 >>> auto_install_state
 {
   "last_version": "1.33.0",
+  "consented": true,
   "id": "treatment-machine"
 }
 

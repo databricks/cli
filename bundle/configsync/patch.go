@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"slices"
@@ -93,18 +94,23 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			return nil, fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 		}
 
+		source, err := moveDroppedAnchors(content, fieldPathCandidate, fieldChange.Change.Operation)
+		if err != nil {
+			return nil, err
+		}
+
 		patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 		var modifiedContent []byte
 		var patchErr error
 
 		switch fieldChange.Change.Operation {
 		case OperationRemove:
-			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr = patcher.Apply(source, yamlpatch.Patch{yamlpatch.Operation{
 				Type: yamlpatch.OperationRemove,
 				Path: path,
 			}})
 		case OperationReplace:
-			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr = patcher.Apply(source, yamlpatch.Patch{yamlpatch.Operation{
 				Type:  yamlpatch.OperationReplace,
 				Path:  path,
 				Value: fieldChange.Change.Value,
@@ -254,6 +260,150 @@ func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte
 		}
 	}
 	return nil, nil
+}
+
+// moveDroppedAnchors rewrites content so that removing or replacing the node at
+// fieldPath leaves no alias dangling. An anchor on or inside that node moves to its
+// first alias elsewhere, which becomes a copy of the old value, so the aliases after
+// it keep that value. Like the patcher, the path follows aliases into their anchors.
+func moveDroppedAnchors(content []byte, fieldPath string, operation OperationType) ([]byte, error) {
+	if operation != OperationRemove && operation != OperationReplace {
+		return content, nil
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return nil, err
+	}
+	if len(doc.Content) != 1 {
+		return content, nil
+	}
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil, err
+	}
+
+	node, key := doc.Content[0], (*yaml.Node)(nil)
+	for _, part := range pattern.AsSlice() {
+		if node.Kind == yaml.AliasNode {
+			node = node.Alias
+		}
+		node, key = yamlChild(node, (*structpath.PathNode)(part))
+		if node == nil {
+			return content, nil
+		}
+	}
+	dropped := node
+
+	anchors := map[*yaml.Node]bool{}
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			anchors[n] = true
+		}
+	})
+	if operation == OperationRemove && key != nil && key.Anchor != "" {
+		anchors[key] = true
+	}
+	if len(anchors) == 0 {
+		return content, nil
+	}
+
+	// A copy keeps its aliases to anchors that stay, so it still follows them, unless
+	// another anchor reuses the name and could take the alias at the copy's place.
+	names := map[string]int{}
+	walkYAML(&doc, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			names[n.Anchor]++
+		}
+	})
+	droppedAnchors := maps.Clone(anchors)
+	keepAlias := func(alias *yaml.Node) bool {
+		return !droppedAnchors[alias.Alias] && names[alias.Alias.Anchor] == 1
+	}
+
+	changed := false
+	var visit func(node, key *yaml.Node)
+	visit = func(node, key *yaml.Node) {
+		if node == dropped {
+			return
+		}
+		if node.Kind == yaml.AliasNode && anchors[node.Alias] {
+			anchored := node.Alias
+			delete(anchors, anchored)
+			replacement := inlineYAMLNode(anchored, keepAlias)
+			replacement.Anchor = anchored.Anchor
+			anchored.Anchor = ""
+			replaceYAMLNode(node, key, replacement)
+			changed = true
+			return
+		}
+		if node.Kind == yaml.MappingNode {
+			for i := 0; i+1 < len(node.Content); i += 2 {
+				visit(node.Content[i], nil)
+				visit(node.Content[i+1], node.Content[i])
+			}
+			return
+		}
+		for _, child := range node.Content {
+			visit(child, nil)
+		}
+	}
+	visit(&doc, nil)
+	// The patcher still parses the dropped node, so its aliases to a moved anchor become copies.
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
+			replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias, keepAlias))
+			changed = true
+		}
+	})
+	if !changed {
+		return content, nil
+	}
+	return encodeYAML(&doc)
+}
+
+func walkYAML(node *yaml.Node, fn func(*yaml.Node)) {
+	fn(node)
+	for _, child := range node.Content {
+		walkYAML(child, fn)
+	}
+}
+
+// inlineYAMLNode copies node with its anchors dropped, so the copy cannot rebind an
+// anchor name for the aliases that follow it, and expands the aliases keep rejects.
+func inlineYAMLNode(node *yaml.Node, keep func(alias *yaml.Node) bool) *yaml.Node {
+	if node.Kind == yaml.AliasNode {
+		if keep(node) {
+			c := *node
+			return &c
+		}
+		return inlineYAMLNode(node.Alias, keep)
+	}
+	c := *node
+	c.Anchor = ""
+	c.Content = make([]*yaml.Node, len(node.Content))
+	for i, child := range node.Content {
+		c.Content[i] = inlineYAMLNode(child, keep)
+	}
+	return &c
+}
+
+// replaceYAMLNode replaces an alias in place and keeps its comments.
+func replaceYAMLNode(alias, key, replacement *yaml.Node) {
+	replacement.HeadComment = alias.HeadComment
+	replacement.LineComment = ""
+	replacement.FootComment = alias.FootComment
+	// A block container would pass the alias's inline comment on to the next line, and
+	// go-yaml cannot encode an anchored one after a key's inline comment, so it goes above.
+	switch {
+	case alias.LineComment == "":
+	case replacement.Kind == yaml.ScalarNode || replacement.Style&yaml.FlowStyle != 0:
+		replacement.LineComment = alias.LineComment
+	case key != nil:
+		key.HeadComment = strings.TrimSpace(key.HeadComment + "\n" + alias.LineComment)
+	default:
+		replacement.HeadComment = strings.TrimSpace(replacement.HeadComment + "\n" + alias.LineComment)
+	}
+	*alias = *replacement
 }
 
 // isParentPathError checks if error indicates missing parent path.
