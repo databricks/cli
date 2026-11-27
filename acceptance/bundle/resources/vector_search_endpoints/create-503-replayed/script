@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+ENDPOINT="vs-endpoint-$UNIQUE_NAME"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI bundle destroy --auto-approve > LOG.cleanup 2>&1
+    errcode $CLI vector-search-endpoints delete-endpoint "$ENDPOINT" >> LOG.cleanup 2>&1
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# The SDK repeats a request that is answered with a 503 on its own, so deploy never sees the 503.
+title "The create request is applied but answered with a 503: the SDK repeats it, and the repeat fails because the endpoint exists"
+fault.py --after-handler "POST /api/2.0/vector-search/endpoints" 503 0 1
+trace musterr $CLI bundle deploy
+trace print_requests.py --get //vector-search/endpoints | jq -r '.method + " " + .path'
+
+title "The endpoint exists, but it is not in the bundle's state"
+trace $CLI vector-search-endpoints get-endpoint "$ENDPOINT" | jq '{name}'
+trace $CLI bundle plan
+
+title "The next deploy fails the same way"
+trace musterr $CLI bundle deploy
