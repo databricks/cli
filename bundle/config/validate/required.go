@@ -238,6 +238,7 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 // errorForAppEnvWithoutSource errors for inline app env entries with neither value nor
 // value_from: the Deploy API rejects them without naming the entry. An empty value, for
 // example from a variable that resolves to "", is dropped by omitempty and ends up here.
+// A ${resources...} value that resolves to "" only after Initialize is not caught here.
 func errorForAppEnvWithoutSource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
