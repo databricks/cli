@@ -34,7 +34,7 @@ const ruleStrings = 2
 
 // field visits the strings of the field that op describes in the struct t at p.
 func (c *stringsWalk) field(t *structinfo.Type, n *Node, p unsafe.Pointer, op *structinfo.Op) {
-	if t == rootInfo && c.skipResources && op.Key == "resources" {
+	if t == rootInfo() && c.skipResources && op.Key == "resources" {
 		return
 	}
 	var fp unsafe.Pointer

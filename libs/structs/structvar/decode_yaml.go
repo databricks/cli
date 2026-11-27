@@ -297,7 +297,7 @@ func (s *yamlSource) pairs() ([]sourcePair, error) {
 	switch merge.Kind {
 	case yaml.SequenceNode:
 		mnodes = merge.Content
-	case yaml.AliasNode:
+	case yaml.MappingNode, yaml.AliasNode:
 		mnodes = []*yaml.Node{merge}
 	default:
 		return nil, merr
@@ -396,7 +396,7 @@ func (s *yamlSource) validateMapping() error {
 	switch merge.Kind {
 	case yaml.SequenceNode:
 		mnodes = merge.Content
-	case yaml.AliasNode:
+	case yaml.MappingNode, yaml.AliasNode:
 		mnodes = []*yaml.Node{merge}
 	default:
 		return merr

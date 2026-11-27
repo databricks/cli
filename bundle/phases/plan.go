@@ -58,7 +58,7 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 			continue
 		}
 
-		path, err := structpath.ParsePath(action.ResourceKey)
+		path, err := structpath.ParsePathOrKey(action.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q", action.ResourceKey)
 		}

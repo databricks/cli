@@ -75,20 +75,20 @@ func sortedKeys[V any](m map[string]V) []string {
 func (r *Root) ResourceNodes() []string {
 	var nodes []string
 	r.Resources.IterateAllResources(func(typ, name string, _ ConfigResource) bool {
-		nodes = append(nodes, structpath.NewPath(nil, "resources", typ, name).String())
+		nodes = append(nodes, structpath.NewPath(nil, "resources", typ, name).KeyString())
 		return true
 	})
 	r.Resources.IterateAllPermissions(func(typ, name string, perms PermissionList) bool {
 		p := structpath.NewPath(nil, "resources", typ, name, "permissions")
 		if !perms.IsNil() || r.IsReferenceAt(p) {
-			nodes = append(nodes, p.String())
+			nodes = append(nodes, p.KeyString())
 		}
 		return true
 	})
 	r.Resources.IterateAllGrants(func(typ, name string, grants *[]catalog.PrivilegeAssignment) bool {
 		p := structpath.NewPath(nil, "resources", typ, name, "grants")
 		if *grants != nil || r.IsReferenceAt(p) {
-			nodes = append(nodes, p.String())
+			nodes = append(nodes, p.KeyString())
 		}
 		return true
 	})

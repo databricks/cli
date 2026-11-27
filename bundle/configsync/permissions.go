@@ -134,7 +134,7 @@ func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resource
 // declaredPrincipals returns the permissions written in the resource's config as the plan's
 // selectors, e.g. "[user_name='a']". Entries added by mutators have no location.
 func declaredPrincipals(b *bundle.Bundle, resourceKey string) map[string]bool {
-	path, err := structpath.ParsePath(resourceKey)
+	path, err := structpath.ParsePathOrKey(resourceKey)
 	if err != nil {
 		return nil
 	}

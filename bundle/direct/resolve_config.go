@@ -113,7 +113,7 @@ func (b *DeploymentBundle) lookupStateField(path *structpath.PathNode) (structva
 	if path.Len() < 4 || path.KeyAt(0) != "resources" {
 		return structvar.View{}, false
 	}
-	resourceKey := path.Prefix(3).String()
+	resourceKey := path.Prefix(3).KeyString()
 	entry, ok := b.StateDB.GetResourceEntry(resourceKey)
 	if !ok || len(entry.State) == 0 {
 		return structvar.View{}, false

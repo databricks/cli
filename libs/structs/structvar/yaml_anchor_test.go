@@ -1,10 +1,13 @@
 package structvar_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func loc(file string, line, column int) []diag.Location {
@@ -112,4 +115,11 @@ func TestYAMLAnchor10(t *testing.T) {
 
 	assert.Equal(t, 1, at(t, v, "use1", "value"))
 	assert.Equal(t, 1, at(t, v, "use2", "value"))
+}
+
+func TestYAMLInlineMapMerge(t *testing.T) {
+	var v any
+	_, _, err := structvar.DecodeYAML("inline.yml", strings.NewReader("target:\n  <<: {x: inherited, y: merged}\n  x: local\n"), &v)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"target": map[string]any{"x": "local", "y": "merged"}}, v)
 }

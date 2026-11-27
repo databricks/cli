@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type Kind uint8
@@ -211,9 +212,16 @@ func build(typ reflect.Type) *Type {
 	return t
 }
 
+// openEnumType is an enum whose Values the platform extends before the SDK lists them
+// (e.g. CREATE_SECRET), so it is not validated.
+var openEnumType = reflect.TypeFor[catalog.Privilege]()
+
 // enumValues returns the values of an enum type: a string type with a Values method
 // returning a slice of the type.
 func enumValues(typ reflect.Type) []string {
+	if typ == openEnumType {
+		return nil
+	}
 	m, ok := typ.MethodByName("Values")
 	if !ok {
 		m, ok = reflect.PointerTo(typ).MethodByName("Values")

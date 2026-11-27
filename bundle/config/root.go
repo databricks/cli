@@ -634,7 +634,7 @@ func (r *Root) UpdateSequence(path *structpath.PathNode, sources [][]int) {
 
 // GetLocation is [Root.GetLocationOf] for a path string, like main's.
 func (r Root) GetLocation(path string) diag.Location {
-	p, err := structpath.ParsePath(path)
+	p, err := structpath.ParsePathOrKey(path)
 	if err != nil {
 		return diag.Location{}
 	}
@@ -643,7 +643,7 @@ func (r Root) GetLocation(path string) diag.Location {
 
 // GetLocations is [Root.GetLocationsOf] for a path string, like main's.
 func (r Root) GetLocations(path string) []diag.Location {
-	p, err := structpath.ParsePath(path)
+	p, err := structpath.ParsePathOrKey(path)
 	if err != nil {
 		return nil
 	}
@@ -708,7 +708,7 @@ func GetNodeAndType(path *structpath.PathNode) (*structpath.PathNode, string) {
 // For example, "resources.jobs.foo" returns "jobs".
 // Returns empty string if the path is not in the expected format.
 func GetResourceTypeFromKey(path string) string {
-	p, err := structpath.ParsePath(path)
+	p, err := structpath.ParsePathOrKey(path)
 	if err != nil {
 		return ""
 	}
@@ -721,7 +721,7 @@ func GetResourceTypeFromKey(path string) string {
 // The returned value is a pointer to the concrete struct that represents that resource type.
 // When the path is invalid or resource is not found, the second return value is false.
 func (r *Root) GetResourceConfig(path string) (any, error) {
-	p, err := structpath.ParsePath(path)
+	p, err := structpath.ParsePathOrKey(path)
 	if err != nil {
 		return nil, err
 	}

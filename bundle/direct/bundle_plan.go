@@ -1344,10 +1344,10 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
 		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
-			return path.Prefix(4).String(), path.SkipPrefix(4)
+			return path.Prefix(4).KeyString(), path.SkipPrefix(4)
 		}
 	}
-	return path.Prefix(3).String(), path.SkipPrefix(3)
+	return path.Prefix(3).KeyString(), path.SkipPrefix(3)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
@@ -1755,7 +1755,7 @@ func extractReferences(root *config.Root, node string, stateType reflect.Type) (
 	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
 
-	path, err := structpath.ParsePath(node)
+	path, err := structpath.ParsePathOrKey(node)
 	if err != nil {
 		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
 	}

@@ -201,7 +201,7 @@ func collectResourceIDRefs(preResolved structvar.View) []*structpath.PathNode {
 // resolved. Skips references whose IDs aren't in state.
 func injectResourceIDs(ctx context.Context, resolved resolvedConfig, paths []*structpath.PathNode, lookupID func(string) string) {
 	for _, p := range paths {
-		resourceKey := p.Prefix(3).String()
+		resourceKey := p.Prefix(3).KeyString()
 		id := lookupID(resourceKey)
 		if id == "" {
 			log.Debugf(ctx, "variable restoration: no state entry for resource %q", resourceKey)

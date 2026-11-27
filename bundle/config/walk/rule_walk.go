@@ -2,6 +2,7 @@ package walk
 
 import (
 	"reflect"
+	"sync"
 	"unsafe"
 
 	"github.com/databricks/cli/bundle/config"
@@ -77,20 +78,20 @@ func (a *arena) pop() {
 	a.depth--
 }
 
-var rootInfo = structinfo.For(reflect.TypeFor[config.Root]())
+var rootInfo = sync.OnceValue(func() *structinfo.Type { return structinfo.For(reflect.TypeFor[config.Root]()) })
 
 // Required calls missing for each required field of the configuration that is not set.
 func Required(root *config.Root, missing func(n *Node, field string)) {
 	e := &ruleWalk{rule: 0, missing: missing}
 	n := e.root(RootWithReferences(root))
-	e.strct(rootInfo, n, unsafe.Pointer(root))
+	e.strct(rootInfo(), n, unsafe.Pointer(root))
 }
 
 // Enums calls enum for each value of an enum field that is not empty.
 func Enums(root *config.Root, enum func(n *Node, s string, valid []string)) {
 	e := &ruleWalk{rule: 1, enum: enum}
 	n := e.root(Root(root))
-	e.strct(rootInfo, n, unsafe.Pointer(root))
+	e.strct(rootInfo(), n, unsafe.Pointer(root))
 }
 
 // zeroIsValid lists the required fields (by struct type) whose zero value is a valid
@@ -128,7 +129,7 @@ func (e *ruleWalk) strct(t *structinfo.Type, n *Node, p unsafe.Pointer) {
 	ops := t.Walk[e.rule]
 	for i := range ops {
 		// Targets and environments are merged into the root.
-		if t == rootInfo {
+		if t == rootInfo() {
 			if k := t.Fields[ops[i].Idx].Key; k == "targets" || k == "environments" {
 				continue
 			}

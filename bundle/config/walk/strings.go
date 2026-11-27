@@ -40,13 +40,13 @@ type StringFunc func(n *Node, s string) (string, bool)
 // paying for the traversal once. Phase ordering limits which ones can be combined.
 func Strings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	c.strct(rootInfo, c.root(RootWithReferences(root)), unsafe.Pointer(root))
+	c.strct(rootInfo(), c.root(RootWithReferences(root)), unsafe.Pointer(root))
 }
 
 // StringsWithoutResources is [Strings] for the configuration outside "resources".
 func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn, skipResources: true}
-	c.strct(rootInfo, c.root(RootWithReferences(root)), unsafe.Pointer(root))
+	c.strct(rootInfo(), c.root(RootWithReferences(root)), unsafe.Pointer(root))
 }
 
 // ResourceStrings is [Strings] for "resources" only.
