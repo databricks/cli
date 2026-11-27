@@ -67,15 +67,20 @@ func openRelease(ctx context.Context) (Source, error) {
 	}, nil
 }
 
-// releaseFileURL returns the URL of the file name in the release at base. Each
-// path segment is escaped, so a name with '#', '?' or '%' stays part of the
-// path instead of starting a fragment or a query.
+// releaseFileURL returns the URL of the file name in the release at base.
 func releaseFileURL(base, name string) string {
+	return base + "/" + EscapeFilePath(name)
+}
+
+// EscapeFilePath escapes each slash-separated element of a skill file path, so
+// a '#', '?' or '%' in a name stays part of the path instead of starting a
+// fragment or a query. Ordinary names are unchanged.
+func EscapeFilePath(name string) string {
 	segments := strings.Split(name, "/")
 	for i, segment := range segments {
 		segments[i] = url.PathEscape(segment)
 	}
-	return base + "/" + strings.Join(segments, "/")
+	return strings.Join(segments, "/")
 }
 
 // unreachable marks err as ErrSourceUnreachable. It leaves err alone when err

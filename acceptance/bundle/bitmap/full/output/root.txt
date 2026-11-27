@@ -1,0 +1,332 @@
+   0 variables
+   1 variables.*
+   2 variables.*.type
+   3 variables.*.default
+   4 variables.*.description
+   5 variables.*.sensitive
+   6 variables.*.sensitive=true
+   7 variables.*.sensitive=false
+   8 variables.*.value
+   9 variables.*.lookup
+  10 variables.*.lookup.alert
+  11 variables.*.lookup.cluster_policy
+  12 variables.*.lookup.cluster
+  13 variables.*.lookup.dashboard
+  14 variables.*.lookup.instance_pool
+  15 variables.*.lookup.job
+  16 variables.*.lookup.metastore
+  17 variables.*.lookup.notification_destination
+  18 variables.*.lookup.pipeline
+  19 variables.*.lookup.query
+  20 variables.*.lookup.service_principal
+  21 variables.*.lookup.warehouse
+  22 bundle
+  23 bundle.name
+  24 bundle.terraform
+  25 bundle.terraform.exec_path
+  26 bundle.force
+  27 bundle.force=true
+  28 bundle.force=false
+  29 bundle.git
+  30 bundle.git.branch
+  31 bundle.git.origin_url
+  32 bundle.git.commit
+  33 bundle.git.bundle_root_path
+  34 bundle.git.actual_branch
+  35 bundle.mode
+  36 bundle.compute_id
+  37 bundle.cluster_id
+  38 bundle.engine
+  39 bundle.deployment
+  40 bundle.deployment.fail_on_active_runs
+  41 bundle.deployment.fail_on_active_runs=true
+  42 bundle.deployment.fail_on_active_runs=false
+  43 bundle.deployment.lock
+  44 bundle.deployment.lock.enabled
+  45 bundle.deployment.lock.enabled=true
+  46 bundle.deployment.lock.enabled=false
+  47 bundle.deployment.lock.force
+  48 bundle.deployment.lock.force=true
+  49 bundle.deployment.lock.force=false
+  50 bundle.deployment.deployment_id
+  51 bundle.deployment.latest_version_id
+  52 bundle.databricks_cli_version
+  53 bundle.uuid
+  54 include
+  55 include[*]
+  56 workspace
+  57 workspace.host
+  58 workspace.profile
+  59 workspace.auth_type
+  60 workspace.metadata_service_url
+  61 workspace.client_id
+  62 workspace.google_service_account
+  63 workspace.azure_workspace_resource_id
+  64 workspace.azure_use_msi
+  65 workspace.azure_use_msi=true
+  66 workspace.azure_use_msi=false
+  67 workspace.azure_client_id
+  68 workspace.azure_tenant_id
+  69 workspace.azure_environment
+  70 workspace.azure_login_app_id
+  71 workspace.experimental_is_unified_host
+  72 workspace.experimental_is_unified_host=true
+  73 workspace.experimental_is_unified_host=false
+  74 workspace.account_id
+  75 workspace.workspace_id
+  76 workspace.current_user
+  77 workspace.current_user.short_name
+  78 workspace.current_user.domain_friendly_name
+  79 workspace.current_user.active
+  80 workspace.current_user.active=true
+  81 workspace.current_user.active=false
+  82 workspace.current_user.displayName
+  83 workspace.current_user.emails
+  84 workspace.current_user.emails[*]
+  85 workspace.current_user.emails[*].display
+  86 workspace.current_user.emails[*].primary
+  87 workspace.current_user.emails[*].primary=true
+  88 workspace.current_user.emails[*].primary=false
+  89 workspace.current_user.emails[*].$ref
+  90 workspace.current_user.emails[*].type
+  91 workspace.current_user.emails[*].value
+  92 workspace.current_user.entitlements
+  93 workspace.current_user.entitlements[*]
+  94 workspace.current_user.entitlements[*].display
+  95 workspace.current_user.entitlements[*].primary
+  96 workspace.current_user.entitlements[*].primary=true
+  97 workspace.current_user.entitlements[*].primary=false
+  98 workspace.current_user.entitlements[*].$ref
+  99 workspace.current_user.entitlements[*].type
+ 100 workspace.current_user.entitlements[*].value
+ 101 workspace.current_user.externalId
+ 102 workspace.current_user.groups
+ 103 workspace.current_user.groups[*]
+ 104 workspace.current_user.groups[*].display
+ 105 workspace.current_user.groups[*].primary
+ 106 workspace.current_user.groups[*].primary=true
+ 107 workspace.current_user.groups[*].primary=false
+ 108 workspace.current_user.groups[*].$ref
+ 109 workspace.current_user.groups[*].type
+ 110 workspace.current_user.groups[*].value
+ 111 workspace.current_user.id
+ 112 workspace.current_user.name
+ 113 workspace.current_user.name.familyName
+ 114 workspace.current_user.name.givenName
+ 115 workspace.current_user.roles
+ 116 workspace.current_user.roles[*]
+ 117 workspace.current_user.roles[*].display
+ 118 workspace.current_user.roles[*].primary
+ 119 workspace.current_user.roles[*].primary=true
+ 120 workspace.current_user.roles[*].primary=false
+ 121 workspace.current_user.roles[*].$ref
+ 122 workspace.current_user.roles[*].type
+ 123 workspace.current_user.roles[*].value
+ 124 workspace.current_user.schemas
+ 125 workspace.current_user.schemas[*]
+ 126 workspace.current_user.userName
+ 127 workspace.root_path
+ 128 workspace.file_path
+ 129 workspace.resource_path
+ 130 workspace.artifact_path
+ 131 workspace.state_path
+ 132 workspace.sync_mode
+ 133 artifacts
+ 134 artifacts.*
+ 135 artifacts.*.type
+ 136 artifacts.*.path
+ 137 artifacts.*.files
+ 138 artifacts.*.files[*]
+ 139 artifacts.*.files[*].source
+ 140 artifacts.*.files[*].patched
+ 141 artifacts.*.files[*].remote_path
+ 142 artifacts.*.build
+ 143 artifacts.*.executable
+ 144 artifacts.*.dynamic_version
+ 145 artifacts.*.dynamic_version=true
+ 146 artifacts.*.dynamic_version=false
+ 147 artifacts.*.include
+ 148 artifacts.*.include[*]
+ 149 artifacts.*.git
+ 150 artifacts.*.git.branch
+ 151 artifacts.*.git.commit
+ 152 resources
+5094 sync
+5095 sync.paths
+5096 sync.paths[*]
+5097 sync.include
+5098 sync.include[*]
+5099 sync.exclude
+5100 sync.exclude[*]
+5101 run_as
+5102 run_as.group_name
+5103 run_as.service_principal_name
+5104 run_as.user_name
+5105 presets
+5106 presets.name_prefix
+5107 presets.pipelines_development
+5108 presets.pipelines_development=true
+5109 presets.pipelines_development=false
+5110 presets.trigger_pause_status
+5111 presets.jobs_max_concurrent_runs
+5112 presets.source_linked_deployment
+5113 presets.source_linked_deployment=true
+5114 presets.source_linked_deployment=false
+5115 presets.artifacts_dynamic_version
+5116 presets.artifacts_dynamic_version=true
+5117 presets.artifacts_dynamic_version=false
+5118 presets.tags
+5119 presets.tags.*
+5120 experimental
+5121 experimental.scripts
+5122 experimental.scripts.*
+5123 experimental.immutable_folder
+5124 experimental.immutable_folder=true
+5125 experimental.immutable_folder=false
+5126 experimental.python_wheel_wrapper
+5127 experimental.python_wheel_wrapper=true
+5128 experimental.python_wheel_wrapper=false
+5129 experimental.use_legacy_run_as
+5130 experimental.use_legacy_run_as=true
+5131 experimental.use_legacy_run_as=false
+5132 experimental.pydabs
+5133 experimental.pydabs.enabled
+5134 experimental.pydabs.enabled=true
+5135 experimental.pydabs.enabled=false
+5136 experimental.python
+5137 experimental.python.resources
+5138 experimental.python.resources[*]
+5139 experimental.python.mutators
+5140 experimental.python.mutators[*]
+5141 experimental.python.venv_path
+5142 experimental.skip_artifact_cleanup
+5143 experimental.skip_artifact_cleanup=true
+5144 experimental.skip_artifact_cleanup=false
+5145 experimental.skip_name_prefix_for_schema
+5146 experimental.skip_name_prefix_for_schema=true
+5147 experimental.skip_name_prefix_for_schema=false
+5148 experimental.deployment_history
+5149 experimental.deployment_history=true
+5150 experimental.deployment_history=false
+5151 permissions
+5152 permissions[*]
+5153 permissions[*].level
+5154 permissions[*].user_name
+5155 permissions[*].service_principal_name
+5156 permissions[*].group_name
+5157 scripts
+5158 scripts.*
+5159 scripts.*.content
+5160 scripts.*.env
+5161 scripts.*.env.*
+5162 python
+5163 python.resources
+5164 python.resources[*]
+5165 python.mutators
+5166 python.mutators[*]
+5167 python.venv_path
+5168 definitions
+5169 telemetry.python_wheel_wrapper_is_set
+5170 telemetry.python_wheel_wrapper_is_set=true
+5171 telemetry.python_wheel_wrapper_is_set=false
+5172 telemetry.artifact_dynamic_version_is_set
+5173 telemetry.artifact_dynamic_version_is_set=true
+5174 telemetry.artifact_dynamic_version_is_set=false
+5175 telemetry.artifact_build_command_is_set
+5176 telemetry.artifact_build_command_is_set=true
+5177 telemetry.artifact_build_command_is_set=false
+5178 telemetry.artifact_files_is_set
+5179 telemetry.artifact_files_is_set=true
+5180 telemetry.artifact_files_is_set=false
+5181 telemetry.presets_name_prefix_is_set
+5182 telemetry.presets_name_prefix_is_set=true
+5183 telemetry.presets_name_prefix_is_set=false
+5184 telemetry.app_lifecycle_started
+5185 telemetry.app_lifecycle_started=true
+5186 telemetry.app_lifecycle_started=false
+5187 telemetry.cluster_lifecycle_started
+5188 telemetry.cluster_lifecycle_started=true
+5189 telemetry.cluster_lifecycle_started=false
+5190 telemetry.deployment_history_enabled
+5191 telemetry.deployment_history_enabled=true
+5192 telemetry.deployment_history_enabled=false
+5193 telemetry.sql_warehouse_lifecycle_started
+5194 telemetry.sql_warehouse_lifecycle_started=true
+5195 telemetry.sql_warehouse_lifecycle_started=false
+5196 telemetry.select_used
+5197 telemetry.immutable_snapshot_used
+5198 telemetry.immutable_snapshot_used=true
+5199 telemetry.immutable_snapshot_used=false
+5200 telemetry.direct_migrate_error
+5201 telemetry.direct_migrate_warnings
+5202 telemetry.direct_migrate_state_missing
+5203 telemetry.direct_migrate_plan_error
+5204 telemetry.direct_migrate_recreate_planned
+5205 telemetry.direct_migrated_via_config
+5206 telemetry.direct_migrated_via_env
+5207 telemetry.direct_migrated_via_default
+5208 telemetry.engine_terraform_config
+5209 telemetry.engine_terraform_env
+5210 telemetry.state_path_is_shared
+5211 telemetry.state_path_is_shared=true
+5212 telemetry.state_path_is_shared=false
+5213 telemetry.dms_compat_auto
+5214 telemetry.dms_compat_only_self_undeclared
+5215 telemetry.dms_compat_not
+5216 telemetry.permissions_section_set
+5217 telemetry.permissions_section_set=true
+5218 telemetry.permissions_section_set=false
+5219 telemetry.state_path_in_deployer_home
+5220 telemetry.state_path_in_deployer_home=true
+5221 telemetry.state_path_in_deployer_home=false
+5222 telemetry.state_path_in_other_user_home
+5223 telemetry.state_path_in_other_user_home=true
+5224 telemetry.state_path_in_other_user_home=false
+5225 telemetry.state_path_other
+5226 telemetry.state_path_other=true
+5227 telemetry.state_path_other=false
+5228 telemetry.dms_undeclared_deploying_user
+5229 telemetry.dms_undeclared_deploying_user=true
+5230 telemetry.dms_undeclared_deploying_user=false
+5231 telemetry.dms_undeclared_other_user
+5232 telemetry.dms_undeclared_other_user=true
+5233 telemetry.dms_undeclared_other_user=false
+5234 telemetry.dms_undeclared_service_principal
+5235 telemetry.dms_undeclared_service_principal=true
+5236 telemetry.dms_undeclared_service_principal=false
+5237 telemetry.dms_undeclared_group
+5238 telemetry.dms_undeclared_group=true
+5239 telemetry.dms_undeclared_group=false
+5240 telemetry.ai_runtime_task_scheduled
+5241 telemetry.ai_runtime_task_scheduled=true
+5242 telemetry.ai_runtime_task_scheduled=false
+5243 telemetry.ai_runtime_task_multitask
+5244 telemetry.ai_runtime_task_multitask=true
+5245 telemetry.ai_runtime_task_multitask=false
+5246 telemetry.skip_artifact_cleanup
+5247 telemetry.skip_artifact_cleanup=true
+5248 telemetry.skip_artifact_cleanup=false
+5249 telemetry.source_linked_set_for_non_development
+5250 telemetry.source_linked_set_for_non_development=true
+5251 telemetry.source_linked_set_for_non_development=false
+5252 telemetry.config_has_double_dollar_brace
+5253 telemetry.config_has_double_dollar
+5254 telemetry.config_has_backslash_dollar_brace
+5255 telemetry.config_has_backslash_dollar
+5256 telemetry.artifacts_reference_used
+5257 telemetry.experimental.use_legacy_run_as
+5258 telemetry.experimental.use_legacy_run_as=true
+5259 telemetry.experimental.use_legacy_run_as=false
+5260 telemetry.run_as_set
+5261 telemetry.run_as_set=true
+5262 telemetry.run_as_set=false
+5263 telemetry.has_tf_only_references
+5264 telemetry.has_serverless_compute
+5265 telemetry.has_serverless_compute=true
+5266 telemetry.has_serverless_compute=false
+5267 telemetry.has_classic_job_compute
+5268 telemetry.has_classic_job_compute=true
+5269 telemetry.has_classic_job_compute=false
+5270 telemetry.has_classic_interactive_compute
+5271 telemetry.has_classic_interactive_compute=true
+5272 telemetry.has_classic_interactive_compute=false

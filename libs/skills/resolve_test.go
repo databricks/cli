@@ -15,8 +15,10 @@ func TestResolveWithoutDir(t *testing.T) {
 	assert.Nil(t, src)
 }
 
+// The folder is built with the host's separator, so on Windows the label is
+// converted from a backslash path. On other hosts it is the same path.
 func TestResolveWithDir(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", "testdata/release")
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", filepath.Join("testdata", "release"))
 	src, err := Resolve(ctx)
 	require.NoError(t, err)
 

@@ -17,4 +17,9 @@ trace update_file.py databricks.yml 'python: {resources: ["resources:load_resour
 trace uv run $UV_ARGS -q $CLI bundle deploy
 print_pydabs_telemetry
 
+# The bitmap records what Python wrote: the pipeline it defines, and the description the mutator
+# sets on the YAML job. The defaults the CLI fills in are left out.
+title "Bitmap includes what Python wrote"
+trace uv run $UV_ARGS -q $CLI bundle bitmap bitmap -o text | grep -E ' resources\.(jobs|pipelines)'
+
 rm -fr .databricks __pycache__

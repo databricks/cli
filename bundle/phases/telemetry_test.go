@@ -129,9 +129,9 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 	}}}
 
 	tests := []struct {
-		name                          string
-		jobs                          map[string]*resources.Job
-		present, scheduled, multitask bool
+		name                 string
+		jobs                 map[string]*resources.Job
+		scheduled, multitask []bool
 	}{
 		{
 			name: "no jobs",
@@ -142,38 +142,43 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 			jobs: map[string]*resources.Job{"j": {JobSettings: jobs.JobSettings{Tasks: []jobs.Task{{TaskKey: "notebook"}}}}},
 		},
 		{
-			name:    "single task",
-			jobs:    map[string]*resources.Job{"j": aiRuntimeJob(false)},
-			present: true,
+			name:      "single task",
+			jobs:      map[string]*resources.Job{"j": aiRuntimeJob(false)},
+			scheduled: []bool{false}, multitask: []bool{false},
 		},
 		{
-			name:    "multi-task",
-			jobs:    map[string]*resources.Job{"j": aiRuntimeJob(true)},
-			present: true, multitask: true,
+			name:      "multi-task",
+			jobs:      map[string]*resources.Job{"j": aiRuntimeJob(true)},
+			scheduled: []bool{false}, multitask: []bool{true},
 		},
 		{
-			name:    "scheduled single task",
-			jobs:    map[string]*resources.Job{"j": scheduledJob},
-			present: true, scheduled: true,
+			name:      "scheduled single task",
+			jobs:      map[string]*resources.Job{"j": scheduledJob},
+			scheduled: []bool{true}, multitask: []bool{false},
 		},
 		{
-			name:    "for_each nested ai_runtime_task",
-			jobs:    map[string]*resources.Job{"j": forEachJob},
-			present: true,
+			name:      "for_each nested ai_runtime_task",
+			jobs:      map[string]*resources.Job{"j": forEachJob},
+			scheduled: []bool{false}, multitask: []bool{false},
 		},
 		{
-			name:    "nil job is skipped",
-			jobs:    map[string]*resources.Job{"j": nil, "k": aiRuntimeJob(false)},
-			present: true,
+			name:      "nil job is skipped",
+			jobs:      map[string]*resources.Job{"j": nil, "k": aiRuntimeJob(false)},
+			scheduled: []bool{false}, multitask: []bool{false},
+		},
+		{
+			name:      "jobs that differ record both values",
+			jobs:      map[string]*resources.Job{"j": scheduledJob, "k": aiRuntimeJob(true)},
+			scheduled: []bool{true, false}, multitask: []bool{true, false},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			present, scheduled, multitask := aiRuntimeTaskMetrics(tc.jobs)
-			assert.Equal(t, tc.present, present, "present")
-			assert.Equal(t, tc.scheduled, scheduled, "scheduled")
-			assert.Equal(t, tc.multitask, multitask, "multitask")
+			var telemetry bundle.Telemetry
+			aiRuntimeTaskMetrics(tc.jobs, &telemetry)
+			assert.Equal(t, tc.scheduled, telemetry.AiRuntimeTaskScheduled.Values(), "scheduled")
+			assert.Equal(t, tc.multitask, telemetry.AiRuntimeTaskMultitask.Values(), "multitask")
 		})
 	}
 }
