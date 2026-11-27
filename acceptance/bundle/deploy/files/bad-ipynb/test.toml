@@ -1,7 +1,5 @@
 Cloud = true
 
-Badness = "bundle deploy deletes the remote notebook n when the local n.ipynb has invalid JSON, and only then fails. It should fail or skip the file without deleting the remote notebook."
-
 # File sync does not depend on the deployment metadata service.
 EnvMatrix.DMS = [""]
 

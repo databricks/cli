@@ -1,4 +1,4 @@
-title "Unicode job names resolve in resources references"
+title "A unicode resource key passes validate, plan and deploy"
 trace $CLI bundle validate
 trace $CLI bundle plan
 trace $CLI bundle deploy
