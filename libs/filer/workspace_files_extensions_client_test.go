@@ -2,6 +2,7 @@ package filer
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"testing"
@@ -295,7 +296,11 @@ func (c getStatusClient) Do(ctx context.Context, method, path string,
 	headers map[string]string, queryString map[string]any, request, response any,
 	visitors ...func(*http.Request) error,
 ) error {
-	info, ok := c[request.(map[string]string)["path"]]
+	req := request.(map[string]string)
+	if path != "/api/2.0/workspace/get-status" || req["return_export_info"] != "true" {
+		return fmt.Errorf("unexpected request %s %s %v", method, path, req)
+	}
+	info, ok := c[req["path"]]
 	if !ok {
 		return &apierr.APIError{StatusCode: http.StatusNotFound}
 	}
