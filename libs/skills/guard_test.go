@@ -13,9 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Each case clears the process environment with testutil.CleanupEnvironment
-// and sets DATABRICKS_AGENT_FEATURES_DISABLED to "" in the context, so an
-// exported value on the developer's machine does not leak in.
+// Each case clears the process environment with testutil.CleanupEnvironment,
+// so an exported value on the developer's machine does not leak in.
 func TestEnabled(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -34,7 +33,7 @@ func TestEnabled(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			testutil.CleanupEnvironment(t)
-			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, "")
+			ctx := t.Context()
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
 			}
@@ -130,7 +129,7 @@ func TestHintsEnabled(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			testutil.CleanupEnvironment(t)
-			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, "")
+			ctx := t.Context()
 			if c.preview != "" {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
 			}

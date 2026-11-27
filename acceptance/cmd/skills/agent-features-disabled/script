@@ -9,5 +9,6 @@ musterr trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI skills list
 trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI --help | contains.py "!databricks skills" > LOG.help
 trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contains.py "!databricks skills" > LOG.fs-help
 
-# With the variable unset, the same group gets its footer, so the checks above can fail.
+# With the variable unset, the root and the same group get their footer, so the checks above can fail.
+trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI --help | contains.py "databricks skills" > LOG.help-unset
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > LOG.fs-help-unset

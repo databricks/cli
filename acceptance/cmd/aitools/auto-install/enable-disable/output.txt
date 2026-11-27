@@ -30,6 +30,18 @@ Automatic installation of Databricks AI tools is enabled.
 Automatic installation of Databricks AI tools is enabled.
 DATABRICKS_AITOOLS_AUTO_INSTALL still disables it in this environment; unset it to let it run.
 
+=== enable names the agent features switch when it still turns it off
+
+>>> DATABRICKS_AGENT_FEATURES_DISABLED=1 [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+DATABRICKS_AGENT_FEATURES_DISABLED still disables it in this environment; unset it to let it run.
+
+=== enable names both variables, and says to unset both
+
+>>> DATABRICKS_AITOOLS_AUTO_INSTALL=false DATABRICKS_AGENT_FEATURES_DISABLED=1 [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+DATABRICKS_AITOOLS_AUTO_INSTALL and DATABRICKS_AGENT_FEATURES_DISABLED still disable it in this environment; unset both to let it run.
+
 === disable replaces a state file it cannot read
 
 >>> [CLI] aitools auto-install disable

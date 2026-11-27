@@ -299,7 +299,7 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 }
 
 // withAgentFeaturesDisabled sets DATABRICKS_AGENT_FEATURES_DISABLED on ctx to
-// value. Empty is set to false, so the host environment cannot turn it on.
+// value. TestMain's hostenv.Isolate already unsets the host's DATABRICKS_* variables.
 func withAgentFeaturesDisabled(ctx context.Context, value string) context.Context {
 	return env.Set(ctx, skills.AgentFeaturesDisabledEnv, value)
 }

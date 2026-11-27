@@ -15,6 +15,12 @@ trace auto_install_state
 title "enable says when the environment still turns it off"
 trace DATABRICKS_AITOOLS_AUTO_INSTALL=false $CLI aitools auto-install enable
 
+title "enable names the agent features switch when it still turns it off"
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 $CLI aitools auto-install enable
+
+title "enable names both variables, and says to unset both"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL=false DATABRICKS_AGENT_FEATURES_DISABLED=1 $CLI aitools auto-install enable
+
 title "disable replaces a state file it cannot read"
 echo "not json" > "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
 trace $CLI aitools auto-install disable
