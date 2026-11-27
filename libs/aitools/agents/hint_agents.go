@@ -55,7 +55,7 @@ func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 // would repeat on every command, so the caller then skips it. A sandbox that
 // can't write the user cache can't run the install either. The same holds with
 // caching turned off (DATABRICKS_CACHE_ENABLED=false): nothing persists, so
-// these agents get no hint. throttle is the text's throttle (see textThrottle).
+// these agents get no hint. throttle is the text's throttle (see message).
 func claimHintMarker(ctx context.Context, throttle hintThrottle, key string) bool {
 	c := throttle.markers(ctx)
 	cache.Put(ctx, c, key, true)
