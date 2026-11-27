@@ -202,12 +202,12 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 //
 // A change that cannot be attributed to a single source location, or whose ancestor
 // in the config is written as a variable reference, is left unapplied rather than
-// written to a guessed or non-existent location. The count of those is returned so
-// the caller can record it: the command runs unattended, so a change that silently
-// disappears looks identical to one that was written. preResolved is the merged
-// config with ${...} references still literal, used to detect variable-reference
-// ancestors and to find fields a mutator cleared, which are replaced where the file
-// declares them.
+// written to a guessed or non-existent location. Such a change is marked as skip in
+// configChanges and counted, so the caller can report it: the command runs unattended,
+// so a change that silently disappears looks identical to one that was written.
+// preResolved is the merged config with ${...} references still literal, used to
+// detect variable-reference ancestors and to find fields a mutator cleared, which are
+// replaced where the file declares them.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
@@ -272,7 +272,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 			if reason, ok := renames.unpairedPaths[fieldPath]; ok {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
+				leaveUnapplied(ctx, configChange, fullPath, reason)
 				skipped++
 				continue
 			}
@@ -289,12 +289,9 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 			// The field is nested inside a value written as a variable reference (e.g.
 			// spark_conf: ${var.spark_conf}), which is a scalar in the file with no node
-			// to place the key or index under. Leave it unapplied, and record the skip on
-			// the shared change so the output reports "skip" rather than a write that never
-			// happens (matching the reclassification below).
+			// to place the key or index under.
 			if ancestorIsVariableReference(preResolved, mergedIndexPath.String()) {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: ancestor is a variable reference", fullPath)
-				configChange.Operation = OperationSkip
+				leaveUnapplied(ctx, configChange, fullPath, "ancestor is a variable reference")
 				skipped++
 				continue
 			}
@@ -311,8 +308,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					// A complex variable (new_cluster: ${var.cluster}) cannot take the remote
 					// map or list without losing its reference, so it is left unapplied too.
 					if ref, isString := declared.AsString(); isString && dynvar.ContainsVariableReference(ref) && isContainer(configChange.Value) {
-						log.Debugf(ctx, "config-remote-sync: skipping %s: the field is a variable reference", fullPath)
-						configChange.Operation = OperationSkip
+						leaveUnapplied(ctx, configChange, fullPath, "the field is a variable reference")
 						skipped++
 						continue
 					}
@@ -325,7 +321,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					} else if !blocks.addReachesWinner(resolved, replaced, b.Config.GetLocationOf(resourcePath).File) {
 						// The add would fail on the key, or write a copy that does not win,
 						// which changes nothing for this target and changes what others deploy.
-						log.Debugf(ctx, "config-remote-sync: skipping %s: the key it wins with cannot be replaced", fullPath)
+						leaveUnapplied(ctx, configChange, fullPath, "the key it wins with cannot be replaced")
 						skipped++
 						continue
 					}
@@ -339,14 +335,14 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 				// Applying this change would mean guessing a location. Leave it
 				// unapplied; a later run can pick it up.
-				log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, err)
+				leaveUnapplied(ctx, configChange, fullPath, err.Error())
 				skipped++
 				continue
 			}
 			if len(destinations) == 0 {
 				// A rename whose element could not be attributed to a block: the whole
 				// pair is left for a later run rather than half-applied.
-				log.Debugf(ctx, "config-remote-sync: skipping %s: the renamed element has no source location", fullPath)
+				leaveUnapplied(ctx, configChange, fullPath, "the renamed element has no source location")
 				skipped++
 				continue
 			}
@@ -355,11 +351,9 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// that cannot be written everywhere is skipped as a whole and shifts nothing.
 			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved, configChange.Operation, rename.keyField, destinations)
 			if !written {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: the file does not write it where it is defined", fullPath)
-				configChange.Operation = OperationSkip
+				leaveUnapplied(ctx, configChange, fullPath, "the file does not write it where it is defined")
 				skipped++
 				if isRename {
-					resourceChanges[rename.addPath].Operation = OperationSkip
 					skipped++
 				}
 				continue
@@ -454,9 +448,26 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				})
 			}
 		}
+
+		// The add half of a rename is written through its remove half, so it is left
+		// unapplied with it.
+		for removePath, rename := range renames.byRemovePath {
+			if remove := resourceChanges[removePath]; remove.Operation == OperationSkip {
+				add := resourceChanges[rename.addPath]
+				add.Operation, add.Reason = OperationSkip, remove.Reason
+			}
+		}
 	}
 
 	return result, skipped, nil
+}
+
+// leaveUnapplied marks a change that is left for a later run as skip, so the output
+// does not list it under an operation that was never written.
+func leaveUnapplied(ctx context.Context, change *ConfigChangeDesc, fullPath, reason string) {
+	log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
+	change.Operation = OperationSkip
+	change.Reason = reason
 }
 
 // writtenDestinations checks each destination against the file it is written to. The

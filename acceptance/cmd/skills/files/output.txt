@@ -1,0 +1,70 @@
+
+=== list the files of a skill, one per line
+
+>>> [CLI] skills list-files demo-skill
+SKILL.md
+references/guide.md
+assets/logo.png
+
+=== list the files as JSON, with sizes
+
+>>> [CLI] skills list-files demo-skill --output json
+[
+  {
+    "path": "SKILL.md",
+    "size": 83
+  },
+  {
+    "path": "references/guide.md",
+    "size": 32
+  },
+  {
+    "path": "assets/logo.png",
+    "size": 70
+  }
+]
+
+=== read a text file: stdout holds only the file
+
+>>> [CLI] skills read-file demo-skill references/guide.md
+# Guide
+
+Read this for details.
+
+=== a binary file is refused as text
+
+>>> [CLI] skills read-file demo-skill assets/logo.png
+Error: "assets/logo.png" in skill "demo-skill" is not text (image/png); use --output json to read it base64-encoded with its media type
+
+=== a binary file as JSON: base64 with its media type
+
+>>> [CLI] skills read-file demo-skill assets/logo.png --output json
+{
+  "path": "assets/logo.png",
+  "media_type": "image/png",
+  "content_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+}
+
+=== paths outside the skill, and files the manifest does not list, are refused
+
+>>> [CLI] skills read-file demo-skill ../manifest.json
+Error: unknown skill file: "../manifest.json" in skill "demo-skill"
+
+>>> [CLI] skills read-file demo-skill ../../demo-skill/SKILL.md
+Error: unknown skill file: "../../demo-skill/SKILL.md" in skill "demo-skill"
+
+>>> [CLI] skills read-file demo-skill private.md
+Error: unknown skill file: "private.md" in skill "demo-skill"
+
+=== an unknown skill is named
+
+>>> [CLI] skills list-files missing-skill
+Error: unknown skill: "missing-skill"
+
+>>> [CLI] skills read-file missing-skill SKILL.md
+Error: unknown skill: "missing-skill"
+
+=== an unknown file is named
+
+>>> [CLI] skills read-file demo-skill missing.md
+Error: unknown skill file: "missing.md" in skill "demo-skill"

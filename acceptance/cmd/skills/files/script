@@ -1,0 +1,27 @@
+# The test directory is the skills release: its manifest.json and skills/ folder.
+title "list the files of a skill, one per line"
+trace $CLI skills list-files demo-skill
+
+title "list the files as JSON, with sizes"
+trace $CLI skills list-files demo-skill --output json
+
+title "read a text file: stdout holds only the file"
+trace $CLI skills read-file demo-skill references/guide.md
+
+title "a binary file is refused as text"
+musterr trace $CLI skills read-file demo-skill assets/logo.png
+
+title "a binary file as JSON: base64 with its media type"
+trace $CLI skills read-file demo-skill assets/logo.png --output json
+
+title "paths outside the skill, and files the manifest does not list, are refused"
+musterr trace $CLI skills read-file demo-skill ../manifest.json
+musterr trace $CLI skills read-file demo-skill ../../demo-skill/SKILL.md
+musterr trace $CLI skills read-file demo-skill private.md
+
+title "an unknown skill is named"
+musterr trace $CLI skills list-files missing-skill
+musterr trace $CLI skills read-file missing-skill SKILL.md
+
+title "an unknown file is named"
+musterr trace $CLI skills read-file demo-skill missing.md

@@ -11,14 +11,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='anchored'].existing_cluster_id: remove
-  tasks[task_key='anchored'].job_cluster_key: add
-  tasks[task_key='inherited'].existing_cluster_id: remove
-  tasks[task_key='inherited'].job_cluster_key: add
-  tasks[task_key='main'].existing_cluster_id: remove
+  tasks[task_key='anchored'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='anchored'].job_cluster_key: skip (the key it wins with cannot be replaced)
+  tasks[task_key='inherited'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='inherited'].job_cluster_key: skip (the key it wins with cannot be replaced)
+  tasks[task_key='main'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
   tasks[task_key='main'].job_cluster_key: replace
-  tasks[task_key='merged'].existing_cluster_id: remove
-  tasks[task_key='merged'].job_cluster_key: add
+  tasks[task_key='merged'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='merged'].job_cluster_key: skip (the key it wins with cannot be replaced)
 
 
 

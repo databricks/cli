@@ -22,6 +22,9 @@ var (
 
 	// ErrSourceUnreachable reports a source whose release cannot be read.
 	ErrSourceUnreachable = errors.New("skills source unreachable")
+
+	// ErrNoSize reports a listed path that has no known size, such as a folder.
+	ErrNoSize = errors.New("skill path has no size")
 )
 
 // Skill is one skill in a catalog.
@@ -34,10 +37,20 @@ type Skill struct {
 	// Files lists the skill's files relative to the skill directory, SKILL.md included.
 	Files []string
 
-	// Commands lists the CLI command groups the skill covers.
+	// Commands lists the CLI command groups the skill covers. Each entry is a
+	// group's path below the root command, such as "fs" or "bundle deployment".
+	// The match is exact: a skill for "bundle" is not shown on "bundle deployment".
 	Commands []string
 
 	Experimental bool
+}
+
+// FileSizer is implemented by a source that can size a skill file without
+// reading it. A source that does not implement it lists files without sizes.
+// A path with no size returns ErrNoSize: a folder, or a source that cannot stat
+// its files, such as a release fetched over HTTP.
+type FileSizer interface {
+	FileSize(ctx context.Context, skill, path string) (int64, error)
 }
 
 // Catalog is the set of skills a source serves.

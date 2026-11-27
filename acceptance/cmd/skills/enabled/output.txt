@@ -27,12 +27,3 @@ Use "databricks skills [command] --help" for more information about a command.
 
 >>> [CLI] skills list
 Error: databricks skills list is not implemented yet
-
->>> [CLI] skills read demo-skill
-Error: databricks skills read is not implemented yet
-
->>> [CLI] skills list-files demo-skill
-Error: databricks skills list-files is not implemented yet
-
->>> [CLI] skills read-file demo-skill SKILL.md
-Error: databricks skills read-file is not implemented yet

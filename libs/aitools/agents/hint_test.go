@@ -280,6 +280,39 @@ func TestMaybeHint_SkillsHintReplacesAgentInstallText(t *testing.T) {
 	assert.NotContains(t, stderr.String(), "aitools")
 }
 
+func TestMaybeHint_SkillsHintKindFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		agent   string
+		preview string
+		hints   string
+		want    protos.AitoolsHintKind
+	}{
+		{"claude, both on: skills list kind", "", "1", "1", protos.AitoolsHintKindSkillsListText},
+		{"codex, both on: skills list kind, not agent install text", "CODEX_CI", "1", "1", protos.AitoolsHintKindSkillsListText},
+		{"claude, hints off: install text kind", "", "1", "", protos.AitoolsHintKindInstallText},
+		{"claude, hints without preview: install text kind", "", "", "1", protos.AitoolsHintKindInstallText},
+		{"claude, both unset: install text kind", "", "", "", protos.AitoolsHintKindInstallText},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var ctx context.Context
+			if tc.agent == "" {
+				setClaudeAgent(t)
+				ctx, _ = claudeCtx(t, t.TempDir())
+			} else {
+				setAgentEnv(t, tc.agent)
+				ctx, _ = agentCtx(t, t.TempDir(), t.TempDir())
+			}
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, []protos.AitoolsHintKind{tc.want}, hintKinds(t, ctx))
+		})
+	}
+}
+
 func TestMaybeHint_SkillsCommandExemptFollowsGuard(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

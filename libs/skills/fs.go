@@ -16,7 +16,10 @@ import (
 const manifestFile = "manifest.json"
 
 type fsSource struct {
-	read  func(ctx context.Context, name string) ([]byte, error)
+	read func(ctx context.Context, name string) ([]byte, error)
+	// stat reports the info of a file in the release. It is nil when the
+	// source cannot stat its files, as for a release fetched over HTTP.
+	stat  func(name string) (fs.FileInfo, error)
 	label string
 }
 
@@ -27,6 +30,8 @@ type fsSource struct {
 func NewFSSource(fsys fs.FS, label string) Source {
 	return &fsSource{read: func(_ context.Context, name string) ([]byte, error) {
 		return fs.ReadFile(fsys, name)
+	}, stat: func(name string) (fs.FileInfo, error) {
+		return fs.Stat(fsys, name)
 	}, label: strings.ReplaceAll(label, `\`, "/")}
 }
 
@@ -59,22 +64,52 @@ func (s *fsSource) Catalog(ctx context.Context) (*Catalog, error) {
 }
 
 func (s *fsSource) ReadFile(ctx context.Context, skill, file string) ([]byte, error) {
-	m, err := s.manifest(ctx)
+	name, err := s.filePath(ctx, skill, file)
 	if err != nil {
 		return nil, err
 	}
-	meta, ok := m.Skills[skill]
-	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
-	}
-	if !slices.Contains(meta.Files, file) {
-		return nil, fmt.Errorf("%w: %q in skill %q", ErrUnknownFile, file, skill)
-	}
-	data, err := s.read(ctx, path.Join(meta.RepoDir, skill, file))
+	data, err := s.read(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("read %q in skill %q: %w", file, skill, err)
 	}
 	return data, nil
+}
+
+// FileSize returns the size of a skill file. It returns ErrNoSize for a folder,
+// and for a source that cannot stat its files.
+func (s *fsSource) FileSize(ctx context.Context, skill, file string) (int64, error) {
+	name, err := s.filePath(ctx, skill, file)
+	if err != nil {
+		return 0, err
+	}
+	if s.stat == nil {
+		return 0, fmt.Errorf("%w: %q in skill %q", ErrNoSize, file, skill)
+	}
+	info, err := s.stat(name)
+	if err != nil {
+		return 0, fmt.Errorf("stat %q in skill %q: %w", file, skill, err)
+	}
+	if info.IsDir() {
+		return 0, fmt.Errorf("%w: %q in skill %q is a folder", ErrNoSize, file, skill)
+	}
+	return info.Size(), nil
+}
+
+// filePath returns the path of a skill file in the release. The manifest must
+// list the file for the skill.
+func (s *fsSource) filePath(ctx context.Context, skill, file string) (string, error) {
+	m, err := s.manifest(ctx)
+	if err != nil {
+		return "", err
+	}
+	meta, ok := m.Skills[skill]
+	if !ok {
+		return "", fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
+	}
+	if !slices.Contains(meta.Files, file) {
+		return "", fmt.Errorf("%w: %q in skill %q", ErrUnknownFile, file, skill)
+	}
+	return path.Join(meta.RepoDir, skill, file), nil
 }
 
 // manifest reads and checks the release manifest. Every path it names, the
