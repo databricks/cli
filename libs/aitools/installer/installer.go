@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -116,7 +117,7 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 		repoDir = stableSkillsRepoPath
 	}
 	url := fmt.Sprintf("%s/%s/%s/%s/%s",
-		GetSkillsBaseURL(ctx), ref, repoDir, skillName, filePath)
+		GetSkillsBaseURL(ctx), ref, repoDir, skillName, escapeFilePath(filePath))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -138,6 +139,17 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 		return nil, &FetchError{Stage: FetchStageFile, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to read response: %w", err)}
 	}
 	return data, nil
+}
+
+// escapeFilePath escapes each slash-separated element of a skill file path, so
+// a '#' or '?' in a name stays part of the path instead of starting a fragment
+// or query. Ordinary names are unchanged.
+func escapeFilePath(filePath string) string {
+	elems := strings.Split(filePath, "/")
+	for i, elem := range elems {
+		elems[i] = url.PathEscape(elem)
+	}
+	return strings.Join(elems, "/")
 }
 
 // FetchSkillsManifestWithFallback fetches the skills manifest at the given ref.
