@@ -248,6 +248,25 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 	return sourceBlock{}, false
 }
 
+// overrideSupplies reports whether the selected target's override, in any file, defines
+// the field change addresses, merge keys included. That definition wins the target merge,
+// so writing the field at the top level would leave its value unchanged.
+func (r *blockResolver) overrideSupplies(change resolvedChange) bool {
+	for block, parsed := range r.blocks {
+		if !block.override {
+			continue
+		}
+		path, err := r.pathWithinBlock(block, change)
+		if err != nil {
+			continue
+		}
+		if _, ok := preResolvedValueAt(parsed, r.candidatePath(block, path)); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // replacesKey reports whether change routes to one block that writes the key it
 // addresses, so it can be written there as a replace.
 func (r *blockResolver) replacesKey(change resolvedChange) bool {
@@ -442,10 +461,14 @@ func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) 
 				if !block.override && blocks.target != "" && !blocks.writesKey(block, resolved.path) && blocks.writesKey(override, resolved.path) {
 					block = override
 				}
-				if !blocks.writesKey(block, resolved.path) {
-					return nil, fmt.Errorf("%w: the winning definition has no key of its own or its value holds an anchor", errAmbiguousBlock)
+				// A key inherited through a merge key has no node of its own: writtenDestinations
+				// adds it next to the merge key of the scope that wins.
+				if blocks.keyValue(block, resolved.path) != nil {
+					if !blocks.writesKey(block, resolved.path) {
+						return nil, fmt.Errorf("%w: the winning definition's value holds an anchor", errAmbiguousBlock)
+					}
+					return []routeDestination{{block: &block, path: resolved.path}}, nil
 				}
-				return []routeDestination{{block: &block, path: resolved.path}}, nil
 			}
 		}
 		return []routeDestination{{path: resolved.path}}, nil

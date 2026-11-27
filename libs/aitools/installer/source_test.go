@@ -78,8 +78,8 @@ func TestFetchManifestSizeCap(t *testing.T) {
 		wantErr bool
 	}{
 		// Whitespace pads a valid manifest to exactly the cap: it still parses.
-		{name: "at the cap", body: strings.Repeat(" ", maxFetchBodySize-2) + "{}"},
-		{name: "one byte over the cap", body: strings.Repeat(" ", maxFetchBodySize-1) + "{}", wantErr: true},
+		{name: "at the cap", body: strings.Repeat(" ", skills.MaxFetchBodySize-2) + "{}"},
+		{name: "one byte over the cap", body: strings.Repeat(" ", skills.MaxFetchBodySize-1) + "{}", wantErr: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
