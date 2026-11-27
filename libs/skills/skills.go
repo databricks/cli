@@ -53,14 +53,15 @@ type Catalog struct {
 	Label string
 
 	// FetchedAt is when the source produced the catalog. A source that serves
-	// a cached copy sets it to the time the copy was fetched. Zero means the
-	// time is unknown, as for the bundled copy.
+	// a cached copy sets it to the time the copy was fetched. The bundled copy
+	// has the time it was read. Zero means the time is unknown.
 	FetchedAt time.Time
 
-	// Stale reports that the catalog is not the current release. The source
-	// served a cached copy it could not refresh, or it is the bundled copy,
-	// which is only served when the release cannot be reached. Sources that
-	// always read the release themselves leave it false.
+	// Stale reports that the catalog may not be the current release. The source
+	// served a cached copy it could not refresh, or the bundled copy, which
+	// callers get only when the release cannot be reached. A fresh cached copy
+	// and a live read leave it false. Sources that always read the release
+	// themselves leave it false too.
 	Stale bool
 
 	// Rules is text shown above the catalog, empty when the release has none.
@@ -69,6 +70,10 @@ type Catalog struct {
 
 // Source serves skills. Callers list skills and their files from the catalog,
 // and read file contents with ReadFile.
+//
+// A source that cannot reach its release returns an error that wraps
+// ErrSourceUnreachable. That is the only error the chain falls back on; any
+// other error is returned to the caller as it is.
 type Source interface {
 	Catalog(ctx context.Context) (*Catalog, error)
 	ReadFile(ctx context.Context, skill, path string) ([]byte, error)
