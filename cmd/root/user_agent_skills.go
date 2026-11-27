@@ -51,12 +51,13 @@ var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 
 // parseSkills normalizes a comma-separated list of skill names: entries are
 // trimmed, lowercased and deduplicated, invalid ones and names that are not
-// known Databricks skills (see knownSkills) are dropped, and names are
+// known Databricks skills (see skillMatcher) are dropped, and names are
 // kept in order while their pairs fit in maxSkillsUserAgentLength. Invalid input is only logged at debug level because this
 // is telemetry and must never fail or warn a command.
 func parseSkills(ctx context.Context, raw string) []string {
 	var skills []string
 	size := 0
+	matcher := newSkillMatcher()
 	for entry := range strings.SplitSeq(raw, ",") {
 		name := strings.ToLower(strings.TrimSpace(entry))
 		pairSize := len(" "+skillUserAgentKey+"/") + len(name)
@@ -64,7 +65,7 @@ func parseSkills(ctx context.Context, raw string) []string {
 		case name == "":
 		case len(name) > maxSkillLength || !skillNamePattern().MatchString(name):
 			log.Debugf(ctx, "dropping invalid skill entry %q", entry)
-		case !isKnownSkill(name):
+		case !matcher.isKnown(ctx, name):
 			// Don't log the name: it may be a customer's own skill.
 			log.Debugf(ctx, "dropping skill entry that is not a known Databricks skill")
 		case slices.Contains(skills, name):

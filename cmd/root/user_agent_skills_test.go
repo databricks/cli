@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/env"
@@ -79,6 +80,41 @@ func TestParseSkillsDropsUnknownSkills(t *testing.T) {
 	// even when a customer's own skill uses the databricks- prefix.
 	got := root.ParseSkills(t.Context(), "my-team-skill,databricks-core,databricks-my-team-tool,acme-databricks,databricks-jobs")
 	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, got)
+}
+
+func TestParseSkillsAllowsReleasedSkills(t *testing.T) {
+	// A skill added to the release after this CLI's static list is still reported.
+	root.SetReleasedSkillsForTest(t, time.Second, func() ([]string, error) {
+		return []string{"databricks-brand-new"}, nil
+	})
+	got := root.ParseSkills(t.Context(), "databricks-brand-new,databricks-my-team-tool,databricks-core")
+	assert.Equal(t, []string{"databricks-brand-new", "databricks-core"}, got)
+}
+
+func TestParseSkillsDropsReleasedSkillsAfterTimeout(t *testing.T) {
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	root.SetReleasedSkillsForTest(t, 5*time.Millisecond, func() ([]string, error) {
+		<-release
+		return []string{"databricks-brand-new", "databricks-other-new"}, nil
+	})
+
+	start := time.Now()
+	got := root.ParseSkills(t.Context(), "databricks-brand-new,databricks-core,databricks-other-new")
+	elapsed := time.Since(start)
+
+	// Static matches still go through; the slow lookup only drops the rest.
+	assert.Equal(t, []string{"databricks-core"}, got)
+	// Both unmatched names share one deadline, so the wait is not doubled.
+	assert.Less(t, elapsed, 500*time.Millisecond)
+}
+
+func TestParseSkillsSkipsLookupForStaticMatches(t *testing.T) {
+	root.SetReleasedSkillsForTest(t, time.Second, func() ([]string, error) {
+		t.Error("released skills were looked up for names in the static list")
+		return nil, nil
+	})
+	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, root.ParseSkills(t.Context(), "databricks-core,databricks-jobs"))
 }
 
 func TestKnownSkillsAreValid(t *testing.T) {

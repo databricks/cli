@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,14 @@ var (
 	InitSkillsInvokedFlag    = initSkillsInvokedFlag
 	MaxSkillsUserAgentLength = maxSkillsUserAgentLength
 )
+
+// SetReleasedSkillsForTest replaces the released skills loader and timeout
+// until the test ends.
+func SetReleasedSkillsForTest(t *testing.T, timeout time.Duration, load func() ([]string, error)) {
+	origSkills, origTimeout := releasedSkills, releasedSkillsTimeout
+	releasedSkills, releasedSkillsTimeout = newReleasedSkills(load), timeout
+	t.Cleanup(func() { releasedSkills, releasedSkillsTimeout = origSkills, origTimeout })
+}
 
 // KnownSkills returns the known skill names.
 func KnownSkills() []string { return knownSkills }

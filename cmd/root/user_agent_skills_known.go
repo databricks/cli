@@ -1,6 +1,14 @@
 package root
 
-import "slices"
+import (
+	"context"
+	"slices"
+	"sync"
+	"time"
+
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
+)
 
 // knownSkills lists every skill name Databricks has published, current and
 // retired. Only these names are reported in skill/<name> user agent pairs.
@@ -18,9 +26,10 @@ import "slices"
 //     or retired, so older installs keep reporting.
 //   - The databricks-quickstart skill printed by `databricks quickstart --skill`.
 //
-// When a new skill is published, add its name here. Until a CLI release includes
-// it, its usage is not reported. It is a slice, not a map, so it costs nothing
-// at startup.
+// A skill that is not listed here is still reported when it is in the skills
+// release bundled with the binary (see releasedSkills), so new skills need no
+// edit here. Retired and renamed names must stay, because no current release
+// lists them. It is a slice, not a map, so it costs nothing at startup.
 var knownSkills = []string{
 	"data-app-design",
 	"databricks",
@@ -78,7 +87,91 @@ var knownSkills = []string{
 	"spark-python-data-source",
 }
 
-// isKnownSkill reports whether name is a Databricks-published skill.
-func isKnownSkill(name string) bool {
-	return slices.Contains(knownSkills, name)
+// releasedSkillsTimeout bounds the wait for releasedSkills in one parseSkills
+// call. It is a variable so tests can change it.
+var releasedSkillsTimeout = 5 * time.Millisecond
+
+// releasedSkillSet holds the names of the skills release that ships with this
+// binary. done is closed once names and err are set.
+type releasedSkillSet struct {
+	done  chan struct{}
+	names []string
+	err   error
+}
+
+// releasedSkills starts the lookup of the released skill names on the first
+// call, once per process, so a command whose skills are all in knownSkills
+// never pays for it. A variable so tests can swap the loader.
+var releasedSkills = newReleasedSkills(loadBundledSkillNames)
+
+func newReleasedSkills(load func() ([]string, error)) func() *releasedSkillSet {
+	return sync.OnceValue(func() *releasedSkillSet {
+		set := &releasedSkillSet{done: make(chan struct{})}
+		go func() {
+			set.names, set.err = load()
+			close(set.done)
+		}()
+		return set
+	})
+}
+
+// loadBundledSkillNames returns the skill names in the skills release compiled
+// into the binary, which the release build fills from the published release.
+// It only reads a source that can't name a customer's own skill and needs no
+// network call: the bundled snapshot, not DATABRICKS_SKILLS_DIR or GitHub. A
+// development build has an empty snapshot and returns an error.
+func loadBundledSkillNames() ([]string, error) {
+	// The lookup outlives a caller that stopped waiting at its deadline, so it
+	// does not take the caller's context. Reading the embedded snapshot does no
+	// I/O that a context could cancel.
+	catalog, err := skills.NewBundledSource().Catalog(context.Background()) //nolint:gocritic // see above
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(catalog.Skills))
+	for _, s := range catalog.Skills {
+		names = append(names, s.Name)
+	}
+	return names, nil
+}
+
+// skillMatcher reports whether a name is a Databricks skill: one in knownSkills,
+// or one in the released skills when their lookup finishes before the deadline.
+// A lookup that misses the deadline counts as no match, so the name is dropped.
+type skillMatcher struct {
+	deadline   <-chan time.Time
+	skipLookup bool
+}
+
+// newSkillMatcher returns a matcher for one parseSkills call. The deadline
+// starts at the first name that is not in knownSkills and is shared by every
+// later name, so a slow lookup costs at most releasedSkillsTimeout in total.
+func newSkillMatcher() *skillMatcher {
+	return &skillMatcher{}
+}
+
+func (m *skillMatcher) isKnown(ctx context.Context, name string) bool {
+	if slices.Contains(knownSkills, name) {
+		return true
+	}
+	if m.skipLookup {
+		return false
+	}
+	if m.deadline == nil {
+		m.deadline = time.After(releasedSkillsTimeout)
+	}
+	set := releasedSkills()
+	select {
+	case <-set.done:
+		if set.err != nil {
+			log.Debugf(ctx, "no released skills catalog for skill telemetry: %v", set.err)
+			m.skipLookup = true
+			return false
+		}
+		return slices.Contains(set.names, name)
+	case <-m.deadline:
+		m.skipLookup = true
+		log.Debugf(ctx, "released skills lookup took longer than %s, dropping skills not in the built-in list", releasedSkillsTimeout)
+		return false
+	}
 }
