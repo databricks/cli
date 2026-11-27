@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Stands in for the claude CLI, in front of the harness's stand-in on PATH. It does what Claude Code 2.1.325 does where
-# the harness's stand-in does not: `mcp add-json` refuses a name that the user config already holds, and `mcp remove`
-# deletes the entry of the name whoever wrote it.
+# the harness's stand-in does not: `mcp add-json` refuses a name that the user config already holds.
 #
 # Before it reads the config, it runs the script that $WHILE_CLAUDE_STARTS names, once. That script is another process
 # that changes the config, or runs a second databricks command, after databricks checked the config and started claude,
@@ -22,13 +21,6 @@ case "$1 $2" in
         echo "MCP server $name already exists in user config" >&2
         exit 1
     fi
-    ;;
-"mcp remove")
-    name="$5"
-    jq --arg name "$name" 'del(.mcpServers[$name])' "$config" > "$config.tmp"
-    mv "$config.tmp" "$config"
-    echo "Removed MCP server $name from user config"
-    exit 0
     ;;
 esac
 exec "$FAKE_AGENT_DIR/claude" "$@"

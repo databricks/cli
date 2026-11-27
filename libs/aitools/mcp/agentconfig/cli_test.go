@@ -26,8 +26,8 @@ import (
 // sleepingCLIEnv tells TestSleepingCLI to block, so that the timeout test can run it as a child process.
 const sleepingCLIEnv = "AGENTCONFIG_TEST_SLEEP"
 
-// cliAgent is an agent whose config is the JSON file at path, and whose CLI has the add and remove commands of a
-// stand-in: `mcp add <name> -- <command> <args>` and `mcp remove <name>`.
+// cliAgent is an agent whose config is the JSON file at path, and whose CLI has the add command of a stand-in:
+// `mcp add <name> -- <command> <args>`.
 func cliAgent(path string) *agents.Agent {
 	return &agents.Agent{
 		Name:        "fakeagent",
@@ -41,7 +41,6 @@ func cliAgent(path string) *agents.Agent {
 			AddArgs: func(name, cmd string, args []string, _ map[string]string) []string {
 				return append([]string{"mcp", "add", name, "--", cmd}, args...)
 			},
-			RemoveArgs: func(name string) []string { return []string{"mcp", "remove", name} },
 		},
 	}
 }
@@ -328,99 +327,59 @@ func TestUpsertWritesDirectlyWhenBatchFileCannotTakeArguments(t *testing.T) {
 	assert.Len(t, *calls, 1, "an executable runs the CLI, which here writes nothing, and the direct writer adds the entry")
 }
 
-func TestRemoveThroughCLI(t *testing.T) {
+// TestUpsertRefusesForeignEntryWrittenWhileCLIRuns covers someone else adding a server of the same name between the
+// check that the name is free and the read-back after the agent's CLI ran. The CLI stands in for that writer here, and
+// fails as an agent's CLI does for a name that exists.
+func TestUpsertRefusesForeignEntryWrittenWhileCLIRuns(t *testing.T) {
 	ctx := testHome(t)
 	path := filepath.Join(t.TempDir(), "agent.json")
+	writeServers(t, path, map[string]any{})
 	a := cliAgent(path)
-	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
-	require.NoError(t, err)
-
-	bin := filepath.Join(t.TempDir(), "fakeagent")
-	calls := stubCLI(t, bin, func([]string) error {
-		writeServers(t, path, map[string]any{})
-		return nil
+	foreign := map[string]any{"command": "/usr/bin/other", "args": []any{"x"}}
+	exists := &process.ProcessError{Command: "fakeagent", Err: errors.New("exit status 1"), Stderr: "already exists\n"}
+	stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error {
+		writeServers(t, path, map[string]any{testName: foreign})
+		return exists
 	})
-	removed, err := RemoveAt(ctx, a, path, testName)
+
+	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.ErrorIs(t, err, ErrNotOwned)
+	entries, err := ReadAt(a, path)
+	require.NoError(t, err)
+	assert.Equal(t, foreign, entries[testName], "the entry someone else wrote is left as it is")
+
+	// With force the entry is replaced, as a foreign entry that was there before the run is.
+	require.NoError(t, os.WriteFile(path, []byte(`{"mcpServers": {}}`), 0o600))
+	_, status, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, true)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	entries, err = ReadAt(a, path)
+	require.NoError(t, err)
+	assert.Equal(t, testCmd, entries[testName]["command"])
+}
+
+// TestRemoveNeverRunsCLI covers the removal, which the direct writer makes for every agent: the CLI of an agent would
+// remove whatever entry holds the name when it runs, and the check of who wrote the entry must hold until it is gone.
+func TestRemoveNeverRunsCLI(t *testing.T) {
+	ctx := testHome(t)
+	path := filepath.Join(t.TempDir(), "agent.json")
+	a := cliAgent(path)
+	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
+
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
-	assert.Equal(t, [][]string{{bin, "mcp", "remove", testName}}, *calls)
+	assert.Empty(t, *calls)
 	entries, err := ReadAt(a, path)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
-}
 
-func TestRemoveWritesDirectlyWhenFileMoved(t *testing.T) {
-	ctx := testHome(t)
-	current := filepath.Join(t.TempDir(), "current.json")
-	recorded := filepath.Join(t.TempDir(), "recorded.json")
-	a := cliAgent(current)
-	writeServers(t, recorded, map[string]any{testName: testEntry(testCmd, testArgs("test"), nil)})
-	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
-
-	removed, err := RemoveAt(ctx, a, recorded, testName)
-	require.NoError(t, err)
-	assert.True(t, removed)
-	assert.Empty(t, *calls, "the CLI reads the current file, not the recorded one")
-	entries, err := ReadAt(a, recorded)
-	require.NoError(t, err)
-	assert.Empty(t, entries)
-}
-
-func TestRemoveRefusesForeignEntryBeforeCLI(t *testing.T) {
-	ctx := testHome(t)
-	path := filepath.Join(t.TempDir(), "agent.json")
 	writeServers(t, path, map[string]any{testName: map[string]any{"command": "/usr/bin/other", "args": []string{"x"}}})
-	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
-
-	_, err := RemoveAt(ctx, cliAgent(path), path, testName)
-	assert.ErrorIs(t, err, ErrNotOwned)
+	_, err = RemoveAt(a, path, testName)
+	require.ErrorIs(t, err, ErrNotOwned)
 	assert.Empty(t, *calls)
-}
-
-func TestRemoveDoesNotRunCLIWhenEntryIsAbsent(t *testing.T) {
-	ctx := testHome(t)
-	path := filepath.Join(t.TempDir(), "agent.json")
-	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
-
-	removed, err := RemoveAt(ctx, cliAgent(path), path, testName)
-	require.NoError(t, err)
-	assert.False(t, removed)
-	assert.Empty(t, *calls)
-}
-
-func TestRemoveDirectWhenCLILeavesEntry(t *testing.T) {
-	ctx := testHome(t)
-	path := filepath.Join(t.TempDir(), "agent.json")
-	a := cliAgent(path)
-	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
-	require.NoError(t, err)
-	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
-
-	removed, err := RemoveAt(ctx, a, path, testName)
-	require.NoError(t, err)
-	assert.True(t, removed)
-	assert.Len(t, *calls, 1, "the CLI ran once, and the direct writer removed what it left")
-	entries, err := ReadAt(a, path)
-	require.NoError(t, err)
-	assert.Empty(t, entries)
-}
-
-func TestRemoveDirectWhenCLIFails(t *testing.T) {
-	ctx := testHome(t)
-	path := filepath.Join(t.TempDir(), "agent.json")
-	a := cliAgent(path)
-	_, _, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
-	require.NoError(t, err)
-	failure := &process.ProcessError{Command: "fakeagent", Err: errors.New("exit status 2"), Stderr: "no such server\n"}
-	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return failure })
-
-	removed, err := RemoveAt(ctx, a, path, testName)
-	require.NoError(t, err)
-	assert.True(t, removed)
-	assert.Len(t, *calls, 1)
-	entries, err := ReadAt(a, path)
-	require.NoError(t, err)
-	assert.Empty(t, entries)
 }
 
 // launcherEnv tells TestLauncherCLI to start the sleeping CLI as a child and wait for it, as npm shims and Gemini do.
@@ -521,7 +480,7 @@ func TestUpsertWritesDirectlyForNameWithDash(t *testing.T) {
 	_, status, err := Upsert(ctx, a, "-h", testCmd, testArgs("test"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusAdded, status)
-	_, err = RemoveAt(ctx, a, path, "-h")
+	_, err = RemoveAt(a, path, "-h")
 	require.NoError(t, err)
 	assert.Empty(t, *calls, "a name with a dash would reach the CLI as one of its flags")
 }
@@ -634,7 +593,7 @@ func TestSymlinkedConfigIsWrittenThroughWithoutCLI(t *testing.T) {
 	assert.Equal(t, StatusAdded, status)
 	assert.Empty(t, *calls, "a CLI that renames over the config would replace the link")
 
-	_, err = RemoveAt(ctx, a, path, testName)
+	_, err = RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.Empty(t, *calls)
 
@@ -655,7 +614,7 @@ func TestRemoveWritesDirectlyWhenCurrentPathCannotBeResolved(t *testing.T) {
 	a.MCP.Path = func(context.Context) (string, error) { return "", errors.New("no home directory") }
 	calls := stubCLI(t, filepath.Join(t.TempDir(), "fakeagent"), func([]string) error { return nil })
 
-	removed, err := RemoveAt(ctx, a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Empty(t, *calls, "the recorded file is not the current one, so the CLI is not run")
@@ -734,7 +693,7 @@ func TestReadOnlyConfigRefusedBeforeCLI(t *testing.T) {
 	require.NoError(t, os.Chmod(path, 0o400))
 	before, err := os.ReadFile(path)
 	require.NoError(t, err)
-	_, err = RemoveAt(ctx, a, path, testName)
+	_, err = RemoveAt(a, path, testName)
 	require.ErrorContains(t, err, refused)
 	after, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -760,7 +719,7 @@ func TestCodexWritesDirectlyWhenCLIIsOnPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, entries, testName)
 
-	removed, err := RemoveAt(ctx, a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	entries, err = ReadAt(a, path)
@@ -783,25 +742,21 @@ func TestAgentCLIRunsWithoutTheLock(t *testing.T) {
 
 	entry := testEntry(testCmd, testArgs("test"), nil)
 	var heldDuringCLI []bool
-	stubCLI(t, bin, func(argv []string) error {
+	stubCLI(t, bin, func([]string) error {
 		_, statErr := os.Stat(lock)
 		heldDuringCLI = append(heldDuringCLI, statErr == nil)
-		servers := map[string]any{"other": map[string]any{"command": "/usr/bin/other"}}
-		if argv[2] == "add" {
-			servers[testName] = entry
-		}
-		writeServers(t, path, servers)
+		writeServers(t, path, map[string]any{"other": map[string]any{"command": "/usr/bin/other"}, testName: entry})
 		return nil
 	})
 
 	_, status, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusAdded, status)
-	removed, err := RemoveAt(ctx, a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 
-	assert.Equal(t, []bool{false, false}, heldDuringCLI, "the lock is not held while the agent's CLI runs")
+	assert.Equal(t, []bool{false}, heldDuringCLI, "the lock is not held while the agent's CLI runs, and remove does not run it")
 	_, err = os.Stat(lock)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

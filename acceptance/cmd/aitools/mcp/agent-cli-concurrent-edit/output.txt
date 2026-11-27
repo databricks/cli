@@ -1,6 +1,25 @@
 
 === add: the user adds their own server of the same name while the claude CLI starts
 
+>>> musterr [CLI] aitools mcp add --profile logfood --names system.ai.github --agents claude-code
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): claude-code
+
+github-logfood  system.ai.github
+  claude-code  failed: [TEST_TMP_DIR]/home/.claude.json: server "github-logfood": entry was not written by databricks
+Error: [TEST_TMP_DIR]/home/.claude.json: server "github-logfood": entry was not written by databricks
+
+>>> cat concurrent.log
+user wrote their own github-logfood entry
+
+>>> jq -c .mcpServers["github-logfood"] | {command, args} home/.claude.json
+{"command":"npx","args":["users-own-github-server"]}
+
+>>> [CLI] aitools mcp list
+No Databricks MCP servers installed by this CLI.
+
+=== remove: the direct writer checks who wrote the entry and removes it under one lock, so claude does not run
+
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.github --agents claude-code
 Profile logfood ([DATABRICKS_URL])
 Agents (named with --agents): claude-code
@@ -9,22 +28,13 @@ github-logfood  system.ai.github
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
   Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector (on AWS GovCloud, https://github.com/apps/databricks-gh-connector-gov-cloud).
 
->>> cat concurrent.log
-user wrote their own github-logfood entry
-
->>> jq -c .mcpServers["github-logfood"] | {command, args} home/.claude.json
-{"command":"[CLI]","args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}
-
-=== remove: the user replaces the Databricks entry with their own while the claude CLI starts
-
 >>> [CLI] aitools mcp remove --names github-logfood
 Removed github-logfood  system.ai.github  profile logfood  (Claude Code)
 
->>> cat concurrent.log
-user wrote their own github-logfood entry
+>>> assert_not_exists.py concurrent.log
 
 >>> jq -c .mcpServers home/.claude.json
-{}
+null
 
 === two adds of one server name, one after the other: the second is refused
 
@@ -42,7 +52,7 @@ Error: --name github is used by another installed server; pick a different name
 >>> [CLI] aitools mcp remove --all
 Removed github  system.ai.github  profile logfood  (Claude Code)
 
-=== the same two adds at the same time: the second finishes while the first waits for the claude CLI
+=== the same two adds at the same time: the second starts while the first waits for the claude CLI, and is refused
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
 Profile logfood ([DATABRICKS_URL])
@@ -58,11 +68,6 @@ Error: another databricks aitools mcp add or remove is running; run this command
 >>> jq -c .mcpServers | map_values(.args) home/.claude.json
 {"github":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}
 
->>> jq -c .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
-[{"name":"github","profile":"logfood","agents":["claude-code"]}]
-
-=== afterwards remove --all takes the logfood entry out of the agent config and drops the dogfood record
-
 >>> [CLI] aitools mcp list
 Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   github                   system.ai.github               Claude Code
@@ -71,9 +76,4 @@ Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
 Removed github  system.ai.github  profile logfood  (Claude Code)
 
 >>> jq -c .mcpServers home/.claude.json
-{}
-
->>> jq -c .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
-jq: error: Could not open file home/.databricks/aitools/skills/.state.json: No such file or directory
-
-Exit code: 2
+null

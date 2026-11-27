@@ -7,5 +7,5 @@ export DATABRICKS_CONFIG_FILE=.databrickscfg
 title "A profile that does not exist is refused before any request, and the error lists the profiles that exist"
 musterr trace $CLI aitools mcp add --profile logfod --names system.ai.genie_one_mcp --agents claude-code
 
-title "Nothing was written"
-trace ls -A home
+title "Nothing was written but the lock file of add and remove"
+trace find home -type f

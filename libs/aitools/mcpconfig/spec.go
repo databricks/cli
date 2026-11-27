@@ -52,10 +52,6 @@ type Spec struct {
 	// and "add-json". Nil when the agent has no non-interactive add. It returns nil too when the CLI cannot take these
 	// arguments, and the direct writer makes the change instead.
 	AddArgs func(name, cmd string, args []string, env map[string]string) []string
-	// RemoveArgs returns the arguments, without the program, of the agent CLI command that removes server name from
-	// user scope. Nil when the agent has no non-interactive remove. The first two arguments are the subcommand words,
-	// as for AddArgs.
-	RemoveArgs func(name string) []string
 	// HomeEnv is the variable that moves the agent's config directory, such as CODEX_HOME, or "" when none does. The
 	// CLI runs with it set to the cleaned absolute form of its value, or with it unset when the value is empty.
 	HomeEnv string
