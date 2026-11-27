@@ -1,6 +1,3 @@
-# pnpm is not installed on DBR.
-RunsOnDbr = false
-
 Env.VALIDATION_TEST_FAIL = ""
 Ignore = ["commands.log"]
 

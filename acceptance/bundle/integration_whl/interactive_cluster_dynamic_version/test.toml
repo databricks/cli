@@ -1,6 +1,3 @@
-# Builds wheels and venvs on the workspace file system, which times out or fails there.
-RunsOnDbr = false
-
 EnvMatrix.DATA_SECURITY_MODE = [
     "USER_ISOLATION",
     "SINGLE_USER",

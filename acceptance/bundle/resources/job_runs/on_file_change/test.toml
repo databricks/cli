@@ -1,6 +1,3 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the upload output differs.
-RunsOnDbr = false
-
 # Deploy both by re-planning and from a plan saved on disk, so the hashes
 # computed during planning survive plan serialization.
 EnvMatrix.READPLAN = ["", "1"]

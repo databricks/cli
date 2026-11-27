@@ -1,6 +1,3 @@
-# pnpm is not installed on DBR.
-RunsOnDbr = false
-
 Ignore = ["commands.log"]
 
 [[Repls]]
