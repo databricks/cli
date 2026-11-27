@@ -34,15 +34,15 @@ func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
 }
 
 func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v.Kind() == dyn.KindNil {
-			return v, nil
-		}
+	return diag.FromErr(b.Config.Mutate(m.merge))
+}
 
-		return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(_ dyn.Path, pipeline dyn.Value) (dyn.Value, error) {
-			return dyn.Map(pipeline, "clusters", merge.ElementsByKey("label", m.clusterLabel))
-		}))
-	})
+func (m *mergePipelineClusters) merge(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() == dyn.KindNil {
+		return v, nil
+	}
 
-	return diag.FromErr(err)
+	return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(_ dyn.Path, pipeline dyn.Value) (dyn.Value, error) {
+		return dyn.Map(pipeline, "clusters", merge.ElementsByKey("label", m.clusterLabel))
+	}))
 }
