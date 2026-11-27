@@ -1,5 +1,6 @@
 use_home home
 gate true
+trace $CLI aitools auto-install enable
 
 # end_retry_wait moves the last failed attempt back in time, as if the wait
 # before the next attempt were over.

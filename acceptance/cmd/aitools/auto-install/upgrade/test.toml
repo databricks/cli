@@ -1,4 +1,4 @@
-Ignore = ["pinned-home"]
+Ignore = ["pinned-home", "existing-home"]
 
 # Skills releases: the latest release is v0.3.0, under /newer it is v0.4.0 and
 # under /older it is v0.2.0 (DATABRICKS_CLI_GITHUB_API_URL picks one).

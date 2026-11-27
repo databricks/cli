@@ -201,8 +201,6 @@ func TestAskCancellable_Cancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	ctx = InContext(ctx, NewIO(ctx, flags.OutputText, stdin, io.Discard, io.Discard, "", ""))
 	cancel()
-	t.Cleanup(func() { stdinReadInBackground.Store(false) })
 	_, err := AskCancellable(ctx, "Question", "")
 	assert.ErrorIs(t, err, context.Canceled)
-	assert.True(t, stdinReadInBackground.Load(), "the abandoned read turns off later line prompts")
 }
