@@ -1,0 +1,21 @@
+title "Copy a file to a new file"
+trace $CLI fs cp $SRC_DIR/foo.txt $DST_DIR/bar.txt
+trace $CLI fs cat $DST_DIR/bar.txt
+# The output comparison normalizes line endings; cmp checks the exact bytes.
+$CLI fs cat $DST_DIR/bar.txt | cmp - src/foo.txt
+
+title "Copy a file into an existing directory"
+trace $CLI fs cp $SRC_DIR/foo.txt $DST_DIR
+trace $CLI fs cat $DST_DIR/foo.txt
+
+title "An existing file is skipped without --overwrite"
+trace $CLI fs cp $SRC_DIR/a/b/c/hello.txt $DST_DIR/skip/a/b/c
+trace $CLI fs cat $DST_DIR/skip/a/b/c/hello.txt
+trace $CLI fs cp $SRC_DIR/a/b/c/hello.txt $DST_DIR/skip/a/b/c/dontoverwrite.txt
+trace $CLI fs cat $DST_DIR/skip/a/b/c/dontoverwrite.txt
+
+title "--overwrite replaces an existing file"
+trace $CLI fs cp --overwrite $SRC_DIR/a/b/c/hello.txt $DST_DIR/overwrite/a/b/c
+trace $CLI fs cat $DST_DIR/overwrite/a/b/c/hello.txt
+trace $CLI fs cp --overwrite $SRC_DIR/a/b/c/hello.txt $DST_DIR/overwrite/a/b/c/overwritten.txt
+trace $CLI fs cat $DST_DIR/overwrite/a/b/c/overwritten.txt

@@ -1,0 +1,52 @@
+# fs cp from a $SRC directory to a $DST directory, each one of local, DBFS or UC Volume.
+# The test's src/ tree is uploaded to [SRC], and its target/ tree (files the copies run into) to [DST].
+# Volumes are used at their root, and Volume to Volume uses two volumes, so a copy that resolves
+# the target against the source volume, or mishandles a volume root, fails.
+CATALOG_NAME="main"
+SCHEMA_NAME="default"
+SRC_VOLUME="fs-cp-src-${UNIQUE_NAME}"
+DST_VOLUME="fs-cp-dst-${UNIQUE_NAME}"
+DBFS_ROOT="dbfs:/tmp/fs-cp-matrix-${UNIQUE_NAME}"
+
+root_of() {
+  case $1 in
+    local) echo "local/$2" ;;
+    dbfs) echo "${DBFS_ROOT}/$2" ;;
+    volume) echo "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/fs-cp-$2-${UNIQUE_NAME}" ;;
+  esac
+}
+
+SRC_DIR="$(root_of $SRC src)"
+DST_DIR="$(root_of $DST dst)"
+
+volumes() {
+  [ "$SRC" = volume ] && echo $SRC_VOLUME
+  [ "$DST" = volume ] && echo $DST_VOLUME
+  true
+}
+
+cleanup() {
+  for v in $(volumes); do
+    $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.$v" >>LOG.cleanup 2>&1 || true
+  done
+  if [ "$SRC" = dbfs ] || [ "$DST" = dbfs ]; then
+    $CLI fs rm -r "${DBFS_ROOT}" >>LOG.cleanup 2>&1 || true
+  fi
+  rm -rf local
+}
+trap cleanup EXIT
+
+for v in $(volumes); do
+  $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "$v" MANAGED >>LOG.setup
+done
+
+$CLI fs mkdir $SRC_DIR
+$CLI fs cp -r src $SRC_DIR >>LOG.setup
+$CLI fs mkdir $SRC_DIR/empty
+$CLI fs mkdir $DST_DIR
+$CLI fs cp -r target $DST_DIR >>LOG.setup
+
+# Only full paths go to add_repl: Git Bash would rewrite a bare /tmp/... argument into a Windows
+# path. Error messages print remote paths without the dbfs: scheme; test.toml handles those.
+add_repl "$SRC_DIR" SRC
+add_repl "$DST_DIR" DST

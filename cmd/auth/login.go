@@ -80,9 +80,6 @@ const (
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
-	// deviceCodeEnvVar enables the experimental device code login flow
-	// (--use-device-code) while it is experimental.
-	deviceCodeEnvVar = "DATABRICKS_CLI_DEVICE_CODE"
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -163,6 +160,9 @@ information, see:
 If no host is provided, the CLI opens login.databricks.com where you can
 authenticate and select a workspace.
 
+On a machine that cannot open a browser, use --use-device-code to approve
+the login in a browser on another device.
+
 The positional argument is resolved as a profile name first. If no profile
 with that name exists and the argument looks like a URL, it is used as a
 host. The positional argument cannot be combined with --host or --profile;
@@ -206,9 +206,7 @@ a new profile is created.
 	cmd.Flags().StringArrayVar(&resources, "resource", nil,
 		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
 	cmd.Flags().BoolVar(&useDeviceCode, "use-device-code", false,
-		"Log in with a device code, using a browser on another device (experimental)")
-	// Hidden while device code login is experimental.
-	cmd.Flags().MarkHidden("use-device-code")
+		"Log in with a device code, using a browser on another device")
 	// The non-interactive device code login tells the user to rerun the
 	// command with these flags, which completes the login. Hidden because only
 	// that rerun uses them.
@@ -273,7 +271,7 @@ a new profile is created.
 		// for the profile or the host.
 		var nonInteractive bool
 		if useDeviceCode {
-			if err := validateDeviceCodeLogin(ctx, cmd); err != nil {
+			if err := validateDeviceCodeLogin(cmd); err != nil {
 				return err
 			}
 			nonInteractive = completeLogin || !cmdio.IsInputTTY(ctx)

@@ -1,6 +1,6 @@
 # With the variable set, the group lists its five subcommands and stays hidden from the root help.
 trace $CLI skills --help
-trace $CLI --help | contains.py "!  skills " > /dev/null
+trace $CLI --help | contains.py "!  skills " > LOG.help
 
 # Each remaining stub exits non-zero with the not-implemented message. list-files
 # and read-file are covered in acceptance/cmd/skills/files.

@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-error-[UNIQUE_NAME]/default/files...
+Created jobs.bar
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== deploy: removing bar from config, its delete is rejected with 400
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-error-[UNIQUE_NAME]/default/files...
+Error: cannot delete resources.jobs.bar: deleting id=[BAR_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Files: 1 uploaded, 0 deleted
+
+>>> [CLI] jobs get [BAR_ID]
+json.settings.name = "bar-[UNIQUE_NAME]";
+
+>>> print_state.py
+json.state.resources.jobs.bar.__id__ = "[BAR_ID]";
+json.state.resources.jobs.foo.__id__ = "[FOO_ID]";
+
+=== destroy: the delete of foo is rejected with 400
+
+>>> musterr [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-error-[UNIQUE_NAME]/default
+
+Error: cannot delete resources.jobs.foo: deleting id=[FOO_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+
+>>> [CLI] jobs get [FOO_ID]
+json.settings.name = "foo-[UNIQUE_NAME]";
+
+>>> print_state.py
+json.state.resources.jobs.foo.__id__ = "[FOO_ID]";
