@@ -53,7 +53,7 @@ func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
 func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
 	n := rootWithReferencesUnder(root, structpath.NewStringKey(nil, "resources"))
-	c.strct(resourcesInfo, c.child(&n, "resources"), unsafe.Pointer(&root.Resources))
+	c.strct(resourcesInfo(), c.child(&n, "resources"), unsafe.Pointer(&root.Resources))
 }
 
 // ResourceStringsOf is [Strings] for the resource name of type typ.
@@ -77,7 +77,7 @@ func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
 		}
 		ch := vn.Child(k)
 		ln := ch.Child("lookup")
-		c.strct(lookupInfo, c.root(ln), unsafe.Pointer(v.Lookup))
+		c.strct(lookupInfo(), c.root(ln), unsafe.Pointer(v.Lookup))
 		c.pop()
 	}
 }

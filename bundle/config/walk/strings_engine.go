@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"sync"
 	"unsafe"
 
 	"github.com/databricks/cli/bundle/config"
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	resourcesInfo = structinfo.For(reflect.TypeFor[config.Resources]())
-	lookupInfo    = structinfo.For(reflect.TypeFor[variable.Lookup]())
+	resourcesInfo = sync.OnceValue(func() *structinfo.Type { return structinfo.For(reflect.TypeFor[config.Resources]()) })
+	lookupInfo    = sync.OnceValue(func() *structinfo.Type { return structinfo.For(reflect.TypeFor[variable.Lookup]()) })
 )
 
 // strct visits the strings of the struct t at p, in field order. A value replaced by a
@@ -276,8 +277,8 @@ func (c *stringsWalk) mapElems(t *structinfo.Type, cn *Node, p unsafe.Pointer) {
 // resource visits the strings of the resource name of type typ, whose node rn is the
 // node of "resources".
 func (c *stringsWalk) resource(rn *Node, r *config.Resources, typ, name string) {
-	for i := range resourcesInfo.Fields {
-		f := &resourcesInfo.Fields[i]
+	for i := range resourcesInfo().Fields {
+		f := &resourcesInfo().Fields[i]
 		if f.Key != typ {
 			continue
 		}
