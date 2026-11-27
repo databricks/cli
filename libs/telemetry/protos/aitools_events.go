@@ -22,12 +22,17 @@ const (
 	// AitoolsHintKindAppsInitPrompt is the interactive "install skills now?"
 	// prompt shown by `databricks apps init`.
 	AitoolsHintKindAppsInitPrompt AitoolsHintKind = "APPS_INIT_PROMPT"
+	// AitoolsHintKindSkillsHelpHint is the help footer of a command group, or
+	// the root help line, that points at the skills for the commands shown.
+	// Logged once for each help output that prints one.
+	AitoolsHintKindSkillsHelpHint AitoolsHintKind = "SKILLS_HELP_HINT"
 )
 
 // AitoolsHintEvent is emitted once for each install-hint line the CLI prints
-// for a coding agent (Claude Code's native and text lines are one event each)
-// and for the `apps init` skills tip or install prompt; other messages that
-// mention `databricks aitools install` log nothing. It carries no
+// for a coding agent (Claude Code's native and text lines are one event each),
+// for the `apps init` skills tip or install prompt, and for each skills help
+// footer or root help line; other messages that mention `databricks aitools
+// install` log nothing. It carries no
 // user-authored strings. The command it was shown on is ExecutionContext.Command
 // of the enclosing log entry. The CLI sets no calling-agent field on this
 // event: the calling agent is reported by the User-Agent of the telemetry

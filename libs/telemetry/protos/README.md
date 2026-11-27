@@ -20,6 +20,10 @@ native line printed since the text line last printed. So when the command that p
 resolves no auth (e.g. `databricks bundle schema`), no event for that line is uploaded until the
 text line prints again, even though the agent saw the hint.
 
+With skill hints on, help output logs one `aitools_hint_event` with `hint_kind` `SKILLS_HELP_HINT`
+for each skills footer or root line it prints. Help never resolves auth, so these events upload only
+when the same command resolved auth, which help does not do; the hint itself is never throttled.
+
 `databricks feedback` sends one `fast_feedback_log` entry, the event the in-product feedback widget
 records, instead of a `databricks_cli_log`. This command explicitly submits feedback, so it uploads
 immediately in a single attempt even when `DATABRICKS_CLI_DISABLE_TELEMETRY` is set. AI agents can

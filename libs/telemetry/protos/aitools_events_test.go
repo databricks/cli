@@ -19,6 +19,12 @@ func TestAitoolsEventsWireKeys(t *testing.T) {
 	assert.JSONEq(t, `{"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}`, string(b))
 
 	b, err = json.Marshal(DatabricksCliLog{
+		AitoolsHintEvent: &AitoolsHintEvent{HintKind: AitoolsHintKindSkillsHelpHint},
+	})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"aitools_hint_event":{"hint_kind":"SKILLS_HELP_HINT"}}`, string(b))
+
+	b, err = json.Marshal(DatabricksCliLog{
 		AitoolsCommandEvent: &AitoolsCommandEvent{
 			Command: AitoolsCommandList,
 			Stage:   AitoolsCommandStageStarted,

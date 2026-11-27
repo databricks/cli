@@ -31,8 +31,9 @@ func TestWriteGroupHint(t *testing.T) {
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
 
 			var buf bytes.Buffer
-			WriteGroupHint(ctx, &buf, c.group)
+			wrote := WriteGroupHint(ctx, &buf, c.group)
 			assert.Equal(t, c.want, buf.String())
+			assert.Equal(t, c.want != "", wrote)
 		})
 	}
 }

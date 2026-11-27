@@ -38,17 +38,19 @@ func GroupSkills(ctx context.Context, group string) []string {
 	return names
 }
 
-// WriteGroupHint writes the help footer for the command group named group.
-// The footer names each local skill that GroupSkills returns for group. It
-// writes nothing when GroupSkills is empty.
-func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
+// WriteGroupHint writes the help footer for the command group named group and
+// reports whether it wrote one. The footer names each local skill that
+// GroupSkills returns for group. It writes nothing, and returns false, when
+// GroupSkills is empty.
+func WriteGroupHint(ctx context.Context, w io.Writer, group string) bool {
 	names := GroupSkills(ctx, group)
 	if len(names) == 0 {
-		return
+		return false
 	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Coding agents: read the skills for this command group before you use it.")
 	for _, name := range names {
 		fmt.Fprintf(w, "  databricks skills read %s\n", name)
 	}
+	return true
 }

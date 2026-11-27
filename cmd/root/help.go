@@ -1,10 +1,13 @@
 package root
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/skills"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +29,8 @@ func setHelpFunc(root *cobra.Command) {
 
 // WriteSkillsHint appends the skill hint to the help of c: the generic line
 // for the root, or the footer for a command group. It reads only the local
-// skills catalog, so help never makes a network call.
+// skills catalog, so help never makes a network call. Each hint it prints is
+// logged as a hint-shown event; the hint itself is never throttled.
 func WriteSkillsHint(c *cobra.Command) {
 	ctx := c.Context()
 	if !skills.HintsEnabled(ctx) {
@@ -35,11 +39,22 @@ func WriteSkillsHint(c *cobra.Command) {
 	w := c.OutOrStdout()
 	if !c.HasParent() {
 		fmt.Fprintf(w, "\n%s\n", rootSkillsHint)
+		logSkillsHelpHint(ctx)
 		return
 	}
 	if !c.HasSubCommands() {
 		return
 	}
 	group := strings.TrimPrefix(c.CommandPath(), c.Root().CommandPath()+" ")
-	skills.WriteGroupHint(ctx, w, group)
+	if skills.WriteGroupHint(ctx, w, group) {
+		logSkillsHelpHint(ctx)
+	}
+}
+
+// logSkillsHelpHint logs the hint-shown event for a skills help footer or root
+// line that help printed.
+func logSkillsHelpHint(ctx context.Context) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		AitoolsHintEvent: &protos.AitoolsHintEvent{HintKind: protos.AitoolsHintKindSkillsHelpHint},
+	})
 }
