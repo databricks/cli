@@ -1,0 +1,10 @@
+version: 0.1
+source: main.default.test_table
+
+dimensions:
+  - name: region
+    expr: region
+
+measures:
+  - name: total_cost
+    expr: sum(cost)

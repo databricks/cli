@@ -1,0 +1,14 @@
+version: 0.1
+source: main.default.test_table
+dimensions:
+  - name: region
+    expr: region
+measures:
+  - name: total_cnt
+    expr: count(*)
+materialization:
+  mode: relaxed
+  schedule: CRON '0 * * * *'
+  materialized_views:
+    - name: baseline
+      type: unaggregated

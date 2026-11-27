@@ -1,0 +1,14 @@
+version: 1.1
+
+source: |
+  WITH
+    foo AS (SELECT * FROM main.sales.orders),
+    bar AS (SELECT * FROM foo WHERE totalprice > 100)
+  SELECT * FROM bar
+filter: region = 'WEST'
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+measures:
+  - name: total_orders
+    expr: COUNT(*)

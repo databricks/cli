@@ -1,0 +1,33 @@
+version: 1.1
+
+view_type: MULTI_SOURCE
+
+sources:
+  - name: s1
+    from: s1_table
+    primary_key:
+      - c1
+      - c2
+  - name: s2
+    from: s2_table
+    relationships:
+      - ref: s1
+        foreign_key:
+          - c1
+          - c2
+
+comment: Complex metric view with various comment patterns
+
+dimensions:
+  - name: month
+    expr: MONTH(s1.o_orderdate)
+    comment: Month when the order was placed
+  - name: region
+    expr: s2.o_region
+
+measures:
+  - name: count_orders
+    expr: MEASURE(s2.count)
+  - name: total_revenue
+    expr: MEASURE(s1.o_totalprice)
+    comment: Sum of all order prices

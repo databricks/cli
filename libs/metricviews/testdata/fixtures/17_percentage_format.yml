@@ -1,0 +1,11 @@
+version: 1.1
+
+source: main.sales.orders
+measures:
+  - name: profit_margin
+    expr: (SUM(o_totalprice) - SUM(o_totalcost)) / SUM(o_totalprice)
+    format:
+      type: percentage
+      decimal_places:
+        type: max
+        places: 1

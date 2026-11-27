@@ -1,0 +1,10 @@
+version: 1.1
+
+source: "select.schema.table"
+filter: region = 'WEST'
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+measures:
+  - name: count_orders
+    expr: COUNT(*)

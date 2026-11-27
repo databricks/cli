@@ -1,0 +1,13 @@
+version: 1.1
+
+source: main.sales.orders
+dimensions:
+  - name: order_date
+    expr: o_orderdate
+measures:
+  - name: running_total
+    expr: SUM(o_totalprice)
+    window:
+      - order: order_date
+        semiadditive: first
+        range: trailing 3 month

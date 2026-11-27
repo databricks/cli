@@ -1,0 +1,15 @@
+version: 1.1
+source: my_table
+comment: Metric view with byte format
+dimensions:
+  - name: file_id
+    expr: file_id
+measures:
+  - name: total_size
+    expr: sum(file_size_bytes)
+    display_name: Total File Size
+    format:
+      type: byte
+      decimal_places:
+        type: exact
+        places: 2

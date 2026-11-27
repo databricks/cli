@@ -1,0 +1,58 @@
+version: 1.1
+
+source: test_table
+
+comment: Test metric view with semantic metadata
+
+dimensions:
+  - name: region
+    expr: upper(region)
+    display_name: Geographic Region
+    synonyms:
+      - geo_region
+      - territory
+  - name: sku
+    expr: sku
+    display_name: Stock Keeping Unit
+    synonyms:
+      - product_id
+      - item_code
+
+measures:
+  - name: total_cost
+    expr: sum(cost)
+    display_name: Total Cost
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 2
+      abbreviation: compact
+    synonyms:
+      - cost_sum
+      - expense_total
+  - name: total_revenue
+    expr: sum(revenue)
+    display_name: Total Revenue
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 2
+      abbreviation: compact
+    synonyms:
+      - revenue_sum
+      - income_total
+  - name: profit_ratio
+    expr: sum(revenue) / sum(cost)
+    display_name: Profit Ratio
+    format:
+      type: percentage
+      decimal_places:
+        type: exact
+        places: 4
+    synonyms:
+      - profit_margin
+      - revenue_cost_ratio
