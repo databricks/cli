@@ -210,7 +210,7 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 		return fmt.Errorf("store pending login: %w", err)
 	}
 	agentNote := deviceCodeAgentNote + "Ask the user for the confirmation code their browser shows."
-	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(ctx, *da, agentNote),
+	cmdio.LogString(ctx, strings.Join(append(approvalInstructions(*da, agentNote),
 		"Once finished, complete the login by running the same command with",
 		"--user-code "+formatCode(da.UserCode)+" and --confirmation-code set to the confirmation code",
 		"provided in your browser.",
@@ -262,7 +262,7 @@ func (l nonInteractiveDeviceCodeLogin) complete(ctx context.Context, userCode, c
 		err = fmt.Errorf("%w. Check the confirmation code and approve the login if you haven't, then rerun this command. %s if it still fails", err, startNewLoginHint)
 		// The agent runs this step, so the error above is addressed to it.
 		// Only the user may approve the login.
-		if note := agent.AgentNote(ctx, "ask the user to check the confirmation code\n"+
+		if note := agent.AgentNote("ask the user to check the confirmation code\n" +
 			"and to approve the login if they haven't. Do not approve it yourself"); note != "" {
 			err = fmt.Errorf("%w\n\n%s", err, note)
 		}
@@ -314,7 +314,7 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 	if lastErr == nil {
 		agentNote := deviceCodeAgentNote + "Ask the user for the confirmation code their browser shows, and enter it\n" +
 			`at the "Confirmation code" prompt of this command.`
-		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(ctx, da, agentNote),
+		cmdio.LogString(ctx, strings.Join(append(approvalInstructions(da, agentNote),
 			"Once finished, enter the confirmation code provided in your browser.",
 		), "\n"))
 	} else {
@@ -339,7 +339,7 @@ func promptForConfirmationCode(ctx context.Context, da u2m.DeviceAuthorization, 
 // the login. Both flows print them before saying how to complete the login.
 // An AI agent also gets a note to pass the login on to the user, whether or
 // not it runs the command in a terminal.
-func approvalInstructions(ctx context.Context, da u2m.DeviceAuthorization, agentNote string) []string {
+func approvalInstructions(da u2m.DeviceAuthorization, agentNote string) []string {
 	lines := []string{
 		"Using a browser on another device, visit:",
 		da.VerificationURI,
@@ -348,7 +348,7 @@ func approvalInstructions(ctx context.Context, da u2m.DeviceAuthorization, agent
 		formatCode(da.UserCode),
 		"",
 	}
-	if note := agent.AgentNote(ctx, agentNote); note != "" {
+	if note := agent.AgentNote(agentNote); note != "" {
 		lines = append(lines, note, "")
 	}
 	return lines
