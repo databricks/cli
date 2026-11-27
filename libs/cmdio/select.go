@@ -3,6 +3,7 @@ package cmdio
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"slices"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/cli/libs/textutil"
 )
 
 const (
@@ -354,6 +356,12 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// executeTemplate renders a prompt template. Colors are always kept: the
+// prompt templates style text (bold, faint, underline) with colors off too.
+func (m *selectModel) executeTemplate(t *template.Template, w io.Writer, data any) error {
+	return executeTemplate(t, w, data, true)
+}
+
 func (m *selectModel) View() string {
 	var b strings.Builder
 
@@ -366,8 +374,8 @@ func (m *selectModel) View() string {
 	// shutdown, so we park the cursor on an empty row below the content.
 	if m.submitted {
 		if !m.hideSelected {
-			if err := executeTemplate(m.selectedTpl, &b, m.items[m.originalIndex()]); err != nil {
-				fmt.Fprintf(&b, "[selected template error: %v]", err)
+			if err := m.executeTemplate(m.selectedTpl, &b, m.items[m.originalIndex()]); err != nil {
+				fmt.Fprintf(&b, "[selected template error: %s]", textutil.EscapeControl(err.Error()))
 			}
 			b.WriteString("\n")
 		}
@@ -393,8 +401,8 @@ func (m *selectModel) View() string {
 		b.WriteString("\n")
 	}
 
-	if err := executeTemplate(m.labelTpl, &b, m.label); err != nil {
-		fmt.Fprintf(&b, "[label template error: %v]", err)
+	if err := m.executeTemplate(m.labelTpl, &b, m.label); err != nil {
+		fmt.Fprintf(&b, "[label template error: %s]", textutil.EscapeControl(err.Error()))
 	}
 	b.WriteString("\n")
 
@@ -421,8 +429,8 @@ func (m *selectModel) View() string {
 		if i == m.cursor {
 			tpl = m.activeTpl
 		}
-		if err := executeTemplate(tpl, &b, m.items[m.matches[i]]); err != nil {
-			fmt.Fprintf(&b, "[template error: %v]", err)
+		if err := m.executeTemplate(tpl, &b, m.items[m.matches[i]]); err != nil {
+			fmt.Fprintf(&b, "[template error: %s]", textutil.EscapeControl(err.Error()))
 		}
 		b.WriteString("\n")
 	}

@@ -1,1 +1,1 @@
-Ignore = ["raw.txt"]
+Ignore = ["raw.txt", "exported.txt"]

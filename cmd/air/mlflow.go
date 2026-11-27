@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -162,7 +163,7 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 // the end. A width of 0 or less means no limit.
 func mlflowRunLabel(name, mlflowRunID string, width int) string {
 	// Escaped before it is shortened, so that the width is that of the text shown.
-	label := oneLine(name)
+	label := textutil.EscapeControlOneLine(name)
 	if label == "" {
 		label = mlflowRunID
 	}

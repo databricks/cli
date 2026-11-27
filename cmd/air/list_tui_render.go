@@ -3,6 +3,8 @@ package aircmd
 import (
 	"strings"
 
+	"github.com/databricks/cli/libs/textutil"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -89,12 +91,12 @@ func computeListCols(rows []listRow) listCols {
 	}
 	for _, r := range rows {
 		c.runID = max(c.runID, lipgloss.Width(r.runIDLabel()))
-		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(oneLine(r.Experiment))))
+		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(textutil.EscapeControlOneLine(r.Experiment))))
 		c.status = max(c.status, lipgloss.Width("● "+listRowStatus(r)))
 		c.started = max(c.started, lipgloss.Width(startedDisplay(r)))
 		c.duration = max(c.duration, lipgloss.Width(r.Duration))
 		c.progress = max(c.progress, lipgloss.Width(progressDisplay(r)))
-		c.user = min(columnCap, max(c.user, lipgloss.Width(oneLine(r.User))))
+		c.user = min(columnCap, max(c.user, lipgloss.Width(textutil.EscapeControlOneLine(r.User))))
 		c.accel = max(c.accel, lipgloss.Width(r.Accelerators))
 	}
 	return c
@@ -200,7 +202,7 @@ func (c listCols) compact(rows []listRow) listCols {
 	c.mlflow = len("MLflow")
 	for _, r := range rows {
 		c.started = max(c.started, lipgloss.Width(startedCompact(r)))
-		c.mlflow = max(c.mlflow, lipgloss.Width(oneLine(mlflowLabel(r))))
+		c.mlflow = max(c.mlflow, lipgloss.Width(textutil.EscapeControlOneLine(mlflowLabel(r))))
 	}
 	c.mlflow = min(c.mlflow, mlflowColWidth)
 	return c
@@ -324,7 +326,7 @@ func listRowStatus(r listRow) string {
 // escaping existed), then it is truncated to width and padded with (background-only)
 // spaces so columns align even when the text is styled or hyperlinked.
 func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipgloss.Color, right, underline bool, link string) string {
-	text = truncate(oneLine(text), width)
+	text = truncate(textutil.EscapeControlOneLine(text), width)
 	style := base.Foreground(fg)
 	if underline {
 		style = style.Underline(true)

@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -260,7 +261,7 @@ func TestRenderRowEscapesControlCharacters(t *testing.T) {
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 	// The width is measured on the escaped text, so the columns stay aligned.
-	assert.Equal(t, cols.experiment, lipgloss.Width(oneLine(row.Experiment)))
+	assert.Equal(t, cols.experiment, lipgloss.Width(textutil.EscapeControlOneLine(row.Experiment)))
 }
 
 func TestListModelInfoKeyOpensDetail(t *testing.T) {

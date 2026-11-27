@@ -162,7 +162,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		fmt.Fprintf(out, "Run URL:    %s\n", view.dashboardURL)
 	}
 	if view.mlflowURL != "" {
-		fmt.Fprintf(out, "MLflow URL: %s\n", oneLine(view.mlflowURL))
+		fmt.Fprintf(out, "MLflow URL: %s\n", textutil.EscapeControlOneLine(view.mlflowURL))
 	}
 }
 
@@ -460,18 +460,18 @@ func renderBox(p palette, title, body string) string {
 // server-supplied, so control characters in them are escaped before they reach
 // the terminal.
 func renderFields(p palette, colorOn bool, v runView) string {
-	v.status = oneLine(v.status)
-	v.accelerators = oneLine(v.accelerators)
-	v.experiment = oneLine(v.experiment)
-	v.mlflowLabel = oneLine(v.mlflowLabel)
-	v.user = oneLine(v.user)
-	v.environment = oneLine(v.environment)
+	v.status = textutil.EscapeControlOneLine(v.status)
+	v.accelerators = textutil.EscapeControlOneLine(v.accelerators)
+	v.experiment = textutil.EscapeControlOneLine(v.experiment)
+	v.mlflowLabel = textutil.EscapeControlOneLine(v.mlflowLabel)
+	v.user = textutil.EscapeControlOneLine(v.user)
+	v.environment = textutil.EscapeControlOneLine(v.environment)
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),
 	}
 	if v.task != "" {
-		rows = append(rows, field(p, "Task", p.n12.Render(oneLine(v.task))))
+		rows = append(rows, field(p, "Task", p.n12.Render(textutil.EscapeControlOneLine(v.task))))
 	}
 	rows = append(rows,
 		field(p, "Status", status),

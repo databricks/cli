@@ -34,7 +34,7 @@ func TestExecuteTemplateEscapesControlCharacters(t *testing.T) {
 		&escapeTestRow{ID: 2, Name: Green(ctx, "●") + " plain\r\n"},
 	}
 	var out bytes.Buffer
-	require.NoError(t, executeTemplate(tmpl, &out, rows))
+	require.NoError(t, executeTemplate(tmpl, &out, rows, colorEnabled(ctx)))
 
 	assert.Equal(t,
 		"\x1b[32m1\x1b[0m\t\x1b[1m"+`a\u001b]0;title\u0007b`+"\x1b[0m\t"+`in\u001bner`+"\t"+`k\r=v\u001b[2J`+"\t"+`a\u001b]0;title\u0007b`+"\n"+
@@ -44,12 +44,34 @@ func TestExecuteTemplateEscapesControlCharacters(t *testing.T) {
 	assert.Equal(t, "a\x1b]0;title\x07b", rows[0].(escapeTestRow).Name)
 }
 
+func TestExecuteTemplateKeepsNoColorsWhenColorsAreOff(t *testing.T) {
+	ctx, _ := NewTestContextWithStdout(t.Context())
+	require.False(t, colorEnabled(ctx))
+
+	tmpl, err := template.New("t").Funcs(renderFuncMap(ctx)).Parse("{{green `%d` .ID}}\t{{.Name}}\t{{.Inner}}\n")
+	require.NoError(t, err)
+
+	// With colors off the template adds none, so a color in a value is the value's.
+	var out bytes.Buffer
+	require.NoError(t, executeTemplate(tmpl, &out, escapeTestRow{ID: 1, Name: "a\x1b[8mb", inner: "c"}, colorEnabled(ctx)))
+	assert.Equal(t, "1\t"+`a\u001b[8mb`+"\tc\n", out.String())
+}
+
+func TestExecuteTemplateEndsAStyleLeftOnAtItsCell(t *testing.T) {
+	tmpl, err := template.New("t").Parse("{{.Name}}\t{{.Inner}}\n")
+	require.NoError(t, err)
+
+	var out bytes.Buffer
+	require.NoError(t, executeTemplate(tmpl, &out, escapeTestRow{Name: "a\x1b[8mb", inner: "c"}, true))
+	assert.Equal(t, "a\x1b[8mb\x1b[0m\tc\n", out.String())
+}
+
 func TestExecuteTemplateWritesOutputRenderedBeforeAnError(t *testing.T) {
 	tmpl, err := template.New("t").Funcs(staticTemplateFuncs).Parse("before\r{{`not base64` | b64_decode}}after")
 	require.NoError(t, err)
 
 	var out bytes.Buffer
-	err = executeTemplate(tmpl, &out, nil)
+	err = executeTemplate(tmpl, &out, nil, false)
 	require.Error(t, err)
 	assert.Equal(t, `before\r`, out.String())
 }

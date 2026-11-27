@@ -40,6 +40,8 @@ type templatePager struct {
 	headerStr  string
 	widths     []int
 	headerDone bool
+	// keepColors is whether the templates add colors; see executeTemplate.
+	keepColors bool
 }
 
 // flushLines renders the header (on the first call) plus any buffered
@@ -57,7 +59,7 @@ func (p *templatePager) flushLines(buf []any) ([]string, error) {
 		rendered.WriteByte('\n')
 	}
 	if len(buf) > 0 {
-		if err := executeTemplate(p.rowT, &rendered, buf); err != nil {
+		if err := executeTemplate(p.rowT, &rendered, buf, p.keepColors); err != nil {
 			return nil, err
 		}
 	}
@@ -99,9 +101,10 @@ func renderIteratorPagedTemplateCore[T any](
 		return err
 	}
 	pager := &templatePager{
-		headerT:   headerT,
-		rowT:      rowT,
-		headerStr: headerTemplate,
+		headerT:    headerT,
+		rowT:       rowT,
+		headerStr:  headerTemplate,
+		keepColors: colorEnabled(ctx),
 	}
 	m := newPagerModel(ctx, out, iter, pager, pageSize, limitFromContext(ctx))
 	p := tea.NewProgram(

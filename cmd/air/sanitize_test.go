@@ -23,23 +23,6 @@ func assertControlEscaped(t *testing.T, out string) {
 	assert.Contains(t, out, controlEscaped)
 }
 
-func TestOneLine(t *testing.T) {
-	tests := []struct {
-		name, in, want string
-	}{
-		{"plain text is unchanged", "sunny-cat-42", "sunny-cat-42"},
-		{"non-ASCII text is kept", "résumé 日本語 🚀", "résumé 日本語 🚀"},
-		{"escape sequences and control characters", controlPayload, controlEscaped},
-		{"line breaks and tabs", "a\tb\nc\r\nd", `a\tb\nc\r\nd`},
-		{"already escaped text is unchanged", controlEscaped, controlEscaped},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, oneLine(tt.in))
-		})
-	}
-}
-
 func TestOSC8(t *testing.T) {
 	assert.Equal(t, "\x1b]8;;https://h.test/a\x1b\\label\x1b]8;;\x1b\\", osc8("https://h.test/a", "label"))
 	// A control character in the target would end the sequence early.

@@ -7,14 +7,25 @@ Error: Scope scope\u001b]0;title\u0007\u001b[2J\rname does not exist
 === list as a table
 
 >>> [CLI] jobs list
-[JOB_ID]  nightly\u001b]0;title\u0007\u001b[2J\rETL <0x1b>[31mred<0x1b>[0m
+[JOB_ID]  nightly\u001b]0;title\u0007\u001b[2J\rETL \u001b[31mred\u001b[0m
 
 === list as JSON: unchanged, the JSON encoder escapes the name itself
 
 >>> [CLI] jobs list -o json
 "nightly\u001b]0;title\u0007\u001b[2J\rETL \u001b[31mred\u001b[0m"
 
-=== an exported file is written as is
+=== an exported file is written as is, tabs included
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt
 line 1<0x0d>line 2<0x1b>[2J
+	indented
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt --file exported.txt
+
+>>> diff.py raw.txt exported.txt
+
+=== export as JSON: the response, with the content in base64
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt -o json
+line 1<0x0d>line 2<0x1b>[2J
+	indented

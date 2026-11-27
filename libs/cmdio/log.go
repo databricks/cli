@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-
-	"github.com/databricks/cli/libs/textutil"
 )
 
 // Log calls [LogString] with the string representation of str.
@@ -19,7 +17,7 @@ func Log(ctx context.Context, str fmt.Stringer) {
 // the CLI added are kept.
 func LogString(ctx context.Context, str string) {
 	c := fromContext(ctx)
-	_, _ = io.WriteString(c.err, textutil.EscapeControlKeepColors(str)+"\n")
+	_, _ = io.WriteString(c.err, escapeComposed(str, c.colorsInLogs())+"\n")
 }
 
 // LogRawString writes str to the error writer as is, followed by a newline. It

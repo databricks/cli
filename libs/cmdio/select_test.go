@@ -61,6 +61,7 @@ func TestSelectModelEscapesControlCharacters(t *testing.T) {
 		assert.NotContains(t, v, "\x07")
 		assert.NotContains(t, v, "\r")
 		assert.Contains(t, v, ansiGreen+"●"+ansiReset+" first "+escaped)
+		assert.NotContains(t, v, "template error")
 		if submitted {
 			assert.Contains(t, v, "Chosen "+escaped)
 		} else {
