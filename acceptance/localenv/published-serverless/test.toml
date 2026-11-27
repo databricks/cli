@@ -1,0 +1,36 @@
+# setup-local against the published databricks/environments artifacts. Locally
+# the test server stands in for them (stubs below) and the script plans only;
+# on cloud the CLI fetches the real artifacts, so the run pins that v5 is
+# published in a shape setup-local can plan from and provision, and that an
+# unpublished version maps to E_ENV_UNSUPPORTED.
+Cloud = true
+
+# The real provision (cloud only) writes a venv, a lockfile and uv's private
+# Python installs; their contents follow the published repo and the package
+# index, so the script checks them itself.
+Ignore = ["provision", "uv-python"]
+
+# The published v5 artifact, trimmed to the fields setup-local reads.
+[[Server]]
+Pattern = "GET /serverless/serverless-v5/pyproject.toml"
+Response.Body = '''
+[project]
+name = "constraint-env-serverless-v5"
+version = "0.1.0"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=18.2.0",
+]
+
+[tool.uv]
+constraint-dependencies = [
+    "pandas~=2.2.3",
+]
+'''
+
+[[Server]]
+Pattern = "GET /serverless/serverless-v9999/pyproject.toml"
+Response.StatusCode = 404
+Response.Body = '404: Not Found'

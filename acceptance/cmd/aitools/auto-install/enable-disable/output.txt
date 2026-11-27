@@ -14,13 +14,15 @@ Automatic installation of Databricks AI tools is disabled.
   "opted_out": true
 }
 
-=== enable clears it
+=== enable stores the consent in its place
 
 >>> [CLI] aitools auto-install enable
 Automatic installation of Databricks AI tools is enabled.
 
 >>> auto_install_state
-{}
+{
+  "consented": true
+}
 
 === enable says when the environment still turns it off
 
@@ -46,7 +48,9 @@ Error: no skills or plugins installed
 Exit code: 1
 
 >>> auto_install_state
-{}
+{
+  "consented": true
+}
 
 === a global uninstall of a mistyped skill leaves it on
 
@@ -56,7 +60,9 @@ Error: skill "databricks-tset" is not installed
 Exit code: 1
 
 >>> auto_install_state
-{}
+{
+  "consented": true
+}
 
 === a global uninstall turns it off
 
@@ -74,4 +80,25 @@ Uninstalled 1 skill.
 Uninstalled 1 skill.
 
 >>> auto_install_state
-{}
+{
+  "consented": true
+}
+
+=== a project install stores no consent
+
+>>> auto_install_state
+(no auto-install state)
+
+=== a global install stores the consent
+
+>>> auto_install_state
+{
+  "consented": true
+}
+
+=== a global install keeps an opt-out
+
+>>> auto_install_state
+{
+  "opted_out": true
+}

@@ -24,12 +24,27 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 	// The "compute_id" key is set; rewrite it to "cluster_id".
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		v, d := rewriteComputeIdToClusterId(v, dyn.NewPath(dyn.Key("bundle")), nil)
+		bundlePath := dyn.NewPath(dyn.Key("bundle"))
+		clusterIdSet := hasClusterId(v, bundlePath)
+		v, d := rewriteComputeIdToClusterId(v, bundlePath, nil)
+		if len(d) > 0 {
+			b.ComputeIdWrittenIn = append(b.ComputeIdWrittenIn, "")
+		}
+		if clusterIdSet {
+			b.ClusterIdWrittenIn = append(b.ClusterIdWrittenIn, "")
+		}
 		diags = diags.Extend(d)
 
 		// Check if the "compute_id" key is set in any target overrides.
 		return dyn.MapByPattern(v, dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			clusterIdSet := hasClusterId(v, dyn.Path{})
 			v, d := rewriteComputeIdToClusterId(v, dyn.Path{}, p)
+			if len(d) > 0 {
+				b.ComputeIdWrittenIn = append(b.ComputeIdWrittenIn, p[1].Key())
+			}
+			if clusterIdSet {
+				b.ClusterIdWrittenIn = append(b.ClusterIdWrittenIn, p[1].Key())
+			}
 			diags = diags.Extend(d)
 			return v, nil
 		})
@@ -37,6 +52,11 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 	diags = diags.Extend(diag.FromErr(err))
 	return diags
+}
+
+func hasClusterId(v dyn.Value, p dyn.Path) bool {
+	clusterId, err := dyn.GetByPath(v, p.Append(dyn.Key("cluster_id")))
+	return err == nil && clusterId.Kind() != dyn.KindInvalid
 }
 
 // rewriteComputeIdToClusterId rewrites p.compute_id to p.cluster_id in v; prefix is the

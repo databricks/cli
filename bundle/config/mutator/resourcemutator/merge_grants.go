@@ -33,38 +33,38 @@ func (m *mergeGrants) Name() string {
 }
 
 func (m *mergeGrants) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v.Kind() == dyn.KindNil {
-			return v, nil
-		}
+	return diag.FromErr(b.Config.Mutate(m.merge))
+}
 
-		for _, resourceType := range grantResourceTypes {
-			var mapErr error
-			v, mapErr = dyn.Map(v, "resources."+resourceType, dyn.Foreach(func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
-				// Merge grant entries by principal. This concatenates privileges
-				// for entries with the same principal via the standard merge semantics.
-				resource, err := dyn.Map(resource, "grants", merge.ElementsByKey("principal", func(v dyn.Value) string {
-					s, _ := v.AsString()
-					return s
-				}))
-				if err != nil {
-					return resource, err
-				}
-
-				// Deduplicate privileges within each grant entry.
-				return dyn.Map(resource, "grants", dyn.Foreach(func(_ dyn.Path, grant dyn.Value) (dyn.Value, error) {
-					return dyn.Map(grant, "privileges", deduplicateSequence)
-				}))
-			}))
-			if mapErr != nil {
-				return v, mapErr
-			}
-		}
-
+func (m *mergeGrants) merge(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() == dyn.KindNil {
 		return v, nil
-	})
+	}
 
-	return diag.FromErr(err)
+	for _, resourceType := range grantResourceTypes {
+		var mapErr error
+		v, mapErr = dyn.Map(v, "resources."+resourceType, dyn.Foreach(func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
+			// Merge grant entries by principal. This concatenates privileges
+			// for entries with the same principal via the standard merge semantics.
+			resource, err := dyn.Map(resource, "grants", merge.ElementsByKey("principal", func(v dyn.Value) string {
+				s, _ := v.AsString()
+				return s
+			}))
+			if err != nil {
+				return resource, err
+			}
+
+			// Deduplicate privileges within each grant entry.
+			return dyn.Map(resource, "grants", dyn.Foreach(func(_ dyn.Path, grant dyn.Value) (dyn.Value, error) {
+				return dyn.Map(grant, "privileges", deduplicateSequence)
+			}))
+		}))
+		if mapErr != nil {
+			return v, mapErr
+		}
+	}
+
+	return v, nil
 }
 
 // deduplicateSequence removes duplicate values from a dyn sequence,

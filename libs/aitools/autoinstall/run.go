@@ -135,9 +135,15 @@ func RecordUnfinished(ctx context.Context, version, id string) error {
 	})
 }
 
-// MarkInstalling sets State.Installing before a first install starts.
+// MarkInstalling sets State.Installing before a first install starts, and
+// State.InstalledWithoutConsent when the user has not answered.
 func MarkInstalling(ctx context.Context) error {
-	return updateState(ctx, func(s *State) { s.Installing = true })
+	return updateState(ctx, func(s *State) {
+		s.Installing = true
+		if s.Consent() == ConsentUnknown {
+			s.InstalledWithoutConsent = true
+		}
+	})
 }
 
 // SaveInstallStateDigest sets State.InstallStateDigest after a first install
