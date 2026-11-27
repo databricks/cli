@@ -617,6 +617,9 @@ func preserveBlankLines(content []byte) []byte {
 				inBlockScalar = true
 				blockScalarIndent = indent
 				blockContentIndent = -1
+				if d := strings.IndexAny(m[1], "123456789"); d >= 0 {
+					blockContentIndent = indent + int(m[1][d]-'0')
+				}
 				keepsTrailingLines = strings.Contains(m[1], "+")
 			}
 		}

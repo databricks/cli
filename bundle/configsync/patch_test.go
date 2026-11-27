@@ -578,6 +578,7 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 		{"tab under existing parent", "tags:\n  other: x\n", "one\n\t\nthree", `tags: {other: x, key: "one\n\t\nthree"}`},
 		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n    \n\t\nthree", tags: {key: value}}`},
 		{"untouched block scalar ending in whitespace", "script: |\n  one\n      \ntags: null\n", "value", `{script: "one\n    \n", tags: {key: value}}`},
+		{"untouched block scalar with indent indicator", "script: |2\n    one\n   \ntags: null\n", "value", `{script: "  one\n \n", tags: {key: value}}`},
 		{"untouched keep block scalar", "script: |+\n  one\n\ntags: null\n", "value", `{script: "one\n\n", tags: {key: value}}`},
 		{"untouched block scalar at end of file", "tags: null\nscript: |\n  one\n  \t\n", "value", `{script: "one\n\t\n", tags: {key: value}}`},
 	} {
