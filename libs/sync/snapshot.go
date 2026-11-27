@@ -177,18 +177,19 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 }
 
 func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (diff, error) {
-	targetState, err := NewSnapshotState(all)
-	if err != nil {
-		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
-	}
-
 	currentState := s.SnapshotState
 	if err := currentState.validate(); err != nil {
 		return diff{}, fmt.Errorf("error parsing existing sync state. Please delete your existing sync snapshot file (%s) and retry: %w", s.snapshotPath, err)
 	}
 
+	targetState, reset, err := newSnapshotStateFrom(all, currentState)
+	if err != nil {
+		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
+	}
+
 	// Compute diff to apply to get from current state to new target state.
 	diff := computeDiff(targetState, currentState)
+	diff.resetMtimes = reset
 
 	// Update state to new value. This is not persisted to the file system before
 	// the diff is applied successfully.

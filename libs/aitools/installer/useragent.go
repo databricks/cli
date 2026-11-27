@@ -63,7 +63,7 @@ func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
 		return ctx
 	}
 	// Only the global state is read: the CLI installs plugins in project scope
-	// only for agents with SupportsProjectScope (see mapAgentScope in
+	// only for agents with SupportsProjectPlugin (see mapAgentScope in
 	// cmd/aitools), and those have a manifest reader.
 	tooling := a.DatabricksTooling(ctx, func() bool { return PluginRecorded(ctx, ScopeGlobal, a.Name) })
 	return useragent.InContext(ctx, callingAgentToolingUserAgentKey, tooling.String())

@@ -26,11 +26,10 @@ title "Nothing was written, so the removal is still pending"
 trace $CLI bundle plan -o json > out.plan.json
 trace set_action
 
-title "The delete settles FAILED the same way, and here the engine decides what the user sees:"
-title "its destroy step forgives a delete error matching none of the cases it knows, so the"
-title "destroy reports success and drops the state while the set stays in the workspace. The leg"
-title "with deployment-history recording takes the one branch that records and returns the"
-title "failure, which is why this case runs on the other leg only."
-trace $CLI bundle destroy --auto-approve
+title "The delete settles FAILED the same way: the destroy fails with the operation's error and"
+title "keeps the set, and the features that depend on it, in state."
+# The two dependency errors are reported in either order.
+trace musterr $CLI bundle destroy --auto-approve 2>&1 | sort_blocks.py
+trace print_state.py | gron.py | grep __id__
 
 rm -f out.requests.txt out.plan.json

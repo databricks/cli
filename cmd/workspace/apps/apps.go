@@ -384,7 +384,8 @@ func newCreateUpdate() *cobra.Command {
     APP_NAME: The name of the app to update.
     UPDATE_MASK: Comma-separated names of the app fields to update, such as description
       or resources. A field named in the mask but absent from app is
-      cleared, except compute_size, which resets to MEDIUM.
+      cleared, except compute_size, which resets to MEDIUM. Sent in the
+      request body together with app.
 
       The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
@@ -617,7 +618,8 @@ func newDeleteSpace() *cobra.Command {
 
 Delete an app space.
 
-  Deletes an app space.
+  Deletes the app space with the supplied name. Spaces are identified by name,
+  not by id. The workspace's default space can't be deleted.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1128,7 +1130,8 @@ func newGetSpace() *cobra.Command {
 
 Get an app space.
 
-  Retrieves information for the app space with the supplied name.
+  Retrieves information for the app space with the supplied name. Spaces are
+  identified by name, not by id.
 
   Arguments:
     NAME: The name of the app space.`
@@ -2207,8 +2210,10 @@ func newUpdateSpace() *cobra.Command {
 
 Update an app space.
 
-  Updates an app space. The update process is asynchronous and the status of the
-  update can be checked with the GetSpaceOperation method.
+  Updates the app space with the supplied name. Spaces are identified by name,
+  not by id. The workspace's default space can't be updated. The update process
+  is asynchronous and the status of the update can be checked with the
+  GetSpaceOperation method.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2222,7 +2227,7 @@ Update an app space.
       after the space is created.
     UPDATE_MASK: Comma-separated names of the space fields to update, such as
       description or resources. A field named in the mask but absent from
-      space is cleared.`
+      space is cleared. Sent as a query parameter, not in the space body.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

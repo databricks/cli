@@ -52,6 +52,12 @@ func TestAutoInstallPrompt(t *testing.T) {
 		input string
 		// installState replaces the global install state file.
 		installState string
+		// unwritableSkillsDir puts a file where Cursor's skills directory
+		// belongs, so Cursor cannot get the skills.
+		unwritableSkillsDir bool
+		// handPlacedSkill puts the user's own databricks-test skill into
+		// Cursor's skills directory, so the install is refused the skills.
+		handPlacedSkill bool
 		// env is set on top of a terminal with color.
 		env map[string]string
 		// agent is a coding agent's env var, set to 1: the run is that
@@ -126,6 +132,25 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
 			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
+		},
+		{
+			name:                "an agent that got no skills is a failed attempt, retried later",
+			unwritableSkillsDir: true,
+			agent:               "CLAUDECODE",
+			stdinPiped:          true,
+			stdoutRedirected:    true,
+			stderrRedirected:    true,
+			wantState:           autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Installing: true, ID: "treatment-machine"},
+			wantOutcome:         protos.AitoolsAutoInstallOutcomeFailed,
+		},
+		{
+			name:            "a yes refused the skills says what was kept",
+			handPlacedSkill: true,
+			wantPrompt:      true,
+			input:           "\n",
+			wantStderr:      []string{"Did not install the Databricks AI tools skills: kept the databricks-test skill in the skills directory of Cursor, which an install would move aside; run 'databricks aitools install' to replace it"},
+			wantState:       autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome:     protos.AitoolsAutoInstallOutcomeKept,
 		},
 		{
 			name:        "NO_COLOR still asks",
@@ -277,6 +302,14 @@ func TestAutoInstallPrompt(t *testing.T) {
 			if tc.inContainer {
 				inContainer = func() bool { return true }
 			}
+			if tc.unwritableSkillsDir {
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".cursor", "skills"), nil, 0o644))
+			}
+			if tc.handPlacedSkill {
+				handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+				require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "NOTES.md"), []byte("my notes"), 0o644))
+			}
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
 				t.Setenv(k, v)
@@ -305,9 +338,15 @@ func TestAutoInstallPrompt(t *testing.T) {
 
 			_, err := os.Stat(filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
 			assert.Equal(t, tc.wantSkills, err == nil, "Cursor has the skill")
+			assert.Equal(t, tc.wantSkills, strings.Contains(stderr.String(), "Installed Databricks AI tools for Cursor."), "notice names Cursor")
 
 			state, err := autoinstall.Load(ctx)
 			require.NoError(t, err)
+			// Only an install that saved install state and did not finish
+			// records its digest; TestAutoInstallRetriesAnAgentThatGotNoSkills
+			// checks the value.
+			assert.Equal(t, tc.unwritableSkillsDir, state.InstallStateDigest != "", "install state digest")
+			state.InstallStateDigest = ""
 			assert.Equal(t, tc.wantState, state)
 
 			var outcomes []protos.AitoolsAutoInstallOutcome
@@ -503,6 +542,141 @@ func TestAutoInstallWaitsBeforeARetry(t *testing.T) {
 	outcomes, state = runAutoInstallAt(t, -time.Hour)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+}
+
+// A first install that saved install state but did not give Cursor the skills
+// is retried as a first install, so Cursor gets them once its skills
+// directory can be written.
+func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	skillsDir := filepath.Join(home, ".cursor", "skills")
+	require.NoError(t, os.WriteFile(skillsDir, nil, 0o644))
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	require.NotNil(t, installState, "the skills are recorded")
+	want := failedAttempts(1, 0)
+	want.InstallStateDigest, err = installStateDigest(installState)
+	require.NoError(t, err)
+	assert.Equal(t, want, state)
+
+	require.NoError(t, os.Remove(skillsDir))
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
+}
+
+// A first install that gives Claude Code its plugin but is refused Cursor's
+// skills, because the user put a skill of that name into Cursor's skills
+// directory, stays unfinished: a later version finishes it once the user has
+// moved that skill out, instead of updating the install state that holds only
+// the plugin, which would never give Cursor the skills. Claude Code, which has
+// its plugin, is left out of that install: its CLI is not run again.
+func TestAutoInstallFinishesAMixedInstallRefusedTheSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o755))
+	fakeBinsOnPath(t, "claude")
+	setAgentCLIsStoppable(t, true)
+	orig, origInstalled := installPluginForAgentFn, pluginAlreadyInstalledFn
+	t.Cleanup(func() { installPluginForAgentFn, pluginAlreadyInstalledFn = orig, origInstalled })
+	pluginInstalls := 0
+	installPluginForAgentFn = func(_ context.Context, _ *agents.Agent, scope, _ string) (installer.PluginRecord, error) {
+		pluginInstalls++
+		return installer.PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: scope, Version: "0.2.6"}, nil
+	}
+	pluginAlreadyInstalledFn = func(context.Context, *agents.Agent, string) bool { return pluginInstalls > 0 }
+	handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "NOTES.md"), []byte("my notes"), 0o644))
+	installed := []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, installed, outcomes)
+	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	require.NotNil(t, installState, "the plugin is recorded")
+	assert.Contains(t, installState.Plugins, "claude-code")
+	assert.Empty(t, installState.Skills)
+	digest, err := installStateDigest(installState)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+	assert.Equal(t, 1, pluginInstalls)
+
+	// While the skill is still there, a later version installs nothing again.
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.Equal(t, 1, pluginInstalls)
+
+	require.NoError(t, os.RemoveAll(handPlaced))
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.32.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, installed, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.32.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+	assert.Equal(t, 1, pluginInstalls)
+	installState, err = installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Contains(t, installState.Plugins, "claude-code", "the plugin is still recorded")
+}
+
+// A first install refused the skills before it wrote anything leaves nothing
+// to finish, so the version is settled as a plain kept: a later version
+// treats skills without install state in the global directory as the user's.
+// The user may have moved the skill there out of Cursor's skills directory.
+func TestAutoInstallSettlesARefusalThatWroteNothing(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "SKILL.md"), []byte("my own skill"), 0o644))
+	kept := []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, kept, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+
+	moved := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(filepath.Dir(moved), 0o755))
+	require.NoError(t, os.Rename(handPlaced, moved))
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, kept, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	data, err := os.ReadFile(filepath.Join(moved, "SKILL.md"))
+	require.NoError(t, err)
+	assert.Equal(t, "my own skill", string(data))
+}
+
+// A first install that did not finish left skills without install state in
+// the global directory. When a retry is refused the skills because of a skill
+// the user put into Cursor's skills directory, the install stays unfinished,
+// so a later version finishes it instead of keeping the skills it left as the
+// user's.
+func TestAutoInstallKeepsAnUnfinishedInstallRefusedTheSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, `{"id": "treatment-machine", "installing": true}`, "CLAUDECODE", "1")
+	left := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(left, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(left, "SKILL.md"), []byte("---\nname: databricks-test\n---\n"), 0o644))
+	handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "NOTES.md"), []byte("my notes"), 0o644))
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, ID: "treatment-machine"}, state)
+	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+
+	require.NoError(t, os.RemoveAll(handPlaced))
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 }
 
 // runAutoInstallAt runs the hook at autoInstallTestNow plus elapsed and returns

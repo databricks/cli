@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The service rejects the enrollment check, and the deploy carries on without recording or a warning"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get
+
+title "The check fails unexpectedly: the deploy warns that it skips deployment history, and does not record"
+trace fault.py "GET /api/2.0/bundle/enrollments:check" 500 0 1000 INTERNAL_ERROR
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get
+
+rm -f "$OUT_REQUESTS"

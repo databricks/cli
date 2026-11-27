@@ -55,6 +55,7 @@ import (
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	genie "github.com/databricks/cli/cmd/workspace/genie"
 	genie_agents "github.com/databricks/cli/cmd/workspace/genie-agents"
+	genie_migrate "github.com/databricks/cli/cmd/workspace/genie-migrate"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -200,6 +201,7 @@ func All() []root.CommandSpec {
 	out = append(out, functions.Spec)
 	out = append(out, genie.Spec)
 	out = append(out, genie_agents.Spec)
+	out = append(out, genie_migrate.Spec)
 	out = append(out, git_credentials.Spec)
 	out = append(out, global_init_scripts.Spec)
 	out = append(out, grants.Spec)

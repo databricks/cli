@@ -1,0 +1,134 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created jobs.readd_job
+Created jobs.rename_job
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove every task except keep remotely
+
+=== Remove a, b and c and rename z to y remotely, keep stays
+
+=== Rename k to z remotely in readd_job
+
+=== Sync
+Detected changes in 3 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='a']: remove
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='d']: remove
+
+Resource: resources.jobs.readd_job
+  tasks[task_key='k']: remove
+  tasks[task_key='z']: add
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='a']: remove
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='y']: add
+  tasks[task_key='z']: remove
+
+
+
+=== Tasks left in databricks.yml
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -11,17 +11,4 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/keep
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/b
+-        - task_key: d
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/d
+-        - task_key: c
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/c
+-
+     # The same with a rename in place of the last removal.
+     rename_job:
+@@ -30,17 +17,7 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/keep
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/b
+-        - task_key: z
++        - task_key: y
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/z
+-        - task_key: c
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/c
+-
+     # A removal, an addition into the slot it frees, and a replace of the task after
+     # it, all in one sync. The replace comes from a rename synced earlier without a
+@@ -51,5 +28,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: k
++        - task_key: z
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/k
+
+=== Task keys after the sync
+my_job config: keep
+my_job remote: keep
+rename_job config: keep y
+rename_job remote: keep y
+
+=== Without deploying, remove a and add m remotely in readd_job
+
+=== Sync readd_job again
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.readd_job
+  tasks[task_key='a']: remove
+  tasks[task_key='m']: add
+  tasks[task_key='z']: replace
+
+
+
+=== readd_job keeps m and z
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -25,8 +25,8 @@
+     readd_job:
+       tasks:
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: z
+-          notebook_task:
++        - notebook_task:
++            notebook_path: /Users/[USERNAME]/m
++          task_key: m
++        - notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/k
++          task_key: z
+readd_job config: m z
+readd_job remote: m z
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.readd_job
+  delete resources.jobs.rename_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted
