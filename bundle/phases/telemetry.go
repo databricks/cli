@@ -16,8 +16,8 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -249,6 +249,14 @@ func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
 	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 }
 
+// Key under which the snapshot upload duration is reported in
+// bundle_mutator_execution_time_ms, next to files.(upload) so the two can be
+// compared. Covers creating the snapshot resource (the upload plus recording it in
+// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
+// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
+// not a mutator.
+const snapshotUploadDurationKey = "snapshot.upload"
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -256,7 +264,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	b.Telemetry.ImmutableSnapshotUsed = new(len(b.Config.Resources.Snapshots) > 0)
 	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   metrics.SnapshotUploadDuration,
+			Key:   snapshotUploadDurationKey,
 			Value: d.(time.Duration).Milliseconds(),
 		})
 	}
@@ -504,4 +512,56 @@ func bundleBitmap(ctx context.Context, b *bundle.Bundle) string {
 		return ""
 	}
 	return encoded
+}
+
+// trackUsedCompute records which kinds of compute the jobs use.
+type trackUsedCompute struct{}
+
+func (c *trackUsedCompute) Name() string {
+	return "trackUsedCompute"
+}
+
+func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Track different types of compute used
+	hasServerlessCompute := false
+	hasClassicJobCompute := false
+	hasClassicInteractiveCompute := false
+
+	// Iterate over all tasks in bundle
+	for _, job := range b.Config.Resources.Jobs {
+		for _, task := range job.Tasks {
+			// If the environment_key is set - then serverless compute is used
+			if task.EnvironmentKey != "" {
+				hasServerlessCompute = true
+				continue
+			}
+
+			// If the new_cluster or job_cluster_key is set - then classic job compute is used
+			if task.NewCluster != nil || task.JobClusterKey != "" {
+				hasClassicJobCompute = true
+				continue
+			}
+
+			// If existing_cluster_id is set - then classic interactive compute is used
+			if task.ExistingClusterId != "" {
+				hasClassicInteractiveCompute = true
+				continue
+			}
+
+			// For notebook tasks if nothing is set it means serverless compute is used
+			if task.NotebookTask != nil {
+				hasServerlessCompute = true
+			}
+		}
+	}
+
+	b.Telemetry.HasServerlessCompute = new(hasServerlessCompute)
+	b.Telemetry.HasClassicJobCompute = new(hasClassicJobCompute)
+	b.Telemetry.HasClassicInteractiveCompute = new(hasClassicInteractiveCompute)
+
+	return nil
+}
+
+func trackUsedComputeMutator() bundle.Mutator {
+	return &trackUsedCompute{}
 }

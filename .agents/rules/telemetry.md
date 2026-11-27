@@ -2,14 +2,14 @@
 description: How to add or extend bundle deploy telemetry metrics
 globs:
   - "libs/telemetry/**/*.go"
+  - "bundle/telemetry.go"
   - "bundle/phases/telemetry.go"
   - "bundle/phases/resources_metadata.go"
-  - "bundle/metrics/**/*.go"
 paths:
   - "libs/telemetry/**/*.go"
+  - "bundle/telemetry.go"
   - "bundle/phases/telemetry.go"
   - "bundle/phases/resources_metadata.go"
-  - "bundle/metrics/**/*.go"
 ---
 
 # Extending bundle deploy telemetry
