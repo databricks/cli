@@ -122,9 +122,9 @@ func writeReadText(w io.Writer, goos, name string, content []byte, files []strin
 				fmt.Fprintf(&b, "  %s\n", f)
 				continue
 			}
-			// A leading "-" would make Cobra read the name or file as a flag, so "--" ends the flags first.
+			// A leading "-" would make Cobra read the file as a flag, so "--" ends the flags first.
 			endOfFlags := ""
-			if strings.HasPrefix(name, "-") || strings.HasPrefix(f, "-") {
+			if strings.HasPrefix(f, "-") {
 				endOfFlags = "-- "
 			}
 			fmt.Fprintf(&b, "  databricks skills read-file %s%s %s\n", endOfFlags, quotedName, quotedFile)

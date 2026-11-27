@@ -7,9 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/clicompat"
@@ -72,19 +70,6 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	return &manifest, nil
 }
 
-// maxSkillNameLength is the Agent Skills limit on the length of a skill name.
-const maxSkillNameLength = 64
-
-// skillNamePattern is the Agent Skills name format
-// (https://agentskills.io/specification#name-field): lowercase letters, digits
-// and single hyphens. Every name is a directory under the skills dir, next to
-// the installer's state file, so the format also keeps names from aliasing each
-// other on case-insensitive filesystems or through Windows trailing dots and
-// spaces.
-var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
-	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-})
-
 // unportableSkill returns why a skill that stays inside its directory still
 // cannot be installed the same way on every OS, or "" if it can. Install skips
 // such a skill and update keeps the installed copy, the way both treat a skill
@@ -95,8 +80,8 @@ var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 // may differ only in case, and no path may be both a file and a folder: either
 // would merge or collide on a case-insensitive filesystem.
 func unportableSkill(name string, files []string) string {
-	if len(name) > maxSkillNameLength || !skillNamePattern().MatchString(name) {
-		return fmt.Sprintf("the name is not at most %d lowercase letters, digits and single hyphens", maxSkillNameLength)
+	if !skills.IsSkillName(name) {
+		return fmt.Sprintf("the name is not at most %d lowercase letters, digits and single hyphens", skills.MaxSkillNameLength)
 	}
 	if isWindowsDeviceName(name) {
 		return "the name is a reserved Windows device name"

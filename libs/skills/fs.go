@@ -10,6 +10,8 @@ import (
 	"path"
 	"slices"
 	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 const manifestFile = "manifest.json"
@@ -46,6 +48,11 @@ func (s *fsSource) Catalog(ctx context.Context) (*Catalog, error) {
 		catalog.Rules = string(data)
 	}
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
+		if !IsSkillName(name) {
+			// The installer rejects this name, so the catalog leaves the skill out.
+			log.Debugf(ctx, "skills catalog: skipping skill %q: the name is not a valid skill name", name)
+			continue
+		}
 		meta := m.Skills[name]
 		catalog.Skills = append(catalog.Skills, Skill{
 			Name:         name,

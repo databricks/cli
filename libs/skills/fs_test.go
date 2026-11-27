@@ -52,6 +52,27 @@ func TestCatalogFromFixture(t *testing.T) {
 	}, catalog.Skills[1])
 }
 
+func TestCatalogLeavesOutSkillNamesTheInstallerRejects(t *testing.T) {
+	src := mapSource(`{"version": "1.0.0", "skills": {
+		"alpha": {"version": "1.0.0", "files": ["SKILL.md"]},
+		"-foo": {"version": "1.0.0", "files": ["SKILL.md"]},
+		"a b": {"version": "1.0.0", "files": ["SKILL.md"]}}}`)
+	catalog, err := src.Catalog(t.Context())
+	require.NoError(t, err)
+
+	require.Len(t, catalog.Skills, 1)
+	assert.Equal(t, "alpha", catalog.Skills[0].Name)
+}
+
+func TestIsSkillName(t *testing.T) {
+	for _, name := range []string{"a", "alpha", "databricks-core", "skill2", strings.Repeat("a", MaxSkillNameLength)} {
+		assert.True(t, IsSkillName(name), name)
+	}
+	for _, name := range []string{"", "-foo", "a b", "Alpha", "a--b", "a_b", "a/b", "a.b", strings.Repeat("a", MaxSkillNameLength+1)} {
+		assert.False(t, IsSkillName(name), name)
+	}
+}
+
 func TestReadFiles(t *testing.T) {
 	src := fixtureSource()
 

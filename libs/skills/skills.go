@@ -55,8 +55,8 @@ type FileSizer interface {
 
 // Catalog is the set of skills a source serves.
 type Catalog struct {
-	// Skills are sorted by name. Install also skips non-portable names and
-	// paths, which the catalog does not check yet.
+	// Skills are sorted by name. A name IsSkillName rejects is left out. Install
+	// also skips non-portable paths, which the catalog does not check yet.
 	Skills []Skill
 
 	// Version is the release version.

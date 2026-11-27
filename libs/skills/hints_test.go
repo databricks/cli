@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
-	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,9 +40,11 @@ func TestWriteGroupHint(t *testing.T) {
 	}
 }
 
-func TestWriteGroupHintRunsLeadingHyphenSkillAsPrinted(t *testing.T) {
+func TestWriteGroupHintLeavesOutSkillNameTheInstallerRejects(t *testing.T) {
 	dir := t.TempDir()
-	const manifest = `{"version": "1.0.0", "skills": {"-foo": {"version": "1.0.0", "description": "A skill whose name starts with a hyphen.", "files": ["SKILL.md"], "commands": ["jobs"]}}}`
+	const manifest = `{"version": "1.0.0", "skills": {
+		"-foo": {"version": "1.0.0", "description": "A skill whose name starts with a hyphen.", "files": ["SKILL.md"], "commands": ["jobs"]},
+		"alpha": {"version": "1.0.0", "description": "A valid skill.", "files": ["SKILL.md"], "commands": ["jobs"]}}}`
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644))
 
 	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", dir)
@@ -53,13 +53,6 @@ func TestWriteGroupHintRunsLeadingHyphenSkillAsPrinted(t *testing.T) {
 
 	var buf bytes.Buffer
 	WriteGroupHint(ctx, &buf, "jobs")
-	assert.Equal(t, "\nCoding agents: read the skills for this command group before you use it.\n"+
-		"  databricks skills read -- -foo\n", buf.String())
-
-	// The printed command, minus "databricks skills read", must parse to the name, not to flags.
-	printed := strings.Fields(buf.String())
-	args := printed[len(printed)-2:]
-	fs := pflag.NewFlagSet("read", pflag.ContinueOnError)
-	require.NoError(t, fs.Parse(args))
-	assert.Equal(t, []string{"-foo"}, fs.Args())
+	require.Equal(t, "\nCoding agents: read the skills for this command group before you use it.\n"+
+		"  databricks skills read alpha\n", buf.String())
 }
