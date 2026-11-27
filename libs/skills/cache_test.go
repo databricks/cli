@@ -194,7 +194,7 @@ func TestNewCacheWithoutCacheFolderStoresNothing(t *testing.T) {
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_CACHE_HOME", "")
 	t.Setenv("LOCALAPPDATA", "")
-	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", "")
+	ctx := env.Set(newCacheTestCtx(t), "DATABRICKS_CACHE_DIR", "")
 
 	assert.Nil(t, NewCache(ctx))
 }
