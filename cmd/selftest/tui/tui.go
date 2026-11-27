@@ -12,12 +12,17 @@ func New() *cobra.Command {
 		newAskCmd(),
 		newAskYesOrNoCmd(),
 		newColorsCmd(),
+		newHuhCmd(),
+		newKeysCmd(),
+		newPagerCmd(),
+		newProfileCmd(),
 		newPromptCmd(),
 		newRunSelectCmd(),
 		newSecretCmd(),
 		newSelectCmd(),
 		newSelectOrderedCmd(),
 		newSpinnerCmd(),
+		newTableCmd(),
 	)
 
 	return cmd
