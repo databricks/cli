@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // decodeRunConfigReader decodes and unknown-key-checks a run YAML from r. path is
