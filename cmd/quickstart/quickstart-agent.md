@@ -1,6 +1,10 @@
 ---
 name: databricks-quickstart
+<!--skills-->
+description: Read this skill before any Databricks work. It covers OAuth auth, profile selection, command discovery, and finding the right skill with databricks skills.
+<!--aitools-->
 description: First-contact orientation for the Databricks CLI when no Databricks skill is loaded. Covers OAuth auth, profile selection, command discovery, and installing the right skill for the task. Read this before attempting any Databricks work.
+<!--end-->
 ---
 
 # Databricks Quickstart
@@ -9,7 +13,11 @@ The `databricks` CLI wraps the public Databricks REST API — there's a command 
 
 ## Golden rules
 
+<!--skills-->
+- **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and find the matching skill with `databricks skills list` (below). Almost everything is reachable through the CLI.
+<!--aitools-->
 - **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and install the matching skill (below). Almost everything is reachable through the CLI.
+<!--end-->
 - **Build with bundles.** For anything durable — jobs, pipelines, dashboards, apps — define it as code in a Declarative Automation Bundle (DABs) and ship with `databricks bundle deploy`, not one-off API calls.
 - **Pick the profile deliberately.** Run `databricks auth profiles`. If only one profile exists, use it. If one is already set as the default (via `databricks auth switch`), assume that one — you can confirm if unsure. Otherwise, show the user the profiles with their workspace URLs and let them choose. Don't invent profile names.
 - **Always pass `--profile <name>`.** Each Bash command runs in its own shell, so a separate `export DATABRICKS_CONFIG_PROFILE=...` line does NOT persist. Use the flag, or chain with `&&`.
@@ -41,9 +49,15 @@ databricks bundle deploy -t dev            # deploy everything to a target (dev,
 databricks bundle run <resource> -t dev    # run a job or pipeline
 ```
 
+<!--skills-->
+Find the bundle skill in `databricks skills list` and read it for bundle structure, resource schemas, and multi-target setup.
+
+**Databricks Apps** (full-stack TypeScript + React via AppKit) build on bundles too, with a dedicated scaffolder — see the apps skill in `databricks skills list`:
+<!--aitools-->
 Read the `databricks-dabs` skill for bundle structure, resource schemas, and multi-target setup.
 
 **Databricks Apps** (full-stack TypeScript + React via AppKit) build on bundles too, with a dedicated scaffolder — see `databricks-apps`:
+<!--end-->
 
 ```bash
 databricks apps init          # scaffold an AppKit app (generates the bundle for you)
@@ -67,6 +81,20 @@ databricks tables list <catalog> <schema> --profile <name>
 
 Unsure of a command's shape? Run `databricks <command> --help`.
 
+<!--skills-->
+## Find skills for the task
+
+Skills give you Databricks-specific patterns so you build resources correctly instead of guessing. Find the one that matches the task in the catalog, read it, then read the supporting files it lists:
+
+```bash
+databricks skills list                       # the catalog: each skill with its description
+databricks skills list-files <name>          # the files a skill has, with their paths
+databricks skills read <name>                # a skill's instructions
+databricks skills read-file <name> <path>    # a supporting file that the skill lists
+```
+
+Pick the skill whose description fits the task from the `databricks skills list` output. The catalog changes between CLI versions, so run `databricks skills list` rather than relying on a remembered list.
+<!--aitools-->
 ## Install skills for the task
 
 Skills give you Databricks-specific patterns so you build resources correctly instead of guessing. They install into your coding agent (auto-detected):
@@ -78,6 +106,7 @@ databricks aitools list                    # available + installed skills — ch
 ```
 
 The set evolves, so run `databricks aitools list` rather than relying on a fixed list. Common ones: `databricks-core` (CLI/auth), `databricks-jobs`, `databricks-pipelines`, `databricks-dabs` (deploy as code), `databricks-apps`. Experimental skills reach further (Unity Catalog, vector search, dashboards, AI functions, and more) — worth a look depending on the prompt.
+<!--end-->
 
 ## Explore data
 
@@ -90,4 +119,8 @@ databricks experimental aitools tools query "SELECT * FROM <table> LIMIT 10" --p
 
 ## When you get stuck
 
+<!--skills-->
+Re-read `databricks <group> --help`, find the matching skill with `databricks skills list`, and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.
+<!--aitools-->
 Re-read `databricks <group> --help`, install the matching skill, and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.
+<!--end-->
