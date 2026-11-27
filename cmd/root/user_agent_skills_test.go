@@ -2,6 +2,7 @@ package root_test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,6 +41,8 @@ func TestParseSkills(t *testing.T) {
 	// 64-, 64-, 64- and 22-byte pairs make 214 bytes, so " skill/abcd" (11)
 	// lands exactly on 225 and nothing more fits.
 	exact := []string{strings.Repeat("a", 57), strings.Repeat("b", 57), strings.Repeat("c", 57), "databricks-core", "abcd"}
+	root.AllowSkillsForTest(t, slices.Concat(sixTooMany, exact,
+		[]string{"a", "b", "c", "d", "jobs", "ok", "a_b.c-d", "core", strings.Repeat("a", 64)})...)
 
 	tests := []struct {
 		name string
@@ -71,6 +74,19 @@ func TestParseSkills(t *testing.T) {
 	}
 }
 
+func TestParseSkillsDropsUnknownSkills(t *testing.T) {
+	// Agents pass every skill they loaded. Only Databricks skills are reported,
+	// even when a customer's own skill uses the databricks- prefix.
+	got := root.ParseSkills(t.Context(), "my-team-skill,databricks-core,databricks-deploy,acme-databricks,databricks-jobs")
+	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, got)
+}
+
+func TestKnownSkillsAreValid(t *testing.T) {
+	for _, name := range root.KnownSkills() {
+		assert.Equal(t, []string{name}, root.ParseSkills(t.Context(), name), "known skill %q is dropped", name)
+	}
+}
+
 func TestWithSkillsInUserAgent(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -82,8 +98,9 @@ func TestWithSkillsInUserAgent(t *testing.T) {
 		{"unset", "", nil, "", ""},
 		{"env var", "databricks-core,databricks-jobs", nil, "", "skill/databricks-core skill/databricks-jobs"},
 		{"flag", "", []string{"--skills-invoked", "databricks-core,databricks-jobs"}, "", "skill/databricks-core skill/databricks-jobs"},
-		{"flag wins over env var", "from-env", []string{"--skills-invoked", "from-flag"}, "", "skill/from-flag"},
-		{"empty flag still wins over env var", "from-env", []string{"--skills-invoked="}, "", ""},
+		{"flag wins over env var", "databricks-dabs", []string{"--skills-invoked", "databricks-jobs"}, "", "skill/databricks-jobs"},
+		{"unknown skills are dropped", "", []string{"--skills-invoked", "my-skill,databricks-core"}, "", "skill/databricks-core"},
+		{"empty flag still wins over env var", "databricks-core", []string{"--skills-invoked="}, "", ""},
 		{"telemetry disabled with env var", "databricks-core", nil, "1", ""},
 		{"telemetry disabled with flag", "", []string{"--skills-invoked", "databricks-core"}, "1", ""},
 	}

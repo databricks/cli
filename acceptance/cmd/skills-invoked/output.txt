@@ -23,6 +23,12 @@
 
 >>> print_requests.py --get //scim/v2/Me
 
+=== Skills that are not Databricks skills are dropped, even with the databricks- prefix
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
 === No skills when unset
 
 >>> [CLI] current-user me
@@ -43,7 +49,7 @@
 
 === Flag wins over env var
 
->>> [CLI] current-user me --skills-invoked from-flag
+>>> [CLI] current-user me --skills-invoked databricks-jobs
 
 >>> print_requests.py --get //scim/v2/Me
 

@@ -22,6 +22,11 @@ DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databri
 trace print_requests.py --get //scim/v2/Me > LOG.normalized
 contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!skill/bad" "!databricks:" < LOG.normalized > /dev/null
 
+title "Skills that are not Databricks skills are dropped, even with the databricks- prefix"
+DATABRICKS_SKILLS_INVOKED=my-team-skill,databricks-core,databricks-deploy,acme-databricks trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.unknown
+contains.py " skill/databricks-core" "!skill/my-team-skill" "!skill/databricks-deploy" "!skill/acme-databricks" < LOG.unknown > /dev/null
+
 title "No skills when unset"
 trace $CLI current-user me > /dev/null
 trace print_requests.py --get //scim/v2/Me > LOG.unset
@@ -38,9 +43,9 @@ trace print_requests.py --get //scim/v2/Me > LOG.flag
 contains.py " skill/databricks-core skill/databricks-jobs" < LOG.flag > /dev/null
 
 title "Flag wins over env var"
-DATABRICKS_SKILLS_INVOKED=from-env trace $CLI current-user me --skills-invoked from-flag > /dev/null
+DATABRICKS_SKILLS_INVOKED=databricks-dabs trace $CLI current-user me --skills-invoked databricks-jobs > /dev/null
 trace print_requests.py --get //scim/v2/Me > LOG.flag-wins
-contains.py " skill/from-flag" "!skill/from-env" < LOG.flag-wins > /dev/null
+contains.py " skill/databricks-jobs" "!skill/databricks-dabs" < LOG.flag-wins > /dev/null
 
 title "No skills from the flag when telemetry is disabled"
 DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me --skills-invoked databricks-core > /dev/null
