@@ -4,6 +4,9 @@
 sethome ./home
 export DATABRICKS_SKILLS_DIR="$TESTDIR/../../skills/release"
 unset XDG_CONFIG_HOME
+# Claude Code's per-session throttle keys the hint by this id. Without it a
+# machine with no session id (CI) prints the hint on every call, so pin it.
+export CLAUDE_CODE_SESSION_ID=session-1
 
 title "Claude Code is hinted, and its help and quickstart are the agent ones"
 trace CLAUDECODE=1 $CLI jobs list
