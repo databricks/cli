@@ -1,0 +1,11 @@
+# The printed read-file command ends the flags, so a file named -notes.md is read.
+title "the read output prints the command for -notes.md after --"
+trace $CLI skills read demo-skill
+
+title "the printed command runs as printed and prints the file"
+databricks() { "$CLI" "$@"; }
+line=$($CLI skills read demo-skill | grep -- '-notes.md')
+trace eval "$line"
+
+title "read-file with -- reads the file directly"
+trace $CLI skills read-file -- demo-skill -notes.md
