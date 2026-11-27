@@ -204,28 +204,34 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 // CAN_MANAGE in the top-level permissions section. The deploying identity is always included
 // because the API rejects an empty list, and it is the one principal always available. The
 // recommended permissions section names it with CAN_MANAGE as well, so skip it in the loop
-// rather than sending it twice.
+// rather than sending it twice. Other principals listed more than once are sent once.
 func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
 	currentUser := b.Config.Workspace.CurrentUser.User
-	var canManage []snapshot.ManagePrincipal
+	deployer := snapshot.ManagePrincipal{UserName: currentUser.UserName}
 	if iamutil.IsServicePrincipal(currentUser) {
-		canManage = append(canManage, snapshot.ManagePrincipal{
-			ServicePrincipalName: currentUser.UserName,
-		})
-	} else {
-		canManage = append(canManage, snapshot.ManagePrincipal{
-			UserName: currentUser.UserName,
-		})
+		deployer = snapshot.ManagePrincipal{ServicePrincipalName: currentUser.UserName}
 	}
+	canManage := []snapshot.ManagePrincipal{deployer}
+	seen := map[snapshot.ManagePrincipal]bool{}
 	for _, p := range b.Config.Permissions {
 		if p.Level != "CAN_MANAGE" {
 			continue
 		}
-		canManage = append(canManage, snapshot.ManagePrincipal{
+		// Match the deployer by name in either field, as the permissions diagnostics do, so a
+		// config that satisfies their recommendation never sends the deployer twice.
+		if p.UserName == currentUser.UserName || p.ServicePrincipalName == currentUser.UserName {
+			continue
+		}
+		principal := snapshot.ManagePrincipal{
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,
-		})
+		}
+		if seen[principal] {
+			continue
+		}
+		seen[principal] = true
+		canManage = append(canManage, principal)
 	}
 	return canManage
 }

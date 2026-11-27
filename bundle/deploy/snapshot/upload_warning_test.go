@@ -109,18 +109,34 @@ func canManageBundle(permissions []resources.Permission) *bundle.Bundle {
 
 func TestBuildCanManage(t *testing.T) {
 	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_MANAGE", UserName: "deployer@example.test"},
 		{Level: "CAN_MANAGE", UserName: "manager@example.test"},
 		{Level: "CAN_VIEW", UserName: "viewer@example.test"},
 		{Level: "CAN_MANAGE", GroupName: "admins"},
 		{Level: "CAN_MANAGE", ServicePrincipalName: "sp-1"},
 	})
 
-	// The deploying identity, then only the CAN_MANAGE principals.
+	// The deploying identity once, then only the other CAN_MANAGE principals.
 	assert.Equal(t, []snapshot.ManagePrincipal{
 		{UserName: "deployer@example.test"},
 		{UserName: "manager@example.test"},
 		{GroupName: "admins"},
 		{ServicePrincipalName: "sp-1"},
+	}, BuildCanManage(b))
+}
+
+func TestBuildCanManageSkipsDeployerListedInOtherField(t *testing.T) {
+	// The permissions diagnostics accept the deployer under either name field, so a user
+	// deployer listed as service_principal_name is still the deployer.
+	b := canManageBundle([]resources.Permission{
+		{Level: "CAN_MANAGE", ServicePrincipalName: "deployer@example.test"},
+		{Level: "CAN_MANAGE", GroupName: "admins"},
+		{Level: "CAN_MANAGE", GroupName: "admins"},
+	})
+
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "deployer@example.test"},
+		{GroupName: "admins"},
 	}, BuildCanManage(b))
 }
 
