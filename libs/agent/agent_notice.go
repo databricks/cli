@@ -22,8 +22,9 @@ func NotAnAgent(ctx context.Context) bool {
 
 // Provider returns the agent name that useragent.AgentProvider reports, or "" when no agent is detected or
 // NotAnAgent holds. The CLI's own readers of the calling agent (output, telemetry, the User-Agent) go through it.
-// The SDK adds its agent token from useragent.AgentProvider directly; ApplyNotAnAgentHeader removes it from the
-// CLI's clients.
+// The SDK adds its agent token from useragent.AgentProvider directly. ApplyNotAnAgentHeader removes it from the
+// MustWorkspaceClient, MustAccountClient and bundle workspace clients, including a profile picked at a prompt.
+// Other places that build their own SDK config, such as auth login and aitools mcp, still send the token.
 func Provider(ctx context.Context) string {
 	if NotAnAgent(ctx) {
 		return ""

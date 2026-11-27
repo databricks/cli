@@ -2,8 +2,6 @@ package config
 
 import (
 	"io/fs"
-	"net/http"
-	"net/http/httptest"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,8 +12,6 @@ import (
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -374,57 +370,24 @@ func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
 	assert.Same(t, httptransport.HealthChecked(true), client.Config.HTTPTransport)
 }
 
-func TestWorkspaceClientNotAnAgentDropsAgentHeader(t *testing.T) {
-	// Workspace.Client builds its own transport, so this test needs a loopback server. The Windows runners
-	// refuse to listen here (WSAEPROVIDERFAILEDINIT). The header logic is platform-independent and is
-	// covered without a listener in libs/agent.
-	if runtime.GOOS == "windows" {
-		t.Skip("needs a loopback listener, which the Windows test runners refuse")
-	}
+func TestWorkspaceClientNotAnAgentWrapsTransport(t *testing.T) {
 	setupWorkspaceTest(t)
-	t.Setenv("CLAUDECODE", "1")
-	t.Setenv("DATABRICKS_TOKEN", "token")
-	useragent.ClearCache()
-	t.Cleanup(useragent.ClearCache)
 
-	cases := []struct {
-		name    string
-		noAgent bool
-	}{
-		{name: "variable set", noAgent: true},
-		{name: "variable unset", noAgent: false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			userAgents := make(chan string, 1)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// The SDK first asks for the host's well-known config; only the Me call is checked.
-				if r.URL.Path != "/api/2.0/preview/scim/v2/Me" {
-					w.WriteHeader(http.StatusNotFound)
-					return
-				}
-				userAgents <- r.Header.Get("User-Agent")
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"id":"1","userName":"user@example.com"}`))
-			}))
-			t.Cleanup(server.Close)
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "secure",
+		Host:    "https://secure.cloud.databricks.test",
+		Token:   "token",
+	})
+	require.NoError(t, err)
 
-			ctx := t.Context()
-			if tc.noAgent {
-				ctx = envlib.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
-			}
-			w := Workspace{Host: server.URL}
-			client, err := w.Client(ctx)
-			require.NoError(t, err)
-			_, err = client.CurrentUser.Me(ctx, iam.MeRequest{})
-			require.NoError(t, err)
+	w := Workspace{Profile: "secure"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, httptransport.HealthChecked(false), client.Config.HTTPTransport)
 
-			ua := <-userAgents
-			if tc.noAgent {
-				assert.NotContains(t, ua, "agent/")
-			} else {
-				assert.Contains(t, ua, "agent/claude-code")
-			}
-		})
-	}
+	// With the variable set, the client's transport drops the SDK's agent token. The header itself is checked
+	// in libs/agent, which needs no loopback listener.
+	client, err = w.Client(envlib.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1"))
+	require.NoError(t, err)
+	assert.NotSame(t, httptransport.HealthChecked(false), client.Config.HTTPTransport)
 }

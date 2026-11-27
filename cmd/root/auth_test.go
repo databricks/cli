@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -40,6 +41,22 @@ func TestEmptyHttpRequest(t *testing.T) {
 	defer cancel()
 	req := emptyHttpRequest(ctx)
 	assert.Equal(t, req.Context(), ctx)
+}
+
+// A profile picked at a prompt builds its own config. It gets the not-an-agent header wrapper only when
+// DATABRICKS_NOT_AN_AGENT is set.
+func TestProfileConfigNotAnAgentHeader(t *testing.T) {
+	t.Run("variable set", func(t *testing.T) {
+		ctx := envlib.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
+		cfg := (*config.Config)(profileConfig(ctx, "picked"))
+		assert.Equal(t, "picked", cfg.Profile)
+		assert.NotNil(t, cfg.HTTPTransport)
+	})
+	t.Run("variable unset", func(t *testing.T) {
+		cfg := (*config.Config)(profileConfig(t.Context(), "picked"))
+		assert.Equal(t, "picked", cfg.Profile)
+		assert.Nil(t, cfg.HTTPTransport)
+	})
 }
 
 type promptFn func(ctx context.Context, cfg *config.Config, retry bool) (any, error)
