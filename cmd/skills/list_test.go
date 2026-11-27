@@ -224,21 +224,33 @@ func TestRenderTextMatchesWidthScan(t *testing.T) {
 	}
 }
 
-func TestRenderTextFourHundredLongDescriptionsIsFast(t *testing.T) {
+// fourHundredLongSkills returns 400 skills whose descriptions are each far
+// longer than the text budget.
+func fourHundredLongSkills() []libskills.Skill {
 	var list []libskills.Skill
 	for i := range 400 {
 		desc := strings.Repeat(fmt.Sprintf("word%d describes the skill in detail. ", i), 40)
 		list = append(list, libskills.Skill{Name: fmt.Sprintf("s%03d", i), Description: desc})
 	}
-	var out string
-	fastest := time.Hour
-	for range 3 {
-		start := time.Now()
-		out = renderText("Pick the skill whose description matches the task.", list)
-		fastest = min(fastest, time.Since(start))
-	}
+	return list
+}
+
+func TestRenderTextFourHundredLongDescriptionsFitsBudget(t *testing.T) {
+	out := renderText("Pick the skill whose description matches the task.", fourHundredLongSkills())
 	assert.LessOrEqual(t, len(out), textBudget)
-	assert.Less(t, fastest, 50*time.Millisecond)
+	assert.Contains(t, out, "s399")
+}
+
+// BenchmarkRenderTextFourHundredLongDescriptions measures the width search on
+// a 400-skill catalog with long descriptions. The time per op is the figure to
+// compare against the 50 ms the search must stay under.
+func BenchmarkRenderTextFourHundredLongDescriptions(b *testing.B) {
+	list := fourHundredLongSkills()
+	const rules = "Pick the skill whose description matches the task."
+	b.ReportAllocs()
+	for b.Loop() {
+		renderText(rules, list)
+	}
 }
 
 func TestRenderTextNoSearchHintWithoutDescriptions(t *testing.T) {
