@@ -44,7 +44,7 @@ Before you work with Databricks, run: databricks skills list
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/linux cmd/current-user_me cmd-exec-id/[UUID][0] interactive/none auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/current-user_me cmd-exec-id/[UUID][0] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -55,7 +55,7 @@ Before you work with Databricks, run: databricks skills list
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/linux cmd/current-user_me cmd-exec-id/[UUID][1] interactive/none aitools-agent/none auth/pat agent/claude-code"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/current-user_me cmd-exec-id/[UUID][1] interactive/none aitools-agent/none auth/pat agent/claude-code"
     ]
   },
   "method": "GET",
