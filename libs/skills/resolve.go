@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -22,7 +23,7 @@ func Resolve(ctx context.Context) (Source, error) {
 	if dir == "" {
 		return nil, ErrNoSource
 	}
-	return NewFSSource(os.DirFS(dir), dir), nil
+	return NewFSSource(os.DirFS(dir), filepath.ToSlash(dir)), nil
 }
 
 // LocalCatalog returns the freshest catalog that needs no network call. For now

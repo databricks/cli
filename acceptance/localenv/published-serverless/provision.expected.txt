@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "dryRun": false,
+  "command": "environments setup-local",
+  "mode": "default",
+  "compute": {
+    "source": "serverless",
+    "envKey": "serverless/serverless-v5"
+  },
+  "artifactSource": "network",
+  "hasPythonVersion": true,
+  "hasDBConnectVersion": true,
+  "phases": [
+    "preflight: ok",
+    "resolve: ok",
+    "fetch: ok",
+    "merge: ok",
+    "provision: ok",
+    "validate: ok"
+  ]
+}
+files: .venv pyproject.toml uv.lock
+venv python: regular file
+pyproject.toml: regular file
+uv.lock: regular file

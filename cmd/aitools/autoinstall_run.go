@@ -180,6 +180,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return nil
 	}
+	consentExistingInstall(ctx, &in)
 	reason := autoinstall.Decide(in)
 	if !reason.Due() {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
@@ -402,6 +403,47 @@ func installStateSaved(globalDir string) bool {
 	return err != nil || existing != nil
 }
 
+// consentExistingInstall stores the consent of a machine whose user never
+// answered but has a global installation that the CLI made (one with install
+// state): the user installed the tools, so auto-install keeps them up to date.
+// Skills without install state may be the user's own copies, and a project
+// installation belongs to the project, so neither counts. Nor does install
+// state that auto-install wrote itself without consent (a coding agent's run,
+// or a first install that did not finish). in is a run past stateFreeSkips;
+// one in CI or with auto-install turned off in the environment stores nothing.
+// in.State gets the stored consent.
+func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
+	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
+		return
+	}
+	if in.State.Installing || in.State.InstalledWithoutConsent {
+		return
+	}
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	existing, err := installer.LoadState(globalDir)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	if existing == nil {
+		return
+	}
+	previous, err := autoinstall.GiveConsentIfUnknown(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+		return
+	}
+	// An opt-out stored since the state was read stays, and the run finds it
+	// when it reads the state again under the run lock.
+	if previous != autoinstall.ConsentOptedOut {
+		in.State.Consented = true
+	}
+}
+
 // saveInstallStateDigest records the digest of the install state that a first
 // install that did not finish saved, so that a later run can tell it from
 // install state that anything else wrote. Without the digest, a later run
@@ -468,8 +510,8 @@ const skippedNotice = "Skipped. To install Databricks AI tools later, run: datab
 // version even when it is never answered: the process is killed, stdin is
 // closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
 // unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
-// no. "Yes" is recorded so that the version's retries do not ask again; only
-// "no" stores the opt-out.
+// no. "Yes" is recorded so that the version's retries do not ask again, and
+// stores the consent; "no" stores the opt-out.
 func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signal) {
 	if err := cmdio.DiscardInput(ctx); err != nil {
 		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
@@ -504,6 +546,10 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 			// The install goes ahead; a retry of it asks again.
 			log.Debugf(ctx, "auto-install: could not save the answer: %v", err)
 		}
+		// The consent stays even if the install then fails or is refused.
+		if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+			log.Debugf(ctx, "auto-install: could not save the consent: %v", err)
+		}
 		return true, nil
 	case "n", "no":
 		r.decline(ctx)
@@ -519,7 +565,7 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 // asks again.
 func (r autoInstallRun) decline(ctx context.Context) {
 	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
-	if err := autoinstall.Decline(ctx); err != nil {
+	if _, err := autoinstall.Decline(ctx); err != nil {
 		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
 		cmdio.LogString(ctx, skippedNotice)
 		return

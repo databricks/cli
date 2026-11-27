@@ -23,7 +23,9 @@ type fsSource struct {
 }
 
 // NewFSSource returns a Source over fsys, laid out like a skills release:
-// manifest.json at the root, and each skill's files under its repo_dir.
+// manifest.json at the root, and each skill's files under its repo_dir. The
+// label names where the release comes from, and is kept as given. A caller
+// that has a host path converts it first, as Resolve does with filepath.ToSlash.
 func NewFSSource(fsys fs.FS, label string) Source {
 	return &fsSource{read: func(_ context.Context, name string) ([]byte, error) {
 		return fs.ReadFile(fsys, name)

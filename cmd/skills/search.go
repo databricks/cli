@@ -2,7 +2,6 @@ package skills
 
 import (
 	"errors"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -67,7 +66,7 @@ func runSearch(cmd *cobra.Command, src skills.Source, words []string, experiment
 	}
 	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
 	out := searchJSON{
-		Source:         filepath.ToSlash(catalog.Label),
+		Source:         catalog.Label,
 		ReleaseVersion: catalog.Version,
 		Skills:         make([]searchJSONSkill, 0, len(matches)),
 	}

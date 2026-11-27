@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -215,7 +214,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
-		metrics.TrackUsedCompute(),
+		trackUsedComputeMutator(),
 		deploy.ResourcePathMkdir(),
 	)
 
