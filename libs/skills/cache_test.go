@@ -71,6 +71,17 @@ func TestCacheLatestBreaksTiesByVersion(t *testing.T) {
 	assert.Equal(t, "10.0.0", latest.Version)
 }
 
+func TestCacheDoesNotStoreStale(t *testing.T) {
+	cache := &Cache{dir: t.TempDir()}
+	stale := fetchedAt(release("1.0.0"), t0)
+	stale.Stale = true
+	require.NoError(t, cache.putCatalog(stale))
+
+	latest, ok := cache.Latest()
+	require.True(t, ok)
+	assert.False(t, latest.Stale, "a stored catalog never reads back as stale")
+}
+
 func TestCacheKeepsStoredReleaseAndNewestOther(t *testing.T) {
 	dir := t.TempDir()
 	cache := &Cache{dir: dir}
@@ -187,7 +198,8 @@ func newCacheTestCtx(t *testing.T) context.Context {
 	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "")
-	return env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "")
+	return env.Set(ctx, "DATABRICKS_SKILLS_DIR", "")
 }
 
 func TestNewCacheHonoursCacheEnabled(t *testing.T) {
