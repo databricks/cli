@@ -1,10 +1,13 @@
 
 === CLI ssh connect over a stale host key for the connection name
 
-=== The stale key is replaced by the one the workspace published
-stale key replaced
+=== The session's file keeps the stale key
+session file unchanged
+
+=== The server's file holds only the key the workspace published
 
 >>> grep -c ^reused-name ssh-
 1
+stale key not pinned
 
 === Reconnecting to the running server keeps working

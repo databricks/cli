@@ -30,16 +30,24 @@ echo "reused-name ssh-ed25519 $STALE_KEY" >known-hosts/reused-name
 title "CLI ssh connect over a stale host key for the connection name"
 errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.connect-1.txt 2>LOG.connect-1
 
-# The connection pins the key in a file of the server it connects to, next to the stale one,
-# and points ssh at that file.
-title "The stale key is replaced by the one the workspace published"
-server_known_hosts=$(ls known-hosts/reused-name.*)
-if grep -q "$STALE_KEY" $server_known_hosts; then
-  echo "stale key still pinned"
+# The connection pins the key in a file of the server it connects to and points ssh at that
+# file: the connection above succeeds with strict host key checking although the session's
+# file, left as it was, still holds the stale key.
+title "The session's file keeps the stale key"
+if grep -q "$STALE_KEY" known-hosts/reused-name; then
+  echo "session file unchanged"
 else
-  echo "stale key replaced"
+  echo "session file rewritten"
 fi
+
+title "The server's file holds only the key the workspace published"
+server_known_hosts=$(ls known-hosts/reused-name.*)
 cat $server_known_hosts | trace grep -c "^reused-name ssh-"
+if grep -q "$STALE_KEY" $server_known_hosts; then
+  echo "stale key pinned"
+else
+  echo "stale key not pinned"
+fi
 
 title "Reconnecting to the running server keeps working"
 errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.connect-2.txt 2>LOG.connect-2

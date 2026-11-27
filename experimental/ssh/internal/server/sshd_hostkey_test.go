@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -210,9 +209,6 @@ func scopeHostKeyFingerprint(t *testing.T, client *databricks.WorkspaceClient) s
 }
 
 func TestPublishHostKeyAndMetadataWritesTheKeyFirst(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("prepareSSHDConfig creates /run/sshd; the SSH tunnel server only runs on Linux")
-	}
 	client, server, wsHome := newPublishTestClient(t)
 
 	var mu sync.Mutex
@@ -249,9 +245,6 @@ func TestPublishHostKeyAndMetadataWritesTheKeyFirst(t *testing.T) {
 }
 
 func TestPublishHostKeyAndMetadataConcurrentServersOnOneCompute(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("prepareSSHDConfig creates /run/sshd; the SSH tunnel server only runs on Linux")
-	}
 	client, _, wsHome := newPublishTestClient(t)
 
 	// Another process holds the default port, so both servers move up the port range.
