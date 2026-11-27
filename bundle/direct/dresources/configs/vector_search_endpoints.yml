@@ -10,3 +10,6 @@ ignore_remote_changes:
   # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
   - field: budget_policy_id
     reason: effective_vs_requested
+stable_output_fields:
+  # endpoint_uuid (the permissions object ID) is assigned at creation and kept on update.
+  - field: endpoint_uuid
