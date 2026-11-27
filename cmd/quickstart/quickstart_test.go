@@ -1,9 +1,11 @@
 package quickstart
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -104,6 +106,41 @@ func TestSkillFlagRegisteredOnlyWhenSkillsEnabled(t *testing.T) {
 			}
 			require.NotNil(t, flag)
 			assert.True(t, flag.Hidden)
+		})
+	}
+}
+
+func TestQuickstartVariantSelectedByEnv(t *testing.T) {
+	cases := []struct {
+		name       string
+		value      string
+		set        bool
+		wantSkills bool
+	}{
+		{name: "unset", wantSkills: false},
+		{name: "false", set: true, value: "false", wantSkills: false},
+		{name: "true", set: true, value: "true", wantSkills: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			if c.set {
+				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
+			}
+			cmd := &cobra.Command{}
+			buildCommand(ctx, cmd)
+			var out bytes.Buffer
+			cmd.SetContext(ctx)
+			cmd.SetOut(&out)
+			// Run without --skill and with stdout not a terminal, so the agent text is printed.
+			require.NoError(t, cmd.RunE(cmd, nil))
+			if c.wantSkills {
+				assert.Contains(t, out.String(), "databricks skills list")
+				assert.NotContains(t, out.String(), "databricks aitools install")
+			} else {
+				assert.Contains(t, out.String(), "databricks aitools install")
+				assert.NotContains(t, out.String(), "databricks skills list")
+			}
 		})
 	}
 }
