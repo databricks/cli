@@ -2,9 +2,9 @@ package dresources
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -74,48 +74,18 @@ func getSensitiveFields() map[string][]FieldRule {
 	return fields
 }
 
-// SensitiveConfigValues returns the non-empty string values of the sensitive fields and
-// sensitive variables in root, the values RedactSensitiveConfigValues replaces.
-func SensitiveConfigValues(root *config.Root) []string {
-	var values []string
-	add := func(v any) {
-		if s, ok := v.(string); ok && s != "" {
-			values = append(values, s)
-		}
+// IsSensitiveResourceField reports whether p is a field under resources.<type>.<key>
+// that the resource type declares as sensitive.
+func IsSensitiveResourceField(p dyn.Path) bool {
+	if len(p) < 4 || p[0].Key() != "resources" {
+		return false
 	}
-	for resourceType, fieldRules := range getSensitiveFields() {
-		resources, err := structaccess.GetByString(root, "resources."+resourceType)
-		if err != nil {
-			continue
-		}
-		_ = structwalk.Walk(resources, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
-			rest := path.SkipPrefix(1)
-			for _, fieldRule := range fieldRules {
-				if rest.HasPatternPrefix(fieldRule.Field) {
-					add(val)
-				}
-			}
-		})
+	field, err := structpath.ParsePath(p[3:].String())
+	if err != nil {
+		return false
 	}
-	for _, variable := range root.Variables {
-		if variable != nil && config.IsExplicitlyEnabled(variable.Sensitive) {
-			add(variable.Default)
-			add(variable.Value)
-		}
-	}
-	return values
-}
-
-// IsSensitiveField reports whether field, a path inside a resource of resourceType, is a
-// sensitive field, lies inside one, or contains one.
-func IsSensitiveField(resourceType string, field *structpath.PathNode) bool {
-	fieldStr := field.String()
-	for _, rule := range MustLoadConfig().Resources[resourceType].SensitiveFields {
+	for _, rule := range GetResourceConfig(p[1].Key()).SensitiveFields {
 		if field.HasPatternPrefix(rule.Field) {
-			return true
-		}
-		ruleStr := rule.Field.String()
-		if strings.HasPrefix(ruleStr, fieldStr+".") || strings.HasPrefix(ruleStr, fieldStr+"[") {
 			return true
 		}
 	}

@@ -130,7 +130,7 @@ func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 
 // TestStateHashing verifies, per fixture, that hashStateValue maps content to the exact
 // expected value (a hardcoded sha256:<hex> placeholder when hashing pays off, the content
-// itself otherwise), that IsStateHashPlaceholder recognizes only the strings this package
+// itself otherwise), that isStateHashPlaceholder recognizes only the strings this package
 // produces, and that CompactState of a dashboard's serialized_dashboard yields the same.
 func TestStateHashing(t *testing.T) {
 	requireTooSmallToHash(t, smallDashboard)
@@ -231,7 +231,7 @@ func TestStateHashing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := hashStateValue(tc.content)
 			assert.Equal(t, tc.want, got)
-			assert.Equal(t, tc.isPlaceholder, IsStateHashPlaceholder(tc.content))
+			assert.Equal(t, tc.isPlaceholder, isStateHashPlaceholder(tc.content))
 			// Idempotent: re-hashing the output is a no-op, so re-compacting never double-hashes.
 			assert.Equal(t, tc.want, hashStateValue(got))
 			if got != tc.content {

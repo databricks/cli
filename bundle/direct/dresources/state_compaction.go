@@ -25,8 +25,8 @@ const stateHashPlaceholderLen = len(stateHashPrefix) + sha256.Size*2
 // not mistaken for an already-hashed value.
 var stateHashPlaceholderRe = regexp.MustCompile(fmt.Sprintf("^%s[a-f0-9]{%d}$", regexp.QuoteMeta(stateHashPrefix), sha256.Size*2))
 
-// IsStateHashPlaceholder reports whether s is a placeholder this package produced.
-func IsStateHashPlaceholder(s string) bool {
+// isStateHashPlaceholder reports whether s is a placeholder this package produced.
+func isStateHashPlaceholder(s string) bool {
 	return stateHashPlaceholderRe.MatchString(s)
 }
 
@@ -38,7 +38,7 @@ func IsStateHashPlaceholder(s string) bool {
 // It is idempotent and stable: an empty string, a value already a placeholder, and a value
 // no larger than a placeholder are returned unchanged.
 func hashStateValue(s string) string {
-	if s == "" || IsStateHashPlaceholder(s) || len(s) <= stateHashPlaceholderLen {
+	if s == "" || isStateHashPlaceholder(s) || len(s) <= stateHashPlaceholderLen {
 		return s
 	}
 	sum := sha256.Sum256([]byte(s))

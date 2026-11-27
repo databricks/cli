@@ -66,7 +66,8 @@ type ProcessOptions struct {
 	// Implies ReadState
 	AlwaysPull bool
 
-	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
+	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also resolves
+	// ${resources.*} references for display (ResolveResourceReferencesForDisplay) and calls InitializeURLs()
 	// Implies ReadState
 	InitIDs bool
 
@@ -458,20 +459,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			bundle.ApplyContext(ctx, b, statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...))
+			mutators := []bundle.Mutator{
+				statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...),
+			}
+			// InitializeURLs makes an extra API call; only run it when URLs are needed.
+			if opts.InitIDs {
+				mutators = append(mutators, mutator.ResolveResourceReferencesForDisplay(), mutator.InitializeURLs())
+			}
+			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-			if opts.InitIDs {
-				// Show deployed values instead of ${resources.*} references in names and URLs.
-				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
-					b.DeploymentBundle.ResolveAllResourcesAgainstState(&b.Config)
-				})
-				// InitializeURLs makes an extra API call; only run it when URLs are needed.
-				bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
-				if logdiag.HasError(ctx) {
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
 			}
 		}
 

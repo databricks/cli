@@ -2,20 +2,18 @@
 trace $CLI bundle deploy --var secret_value=s3cr3t-value 2>&1 | sort
 replace_ids.py
 
-title "After deploy, references show the deployed values"
+title "After deploy, references show their values"
 trace $CLI bundle summary --var secret_value=s3cr3t-value
 trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '[.resources.jobs | to_entries[] | {key, name: .value.name}]'
 
 title "The secret appears nowhere in the summary"
-$CLI bundle summary --var secret_value=s3cr3t-value -o json | grep -c s3cr3t || true
+$CLI bundle summary --var secret_value=s3cr3t-value -o json | contains.py '!s3cr3t' > /dev/null
 
-title "With a rotated secret, the deployed names hold the previous one: the references still stay"
-trace $CLI bundle summary --var secret_value=rotated-value -o json | jq -c '[.resources.jobs | to_entries[] | select(.key | startswith("ref_secret")) | {key, name: .value.name}]'
-$CLI bundle summary --var secret_value=rotated-value -o json | grep -c s3cr3t || true
-
-title "Add resources that are not deployed: a job referencing the literal, and two resources whose resolved values do not fit their types"
-update_file.py databricks.yml '  job_runs:' '    ref_literal:
-      name: copy ${resources.jobs.literal.description}
+title "Add resources that are not deployed: a reference cycle (deploy rejects it, validate does not) and two whose resolved values do not fit their types"
+update_file.py databricks.yml '  job_runs:' '    cycle_a:
+      name: ${resources.jobs.cycle_b.name}
+    cycle_b:
+      name: ${resources.jobs.cycle_a.name}
     bad_type:
       name: bad-type
       max_concurrent_runs: ${resources.jobs.a.name}
@@ -26,11 +24,12 @@ update_file.py databricks.yml '  job_runs:' '    ref_literal:
       history_retention_duration: ${resources.jobs.a.name}
 
   job_runs:'
-title "A run edited locally to point at another job keeps the URL of the job it was launched for"
+title "Edit locally: rename job a and point the run at job b"
+update_file.py databricks.yml 'name: job-a' 'name: job-renamed'
 update_file.py databricks.yml 'job_id: ${resources.jobs.a.id}' 'job_id: ${resources.jobs.b.id}'
-title "After a local edit removes the secret from ref_secret's name, its deployed name still holds it: ref_secret_chain stays a reference"
-update_file.py databricks.yml 'name: secret ${resources.secrets.s.value}' 'name: renamed'
-trace $CLI bundle summary --var secret_value=s3cr3t-value
-trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '.resources.jobs.bad_type.max_concurrent_runs, .resources.job_runs.run.url'
 
-trace $CLI bundle destroy --auto-approve --var secret_value=s3cr3t-value > /dev/null 2>&1
+title "References show the config values; the run keeps the URL of the job it was launched for"
+trace $CLI bundle summary --var secret_value=s3cr3t-value
+trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '.resources.jobs.ref_name.name, .resources.jobs.cycle_a.name, .resources.jobs.bad_type.max_concurrent_runs, .resources.postgres_projects.bad_duration.history_retention_duration, .resources.job_runs.run.url'
+
+trace $CLI bundle destroy --auto-approve --var secret_value=s3cr3t-value &> LOG.destroy
