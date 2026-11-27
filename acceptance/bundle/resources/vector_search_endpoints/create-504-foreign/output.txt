@@ -1,0 +1,55 @@
+
+=== Outside the bundle, create an endpoint with the name the bundle uses
+
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD --no-wait
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Deploy fails: the name is taken
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.vector_search_endpoints.my_endpoint: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name. (409 ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
+HTTP Status: 409 Conflict
+API error_code: ALREADY_EXISTS
+API message: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name.
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1
+
+=== The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the endpoint
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+GET /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
+GET /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy deletes the endpoint the bundle did not create
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //vector-search/endpoints
+DELETE /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
+
+>>> musterr [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+Error: Vector search endpoint vs-endpoint-[UNIQUE_NAME] not found

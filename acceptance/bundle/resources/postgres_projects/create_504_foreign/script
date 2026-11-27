@@ -1,0 +1,25 @@
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI bundle destroy --auto-approve > LOG.cleanup 2>&1
+    errcode $CLI postgres delete-project projects/test-pg-proj >> LOG.cleanup 2>&1
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Outside the bundle, create a project with the project_id the bundle uses"
+trace $CLI postgres create-project test-pg-proj --json '{"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}' | jq '{name}'
+
+title "Deploy fails: the project_id is taken"
+errcode trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the project"
+fault.py "POST /api/2.0/postgres/projects" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //postgres/projects | jq -r '.method + " " + .path'
+trace $CLI bundle plan
+
+title "Destroy deletes the project the bundle did not create"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //postgres/projects | jq -r '.method + " " + .path'
+trace musterr $CLI postgres get-project projects/test-pg-proj

@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-$UNIQUE_NAME"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI bundle destroy --auto-approve > LOG.cleanup 2>&1
+    errcode $CLI schemas delete "$SCHEMA" --force >> LOG.cleanup 2>&1
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Outside the bundle, the deploying user creates a schema with the name the bundle uses"
+trace $CLI schemas create "test-schema-$UNIQUE_NAME" main | jq '{full_name, created_by}'
+
+title "Deploy fails: the name is taken"
+errcode trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the schema"
+fault.py "POST /api/2.1/unity-catalog/schemas" 504 0 1 DEADLINE_EXCEEDED
+trace $CLI bundle deploy
+trace print_requests.py --get //unity-catalog/schemas //scim/v2/Me | jq -r '.method + " " + .path'
+trace $CLI bundle plan
+
+title "Destroy deletes the schema the bundle did not create"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog/schemas | jq -r '.method + " " + .path'
+trace musterr $CLI schemas get "$SCHEMA"
