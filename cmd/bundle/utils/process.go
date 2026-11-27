@@ -270,8 +270,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Start the check only once ctx carries the lineage: the SDK's user agent appends into a
 		// slice shared by contexts derived from the same parent, so a request made in the
 		// background on the earlier ctx can overwrite the lineage entry and drop it from every
-		// later request of this command.
-		if opts.Deploy || opts.PreDeployChecks {
+		// later request of this command. A DMS-only state always records history, so it needs
+		// no check.
+		if (opts.Deploy || opts.PreDeployChecks) && !stateDesc.IsDMS() {
 			recordsHistory = recordsDeploymentHistory(ctx, b)
 		}
 
