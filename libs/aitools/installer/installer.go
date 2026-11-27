@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,40 +24,22 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/skills"
-	"github.com/databricks/cli/libs/versioncheck"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	skillsRepoOwner      = "databricks"
-	skillsRepoName       = "databricks-agent-skills"
+	skillsRepoOwner      = skills.RepoOwner
+	skillsRepoName       = skills.RepoName
 	stableSkillsRepoPath = skills.StableRepoDir
 	experimentalRepoPath = skills.ExperimentalRepoDir
 
-	// fetchConcurrency caps the number of in-flight skill file fetches.
-	// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
-	// fetches were latency-bound on TLS handshakes. 8 is enough to amortise
-	// the round-trip across a typical skill's files without overwhelming the
-	// upstream CDN.
-	fetchConcurrency = 8
+	// fetchConcurrency caps the number of in-flight skill file fetches. The
+	// value lives in libs/skills, next to the HTTP client sized for it.
+	fetchConcurrency = skills.FetchConcurrency
 )
-
-// httpClient is shared across all skill file fetches so the underlying
-// transport reuses TCP+TLS connections. The default MaxIdleConnsPerHost
-// (2) is bumped to leave headroom above fetchConcurrency so a brief overlap
-// between a closing and a new connection doesn't force a fresh handshake.
-var httpClient = sync.OnceValue(func() *http.Client {
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.MaxIdleConnsPerHost = fetchConcurrency * 2
-	return &http.Client{
-		Timeout:   30 * time.Second,
-		Transport: t,
-	}
-})
 
 func manifestHasExperimental(m *Manifest) bool {
 	for _, meta := range m.Skills {
@@ -86,114 +67,21 @@ var fetchFileFn func(ctx context.Context, ref, repoDir, skillName, filePath stri
 // to exercise cross-device fallback paths without depending on host mounts.
 var renamePathFn = os.Rename
 
-// latestSkillsReleaseRefFn resolves the skills repo's latest release tag. Tests
-// replace it so default ref resolution stays deterministic and offline.
-var latestSkillsReleaseRefFn = fetchLatestSkillsReleaseRef
-
-// skillsLatestSentinel is the value cli-compat.json uses for the skills version
-// to mean "track latest" rather than pinning a specific release.
-const skillsLatestSentinel = clicompat.AgentSkillsLatest
-
-// GetSkillsRef returns the skills repo ref to use and whether it was explicitly
-// pinned (as opposed to tracking latest). An unresolved latest release is an error.
-//
-// By default we track the latest skills release tag, not the skills repo's main
-// branch. cli-compat.json is the remote control for this: its newest range
-// normally tracks latest, but if a future change makes a skills release
-// incompatible with older CLIs, it can be edited remotely to pin those CLIs to
-// the last compatible version with no CLI release. DATABRICKS_SKILLS_REF
-// overrides everything for eval/reproducibility. (AppKit version resolution is
-// unaffected; cli-compat still manages it via its own field.)
-func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
-	return getSkillsRef(ctx, false)
-}
-
-func getSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
-	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
-		return ref, true, nil
-	}
-	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
-	if err != nil {
-		log.Debugf(ctx, "could not resolve skills compatibility, resolving latest release: %v", err)
-		return resolveLatestSkillsReleaseRef(ctx, allowFallback)
-	}
-	if v == "" || v == skillsLatestSentinel {
-		return resolveLatestSkillsReleaseRef(ctx, allowFallback)
-	}
-	return "v" + v, true, nil
-}
-
-func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
-	ref, err = latestSkillsReleaseRefFn(ctx)
-	if err == nil {
-		return ref, false, nil
-	}
-	if !allowFallback {
-		return "", false, fmt.Errorf("resolve latest skills release: %w", err)
-	}
-
-	embedded, embeddedErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
-	if embeddedErr == nil && embedded != "" && embedded != skillsLatestSentinel {
-		log.Warnf(ctx, "Could not resolve latest skills release (%v); falling back to embedded skills version %s", err, embedded)
-		return "v" + embedded, false, nil
-	}
-	if embeddedErr != nil {
-		return "", false, fmt.Errorf("resolve latest skills release: %w (embedded fallback failed: %v)", err, embeddedErr) //nolint:errorlint // only the primary error belongs in the chain
-	}
-	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
-}
-
-func fetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), skillsRepoOwner, skillsRepoName)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := httpClient().Do(req)
-	if err != nil {
-		return "", &FetchError{Stage: FetchStageRelease, Err: err}
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", newHTTPFetchError(FetchStageRelease, resp, fmt.Errorf("HTTP %d fetching latest skills release", resp.StatusCode))
-	}
-
-	var payload struct {
-		TagName string `json:"tag_name"`
-	}
-	// A response that arrived but names no usable release is still a failed
-	// release lookup, so these errors carry the stage too.
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxFetchBodySize)).Decode(&payload); err != nil {
-		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: fmt.Errorf("parse latest skills release: %w", err)}
-	}
-	tag := strings.TrimSpace(payload.TagName)
-	if tag == "" {
-		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: errors.New("latest skills release has empty tag_name")}
-	}
-	if !strings.HasPrefix(tag, "v") {
-		tag = "v" + tag
-	}
-	if !semver.IsValid(tag) {
-		return "", &FetchError{Stage: FetchStageRelease, StatusCode: resp.StatusCode, Err: fmt.Errorf("latest skills release has invalid tag %q", payload.TagName)}
-	}
-	return tag, nil
-}
-
 // DisplaySkillsVersion renders a skills ref for humans: a pinned tag drops its
 // leading "v".
 func DisplaySkillsVersion(ref string) string {
 	return strings.TrimPrefix(ref, "v")
 }
 
+// GetSkillsRef returns the skills ref to install from and whether it was
+// explicitly pinned. See skills.GetSkillsRef.
+func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
+	return skills.GetSkillsRef(ctx)
+}
+
 // GetSkillsBaseURL returns the manifest and skill fetch base URL.
-// DATABRICKS_SKILLS_BASE_URL overrides GitHub raw URLs for acceptance tests.
 func GetSkillsBaseURL(ctx context.Context) string {
-	if base := env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL"); base != "" {
-		return strings.TrimRight(base, "/")
-	}
-	return "https://raw.githubusercontent.com/" + skillsRepoOwner + "/" + skillsRepoName
+	return skills.GetSkillsBaseURL(ctx)
 }
 
 // Manifest and SkillMeta are defined in libs/skills, which the skill sources share.
@@ -235,14 +123,14 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	resp, err := httpClient().Do(req)
+	resp, err := skills.HTTPClient().Do(req)
 	if err != nil {
 		return nil, &FetchError{Stage: FetchStageFile, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, newHTTPFetchError(FetchStageFile, resp, fmt.Errorf("HTTP %d", resp.StatusCode))
+		return nil, skills.NewHTTPFetchError(FetchStageFile, resp, fmt.Errorf("HTTP %d", resp.StatusCode))
 	}
 
 	data, err := io.ReadAll(resp.Body)
@@ -262,7 +150,7 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil && allowFallback && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
-		if fbErr == nil && fallbackVersion != "" && fallbackVersion != skillsLatestSentinel && fallbackVersion != tag {
+		if fbErr == nil && fallbackVersion != "" && fallbackVersion != clicompat.AgentSkillsLatest && fallbackVersion != tag {
 			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
 			ref = "v" + fallbackVersion
 			manifest, err = src.FetchManifest(ctx, ref)
@@ -375,7 +263,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	installedRef, allowFallback := installedSkillsRelease(state)
 	allowFallback = allowFallback && !legacyInstall
-	ref, explicit, err := getSkillsRef(ctx, allowFallback)
+	ref, explicit, err := skills.ResolveSkillsRef(ctx, allowFallback)
 	if err != nil {
 		return err
 	}
