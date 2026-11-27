@@ -74,9 +74,9 @@ func setupFetchMock(t *testing.T) {
 
 func stubLatestSkillsReleaseRef(t *testing.T, ref string, err error) {
 	t.Helper()
-	orig := latestSkillsReleaseRefFn
-	t.Cleanup(func() { latestSkillsReleaseRefFn = orig })
-	latestSkillsReleaseRefFn = func(context.Context) (string, error) {
+	orig := skills.LatestSkillsReleaseRefFn
+	t.Cleanup(func() { skills.LatestSkillsReleaseRefFn = orig })
+	skills.LatestSkillsReleaseRefFn = func(context.Context) (string, error) {
 		return ref, err
 	}
 }
@@ -696,7 +696,7 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
 	require.NoError(t, err)
@@ -854,7 +854,7 @@ func testSkillsRefSelection(t *testing.T, run func(context.Context, ManifestSour
 			case tc.compatPin:
 				withCachedCompat(t, DisplaySkillsVersion(tc.selectedRef))
 			default:
-				withCachedCompat(t, skillsLatestSentinel)
+				withCachedCompat(t, clicompat.AgentSkillsLatest)
 			}
 			stubLatestSkillsReleaseRef(t, tc.selectedRef, nil)
 			err := run(ctx, &mockManifestSource{manifest: testManifest()}, targetAgents)
@@ -1688,7 +1688,7 @@ func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
 	// cli-compat reports "latest", so we resolve it to the skills repo's
 	// latest release tag rather than tracking the default branch.
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	stubLatestSkillsReleaseRef(t, "v0.2.8", nil)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
@@ -1758,7 +1758,7 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	latestErr := errors.New("network down")
 	stubLatestSkillsReleaseRef(t, "", latestErr)
 
@@ -1877,7 +1877,7 @@ func TestFetchLatestSkillsReleaseRefRateLimited(t *testing.T) {
 			t.Cleanup(server.Close)
 			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
 
-			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			_, err := skills.FetchLatestSkillsReleaseRef(t.Context())
 			ferr, ok := errors.AsType[*FetchError](err)
 			require.True(t, ok, "want *FetchError, got %T", err)
 			assert.Equal(t, FetchStageRelease, ferr.Stage)
@@ -1905,7 +1905,7 @@ func TestFetchLatestSkillsReleaseRefUnusableResponse(t *testing.T) {
 			t.Cleanup(server.Close)
 			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
 
-			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			_, err := skills.FetchLatestSkillsReleaseRef(t.Context())
 			ferr, ok := errors.AsType[*FetchError](err)
 			require.True(t, ok, "want *FetchError, got %T", err)
 			assert.Equal(t, FetchStageRelease, ferr.Stage)

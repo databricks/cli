@@ -1,5 +1,10 @@
 // Package skills lists and reads Databricks skills from any source that serves
 // a skills release: a published release, a bundled snapshot or a local folder.
+//
+// The catalog and source code is source-neutral. The release lookup in ref.go
+// and the fetch helpers in fetch.go are the only code here that talks to GitHub
+// or reads DATABRICKS_SKILLS_REF and DATABRICKS_SKILLS_BASE_URL. They sit in
+// this package for now, next to the installer code that already uses them.
 package skills
 
 import (
