@@ -407,8 +407,8 @@ func TestDbrAcceptance(t *testing.T) {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
 	}
 
-	// A single 4-CPU serverless driver takes about 2.5h for all local tests.
-	localShards := 6
+	// A single 4-CPU serverless driver takes about 45 min for all local tests.
+	localShards := 2
 	if v := os.Getenv("DBR_LOCAL_TEST_SHARDS"); v != "" {
 		var err error
 		localShards, err = strconv.Atoi(v)

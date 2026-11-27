@@ -1,3 +1,6 @@
+# ssh refuses the generated private key on DBR, where it is reported as mode 0644.
+RunsOnDbr = false
+
 Cloud = false
 
 # Linux-only: the test drives a real sshd, reliable only there (and where
