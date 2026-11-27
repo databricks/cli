@@ -1,8 +1,9 @@
 package agent
 
 import (
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -68,6 +69,29 @@ func TestApplyNotAnAgentHeaderUnsetLeavesConfig(t *testing.T) {
 	assert.Same(t, base, cfg.HTTPTransport)
 }
 
+// meTransport stands in for the workspace: it answers the SDK's requests without a listener, which the
+// Windows test runners refuse, and keeps the User-Agent of each Me call.
+type meTransport struct {
+	userAgents chan string
+}
+
+func (m *meTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode: http.StatusNotFound,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader("")),
+		Request:    req,
+	}
+	// The SDK first asks for the host's well-known config; only the Me call is checked.
+	if req.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+		m.userAgents <- req.Header.Get("User-Agent")
+		resp.StatusCode = http.StatusOK
+		resp.Header.Set("Content-Type", "application/json")
+		resp.Body = io.NopCloser(strings.NewReader(`{"id":"1","userName":"user@example.com"}`))
+	}
+	return resp, nil
+}
+
 func TestNotAnAgentHeaderOnSDKRequests(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -79,31 +103,20 @@ func TestNotAnAgentHeaderOnSDKRequests(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			testutil.SetAgentEnv(t, "CLAUDECODE", "1")
-			userAgents := make(chan string, 1)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// The SDK first asks for the host's well-known config; only the Me call is checked.
-				if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
-					userAgents <- r.Header.Get("User-Agent")
-					w.Header().Set("Content-Type", "application/json")
-					_, _ = w.Write([]byte(`{"id":"1","userName":"user@example.com"}`))
-					return
-				}
-				w.WriteHeader(http.StatusNotFound)
-			}))
-			t.Cleanup(server.Close)
+			transport := &meTransport{userAgents: make(chan string, 1)}
 
 			ctx := t.Context()
 			if tc.noAgent {
 				ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
 			}
-			cfg := &config.Config{Host: server.URL, Token: "token"}
+			cfg := &config.Config{Host: "https://workspace.test", Token: "token", HTTPTransport: transport}
 			ApplyNotAnAgentHeader(ctx, cfg)
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 			require.NoError(t, err)
 			_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 			require.NoError(t, err)
 
-			ua := <-userAgents
+			ua := <-transport.userAgents
 			if tc.noAgent {
 				assert.NotContains(t, ua, "agent/")
 			} else {

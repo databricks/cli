@@ -5,3 +5,8 @@ IncludeRequestHeaders = ["User-Agent"]
 # The throttle markers live in the file cache, which a host could disable.
 Env.DATABRICKS_CACHE_ENABLED = "true"
 Ignore = ["home"]
+
+# The SDK adds cicd/<name> on CI runners (GITHUB_ACTIONS), so drop it to keep the golden the same everywhere.
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

@@ -375,6 +375,12 @@ func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
 }
 
 func TestWorkspaceClientNotAnAgentDropsAgentHeader(t *testing.T) {
+	// Workspace.Client builds its own transport, so this test needs a loopback server. The Windows runners
+	// refuse to listen here (WSAEPROVIDERFAILEDINIT). The header logic is platform-independent and is
+	// covered without a listener in libs/agent.
+	if runtime.GOOS == "windows" {
+		t.Skip("needs a loopback listener, which the Windows test runners refuse")
+	}
 	setupWorkspaceTest(t)
 	t.Setenv("CLAUDECODE", "1")
 	t.Setenv("DATABRICKS_TOKEN", "token")
