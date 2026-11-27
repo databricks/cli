@@ -1,3 +1,6 @@
+# Needs Python 3.9, which the DBR test archive does not ship.
+RunsOnDbr = false
+
 # This test exercises the trampoline workaround for DBR <13.1 (PR #635), which
 # requires booking a cluster on Spark 12.2.x-scala2.12. The AWS test workspaces
 # have legacy access disabled, so 12.2.x is rejected with INVALID_PARAMETER_VALUE

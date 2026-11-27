@@ -1,4 +1,5 @@
 Cloud = true
+RunsOnDbr = false
 EnvMatrix.DMS = [""]
 EnvMatrix.UV_PYTHON = [
   "3.9",

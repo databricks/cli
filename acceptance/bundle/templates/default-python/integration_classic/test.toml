@@ -1,3 +1,6 @@
+# Needs Python versions besides 3.10 and 3.12, which the DBR test archive does not ship.
+RunsOnDbr = false
+
 Cloud = true
 Timeout = '1m'
 

@@ -1,3 +1,6 @@
+# Telemetry on DBR includes dbr_version.
+RunsOnDbr = false
+
 IncludeRequestHeaders = ["User-Agent"]
 
 [[Repls]]
