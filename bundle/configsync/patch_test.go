@@ -262,6 +262,16 @@ next: value
 			expected: "key: |\n  line1\n\n  \t\n# __YAMLPATCH_BLANK_LINE__\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
 		},
 		{
+			name:     "tab line before the first content line",
+			input:    "key: |\n  \t\n  line1\nnext: value\n",
+			expected: "key: |\n\n  line1\nnext: value\n",
+		},
+		{
+			name:     "folded block scalar empties tab lines",
+			input:    "key: >+\n  line1\n  \t\n  line2\n\nnext: value\n",
+			expected: "key: >+\n  line1\n\n  line2\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+		},
+		{
 			name: "keep chomping keeps trailing blanks",
 			input: nl(`
 key: |+

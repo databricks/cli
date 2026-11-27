@@ -557,7 +557,7 @@ const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 // [|>]  — literal or folded block scalar indicator
 // [-+0-9]* — optional chomp (+/-) and indent indicators
 // (?:#.*)? — optional comment
-var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>]([-+0-9]*)\s*(?:#.*)?$`)
+var blockScalarRe = regexp.MustCompile(`[-:]\s+([|>])([-+0-9]*)\s*(?:#.*)?$`)
 
 // preserveBlankLines replaces blank lines with marker comments that survive YAML round-trips
 func preserveBlankLines(content []byte) []byte {
@@ -566,6 +566,8 @@ func preserveBlankLines(content []byte) []byte {
 
 	inBlockScalar := false
 	blockScalarIndent := 0
+	literalBlock := false
+	keepsTabLines := false
 	keepsTrailingLines := false
 	var pendingBlanks []string
 
@@ -587,18 +589,21 @@ func preserveBlankLines(content []byte) []byte {
 			// and keep chomping (+) keeps all of them.
 			n := 0
 			for j, blank := range pendingBlanks {
-				if keepsTrailingLines || strings.HasSuffix(blank, "\t") {
+				if keepsTabLines && (keepsTrailingLines || strings.HasSuffix(blank, "\t")) {
 					n = j + 1
 				}
 			}
-			result = appendBlockScalarBlanks(result, pendingBlanks[:n])
+			result = appendBlockScalarBlanks(result, pendingBlanks[:n], keepsTabLines)
 			pendingBlanks = pendingBlanks[n:]
 		}
 
 		// Flush buffered blank lines: keep them inside block scalars,
 		// replace with markers otherwise.
 		if inBlockScalar {
-			result = appendBlockScalarBlanks(result, pendingBlanks)
+			result = appendBlockScalarBlanks(result, pendingBlanks, keepsTabLines)
+			// Folding would change tab lines of folded scalars, and yaml.v3 rejects
+			// a tab before the first content line, so those are emptied.
+			keepsTabLines = literalBlock
 		} else {
 			for range pendingBlanks {
 				result = append(result, blankLineMarker)
@@ -610,7 +615,9 @@ func preserveBlankLines(content []byte) []byte {
 			if m := blockScalarRe.FindStringSubmatch(trimmed); m != nil {
 				inBlockScalar = true
 				blockScalarIndent = blockScalarParentIndent(line)
-				keepsTrailingLines = strings.Contains(m[1], "+")
+				literalBlock = m[1] == "|"
+				keepsTabLines = false
+				keepsTrailingLines = literalBlock && strings.Contains(m[2], "+")
 			}
 		}
 
@@ -621,10 +628,10 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // appendBlockScalarBlanks appends the whitespace-only lines of a block scalar. yaml.v3 writes a value
-// with a space before a line break as a quoted string, so only lines ending in a tab are kept as is.
-func appendBlockScalarBlanks(result, blanks []string) []string {
+// with a space before a line break as a quoted string, so only lines ending in a tab can be kept as is.
+func appendBlockScalarBlanks(result, blanks []string, keepTabLines bool) []string {
 	for _, blank := range blanks {
-		if !strings.HasSuffix(blank, "\t") {
+		if !keepTabLines || !strings.HasSuffix(blank, "\t") {
 			blank = ""
 		}
 		result = append(result, blank)
