@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -285,4 +286,14 @@ func TestPadRow(t *testing.T) {
 			assert.Equal(t, tt.want, padRow(tt.cells, tt.widths))
 		})
 	}
+}
+
+func TestTemplatePagerEscapesControlCharacters(t *testing.T) {
+	rowT, err := template.New("row").Parse("{{range .}}{{.ID}}\t{{.Name}}\n{{end}}")
+	require.NoError(t, err)
+	pager := &templatePager{rowT: rowT, headerDone: true}
+
+	lines, err := pager.flushLines([]any{map[string]any{"ID": 1, "Name": "a\x1b]0;t\x07\x1b[2J\rb"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{`1  a\u001b]0;t\u0007\u001b[2J\rb`}, lines)
 }

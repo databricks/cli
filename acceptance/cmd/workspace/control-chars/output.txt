@@ -2,14 +2,19 @@
 === API error message: the server quotes the scope name
 
 >>> musterr [CLI] secrets put-secret --json @secret.json
-Error: Scope scope\x1b]0;title\a\x1b[2J\rname does not exist
+Error: Scope scope\u001b]0;title\u0007\u001b[2J\rname does not exist
 
 === list as a table
 
 >>> [CLI] jobs list
-[JOB_ID]  nightly\x1b]0;title\a\x1b[2J\rETL \x1b[31mred\x1b[0m
+[JOB_ID]  nightly\u001b]0;title\u0007\u001b[2J\rETL <0x1b>[31mred<0x1b>[0m
 
 === list as JSON: unchanged, the JSON encoder escapes the name itself
 
 >>> [CLI] jobs list -o json
 "nightly\u001b]0;title\u0007\u001b[2J\rETL \u001b[31mred\u001b[0m"
+
+=== an exported file is written as is
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt
+line 1<0x0d>line 2<0x1b>[2J

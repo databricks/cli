@@ -4,100 +4,52 @@ import (
 	"bytes"
 	"testing"
 	"text/template"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type escapeTestState string
-
-type escapeTestInner struct {
-	Name    string
-	private string
+type escapeTestRow struct {
+	ID    int64
+	Name  string
+	Tags  map[string]string
+	inner string
 }
 
-type escapeTestOuter struct {
-	ID      int64
-	Name    string
-	State   escapeTestState
-	Inner   *escapeTestInner
-	Nil     *escapeTestInner
-	Tags    map[string]string
-	Items   []escapeTestInner
-	Array   [2]string
-	Any     any
-	Created time.Time
-	Bytes   []byte
-}
+func (r escapeTestRow) Inner() string { return r.inner }
 
-func TestEscapeControlInData(t *testing.T) {
-	created := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-	original := escapeTestOuter{
-		ID:      1,
-		Name:    "a\x1b[2Jb",
-		State:   "RUN\rNING",
-		Inner:   &escapeTestInner{Name: "in\x07ner", private: "pri\x1bvate"},
-		Tags:    map[string]string{"k\x1b": "v\x1b", "plain": "plain"},
-		Items:   []escapeTestInner{{Name: "plain"}, {Name: "it\x1bem"}},
-		Array:   [2]string{"plain", "arr\x1b"},
-		Any:     []any{"any\x1b", 2},
-		Created: created,
-		Bytes:   []byte("by\x1btes"),
-	}
-	inner := original.Inner
+func TestExecuteTemplateEscapesControlCharacters(t *testing.T) {
+	// Colors on, so that the template's own colors are in the output.
+	ctx := InContext(t.Context(), NewTestIO(nil, &bytes.Buffer{}, &bytes.Buffer{}))
+	require.True(t, colorEnabled(ctx))
 
-	got := escapeControlInData(&original).(*escapeTestOuter)
-
-	assert.Equal(t, &escapeTestOuter{
-		ID:      1,
-		Name:    `a\x1b[2Jb`,
-		State:   `RUN\rNING`,
-		Inner:   &escapeTestInner{Name: `in\aner`, private: "pri\x1bvate"},
-		Tags:    map[string]string{`k\x1b`: `v\x1b`, "plain": "plain"},
-		Items:   []escapeTestInner{{Name: "plain"}, {Name: `it\x1bem`}},
-		Array:   [2]string{"plain", `arr\x1b`},
-		Any:     []any{`any\x1b`, 2},
-		Created: created,
-		Bytes:   []byte("by\x1btes"),
-	}, got)
-
-	// The input is not modified.
-	assert.Equal(t, "a\x1b[2Jb", original.Name)
-	assert.Same(t, inner, original.Inner)
-	assert.Equal(t, "in\x07ner", inner.Name)
-	assert.Equal(t, map[string]string{"k\x1b": "v\x1b", "plain": "plain"}, original.Tags)
-	assert.Equal(t, "it\x1bem", original.Items[1].Name)
-	assert.Equal(t, []any{"any\x1b", 2}, original.Any)
-}
-
-func TestEscapeControlInDataReturnsCleanDataAsIs(t *testing.T) {
-	clean := &escapeTestOuter{
-		Name:  "multi\nline\ttext",
-		Inner: &escapeTestInner{Name: "inner"},
-		Tags:  map[string]string{"k": "v"},
-		Items: []escapeTestInner{{Name: "item"}},
-		Any:   []any{"any"},
-	}
-	assert.Same(t, clean, escapeControlInData(clean))
-
-	items := []any{clean, "plain", nil}
-	assert.Equal(t, &items[0], &escapeControlInData(items).([]any)[0])
-
-	assert.Nil(t, escapeControlInData(nil))
-	assert.Equal(t, 5, escapeControlInData(5))
-}
-
-func TestExecuteTemplateEscapesData(t *testing.T) {
-	ctx, _ := NewTestContextWithStdout(t.Context())
-	tmpl, err := template.New("t").Funcs(renderFuncMap(ctx)).Parse(`{{range .}}{{.ID | printf "%d" | green}}	{{.Name | bold}}	{{.State}}
+	tmpl, err := template.New("t").Funcs(renderFuncMap(ctx)).Parse(
+		`{{range .}}{{green "%d" .ID}}	{{.Name | bold}}	{{.Inner}}{{range $k, $v := .Tags}}	{{$k}}={{$v}}{{end}}	{{.Name | b64_encode | b64_decode}}
 {{end}}`)
 	require.NoError(t, err)
 
+	rows := []any{
+		escapeTestRow{ID: 1, Name: "a\x1b]0;title\x07b", Tags: map[string]string{"k\r": "v\x1b[2J"}, inner: "in\x1bner"},
+		// A value the CLI styled before it got here keeps its colors.
+		&escapeTestRow{ID: 2, Name: Green(ctx, "●") + " plain\r\n"},
+	}
 	var out bytes.Buffer
-	err = executeTemplate(tmpl, &out, []any{
-		&escapeTestOuter{ID: 1, Name: "a\x1b]0;title\x07b", State: "ok\r"},
-	})
+	require.NoError(t, executeTemplate(tmpl, &out, rows))
+
+	assert.Equal(t,
+		"\x1b[32m1\x1b[0m\t\x1b[1m"+`a\u001b]0;title\u0007b`+"\x1b[0m\t"+`in\u001bner`+"\t"+`k\r=v\u001b[2J`+"\t"+`a\u001b]0;title\u0007b`+"\n"+
+			"\x1b[32m2\x1b[0m\t\x1b[1m\x1b[32m●\x1b[0m plain\n\x1b[0m\t\t\x1b[32m●\x1b[0m plain\n\n",
+		out.String())
+	// The data is not modified.
+	assert.Equal(t, "a\x1b]0;title\x07b", rows[0].(escapeTestRow).Name)
+}
+
+func TestExecuteTemplateWritesOutputRenderedBeforeAnError(t *testing.T) {
+	tmpl, err := template.New("t").Funcs(staticTemplateFuncs).Parse("before\r{{`not base64` | b64_decode}}after")
 	require.NoError(t, err)
-	assert.Equal(t, "1\t"+`a\x1b]0;title\ab`+"\t"+`ok\r`+"\n", out.String())
+
+	var out bytes.Buffer
+	err = executeTemplate(tmpl, &out, nil)
+	require.Error(t, err)
+	assert.Equal(t, `before\r`, out.String())
 }

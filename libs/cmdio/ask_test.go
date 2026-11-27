@@ -1,6 +1,7 @@
 package cmdio
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -205,4 +206,14 @@ func TestAskCancellable_Cancelled(t *testing.T) {
 	_, err := AskCancellable(ctx, "Question", "")
 	assert.ErrorIs(t, err, context.Canceled)
 	assert.True(t, stdinReadInBackground.Load(), "the abandoned read turns off later line prompts")
+}
+
+func TestAskEscapesControlCharactersInQuestion(t *testing.T) {
+	var stderr bytes.Buffer
+	ctx := t.Context()
+	ctx = InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader("\n"), io.Discard, &stderr, "", ""))
+
+	_, err := Ask(ctx, "Delete \x1b[1mjob\x1b[0m 'a\x1b]0;t\x07\x1b[2J\rb'?", "")
+	require.NoError(t, err)
+	assert.Equal(t, "Delete \x1b[1mjob\x1b[0m "+`'a\u001b]0;t\u0007\u001b[2J\rb'?: `, stderr.String())
 }

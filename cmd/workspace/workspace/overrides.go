@@ -8,8 +8,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -25,8 +27,6 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 }
 
 func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest) {
-	// The export command prints the contents of the file to stdout by default.
-	exportCmd.Annotations["template"] = `{{.Content | b64_decode}}`
 	exportCmd.Use = "export SOURCE_PATH"
 
 	var filePath string
@@ -44,12 +44,18 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 		if err != nil {
 			return err
 		}
-		// Render file content to stdout if no file path is specified.
-		if filePath == "" {
+		if filePath == "" && root.OutputType(cmd) == flags.OutputJSON {
 			return cmdio.Render(ctx, response)
 		}
 		b, err := base64.StdEncoding.DecodeString(response.Content)
 		if err != nil {
+			return err
+		}
+		// The export command prints the contents of the file to stdout by default.
+		// They are written as is rather than through a text template, which
+		// escapes control characters: here they are part of the file.
+		if filePath == "" {
+			_, err = cmd.OutOrStdout().Write(b)
 			return err
 		}
 		return os.WriteFile(filePath, b, 0o755)

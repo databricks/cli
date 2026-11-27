@@ -39,3 +39,33 @@ func TestRunSelectNoColor(t *testing.T) {
 	assert.Contains(t, out, ansiBold)
 	assert.Contains(t, out, ansiUnderline)
 }
+
+func TestSelectModelEscapesControlCharacters(t *testing.T) {
+	const raw = "a\x1b]0;t\x07\x1b[2J\rb"
+	const escaped = `a\u001b]0;t\u0007\u001b[2J\rb`
+	opts := SelectOptions{
+		Label: "Pick " + raw,
+		// An item the caller styled itself keeps its colors.
+		Items: []Tuple{{ansiGreen + "●" + ansiReset + " first " + raw, "1"}, {"second " + raw, "2"}},
+		// Templates built from a value, as bundle init does with a description.
+		Selected: "Chosen " + raw + ": {{.Name}}",
+	}
+	m, err := newSelectModel(opts, false)
+	require.NoError(t, err)
+
+	for _, submitted := range []bool{false, true} {
+		m.submitted = submitted
+		v := m.View()
+		assert.NotContains(t, v, "\x1b]")
+		assert.NotContains(t, v, "\x1b[2J")
+		assert.NotContains(t, v, "\x07")
+		assert.NotContains(t, v, "\r")
+		assert.Contains(t, v, ansiGreen+"●"+ansiReset+" first "+escaped)
+		if submitted {
+			assert.Contains(t, v, "Chosen "+escaped)
+		} else {
+			assert.Contains(t, v, "Pick "+escaped)
+			assert.Contains(t, v, "second "+escaped)
+		}
+	}
+}

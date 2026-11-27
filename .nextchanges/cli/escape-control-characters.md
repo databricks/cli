@@ -1,0 +1,1 @@
+* Text output now shows terminal control characters in server-supplied text (API error messages, names of remote objects, state messages) as visible escapes such as `\u001b`, instead of sending them to the terminal. JSON output is unchanged. ([#8129](https://github.com/databricks/cli/pull/8129))

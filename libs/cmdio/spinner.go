@@ -65,7 +65,9 @@ func (m spinnerModel) Init() tea.Cmd {
 func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case suffixMsg:
-		m.suffix = string(msg)
+		// The message can quote an API response (a status or state message), so
+		// terminal control characters in it are escaped; see LogString.
+		m.suffix = textutil.EscapeControlKeepColors(string(msg))
 		return m, nil
 
 	case quitMsg:
@@ -115,11 +117,9 @@ type spinner struct {
 
 // Update sends a status message to the spinner.
 // This operation sends directly to the tea.Program.
-// The message can quote an API response (a status or state message), so
-// terminal control characters in it are escaped; see LogString.
 func (sp *spinner) Update(msg string) {
 	if sp.p != nil {
-		sp.p.Send(suffixMsg(textutil.EscapeControlKeepColors(msg)))
+		sp.p.Send(suffixMsg(msg))
 	}
 }
 

@@ -12,7 +12,7 @@ import (
 // how it is shown.
 const (
 	controlPayload = "x\x1b]0;pwned\x07y\x1b[2Jz\rw"
-	controlEscaped = `x\x1b]0;pwned\ay\x1b[2Jz\rw`
+	controlEscaped = `x\u001b]0;pwned\u0007y\u001b[2Jz\rw`
 )
 
 func assertControlEscaped(t *testing.T, out string) {
@@ -31,6 +31,7 @@ func TestOneLine(t *testing.T) {
 		{"non-ASCII text is kept", "résumé 日本語 🚀", "résumé 日本語 🚀"},
 		{"escape sequences and control characters", controlPayload, controlEscaped},
 		{"line breaks and tabs", "a\tb\nc\r\nd", `a\tb\nc\r\nd`},
+		{"already escaped text is unchanged", controlEscaped, controlEscaped},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,6 +45,8 @@ func TestOSC8(t *testing.T) {
 	// A control character in the target would end the sequence early.
 	assert.Equal(t, "label", osc8("https://h.test/a\x07\x1b[2J", "label"))
 	assert.Equal(t, "label", osc8("https://h.test/a\x1b\\", "label"))
+	// A raw C1 byte is a control character to a terminal in 8-bit mode.
+	assert.Equal(t, "label", osc8("https://h.test/a\x9c", "label"))
 }
 
 func TestColorizeConfigEscapesControlCharacters(t *testing.T) {
@@ -54,12 +57,13 @@ func TestColorizeConfigEscapesControlCharacters(t *testing.T) {
 	assert.Contains(t, out, "echo done")
 }
 
-func TestEmitNoLogsEscapesStateMessage(t *testing.T) {
-	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: controlPayload}
+func TestEmitNoLogsEscapesControlCharacters(t *testing.T) {
+	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAIL\x1b[2JED", stateMessage: controlPayload}
 
 	var text bytes.Buffer
 	emitNoLogs(&text, logRequest{runID: 1, attempt: -1}, status)
 	assertControlEscaped(t, text.String())
+	assert.Contains(t, text.String(), `in state FAIL\u001b[2JED`)
 
 	// JSON output keeps the message as the server sent it, escaped by the encoder.
 	var js bytes.Buffer

@@ -1,6 +1,0 @@
-bundle:
-  name: scripts_control_chars
-
-experimental:
-  scripts:
-    preinit: "python3 ./myscript.py"

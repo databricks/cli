@@ -284,12 +284,7 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 		msg = fmt.Sprintf("No logs available yet for %s, which is still in state %s", subject, status.displayState())
 	}
 	if status.stateMessage != "" {
-		// The JSON encoder escapes the message itself.
-		stateMessage := status.stateMessage
-		if !req.jsonOutput {
-			stateMessage = textutil.EscapeControl(stateMessage)
-		}
-		msg = fmt.Sprintf("%s: %s", msg, stateMessage)
+		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)
 	}
 	// Only the latest attempt was checked; earlier ones may have logs.
 	if req.attempt < 0 && status.terminal() && status.latestAttempt > 0 {
@@ -303,5 +298,6 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 		printLogEvent(out, "ERROR", req.node, msg)
 		return
 	}
-	fmt.Fprintln(out, msg)
+	// The state and its message are the server's text.
+	fmt.Fprintln(out, textutil.EscapeControl(msg))
 }

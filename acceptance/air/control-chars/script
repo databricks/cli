@@ -2,7 +2,7 @@ title "get (text): control characters are escaped in the Metadata box and the fa
 trace $CLI air get 123 | show_control.py
 
 title "get (json): strings are passed through as the server sent them"
-trace $CLI air get 123 -o json | show_control.py | jq '.data | {experiment_name, user, base_environment, termination_reason}'
+trace $CLI air get 123 -o json | show_control.py | jq '.data | {experiment_name, mlflow_run_name, user, base_environment, termination_reason}'
 
 title "list (text): control characters are escaped in the table"
 trace $CLI air list --all-users | show_control.py

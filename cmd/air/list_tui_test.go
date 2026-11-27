@@ -246,7 +246,7 @@ func TestRenderRowEscapesControlCharacters(t *testing.T) {
 	styles := newListStyles(r)
 	row := listRow{
 		RunID: "1", Status: "SUCCESS", Duration: "-", Accelerators: "-",
-		Experiment:  "\x1b]0;pwned\x07exp\x1b[2Jeriment",
+		Experiment:  "\x1b]0;p\x07exp\x1b[2Jeriment",
 		User:        "user\r@example.com",
 		MLflowURL:   "https://h/ml/experiments/E/runs/rid",
 		MLflowLabel: "my\x1b[31m-run",
@@ -254,9 +254,9 @@ func TestRenderRowEscapesControlCharacters(t *testing.T) {
 	cols := computeListCols([]listRow{row})
 
 	out := styles.renderRow(cols, row, false, false)
-	assert.Contains(t, out, `\x1b]0;pwned\aexp\x1b[2Jeriment`)
+	assert.Contains(t, out, `\u001b]0;p\u0007exp\u001b[2Jeriment`)
 	assert.Contains(t, out, `user\r@example.com`)
-	assert.Contains(t, out, `my\x1b[31m-run`)
+	assert.Contains(t, out, `my\u001b[31m-run`)
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 	// The width is measured on the escaped text, so the columns stay aligned.
@@ -811,4 +811,12 @@ func TestListModelEnterOpensMLflowLogsWhenColumnHidden(t *testing.T) {
 	require.NotNil(t, cmd)
 	cmd()
 	assert.Contains(t, stderr.String(), "https://h/ml/experiments/E/runs/04c41514fbb0/logs")
+}
+
+func TestListModelDetailErrorEscapesControlCharacters(t *testing.T) {
+	m := detailLoadingModel(t)
+
+	next, _ := m.Update(detailMsg{title: "Run Details", err: errors.New("no such run: a\x1b]0;t\x07\x1b[2J\rb")})
+
+	assert.Equal(t, `Error: no such run: a\u001b]0;t\u0007\u001b[2J\rb`, next.(listModel).detailContent)
 }

@@ -1,0 +1,1 @@
+* `air list` and `air get` now show control characters in server-supplied names as visible escapes such as `\u001b` instead of removing them, and escape them in the failure reason, the Configuration box, the status and the other values they print too. ([#8129](https://github.com/databricks/cli/pull/8129))

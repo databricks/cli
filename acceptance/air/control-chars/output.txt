@@ -11,15 +11,15 @@
 │  Retries       0                                               │
 │  Max Retries   N/A                                             │
 │  Duration      12s                                             │
-│  Experiment    my\x1b]0;pwned\a-exp                            │
-│  MLflow Run    \x1b]0;pwned\amy\x1b[2J-run\r                   │
-│  User          user\x1b[31m@example.com                        │
+│  Experiment    my\u001b]0;pwned\u0007-exp                      │
+│  MLflow Run    \u001b]0;pwned\u0007my\u001b[2J-run\r           │
+│  User          user\u001b[31m@example.com                      │
 │  Accelerators  1x A10                                          │
-│  Environment   databricks_ai\x1b]0;pwned\a_v6                  │
+│  Environment   databricks_ai\u001b]0;pwned\u0007_v6            │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
-Failure reason: Task train failed with message: Unable to access the notebook "/Shared/train\x1b]0;pwned\a\x1b[2J\r-nb". Either it does not exist, or the identity used to run this job lacks the required permissions.
+Failure reason: Task train failed with message: Unable to access the notebook "/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb". Either it does not exist, or the identity used to run this job lacks the required permissions.
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
@@ -29,6 +29,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 >>> [CLI] air get 123 -o json
 {
   "experiment_name": "my\u001b]0;pwned\u0007-exp",
+  "mlflow_run_name": "\u001b]0;pwned\u0007my\u001b[2J-run\r",
   "user": "user\u001b[31m@example.com",
   "base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6",
   "termination_reason": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions."
@@ -37,8 +38,8 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 === list (text): control characters are escaped in the table
 
 >>> [CLI] air list --all-users
-   Run ID  Experiment            Status     Started              Duration  Progress  MLflow                  User                      Accelerators
-   123     my\x1b]0;pwned\a-exp  ● SUCCESS  [TIMESTAMP]       12s         -  …wned\amy\x1b[2J-run\r  user\x1b[31m@example.com  1x A10
+   Run ID  Experiment                  Status     Started              Duration  Progress  MLflow                  User                        Accelerators
+   123     my\u001b]0;pwned\u0007-exp  ● SUCCESS  [TIMESTAMP]       12s         -  …0007my\u001b[2J-run\r  user\u001b[31m@example.com  1x A10
 
 === list (json): strings are passed through as the server sent them
 

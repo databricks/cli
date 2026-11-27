@@ -149,3 +149,11 @@ func TestSpinnerStructConcurrentClose(t *testing.T) {
 	// Additional Close should still be safe
 	sp.Close()
 }
+
+func TestSpinnerModelEscapesControlCharactersInSuffix(t *testing.T) {
+	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
+
+	updatedModel, _ := m.Update(suffixMsg("Waiting: a\x1b]0;t\x07\x1b[2J\rb"))
+
+	assert.Equal(t, `Waiting: a\u001b]0;t\u0007\u001b[2J\rb`, updatedModel.(spinnerModel).suffix)
+}

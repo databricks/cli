@@ -298,12 +298,12 @@ func TestRenderFieldsEscapesControlCharacters(t *testing.T) {
 		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
 	})
 
-	assert.Contains(t, out, `Status        ● Waiting\x1b[2J for capacity\n...`)
-	assert.Contains(t, out, `Experiment    \x1b]0;pwned\aexp\x1b[2Jeriment`)
+	assert.Contains(t, out, `Status        ● Waiting\u001b[2J for capacity\n...`)
+	assert.Contains(t, out, `Experiment    \u001b]0;pwned\u0007exp\u001b[2Jeriment`)
 	assert.Contains(t, out, `MLflow Run    run\rname`)
-	assert.Contains(t, out, `User          user\x1b[31m@example.com`)
-	assert.Contains(t, out, `Accelerators  1x A10\a`)
-	assert.Contains(t, out, `Environment   \x1b]8;;https://attacker.test/\adatabricks_ai_v6\x1b]8;;\a`)
+	assert.Contains(t, out, `User          user\u001b[31m@example.com`)
+	assert.Contains(t, out, `Accelerators  1x A10\u0007`)
+	assert.Contains(t, out, `Environment   \u001b]8;;https://attacker.test/\u0007databricks_ai_v6\u001b]8;;\u0007`)
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 }

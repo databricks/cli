@@ -200,7 +200,7 @@ func (c listCols) compact(rows []listRow) listCols {
 	c.mlflow = len("MLflow")
 	for _, r := range rows {
 		c.started = max(c.started, lipgloss.Width(startedCompact(r)))
-		c.mlflow = max(c.mlflow, lipgloss.Width(mlflowLabel(r)))
+		c.mlflow = max(c.mlflow, lipgloss.Width(oneLine(mlflowLabel(r))))
 	}
 	c.mlflow = min(c.mlflow, mlflowColWidth)
 	return c

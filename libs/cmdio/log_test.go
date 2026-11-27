@@ -39,7 +39,7 @@ func TestLogStringEscapesControlCharacters(t *testing.T) {
 
 	cmdio.LogString(ctx, "\x1b[32mRun\x1b[0m failed: no such file \"a\x1b]0;title\x07\x1b[2J\rb\"\nsecond line")
 
-	assert.Equal(t, "\x1b[32mRun\x1b[0m"+` failed: no such file "a\x1b]0;title\a\x1b[2J\rb"`+"\nsecond line\n", stderr.String())
+	assert.Equal(t, "\x1b[32mRun\x1b[0m"+` failed: no such file "a\u001b]0;title\u0007\u001b[2J\rb"`+"\nsecond line\n", stderr.String())
 }
 
 func TestIsQuiet(t *testing.T) {
