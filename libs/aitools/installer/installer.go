@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -209,6 +210,17 @@ type InstallOptions struct {
 	// SkillsOnly records the target agents that could have had the plugin in
 	// InstallState.SkillsOnlyAgents: the user chose raw skills for them.
 	SkillsOnly bool
+	// KeepHandPlacedSkills refuses the install with a *RefusedError, before
+	// it writes anything, when a target agent's skills directory has an entry
+	// named after a skill to install that is neither a link to that skill in
+	// the base directory nor a copy of a subset of its files. The install
+	// would move such an entry aside: the user or another tool put it there.
+	// One such entry refuses the whole install, for every target agent and
+	// skill: the install state records the skills for all of them at once,
+	// so installing the rest would record skills that an agent lacks, and
+	// a later update, which reinstalls only skills whose version changed,
+	// would never give them to it.
+	KeepHandPlacedSkills bool
 }
 
 func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) {
@@ -397,8 +409,26 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		ref:     ref,
 	}
 
-	// Install each skill in sorted order for determinism.
-	skillNames := slices.Sorted(maps.Keys(targetSkills))
+	// Install each skill in sorted order for determinism. Idempotency: skip a
+	// skill if the same version is already installed, the canonical dir
+	// exists, AND every requested agent already has the skill on disk.
+	skillNames := slices.DeleteFunc(slices.Sorted(maps.Keys(targetSkills)), func(name string) bool {
+		meta := targetSkills[name]
+		if state == nil || state.Skills[name] != meta.Version || stateRepoDir(state, name) != meta.RepoDir {
+			return false
+		}
+		if _, statErr := os.Stat(filepath.Join(baseDir, name)); statErr != nil || !allAgentsHaveSkill(ctx, name, targetAgents, scope, cwd) {
+			return false
+		}
+		log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
+		return true
+	})
+
+	if opts.KeepHandPlacedSkills {
+		if agent, name, found := handPlacedSkill(ctx, targetAgents, skillNames, params); found {
+			return &RefusedError{Err: fmt.Errorf("kept the %s skill in the skills directory of %s, which an install would move aside; run 'databricks aitools install' to replace it", name, agent.DisplayName)}
+		}
+	}
 
 	// Scoped to the loop, not the manifest fetch above, so earlier warnings print
 	// as plain lines instead of racing the live spinner's redraw.
@@ -413,16 +443,6 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]
-
-		// Idempotency: skip if same version is already installed, the canonical
-		// dir exists, AND every requested agent already has the skill on disk.
-		if state != nil && state.Skills[name] == meta.Version && stateRepoDir(state, name) == meta.RepoDir {
-			skillDir := filepath.Join(baseDir, name)
-			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents, scope, cwd) {
-				log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
-				continue
-			}
-		}
 
 		sp.Update("Installing " + name + "...")
 		records, failed, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
@@ -765,7 +785,7 @@ func agentSkillsDirForScope(ctx context.Context, agent *agents.Agent, scope, cwd
 // backupThirdPartySkill moves destDir to a temp directory if it exists and is not
 // a symlink pointing to canonicalDir. This preserves skills installed by other tools.
 func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName, agentName string) error {
-	fi, err := os.Lstat(destDir)
+	_, err := os.Lstat(destDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
@@ -774,17 +794,8 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	}
 
 	// If it's a symlink to our canonical dir, no backup needed.
-	if fi.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(destDir)
-		if err == nil {
-			absTarget := target
-			if !filepath.IsAbs(target) {
-				absTarget = filepath.Clean(filepath.Join(filepath.Dir(destDir), target))
-			}
-			if absTarget == canonicalDir {
-				return nil
-			}
-		}
+	if linksTo(destDir, canonicalDir) {
+		return nil
 	}
 
 	backupDir, err := os.MkdirTemp("", fmt.Sprintf("databricks-skill-backup-%s-*", skillName))
@@ -800,6 +811,88 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	log.Debugf(ctx, "Existing %q for %s moved to %s", skillName, agentName, backupDest)
 	return nil
 }
+
+// handPlacedSkill returns the first target agent and skill whose entry in the
+// agent's skills directory is neither a link to the canonical skill nor a copy
+// of a subset of its files. installSkillForAgents would move such an entry
+// aside; a link or a copy is what an earlier install that did not finish left.
+func handPlacedSkill(ctx context.Context, targetAgents []*agents.Agent, skillNames []string, params installParams) (*agents.Agent, string, bool) {
+	for _, agent := range targetAgents {
+		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
+		if err != nil {
+			continue
+		}
+		for _, name := range skillNames {
+			path := filepath.Join(agentSkillDir, name)
+			if _, err := os.Lstat(path); err != nil {
+				continue
+			}
+			canonicalDir := filepath.Join(params.baseDir, name)
+			if !linksTo(path, canonicalDir) && !isCopyOf(path, canonicalDir) {
+				return agent, name, true
+			}
+		}
+	}
+	return nil, "", false
+}
+
+// linksTo reports whether path is a symlink whose target is canonicalDir.
+func linksTo(path, canonicalDir string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil || fi.Mode()&os.ModeSymlink == 0 {
+		return false
+	}
+	target, err := os.Readlink(path)
+	if err != nil {
+		return false
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Clean(filepath.Join(filepath.Dir(path), target))
+	}
+	return target == canonicalDir
+}
+
+// isCopyOf reports whether dir is a directory, not a link, whose every file is
+// a regular file with the same contents as the file at the same path in
+// canonicalDir.
+func isCopyOf(dir, canonicalDir string) bool {
+	if fi, err := os.Lstat(dir); err != nil || !fi.IsDir() {
+		return false
+	}
+	if fi, err := os.Stat(canonicalDir); err != nil || !fi.IsDir() {
+		return false
+	}
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !d.Type().IsRegular() {
+			return errNotCopy
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		ours, err := os.ReadFile(filepath.Join(canonicalDir, rel))
+		if err != nil {
+			return err
+		}
+		theirs, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(ours, theirs) {
+			return errNotCopy
+		}
+		return nil
+	})
+	return err == nil
+}
+
+var errNotCopy = errors.New("not a copy")
 
 func movePathWithCrossDeviceFallback(src, dest string) error {
 	if err := renamePathFn(src, dest); err != nil {

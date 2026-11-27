@@ -1,0 +1,17 @@
+{
+ "state_version": 3,
+ "lineage": "test-lineage",
+ "serial": 1,
+ "state": {
+  "resources.clusters.foo": {
+   "__id__": "1126-000000-deleted0",
+   "state": {
+    "autotermination_minutes": 60,
+    "cluster_name": "foo",
+    "node_type_id": "i3.xlarge",
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+   }
+  }
+ }
+}
