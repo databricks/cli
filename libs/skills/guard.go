@@ -39,7 +39,8 @@ func Enabled(ctx context.Context) bool {
 // Every HintsEnabled call on the returned context, and on contexts derived from
 // it, gives the answer of the first call. A cache refresh later in the run,
 // such as the auto-install before the deferred hint prints, cannot then change
-// that hint's text, its throttle or the skills command exemption.
+// that hint's text, its throttle or the skills command exemption. The memo is
+// not locked, so HintsEnabled must run on the command goroutine.
 func WithHintsMemo(ctx context.Context) context.Context {
 	return context.WithValue(ctx, hintsMemoKey{}, &hintsMemo{})
 }
