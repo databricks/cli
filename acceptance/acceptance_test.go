@@ -419,10 +419,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		}
 	}
 
-	// Skip building yamlfmt when running on workspace filesystem (DBR).
-	// This fails today on DBR. Can be looked into and fixed as a follow-up
-	// as and when needed.
-	if !WorkspaceTmpDir && !skipToolBuilds {
+	if !skipToolBuilds {
 		BuildYamlfmt(t)
 	}
 
@@ -2147,8 +2144,14 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	return latestWheel
 }
 
+// BuildYamlfmt builds tools/yamlfmt directly: going through the Taskfile needs a git
+// checkout (it runs git grep at startup), which the DBR test archive does not have.
 func BuildYamlfmt(t *testing.T) {
-	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
+	name := "yamlfmt"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	RunCommand(t, []string{"go", "build", "-o", name, "github.com/google/yamlfmt/cmd/yamlfmt"}, "../tools", []string{})
 }
 
 // loadScriptReplacements adds the replacements appended to replsPath by the scripts.
