@@ -268,6 +268,7 @@ func TestPagerModelQuitKeys(t *testing.T) {
 		{"q", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}},
 		{"Q", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'Q'}}},
 		{"esc", tea.KeyMsg{Type: tea.KeyEsc}},
+		{"alt+esc", tea.KeyMsg{Type: tea.KeyEsc, Alt: true}},
 		{"ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC}},
 	}
 	for _, tc := range cases {
