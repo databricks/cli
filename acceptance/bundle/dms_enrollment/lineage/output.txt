@@ -1,0 +1,43 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-lineage-[UNIQUE_NAME]/default/files...
+Created jobs.job_a
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A deploy of an existing deployment checks enrollment in the background; its requests carry the lineage
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-lineage-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --get --dms --keep //api/2.0/bundle/enrollments //api/2.2/jobs/get
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none lineage/[LINEAGE_HASH] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none lineage/[LINEAGE_HASH] auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[JOB_A_ID]"
+  }
+}
+
+=== Only the requests before the state is read lack the lineage
+GET /api/2.0/workspace/export
+GET /api/2.0/workspace/export

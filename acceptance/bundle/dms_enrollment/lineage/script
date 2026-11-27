@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+read_lineage.py
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+
+title "A deploy of an existing deployment checks enrollment in the background; its requests carry the lineage"
+trace $CLI bundle deploy
+trace print_requests.py --get --dms --keep //api/2.0/bundle/enrollments //api/2.2/jobs/get
+
+title "Only the requests before the state is read lack the lineage"
+print_requests.py --get --dms | jq -r 'select(.headers["User-Agent"][0] | contains("lineage/") | not) | .method + " " + .path'
