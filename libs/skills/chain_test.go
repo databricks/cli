@@ -221,6 +221,16 @@ func TestChainCatalogThenReadFileIsCachedForOfflineReads(t *testing.T) {
 	assert.Equal(t, "live body", string(data), "offline, the cached file is served")
 }
 
+func TestChainReadFileNothingCachedFallsBackToBundled(t *testing.T) {
+	live := &fakeSource{err: errLiveDown}
+	bundled := &fakeSource{catalog: release("0.9.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}}
+	c, _ := newTestChain(t, live, bundled)
+
+	data, err := c.ReadFile(t.Context(), "alpha", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, "bundled body", string(data), "offline with nothing cached, the bundled copy is served")
+}
+
 func TestChainFreshCacheUnreachableFileReadFallsBackToBundled(t *testing.T) {
 	live := &fakeSource{catalog: release("1.0.0")}
 	bundled := &fakeSource{catalog: release("1.0.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}}
@@ -310,6 +320,23 @@ func TestChainClockMovedBackKeepsNewestRelease(t *testing.T) {
 	cached, ok := c.cache.Latest()
 	require.True(t, ok)
 	assert.Equal(t, "2.0.0", cached.Version, "the newer release stays the newest cached one")
+}
+
+func TestChainClockMovedBackKeepsNewestReleaseWhenVersionsSortAsStrings(t *testing.T) {
+	// As strings "0.2.9" sorts above "0.2.10", so a tie on FetchedAt would keep the older release.
+	live := &fakeSource{catalog: release("0.2.9")}
+	c, now := newTestChain(t, live, &fakeSource{})
+
+	_, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	*now = t0.Add(-time.Hour)
+	live.catalog = release("0.2.10")
+	_, err = c.Catalog(t.Context())
+	require.NoError(t, err)
+
+	cached, ok := c.cache.Latest()
+	require.True(t, ok)
+	assert.Equal(t, "0.2.10", cached.Version, "the newer release is stored after the older one, whatever the version order")
 }
 
 func TestChainNilCacheReadsLive(t *testing.T) {

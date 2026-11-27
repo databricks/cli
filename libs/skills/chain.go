@@ -99,12 +99,13 @@ func (c *chain) catalog(ctx context.Context, cached *Catalog) (*catalogRead, err
 }
 
 // storedCopy returns the copy of live to cache. When a clock moved back has
-// stamped the newest cached catalog later than now, live is stored no earlier
-// than that one, so Latest keeps the newest release. The release order breaks the tie.
+// stamped the newest cached catalog at or after live, the copy is stamped one
+// nanosecond after it, so Latest keeps the newest write whatever the release
+// versions are (the cache breaks ties by version as a string).
 func storedCopy(newest, live *Catalog) *Catalog {
 	cp := *live
-	if newest != nil && newest.FetchedAt.After(cp.FetchedAt) {
-		cp.FetchedAt = newest.FetchedAt
+	if newest != nil && !cp.FetchedAt.After(newest.FetchedAt) {
+		cp.FetchedAt = newest.FetchedAt.Add(time.Nanosecond)
 	}
 	return &cp
 }
