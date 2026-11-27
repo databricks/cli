@@ -1,0 +1,4 @@
+bundle:
+  name: test-bundle
+  git:
+    origin_url: https://user:token@github.com/databricks/cli

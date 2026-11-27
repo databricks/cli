@@ -204,3 +204,20 @@ func TestPydabsMetrics(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
 	assert.Equal(t, expected, pydabsMetrics(b))
 }
+
+func TestBundleGitInfoStripsOriginURLCredentials(t *testing.T) {
+	tests := []struct {
+		originURL string
+		want      string
+	}{
+		{"https://user:token@github.com/databricks/cli", "https://github.com/databricks/cli"},
+		{"https://github.com/databricks/cli", "https://github.com/databricks/cli"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.originURL, func(t *testing.T) {
+			b := &bundle.Bundle{}
+			b.Config.Bundle.Git.OriginURL = tt.originURL
+			assert.Equal(t, tt.want, bundleGitInfo(b).OriginURL)
+		})
+	}
+}
