@@ -69,7 +69,7 @@ func NewCache(ctx context.Context) *Cache {
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
 		return nil
 	}
-	if env.Get(ctx, "DATABRICKS_SKILLS_DIR") != "" {
+	if env.Get(ctx, dirEnv) != "" {
 		return nil
 	}
 	ref := env.Get(ctx, "DATABRICKS_SKILLS_REF")

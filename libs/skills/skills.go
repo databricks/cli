@@ -64,8 +64,9 @@ type Catalog struct {
 	// served a cached copy it could not refresh, or the bundled copy, which
 	// callers get only when the release cannot be reached. A fresh cached copy
 	// and a live read leave it false. Sources that always read the release
-	// themselves leave it false too.
-	Stale bool
+	// themselves leave it false too. It is not stored, so a cached catalog
+	// never reads back as stale.
+	Stale bool `json:"-"`
 
 	// Rules is text shown above the catalog, empty when the release has none.
 	Rules string
