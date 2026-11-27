@@ -118,6 +118,8 @@ def count_requests(args, out):
             if e["failed"]:
                 failed.add(e["test"])
             max_requests[e["test"]] = max(max_requests.get(e["test"], 0), e["requests"])
+    if not max_requests:
+        sys.exit(f"No test ran; see the go test output in {out}/count-0.json")
     no_requests = {t for t, n in max_requests.items() if n == 0}
     eligible = {t: n for t, n in max_requests.items() if t not in failed and n > 0}
     return eligible, sorted(failed), sorted(no_requests)
