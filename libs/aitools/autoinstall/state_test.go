@@ -187,6 +187,7 @@ func TestGiveConsentIfUnknown(t *testing.T) {
 		want  State
 	}{
 		{"unknown", State{LastVersion: "1.2.3"}, State{LastVersion: "1.2.3", Consented: true}},
+		{"unknown after an install without consent", State{InstalledWithoutConsent: true}, State{Consented: true}},
 		{"given", State{Consented: true}, State{Consented: true}},
 		{"an opt-out stays", State{OptedOut: true}, State{OptedOut: true}},
 	} {

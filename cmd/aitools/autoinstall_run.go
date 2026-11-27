@@ -407,11 +407,16 @@ func installStateSaved(globalDir string) bool {
 // answered but has a global installation that the CLI made (one with install
 // state): the user installed the tools, so auto-install keeps them up to date.
 // Skills without install state may be the user's own copies, and a project
-// installation belongs to the project, so neither counts. in is a run past
-// stateFreeSkips; one in CI or with auto-install turned off in the environment
-// stores nothing. in.State gets the stored consent.
+// installation belongs to the project, so neither counts. Nor does install
+// state that auto-install wrote itself without consent (a coding agent's run,
+// or a first install that did not finish). in is a run past stateFreeSkips;
+// one in CI or with auto-install turned off in the environment stores nothing.
+// in.State gets the stored consent.
 func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
 	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
+		return
+	}
+	if in.State.Installing || in.State.InstalledWithoutConsent {
 		return
 	}
 	globalDir, err := installer.GlobalSkillsDir(ctx)
@@ -505,8 +510,8 @@ const skippedNotice = "Skipped. To install Databricks AI tools later, run: datab
 // version even when it is never answered: the process is killed, stdin is
 // closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
 // unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
-// no. "Yes" is recorded so that the version's retries do not ask again; only
-// "no" stores the opt-out.
+// no. "Yes" is recorded so that the version's retries do not ask again, and
+// stores the consent; "no" stores the opt-out.
 func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signal) {
 	if err := cmdio.DiscardInput(ctx); err != nil {
 		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
@@ -540,6 +545,10 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 		if err := autoinstall.Accept(ctx, r.version); err != nil {
 			// The install goes ahead; a retry of it asks again.
 			log.Debugf(ctx, "auto-install: could not save the answer: %v", err)
+		}
+		// The consent stays even if the install then fails or is refused.
+		if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+			log.Debugf(ctx, "auto-install: could not save the consent: %v", err)
 		}
 		return true, nil
 	case "n", "no":

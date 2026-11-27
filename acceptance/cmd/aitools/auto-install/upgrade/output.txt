@@ -16,6 +16,7 @@ databricks-kept
 >>> auto_install_state
 {
   "last_version": "1.30.0",
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 
@@ -46,7 +47,7 @@ my notes
 >>> auto_install_state
 {
   "last_version": "1.31.0",
-  "consented": true,
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 
@@ -63,7 +64,7 @@ kept 2.0.0
 >>> auto_install_state
 {
   "last_version": "1.32.0",
-  "consented": true,
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 
@@ -76,7 +77,7 @@ kept 2.0.0
 >>> auto_install_state
 {
   "last_version": "1.32.0",
-  "consented": true,
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 

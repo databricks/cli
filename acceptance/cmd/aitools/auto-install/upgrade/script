@@ -26,7 +26,8 @@ trace cursor_skills
 trace skill_file databricks-kept
 trace skill_file databricks-dropped
 trace skill_file databricks-edited
-# The installation counts as the user's consent.
+# Auto-install made the installation without asking, so it is not the user's
+# consent.
 trace auto_install_state
 
 title "upgrade to 1.32.0 while the latest release is 0.2.0: no downgrade, nothing printed, not retried"

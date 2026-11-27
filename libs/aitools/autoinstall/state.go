@@ -51,8 +51,10 @@ type State struct {
 	// Consented records that the user agreed to installing the tools and
 	// keeping them up to date. It is set by `databricks aitools auto-install
 	// enable`, by a global-scope `databricks aitools install` that set an agent
-	// up, by a "yes" to the skills prompt of `databricks apps init`, and by a
-	// run that finds a global installation made by the CLI. It is never set
+	// up, by a "yes" to the install prompt, by a "yes" to the skills prompt of
+	// `databricks apps init`, and by a run that finds a global installation
+	// made by the CLI other than one auto-install made without consent (see
+	// InstalledWithoutConsent and Installing). It is never set
 	// together with OptedOut (see Consent), so a CLI that knows only OptedOut
 	// still reads an opt-out as one.
 	Consented bool `json:"consented,omitempty"`
@@ -77,6 +79,12 @@ type State struct {
 	// Install state that anything else wrote is updated. It is cleared with
 	// Installing.
 	InstallStateDigest string `json:"install_state_digest,omitempty"`
+
+	// InstalledWithoutConsent records that auto-install started a first
+	// install while the user had not answered (a coding agent's run, which
+	// does not ask). The install state it leaves is not the user's consent, so
+	// a run does not read it as one. It is cleared once the user answers.
+	InstalledWithoutConsent bool `json:"installed_without_consent,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
@@ -171,6 +179,7 @@ func (s State) Consent() Consent {
 func setConsent(s *State, c Consent) {
 	s.OptedOut = c == ConsentOptedOut
 	s.Consented = c == ConsentGiven
+	s.InstalledWithoutConsent = false
 }
 
 // SetConsent stores the user's answer c, keeping the rest of the state, and
