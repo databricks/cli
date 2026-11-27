@@ -69,6 +69,35 @@ func TestReadFiles(t *testing.T) {
 	assert.Contains(t, string(data), "# Beta")
 }
 
+func TestFileSizes(t *testing.T) {
+	src := fixtureSource().(FileSizer)
+
+	size, err := src.FileSize(t.Context(), "alpha", "references/guide.md")
+	require.NoError(t, err)
+	data, err := fixtureSource().ReadFile(t.Context(), "alpha", "references/guide.md")
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(data)), size)
+
+	_, err = src.FileSize(t.Context(), "alpha", "missing.md")
+	assert.ErrorIs(t, err, ErrUnknownFile)
+}
+
+func TestFolderHasNoSize(t *testing.T) {
+	// The manifest may name a folder. A folder has no size, and read-file refuses it.
+	src := NewFSSource(fstest.MapFS{
+		"manifest.json":                    {Data: []byte(`{"skills": {"alpha": {"files": ["SKILL.md", "references"]}}}`)},
+		"skills/alpha/SKILL.md":            {Data: []byte("# Alpha")},
+		"skills/alpha/references/guide.md": {Data: []byte("# Guide")},
+	}, "map")
+
+	_, err := src.(FileSizer).FileSize(t.Context(), "alpha", "references")
+	assert.ErrorIs(t, err, ErrNoSize)
+
+	size, err := src.(FileSizer).FileSize(t.Context(), "alpha", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, int64(len("# Alpha")), size)
+}
+
 func TestUnknownSkillAndFile(t *testing.T) {
 	src := fixtureSource()
 
@@ -152,4 +181,15 @@ func TestCatalogRulesPathIsCleaned(t *testing.T) {
 func TestMissingCatalogRulesIsReported(t *testing.T) {
 	_, err := mapSource(`{"catalog_rules": "RULES.md", "skills": {}}`).Catalog(t.Context())
 	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+// The label is kept as given. A backslash is a legal folder name character on
+// Linux and macOS, so NewFSSource must not rewrite it; Resolve converts host
+// paths with filepath.ToSlash before they get here.
+func TestLabelIsKeptAsGiven(t *testing.T) {
+	src := NewFSSource(fstest.MapFS{"manifest.json": {Data: []byte(`{"skills": {}}`)}}, `my\skills`)
+
+	catalog, err := src.Catalog(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, `my\skills`, catalog.Label)
 }

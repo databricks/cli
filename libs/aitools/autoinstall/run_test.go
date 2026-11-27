@@ -42,7 +42,10 @@ func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 	for range 20 {
 		wg.Go(func() { assert.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now())) })
 	}
-	wg.Go(func() { assert.NoError(t, SetOptedOut(ctx, true)) })
+	wg.Go(func() {
+		_, err := SetConsent(ctx, ConsentOptedOut)
+		assert.NoError(t, err)
+	})
 	wg.Wait()
 
 	s, err := Load(ctx)
@@ -118,14 +121,15 @@ func TestLockReturnsOtherErrorsAtOnce(t *testing.T) {
 	assert.Equal(t, 1, tries)
 }
 
-func TestSetOptedOutWithoutLocks(t *testing.T) {
+func TestSetConsentWithoutLocks(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
 	// An explicit opt-out must work where the filesystem has no locks.
 	orig := tryLock
 	t.Cleanup(func() { tryLock = orig })
 	tryLock = func(*os.File) error { return errors.New("no locks here") }
-	require.NoError(t, SetOptedOut(ctx, true))
+	_, err := SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
 
 	s, err := load(ctx)
 	require.NoError(t, err)
@@ -133,7 +137,8 @@ func TestSetOptedOutWithoutLocks(t *testing.T) {
 
 	// A lock another process holds is waited for, not skipped.
 	tryLock = func(*os.File) error { return errLockHeld }
-	assert.ErrorIs(t, SetOptedOut(ctx, false), errLockHeld)
+	_, err = SetConsent(ctx, ConsentGiven)
+	assert.ErrorIs(t, err, errLockHeld)
 }
 
 func TestRecordClearsInstallingWhenSettled(t *testing.T) {
@@ -164,7 +169,38 @@ func TestRecordUnfinishedSettlesAndKeepsInstalling(t *testing.T) {
 	require.NoError(t, RecordUnfinished(ctx, "1.30.0", "machine"))
 	s, err := Load(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: "digest", ID: "machine"}, s)
+	assert.Equal(t, State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: "digest", InstalledWithoutConsent: true, ID: "machine"}, s)
+}
+
+// A first install that starts before the user answered is marked as made
+// without consent, until the user answers.
+func TestMarkInstallingRecordsAnInstallWithoutConsent(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		state State
+		want  State
+	}{
+		{"unknown", State{}, State{Installing: true, InstalledWithoutConsent: true}},
+		{"given", State{Consented: true}, State{Consented: true, Installing: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+			require.NoError(t, save(ctx, tc.state))
+
+			require.NoError(t, MarkInstalling(ctx))
+			s, err := Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, s)
+		})
+	}
+
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	require.NoError(t, MarkInstalling(ctx))
+	_, err := SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{OptedOut: true, Installing: true}, s, "an answer clears the mark")
 }
 
 func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
@@ -240,7 +276,8 @@ func TestStartAttemptStopsAtAnOptOut(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
 
-	require.NoError(t, SetOptedOut(ctx, true))
+	_, err = SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
 	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at)
 	require.NoError(t, err)
 	assert.False(t, started)

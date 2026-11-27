@@ -15,6 +15,7 @@
   "attempts": 1,
   "last_attempt": "[LAST_ATTEMPT]",
   "installing": true,
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 
@@ -51,5 +52,6 @@ Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-insta
 >>> auto_install_state
 {
   "last_version": "1.31.0",
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }

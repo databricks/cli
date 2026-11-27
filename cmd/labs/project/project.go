@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 
 	"github.com/spf13/cobra"
 )

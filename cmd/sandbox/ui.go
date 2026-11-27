@@ -73,13 +73,8 @@ func field(ctx context.Context, w io.Writer, label, value string) {
 	fmt.Fprintf(w, "  %s %s\n", cmdio.Faint(ctx, fmt.Sprintf("%-10s", label)), value)
 }
 
-// ok prints "  ✓ message" to stderr via the cmdio context.
-func ok(ctx context.Context, msg string) {
-	cmdio.LogString(ctx, "  "+cmdio.Cyan(ctx, "✓")+" "+msg)
-}
-
 // warn prints "  ! message" to stderr via the cmdio context. Yellow so
-// it visually differs from `ok`'s cyan ✓ and `spinner` cyan markers.
+// it visually differs from the spinner's cyan markers.
 func warn(ctx context.Context, msg string) {
 	cmdio.LogString(ctx, "  "+cmdio.Yellow(ctx, "!")+" "+msg)
 }

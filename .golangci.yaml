@@ -156,6 +156,9 @@ linters:
           msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
         - pattern: 'errors\.As\b'
           msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+).'
+        - pattern: '^yaml\.NewEncoder$'
+          pkg: '^go\.yaml\.in/yaml/v4$'
+          msg: Use yamlutil.Encode from libs/yamlutil instead; yaml.NewEncoder wraps lines at 80 columns in go-yaml v4 (yaml/go-yaml#525).
       analyze-types: true
     recvcheck:
       # recvcheck v0.3 switched its built-in exclusions from Marshal* to

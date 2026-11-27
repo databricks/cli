@@ -202,17 +202,18 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 //
 // A change that cannot be attributed to a single source location, or whose ancestor
 // in the config is written as a variable reference, is left unapplied rather than
-// written to a guessed or non-existent location. The count of those is returned so
-// the caller can record it: the command runs unattended, so a change that silently
-// disappears looks identical to one that was written. preResolved is the merged
-// config with ${...} references still literal, used to detect variable-reference
-// ancestors and to find fields a mutator cleared, which are replaced where the file
-// declares them.
+// written to a guessed or non-existent location. Such a change is marked as skip in
+// configChanges and counted, so the caller can report it: the command runs unattended,
+// so a change that silently disappears looks identical to one that was written.
+// preResolved is the merged config with ${...} references still literal, used to
+// detect variable-reference ancestors and to find fields a mutator cleared, which are
+// replaced where the file declares them.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
 	targetName := b.Config.Bundle.Target
 	blocks := newBlockResolver(ctx, b)
+	docs := sourceDocs{}
 
 	resourceKeys := slices.Sorted(maps.Keys(configChanges))
 
@@ -271,7 +272,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 			if reason, ok := renames.unpairedPaths[fieldPath]; ok {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
+				leaveUnapplied(ctx, configChange, fullPath, reason)
 				skipped++
 				continue
 			}
@@ -288,12 +289,9 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 			// The field is nested inside a value written as a variable reference (e.g.
 			// spark_conf: ${var.spark_conf}), which is a scalar in the file with no node
-			// to place the key or index under. Leave it unapplied, and record the skip on
-			// the shared change so the output reports "skip" rather than a write that never
-			// happens (matching the reclassification below).
+			// to place the key or index under.
 			if ancestorIsVariableReference(preResolved, mergedIndexPath.String()) {
-				log.Debugf(ctx, "config-remote-sync: skipping %s: ancestor is a variable reference", fullPath)
-				configChange.Operation = OperationSkip
+				leaveUnapplied(ctx, configChange, fullPath, "ancestor is a variable reference")
 				skipped++
 				continue
 			}
@@ -310,8 +308,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					// A complex variable (new_cluster: ${var.cluster}) cannot take the remote
 					// map or list without losing its reference, so it is left unapplied too.
 					if ref, isString := declared.AsString(); isString && dynvar.ContainsVariableReference(ref) && isContainer(configChange.Value) {
-						log.Debugf(ctx, "config-remote-sync: skipping %s: the field is a variable reference", fullPath)
-						configChange.Operation = OperationSkip
+						leaveUnapplied(ctx, configChange, fullPath, "the field is a variable reference")
 						skipped++
 						continue
 					}
@@ -324,7 +321,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					} else if !blocks.addReachesWinner(resolved, replaced, b.Config.GetLocationOf(resourcePath).File) {
 						// The add would fail on the key, or write a copy that does not win,
 						// which changes nothing for this target and changes what others deploy.
-						log.Debugf(ctx, "config-remote-sync: skipping %s: the key it wins with cannot be replaced", fullPath)
+						leaveUnapplied(ctx, configChange, fullPath, "the key it wins with cannot be replaced")
 						skipped++
 						continue
 					}
@@ -338,19 +335,31 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 				// Applying this change would mean guessing a location. Leave it
 				// unapplied; a later run can pick it up.
-				log.Debugf(ctx, "config-remote-sync: skipping %s: %v", fullPath, err)
+				leaveUnapplied(ctx, configChange, fullPath, err.Error())
 				skipped++
 				continue
 			}
 			if len(destinations) == 0 {
 				// A rename whose element could not be attributed to a block: the whole
 				// pair is left for a later run rather than half-applied.
-				log.Debugf(ctx, "config-remote-sync: skipping %s: the renamed element has no source location", fullPath)
+				leaveUnapplied(ctx, configChange, fullPath, "the renamed element has no source location")
 				skipped++
 				continue
 			}
 
-			for _, destination := range destinations {
+			// Decided for every destination before any index bookkeeping, so a change
+			// that cannot be written everywhere is skipped as a whole and shifts nothing.
+			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved, configChange.Operation, rename.keyField, destinations)
+			if !written {
+				leaveUnapplied(ctx, configChange, fullPath, "the file does not write it where it is defined")
+				skipped++
+				if isRename {
+					skipped++
+				}
+				continue
+			}
+
+			for i, destination := range destinations {
 				block := destination.block
 				resolvedPath := destination.path
 				// Each destination gets its own copy: the operation and the value
@@ -375,6 +384,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
 
 				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
+				if addPaths[i] != "" {
+					// Written next to the merge key, the key overrides the inherited value
+					// for this mapping only.
+					destChange.Operation = OperationAdd
+					configChange.Operation = OperationAdd
+					writePath, altWritePath = addPaths[i], ""
+				}
 
 				// A change routed to a block has a known destination file even when the leaf
 				// itself is new, but "defined in the config" must still be decided by
@@ -432,9 +448,81 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				})
 			}
 		}
+
+		// The add half of a rename is written through its remove half, so it is left
+		// unapplied with it.
+		for removePath, rename := range renames.byRemovePath {
+			if remove := resourceChanges[removePath]; remove.Operation == OperationSkip {
+				add := resourceChanges[rename.addPath]
+				add.Operation, add.Reason = OperationSkip, remove.Reason
+			}
+		}
 	}
 
 	return result, skipped, nil
+}
+
+// leaveUnapplied marks a change that is left for a later run as skip, so the output
+// does not list it under an operation that was never written.
+func leaveUnapplied(ctx context.Context, change *ConfigChangeDesc, fullPath, reason string) {
+	log.Debugf(ctx, "config-remote-sync: skipping %s: %s", fullPath, reason)
+	change.Operation = OperationSkip
+	change.Reason = reason
+}
+
+// writtenDestinations checks each destination against the file it is written to. The
+// merged config can locate a key the file does not write at that path, e.g. one
+// inherited through a merge key ('<<: *anchor'), which the patcher cannot reach. Such a
+// replaced key can still be added next to the merge key: addPaths holds where, per
+// destination. Anything else unwritten makes written false. renameKey is the key field
+// a rename rewrites, empty for any other change.
+func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, resolved resolvedChange, operation OperationType, renameKey string, destinations []routeDestination) (addPaths []string, written bool) {
+	addPaths = make([]string, len(destinations))
+	for i, destination := range destinations {
+		block := destination.block
+		file := resolved.leaf.Location().File
+		isDefinedInConfig := file != ""
+		path := destination.path
+		_, addressesKey := path.StringKey()
+		switch {
+		case isDefinedInConfig && (operation == OperationRemove || operation == OperationReplace):
+			if block != nil {
+				file = block.file
+			}
+		case !isDefinedInConfig && operation == OperationAdd && !addressesKey && block != nil:
+			// A new element goes into its sequence, which the block has to write.
+			file = block.file
+		default:
+			continue
+		}
+		if !addressesKey {
+			// An element is never inherited on its own, but its sequence can be.
+			path = path.Parent()
+		}
+		writePath, altWritePath := writeAddress(blocks, block, target, path)
+		// The target override wins the target merge, so a top-level key it also supplies
+		// would not take effect.
+		shadowed := addressesKey && operation == OperationReplace && (block == nil || !block.override) &&
+			blocks != nil && blocks.overrideSupplies(resolved)
+		if shadowed && block != nil && len(resolved.steps) == 0 {
+			// Routed to the top-level copy: the target can take the key instead.
+			altWritePath = targetPrefixedPath(target, path)
+		}
+		key, parentPath := docs.written(file, writePath, altWritePath, shadowed)
+		if key && renameKey != "" {
+			// The element can be written while the key it is renamed by is inherited.
+			keyPath, altKeyPath := writeAddress(blocks, block, target, structpath.NewPatternStringKey(destination.path, renameKey))
+			key, _ = docs.written(file, keyPath, altKeyPath, false)
+		}
+		switch {
+		case key:
+		case addressesKey && operation == OperationReplace && parentPath != "":
+			addPaths[i] = parentPath
+		default:
+			return nil, false
+		}
+	}
+	return addPaths, true
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative

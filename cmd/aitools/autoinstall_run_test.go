@@ -3,6 +3,7 @@ package aitools
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -83,7 +84,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable"},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Consented: true, AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -92,7 +93,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "Y\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Consented: true, AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -130,7 +131,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantPrompt:  true,
 			input:       "\n",
 			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
-			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Consented: true, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
@@ -140,7 +141,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			stdinPiped:          true,
 			stdoutRedirected:    true,
 			stderrRedirected:    true,
-			wantState:           autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Installing: true, ID: "treatment-machine"},
+			wantState:           autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Installing: true, InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome:         protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
@@ -149,7 +150,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantPrompt:      true,
 			input:           "\n",
 			wantStderr:      []string{"Did not install the Databricks AI tools skills: kept the databricks-test skill in the skills directory of Cursor, which an install would move aside; run 'databricks aitools install' to replace it"},
-			wantState:       autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:       autoinstall.State{LastVersion: "1.30.0", Consented: true, AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome:     protos.AitoolsAutoInstallOutcomeKept,
 		},
 		{
@@ -159,7 +160,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Consented: true, AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -204,7 +205,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			stderrRedirected: true,
 			wantStderr:       []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:       true,
-			wantState:        autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:        autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome:      protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -213,7 +214,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "n\n",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -222,7 +223,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			input:       "",
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -234,7 +235,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			stderrRedirected: true,
 			wantStderr:       []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:       true,
-			wantState:        autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:        autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome:      protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -244,7 +245,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantPrompt:  true,
 			input:       "\n",
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Consented: true, AcceptedVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -274,7 +275,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			inContainer: true,
 			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
 			wantSkills:  true,
-			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
@@ -541,7 +542,7 @@ func TestAutoInstallWaitsBeforeARetry(t *testing.T) {
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	outcomes, state = runAutoInstallAt(t, -time.Hour)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 }
 
 // A first install that saved install state but did not give Cursor the skills
@@ -565,7 +566,8 @@ func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
 	require.NoError(t, os.Remove(skillsDir))
 	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	// The install state of the first attempt is not the user's consent.
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
 }
 
@@ -602,7 +604,7 @@ func TestAutoInstallFinishesAMixedInstallRefusedTheSkills(t *testing.T) {
 	assert.Empty(t, installState.Skills)
 	digest, err := installStateDigest(installState)
 	require.NoError(t, err)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: digest, InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 	assert.Equal(t, 1, pluginInstalls)
 
@@ -610,14 +612,14 @@ func TestAutoInstallFinishesAMixedInstallRefusedTheSkills(t *testing.T) {
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Installing: true, InstallStateDigest: digest, InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.Equal(t, 1, pluginInstalls)
 
 	require.NoError(t, os.RemoveAll(handPlaced))
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.32.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, installed, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.32.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.32.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 	assert.Equal(t, 1, pluginInstalls)
 	installState, err = installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
@@ -638,7 +640,7 @@ func TestAutoInstallSettlesARefusalThatWroteNothing(t *testing.T) {
 
 	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, kept, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 
 	moved := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-test")
 	require.NoError(t, os.MkdirAll(filepath.Dir(moved), 0o755))
@@ -646,7 +648,7 @@ func TestAutoInstallSettlesARefusalThatWroteNothing(t *testing.T) {
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, kept, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	data, err := os.ReadFile(filepath.Join(moved, "SKILL.md"))
 	require.NoError(t, err)
 	assert.Equal(t, "my own skill", string(data))
@@ -668,14 +670,14 @@ func TestAutoInstallKeepsAnUnfinishedInstallRefusedTheSkills(t *testing.T) {
 
 	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 
 	require.NoError(t, os.RemoveAll(handPlaced))
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 }
 
@@ -700,7 +702,7 @@ func runAutoInstallAt(t *testing.T, elapsed time.Duration) ([]protos.AitoolsAuto
 // failedAttempts is the state after attempts failed first installs of 1.30.0,
 // the last at autoInstallTestNow plus elapsed.
 func failedAttempts(attempts int, elapsed time.Duration) autoinstall.State {
-	return autoinstall.State{LastVersion: "1.30.0", Attempts: attempts, LastAttempt: autoInstallTestNow.Add(elapsed), Installing: true, ID: "treatment-machine"}
+	return autoinstall.State{LastVersion: "1.30.0", Attempts: attempts, LastAttempt: autoInstallTestNow.Add(elapsed), Installing: true, InstalledWithoutConsent: true, ID: "treatment-machine"}
 }
 
 // A run that has nothing to install or cannot ask skips before the gate
@@ -768,7 +770,7 @@ func TestAutoInstallSkipsRootInAUserHome(t *testing.T) {
 		assert.Equal(t, 1, *lookups)
 		state, err := autoinstall.Load(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+		assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", InstalledWithoutConsent: true, ID: "treatment-machine"}, state)
 	})
 }
 
@@ -803,7 +805,8 @@ func TestAutoInstallStopsAtAnOptOutStoredWhileItDecides(t *testing.T) {
 	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
 	t.Cleanup(func() { gateOn = autoinstall.GateOn })
 	gateOn = func(ctx context.Context, _ string) (bool, error) {
-		require.NoError(t, autoinstall.SetOptedOut(ctx, true))
+		_, err := autoinstall.SetConsent(ctx, autoinstall.ConsentOptedOut)
+		require.NoError(t, err)
 		return true, nil
 	}
 	ctx := cmdio.MockDiscard(t.Context())
@@ -868,6 +871,84 @@ func TestUninstallFailsWhileAnAutoInstallRuns(t *testing.T) {
 	state, err = autoinstall.Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", OptedOut: true, ID: "treatment-machine"}, state)
+}
+
+// A global installation the CLI made counts as the user's consent on a run
+// that could auto-install. The machine settled the version already, so the
+// runs install nothing and only the consent changes.
+func TestAutoInstallStoresTheConsentOfAnExistingInstall(t *testing.T) {
+	const settled = `{"id": "treatment-machine", "last_version": "1.30.0"}`
+	tests := []struct {
+		name  string
+		state string
+		// global and project write install state in that scope.
+		global  bool
+		project bool
+		// mcpOnly writes global install state that records only MCP servers.
+		mcpOnly bool
+		// untracked puts skills in the global directory without install state.
+		untracked bool
+		env       []string
+		want      autoinstall.Consent
+	}{
+		{name: "global install state", global: true, want: autoinstall.ConsentGiven},
+		{name: "no installation", want: autoinstall.ConsentUnknown},
+		{name: "skills without install state", untracked: true, want: autoinstall.ConsentUnknown},
+		{name: "a project installation", project: true, want: autoinstall.ConsentUnknown},
+		{name: "global install state of MCP servers only", mcpOnly: true, want: autoinstall.ConsentUnknown},
+		// Install state that auto-install wrote itself is not the user's
+		// consent: a coding agent's install, or a first install that did not
+		// finish.
+		{name: "install state auto-install wrote without consent", state: `{"id": "treatment-machine", "last_version": "1.30.0", "installed_without_consent": true}`, global: true, want: autoinstall.ConsentUnknown},
+		{name: "install state of an unfinished first install", state: `{"id": "treatment-machine", "last_version": "1.30.0", "installing": true}`, global: true, want: autoinstall.ConsentUnknown},
+		{name: "an opt-out stays", state: `{"id": "treatment-machine", "last_version": "1.30.0", "opted_out": true}`, global: true, want: autoinstall.ConsentOptedOut},
+		{name: "not in CI", global: true, env: []string{"CI", "true"}, want: autoinstall.ConsentUnknown},
+		{name: "not with the environment opt-out", global: true, env: []string{autoinstall.EnvVar, "false"}, want: autoinstall.ConsentUnknown},
+		{name: "not on a development build", global: true, env: []string{"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.30.0-dev+abcdef123456"}, want: autoinstall.ConsentUnknown},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			state := tc.state
+			if state == "" {
+				state = settled
+			}
+			home := setupAutoInstallHome(t, state, tc.env...)
+			globalDir := filepath.Join(home, ".databricks", "aitools", "skills")
+			project := t.TempDir()
+			t.Chdir(project)
+			recorded := &installer.InstallState{SchemaVersion: installer.CurrentSchemaVersion, Skills: map[string]string{"databricks-test": "1.0.0"}}
+			if tc.global {
+				require.NoError(t, installer.SaveState(globalDir, recorded))
+			}
+			if tc.project {
+				require.NoError(t, installer.SaveState(filepath.Join(project, ".databricks", "aitools", "skills"), recorded))
+			}
+			if tc.mcpOnly {
+				require.NoError(t, os.MkdirAll(globalDir, 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(globalDir, ".state.json"), []byte(`{"mcp": {"servers": {}}}`), 0o600))
+			}
+			if tc.untracked {
+				require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-test"), 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(globalDir, "databricks-test", "SKILL.md"), []byte("mine"), 0o644))
+			}
+			t.Cleanup(func() { gateOn = autoinstall.GateOn })
+			gateOn = func(context.Context, string) (bool, error) {
+				t.Error("the gate was looked up")
+				return true, nil
+			}
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			runAutoInstallHook(ctx)
+
+			got, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got.Consent())
+			var seeded autoinstall.State
+			require.NoError(t, json.Unmarshal([]byte(state), &seeded))
+			got.OptedOut, got.Consented = seeded.OptedOut, seeded.Consented
+			assert.Equal(t, seeded, got, "nothing else changes")
+			assert.Empty(t, telemetry.BufferedEvents(ctx))
+		})
+	}
 }
 
 func TestToolsPlanNewAgents(t *testing.T) {

@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func TestIsTextFile(t *testing.T) {
@@ -1820,7 +1820,8 @@ func TestSelfExecEnvCarriesBothMarkers(t *testing.T) {
 	assert.Equal(t, []string{"HOME=/home/user", "DATABRICKS_CLI_SELF_EXEC=1"}, selfExecEnv([]string{"HOME=/home/user"}))
 
 	// After a "no", the child also does not auto-install.
-	require.NoError(t, autoinstall.Decline(ctx))
+	_, err := autoinstall.Decline(ctx)
+	require.NoError(t, err)
 	environ := selfExecEnv([]string{"HOME=/home/user"})
 	assert.Contains(t, environ, "DATABRICKS_CLI_SELF_EXEC=1")
 	assert.Contains(t, environ, autoinstall.EnvVar+"=false")

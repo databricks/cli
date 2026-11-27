@@ -1,0 +1,55 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove the libraries of the task that defines the anchor and move an aliased task to the large cluster
+
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='setup'].libraries: remove
+  tasks[task_key='transform'].job_cluster_key: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -18,14 +18,13 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/setup
+-          libraries: &common_libs
+-            - pypi:
+-                package: requests
+         - task_key: ingest
+           job_cluster_key: main
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/ingest
+-          libraries: *common_libs
++          libraries: &common_libs
++            - pypi:
++                package: requests
+         - task_key: transform
+-          job_cluster_key: main
++          job_cluster_key: large
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/transform
+
+=== Only the changed tasks differ
+
+>>> [CLI] bundle validate -o json
+{"task_key":"ingest","job_cluster_key":"main","libraries":[{"pypi":{"package":"requests"}}]}
+{"task_key":"setup","job_cluster_key":"main","libraries":null}
+{"task_key":"transform","job_cluster_key":"large","libraries":[{"pypi":{"package":"requests"}}]}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

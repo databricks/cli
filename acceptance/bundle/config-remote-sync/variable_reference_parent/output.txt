@@ -9,12 +9,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  job_clusters[job_cluster_key='shared'].new_cluster.init_scripts[0].workspace.destination: skip
-  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: skip
-  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['added']: skip
-  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['changed']: skip
-  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['removed']: skip
-  job_clusters[job_cluster_key='variable_cluster'].new_cluster.spark_env_vars: skip
+  job_clusters[job_cluster_key='shared'].new_cluster.init_scripts[0].workspace.destination: skip (ancestor is a variable reference)
+  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: skip (ancestor is a variable reference)
+  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['added']: skip (ancestor is a variable reference)
+  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['changed']: skip (ancestor is a variable reference)
+  job_clusters[job_cluster_key='variable_cluster'].new_cluster.custom_tags['removed']: skip (ancestor is a variable reference)
+  job_clusters[job_cluster_key='variable_cluster'].new_cluster.spark_env_vars: skip (ancestor is a variable reference)
   max_concurrent_runs: replace
 
 

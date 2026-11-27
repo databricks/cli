@@ -17,13 +17,17 @@ const (
 	capacityGroupID = "capacity"
 )
 
-const airHelpFooter = `
+const airHelpLinks = `
 Learn more:
   YAML fields and example  databricks air run -h config
   Quickstart (AWS)         https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
   Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
-  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
 `
+
+// airSkillLine is the hard-coded pointer to the air skill. It is always printed
+// for air, even when the local catalog maps air to a skill, because removing it
+// is a launch change. A skill footer, when there is one, follows it.
+const airSkillLine = "  Coding agent skill       " + skillInstallCommand + "\n"
 
 // Spec declares the air command.
 var Spec = root.CommandSpec{
@@ -54,13 +58,19 @@ see your active runs with "databricks air list".`
 	addToGroup(cmd, packageGroupID, newConvertToDabsCommand(), newImagesCommand())
 	addToGroup(cmd, capacityGroupID, newPoolsCommand())
 
-	// Subcommands inherit this help func, so the footer is printed only for `air` itself.
+	// Subcommands inherit this help func. The links and the hard-coded skill line
+	// are printed only for `air` itself.
 	defaultHelp := cmd.HelpFunc()
 	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
 		defaultHelp(c, args)
 		if c == cmd {
-			fmt.Fprint(c.OutOrStdout(), airHelpFooter)
+			w := c.OutOrStdout()
+			fmt.Fprint(w, airHelpLinks)
+			fmt.Fprint(w, airSkillLine)
 		}
+		// air sets its own help func, so the root's wrapper does not reach it. This adds
+		// the skills footer for air and for its nested groups, such as air pools.
+		root.WriteSkillsHint(c)
 	})
 }
 
