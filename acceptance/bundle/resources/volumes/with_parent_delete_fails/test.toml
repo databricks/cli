@@ -1,0 +1,8 @@
+# Local only: the failure of the schema's delete is injected.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

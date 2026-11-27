@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.test-schema-${UNIQUE_NAME}"
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+
+title "Deploy a schema with a volume in it, and rename both out of band"
+trace $CLI bundle deploy
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | schema_fields
+trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | volume_fields
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "The volume goes with the schema's delete, which fails: the volume stays in the state with the schema"
+fault.py "DELETE /api/2.1/unity-catalog/schemas/*" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace summary_ids

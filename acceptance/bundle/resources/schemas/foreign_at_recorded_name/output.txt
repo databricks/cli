@@ -55,22 +55,30 @@ API message: Schema 'test-schema-[UNIQUE_NAME]' already exists
 
 Files: 2 uploaded, 0 deleted
 
-=== Destroy does not delete the other schema: it only drops the bundle's from the state
+=== Destroy finds the bundle's schema by its schema_id and deletes it, not the other one
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place, and drops resources.schemas.schema1 from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted
+Destroy: 1 deleted
 
 >>> print_requests.py //unity-catalog
-
->>> [CLI] schemas get main.test-schema-moved-[UNIQUE_NAME]
 {
-  "full_name": "main.test-schema-moved-[UNIQUE_NAME]",
-  "schema_id": "[SCHEMA_ID]"
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-moved-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
 }
+
+>>> musterr [CLI] schemas get main.test-schema-moved-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-moved-[UNIQUE_NAME]' does not exist.
 
 === The other schema is left alone
 

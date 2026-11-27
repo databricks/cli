@@ -1,0 +1,17 @@
+cp databricks-initial.yml databricks.yml
+
+title "Deploy a schema and a secret scope whose name starts with the schema's full name"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog //secrets &> LOG.deploy_requests
+
+title "Out of band: rename the schema, delete the scope, and create another scope named like the renamed schema"
+trace $CLI schemas update main.myschema --new-name moved_schema | schema_fields
+trace $CLI secrets delete-scope main.myschema.scope
+trace $CLI secrets create-scope main.moved_schema.scope
+print_requests.py //unity-catalog //secrets &> LOG.out_of_band_requests
+
+title "The config follows the rename and drops the scope: the other scope is not the bundle's, and is left alone"
+cp databricks-renamed.yml databricks.yml
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --sort //unity-catalog //secrets
+trace $CLI secrets list-scopes -o json | secret_scope_names

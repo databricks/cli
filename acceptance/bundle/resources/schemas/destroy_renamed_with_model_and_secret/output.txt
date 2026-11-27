@@ -1,0 +1,63 @@
+
+=== Deploy a schema with a registered model and a secret in it, and rename the schema out of band
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created registered_models.model1
+Created schemas.schema1
+Created secrets.secret1
+Files: 2 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "schema_id": "[SCHEMA_ID]"
+}
+
+=== Out of band, delete the secret, and create another schema under the old name with a model of the same name
+
+>>> [CLI] secrets-uc delete-secret main.test-schema-renamed-[UNIQUE_NAME].mysecret
+
+>>> [CLI] schemas create test-schema-[UNIQUE_NAME] main
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "schema_id": "[UUID]"
+}
+
+>>> [CLI] registered-models create --catalog-name main --schema-name test-schema-[UNIQUE_NAME] --name mymodel
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].mymodel"
+}
+
+=== The model has no internal ID to find it by, so destroy lists it as going with the schema it found, and sends a delete only for that schema. The secret is gone, and nothing at the old name is touched
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+  delete resources.schemas.schema1
+  delete resources.secrets.secret1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-renamed-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+
+>>> musterr [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-renamed-[UNIQUE_NAME]' does not exist.
+
+>>> [CLI] registered-models get main.test-schema-[UNIQUE_NAME].mymodel
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].mymodel"
+}
