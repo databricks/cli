@@ -5,7 +5,7 @@ CLI's), so decoding does not need the CLI. :func:`decode` returns the same lines
 ``databricks bundle bitmap decode`` and :func:`decode_json` the same object as
 ``databricks bundle bitmap decode -o json``.
 
-Wire format (``bundle/bitmap/bitmap.go`` in the CLI): ``bm1.`` then base64 of raw DEFLATE of
+Wire format (``bundle/bitmap/encoding.go`` in the CLI): ``bm1.`` then base64 of raw DEFLATE of
 magic ``DBTB`` (4 bytes) | size (uint32, big-endian) | context (uint16,
 big-endian) | ceil(size / 8) bitmap bytes, with bit ``i`` (MSB first within each
 byte) standing for schema line ``i``.
