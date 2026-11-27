@@ -51,6 +51,7 @@ var (
 	CLIPath          string
 	WorkspaceTmpDir  bool
 	WorkspaceTmpRoot string
+	Dbr              bool
 	OnlyOutTestToml  bool
 	Subset           bool
 	DebugSandbox     bool
@@ -86,6 +87,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.StringVar(&WorkspaceTmpRoot, "workspace-tmp-root", "", "Workspace file system directory for -workspace-tmp-dir test directories; the caller deletes it.")
+	flag.BoolVar(&Dbr, "dbr", false, "Running on DBR: RunsOnDbr selects the tests (see acceptance/dbr_test.go).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
 	flag.BoolVar(&DebugSandbox, "debugsandbox", false, "Use a per-test blocking proxy instead of a shared one; shows exactly which test caused unexpected internet access (slower)")
@@ -803,7 +805,7 @@ func getSkipReason(config *internal.TestConfig, configPath string, named bool) s
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
 
-	if WorkspaceTmpDir {
+	if Dbr {
 		if isRunningOnCloud && !isTruePtr(config.RunsOnDbr) {
 			return "Disabled because RunsOnDbr is not set in " + configPath
 		}
@@ -996,8 +998,8 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	// The workspace file system on DBR is slower than local disk, like CI runners.
-	if IsRunningOnCI || WorkspaceTmpDir {
+	// A serverless DBR driver (and its workspace file system) is slower than a dev machine, like CI runners.
+	if IsRunningOnCI || Dbr {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 

@@ -8,9 +8,9 @@ import (
 )
 
 func TestDbrSkipReason(t *testing.T) {
-	prev := WorkspaceTmpDir
-	WorkspaceTmpDir = true
-	t.Cleanup(func() { WorkspaceTmpDir = prev })
+	prev := Dbr
+	Dbr = true
+	t.Cleanup(func() { Dbr = prev })
 
 	unset := &internal.TestConfig{Cloud: new(true)}
 	optIn := &internal.TestConfig{Cloud: new(true), RunsOnDbr: new(true)}

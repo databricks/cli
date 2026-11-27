@@ -204,7 +204,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 	cloudLogPath, cloudLogID := createDebugLog(ctx, t, w, debugLogsDir, "cloud")
 
-	// Parent of the test directories both tasks create. Deleted here once the job is done:
+	// Parent of the cloud task's test directories. Deleted here once the job is done:
 	// deleting them from the job while FUSE still uploads files fails it with AsyncFlushFailedException.
 	tmpRoot := path.Join("/Users", currentUser.UserName, "acceptance", time.Now().Format("2006-01-02T15-04-05")+"-"+uuid.New().String()[:8])
 	t.Cleanup(func() {
@@ -274,12 +274,11 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 			NotebookTask: &jobs.NotebookTask{
 				NotebookPath: notebookPath,
 				BaseParameters: map[string]string{
-					"archive_path":       path.Join(testDir, archiveName),
-					"debug_log_path":     localLogPath,
-					"test_type":          "local",
-					"test_filter":        config.localTestFilter,
-					"test_shard":         fmt.Sprintf("%d/%d", i, config.localShards),
-					"workspace_tmp_root": "/Workspace" + tmpRoot,
+					"archive_path":   path.Join(testDir, archiveName),
+					"debug_log_path": localLogPath,
+					"test_type":      "local",
+					"test_filter":    config.localTestFilter,
+					"test_shard":     fmt.Sprintf("%d/%d", i, config.localShards),
 				},
 				Source: jobs.SourceWorkspace,
 			},
@@ -390,9 +389,9 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 }
 
 // TestDbrAcceptance runs acceptance tests on DBR using serverless compute.
-// Cloud tests run if they set RunsOnDbr = true. Local tests matching DBR_LOCAL_TEST_FILTER
-// (a regex under TestAccept/, "." for all) run unless they set RunsOnDbr = false, split across
-// DBR_LOCAL_TEST_SHARDS parallel tasks.
+// Cloud tests run on the workspace file system if they set RunsOnDbr = true. Local tests matching
+// DBR_LOCAL_TEST_FILTER (a regex under TestAccept/, "." for all) run on the driver's local disk
+// unless they set RunsOnDbr = false, split across DBR_LOCAL_TEST_SHARDS parallel tasks.
 //
 // Run with:
 //
@@ -408,8 +407,8 @@ func TestDbrAcceptance(t *testing.T) {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
 	}
 
-	// A single 4-CPU serverless driver takes about 2.5h for all local tests.
-	localShards := 6
+	// A single 4-CPU serverless driver takes about 45 min for all local tests.
+	localShards := 2
 	if v := os.Getenv("DBR_LOCAL_TEST_SHARDS"); v != "" {
 		var err error
 		localShards, err = strconv.Atoi(v)
