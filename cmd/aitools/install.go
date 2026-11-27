@@ -164,7 +164,7 @@ func newInstallCmd(recordSkillsOnly bool) *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag, pathFlag string
 	var includeExperimental, skillsOnly bool
 	var projectFlag, globalFlag bool
-	var auth *telemetryAuth
+	var auth *TelemetryAuth
 
 	cmd := &cobra.Command{
 		Use:   "install",
@@ -379,7 +379,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			// so it stays instant. The funnel therefore under-counts the fastest
 			// early exits (which usually end before auth resolves), and their
 			// STARTED events, relative to slower ones such as a cancelled prompt.
-			auth.waitAtExit = true
+			auth.WaitAtExit = true
 
 			var outcomes []agentOutcome
 			var runErr error
@@ -449,7 +449,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	markScopeBoolsDeprecated(cmd)
 	// Resolve auth best-effort and time-bounded so telemetry can upload.
-	auth = withTelemetryAuth(cmd)
+	auth = WithTelemetryAuth(cmd)
 	return cmd
 }
 

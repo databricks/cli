@@ -94,6 +94,7 @@ type logger struct {
 	mu               sync.Mutex
 	logs             []protos.FrontendLog
 	stateLineageHash string
+	callingAgent     protos.AitoolsAgentType
 
 	// upload is the config Upload authenticates with, as SetUploadConfig set it. Nil leaves cmdctx.ConfigUsed to it.
 	upload *config.Config
@@ -118,6 +119,22 @@ func SetStateLineageHash(ctx context.Context, hash string) {
 func StateLineageHash(ctx context.Context) string {
 	if l, ok := loggerFromContext(ctx); ok {
 		return l.stateLineageHash
+	}
+	return ""
+}
+
+// SetCallingAgent records the coding agent that ran the command, so that the command's execution context can report
+// it as calling_agent. Like Log, it is a no-op without a logger.
+func SetCallingAgent(ctx context.Context, agent protos.AitoolsAgentType) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.callingAgent = agent
+	}
+}
+
+// CallingAgent returns the value recorded by SetCallingAgent, or "" if none was.
+func CallingAgent(ctx context.Context) protos.AitoolsAgentType {
+	if l, ok := loggerFromContext(ctx); ok {
+		return l.callingAgent
 	}
 	return ""
 }

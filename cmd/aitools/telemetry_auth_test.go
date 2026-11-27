@@ -39,7 +39,7 @@ func noTelemetryAuth(t *testing.T) {
 	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error { return nil })
 }
 
-// authTestCmd returns a command wired with withTelemetryAuth whose RunE
+// authTestCmd returns a command wired with WithTelemetryAuth whose RunE
 // records that it ran and logs a telemetry event, plus a --profile flag like
 // root's. Telemetry is enabled on its context whatever the outer environment
 // says.
@@ -62,7 +62,7 @@ func authTestCmdLogging(t *testing.T, logEvent bool) (*cobra.Command, *bool) {
 	cmd.Flags().String("profile", "", "")
 	// These tests exercise the wait, so the command asks for it, as install
 	// does once the plan is confirmed.
-	withTelemetryAuth(cmd).waitAtExit = true
+	WithTelemetryAuth(cmd).WaitAtExit = true
 	ctx := telemetry.WithNewLogger(t.Context())
 	cmd.SetContext(env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", ""))
 	return cmd, &ran

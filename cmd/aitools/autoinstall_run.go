@@ -680,7 +680,7 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 func updateTools(ctx context.Context, globalDir string, before *installer.InstallState) (installResult, error) {
 	uctx := telemetry.WithNewLogger(ctx)
 	uctx = context.WithValue(uctx, funnelKey{}, &commandFunnel{command: protos.AitoolsCommandUpdate})
-	uctx = context.WithValue(uctx, telemetryAuthKey{}, &telemetryAuth{})
+	uctx = context.WithValue(uctx, telemetryAuthKey{}, &TelemetryAuth{})
 	updateErr := runUpdate(uctx, updateFlags{scope: installer.ScopeGlobal, keepModified: true})
 	// The update refuses the raw skills after it updated the plugins, so a
 	// refusal still reports the plugins it changed.

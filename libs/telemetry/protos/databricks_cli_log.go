@@ -35,6 +35,9 @@ type ExecutionContext struct {
 	// Exit code of the CLI command.
 	// We want to serialize the zero value as well so the omitempty tag is not set.
 	ExitCode int64 `json:"exit_code"`
+
+	// Coding agent that ran this command, detected from the CLI's environment. Unset when none is detected.
+	CallingAgent AitoolsAgentType `json:"calling_agent,omitempty"`
 }
 
 type CliTestEvent struct {
