@@ -1,0 +1,6 @@
+bundle:
+  name: test-bundle
+
+# Not a valid glob: including fails while the configuration loads.
+include:
+  - "["

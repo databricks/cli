@@ -1,0 +1,102 @@
+bundle:
+  name: test-bundle
+
+variables:
+  scalar_var:
+    description: a variable
+    default: abc
+  complex_var:
+    type: complex
+    default:
+      key: value
+  flag:
+    default: true
+  # Set through BUNDLE_VAR_off_flag in test.toml, so its value arrives as a string.
+  off_flag:
+    description: no default
+  clusters:
+    type: complex
+    default:
+      - job_cluster_key: shared
+        new_cluster:
+          spark_version: 15.4.x-scala2.12
+          num_workers: 1
+
+# An explicit false on an optional bool of a CLI-defined struct (*bool) is recorded,
+# as it is for SDK bools (see disable_auto_optimization below).
+experimental:
+  use_legacy_run_as: false
+
+presets:
+  name_prefix: dev_
+  pipelines_development: false
+
+run_as:
+  service_principal_name: sp-1234
+
+artifacts:
+  # One artifact with a build command and one with files only, so each
+  # per-artifact flag records both outcomes.
+  with_build:
+    type: whl
+    build: "true"
+  with_files:
+    type: whl
+    files:
+      - source: wheels/*.whl
+
+resources:
+  jobs:
+    my_job:
+      name: My Job
+      description: "escaped $${var.scalar_var}"
+      timeout_seconds: 0
+      email_notifications: {}
+      parameters: []
+      tags:
+        team: data
+        "a.b": c
+      # Set through a variable: the variable's value is recorded.
+      notification_settings:
+        no_alert_for_skipped_runs: ${var.flag}
+      # true here and false in other_job: both value bits are set.
+      queue:
+        enabled: true
+      tasks:
+        - task_key: a
+          # SDK bool with omitempty: an explicit false is kept via ForceSendFields.
+          disable_auto_optimization: false
+          notebook_task:
+            notebook_path: ./notebook.py
+        - task_key: b
+          depends_on:
+            - task_key: a
+          notebook_task:
+            notebook_path: ./notebook.py
+    other_job:
+      name: Other Job
+      queue:
+        enabled: false
+      email_notifications:
+        no_alert_for_skipped_runs: ${var.off_flag}
+      # A complex variable: the fields inside its value are recorded.
+      job_clusters: ${var.clusters}
+  clusters:
+    # lifecycle.started is a *bool, so the explicit false is kept: true on one cluster
+    # and false on the other sets both value bits.
+    started_cluster:
+      cluster_name: started
+      lifecycle:
+        started: true
+    stopped_cluster:
+      cluster_name: stopped
+      lifecycle:
+        started: false
+
+targets:
+  dev:
+    default: true
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 2

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -93,6 +94,7 @@ func TestSkillFlagRegisteredOnlyWhenSkillsEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
 			ctx := env.Set(t.Context(), "DATABRICKS_AGENT_FEATURES_DISABLED", "")
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
@@ -123,6 +125,7 @@ func TestQuickstartVariantSelectedByEnv(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
 			ctx := env.Set(cmdio.MockDiscard(t.Context()), "DATABRICKS_AGENT_FEATURES_DISABLED", "")
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
