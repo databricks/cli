@@ -30,6 +30,3 @@ Error: databricks skills list is not implemented yet
 
 >>> [CLI] skills read demo-skill
 Error: databricks skills read is not implemented yet
-
->>> [CLI] skills search skill words
-Error: databricks skills search is not implemented yet
