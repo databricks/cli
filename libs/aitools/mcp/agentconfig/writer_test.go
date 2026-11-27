@@ -796,7 +796,7 @@ func TestRemoveInlineServerTOMLKeepsFile(t *testing.T) {
 	writeFile(t, path, []byte(before), 0o600)
 	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-	_, err := RemoveAt(t.Context(), a, path, testName)
+	_, err := RemoveAt(a, path, testName)
 	assert.ErrorContains(t, err, "edit it by hand")
 	assert.Equal(t, before, string(readFile(t, path)))
 }
@@ -822,7 +822,7 @@ func TestRemoveArrayElementInsideServerTOML(t *testing.T) {
 	writeFile(t, path, []byte(testBlock+"extra = [\n  [\"c\"]\n]\n"), 0o600)
 	a := testAgent(path, mcpconfig.FormatTOML, "mcp_servers")
 
-	removed, err := RemoveAt(t.Context(), a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Empty(t, readFile(t, path))
@@ -905,7 +905,7 @@ func TestOpenCodeV1LayoutIsRefused(t *testing.T) {
 			writeFile(t, path, []byte(tc.body), 0o600)
 
 			_, _, upsertErr := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
-			_, removeErr := RemoveAt(t.Context(), a, path, testName)
+			_, removeErr := RemoveAt(a, path, testName)
 			if !tc.refused {
 				require.NoError(t, upsertErr)
 				require.NoError(t, removeErr)
@@ -957,7 +957,7 @@ func TestWriteRefusesReadOnlyFile(t *testing.T) {
 	require.ErrorIs(t, err, ErrReadOnly)
 	require.ErrorIs(t, err, fs.ErrPermission)
 	require.ErrorContains(t, err, refused)
-	_, err = RemoveAt(t.Context(), a, path, testName)
+	_, err = RemoveAt(a, path, testName)
 	require.ErrorIs(t, err, ErrReadOnly)
 	require.ErrorContains(t, err, refused)
 	assert.Equal(t, before, readFile(t, path))
@@ -1062,7 +1062,7 @@ func TestUpsertAndRemoveReleaseLock(t *testing.T) {
 	_, err = os.Stat(lock)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	removed, err := RemoveAt(t.Context(), a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	_, err = os.Stat(lock)
@@ -1073,7 +1073,7 @@ func TestRemoveWithoutConfigDirCreatesNothing(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "claude-home")
 	a := lockedAgent(filepath.Join(dir, ".claude.json"))
 
-	removed, err := RemoveAt(t.Context(), a, filepath.Join(dir, ".claude.json"), testName)
+	removed, err := RemoveAt(a, filepath.Join(dir, ".claude.json"), testName)
 	require.NoError(t, err)
 	assert.False(t, removed)
 	_, err = os.Stat(dir)
@@ -1142,7 +1142,7 @@ func TestLockedEditTimesOutOnLiveLock(t *testing.T) {
 	require.ErrorContains(t, err, filepath.ToSlash(lock)+" is locked by another process")
 	assert.GreaterOrEqual(t, time.Since(start), lockTimeout)
 
-	_, err = RemoveAt(t.Context(), a, path, testName)
+	_, err = RemoveAt(a, path, testName)
 	require.ErrorContains(t, err, filepath.ToSlash(lock)+" is locked by another process")
 
 	_, err = os.Stat(lock)
@@ -1299,7 +1299,7 @@ func TestReadAtAndRemoveAtUseTheGivenFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, entries, "the spec's file does not have the entry")
 
-	removed, err := RemoveAt(t.Context(), a, recorded, testName)
+	removed, err := RemoveAt(a, recorded, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	entries, err = ReadAt(a, recorded)
@@ -1332,7 +1332,7 @@ func removeAgent(ctx context.Context, a *agents.Agent, name string) (bool, error
 	if err != nil {
 		return false, err
 	}
-	return RemoveAt(ctx, a, path, name)
+	return RemoveAt(a, path, name)
 }
 
 // TestCodexRoundTripKeepsOtherTables checks that adding and removing our server leaves every other table of a Codex
@@ -1363,7 +1363,7 @@ func TestCodexRoundTripKeepsOtherTables(t *testing.T) {
 	added := string(readFile(t, path))
 	assert.True(t, strings.HasPrefix(added, before), "the other tables must keep their bytes:\n%s", added)
 
-	removed, err := RemoveAt(ctx, a, path, testName)
+	removed, err := RemoveAt(a, path, testName)
 	require.NoError(t, err)
 	assert.True(t, removed)
 	assert.Equal(t, before, string(readFile(t, path)))

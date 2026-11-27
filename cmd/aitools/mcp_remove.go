@@ -582,7 +582,7 @@ func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *age
 		return plan, nil
 	}
 	for _, path := range plan.paths {
-		if _, err := agentconfig.RemoveAt(ctx, a, path, e.Name); err != nil {
+		if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
 			return agentRemoval{}, removeAgentError(err, a.Name, explicit)
 		}
 	}

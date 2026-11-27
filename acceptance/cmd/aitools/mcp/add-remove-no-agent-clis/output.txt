@@ -1,5 +1,5 @@
 
-=== add goes through the CLI of claude, gemini and copilot; codex is written directly
+=== add writes the config of every agent
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex,gemini,copilot --output json
 {
@@ -64,101 +64,7 @@
   ]
 }
 
-=== the argv each agent CLI ran for add
-
->>> cat agent-calls.log
-claude
-	mcp
-	add-json
-	--scope
-	user
-	genie_one_mcp-logfood
-	{"args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.genie_one_mcp","--agent","claude-code"],"command":"[CLI]","env":{"DATABRICKS_CONFIG_FILE":"[TEST_TMP_DIR]/.databrickscfg"},"type":"stdio"}
-gemini
-	mcp
-	add
-	--scope
-	user
-	-e
-	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
-	genie_one_mcp-logfood
-	[CLI]
-	--
-	aitools
-	mcp
-	serve
-	--profile
-	logfood
-	--service
-	system.ai.genie_one_mcp
-	--agent
-	gemini
-copilot
-	mcp
-	add
-	genie_one_mcp-logfood
-	--tools
-	*
-	--env
-	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
-	--
-	[CLI]
-	aitools
-	mcp
-	serve
-	--profile
-	logfood
-	--service
-	system.ai.genie_one_mcp
-	--agent
-	copilot
-claude
-	mcp
-	add-json
-	--scope
-	user
-	github-logfood
-	{"args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"],"command":"[CLI]","env":{"DATABRICKS_CONFIG_FILE":"[TEST_TMP_DIR]/.databrickscfg"},"type":"stdio"}
-gemini
-	mcp
-	add
-	--scope
-	user
-	-e
-	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
-	github-logfood
-	[CLI]
-	--
-	aitools
-	mcp
-	serve
-	--profile
-	logfood
-	--service
-	system.ai.github
-	--agent
-	gemini
-copilot
-	mcp
-	add
-	github-logfood
-	--tools
-	*
-	--env
-	DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg
-	--
-	[CLI]
-	aitools
-	mcp
-	serve
-	--profile
-	logfood
-	--service
-	system.ai.github
-	--agent
-	copilot
-
-=== the config each agent CLI wrote
+=== the config of each agent
 
 >>> cat home/.claude.json
 {
@@ -303,44 +209,12 @@ DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
   }
 }
 
-=== remove goes through the same CLIs; codex is written directly
+=== remove takes the entries out of every agent config
 
 >>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
 Removed github-logfood  system.ai.github  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
 
-=== the argv each agent CLI ran for remove
+=== no agent CLI ran
 
->>> cat agent-calls.log
-claude
-	mcp
-	remove
-	--scope
-	user
-	genie_one_mcp-logfood
-copilot
-	mcp
-	remove
-	genie_one_mcp-logfood
-gemini
-	mcp
-	remove
-	--scope
-	user
-	genie_one_mcp-logfood
-claude
-	mcp
-	remove
-	--scope
-	user
-	github-logfood
-copilot
-	mcp
-	remove
-	github-logfood
-gemini
-	mcp
-	remove
-	--scope
-	user
-	github-logfood
+>>> assert_not_exists.py agent-calls.log
