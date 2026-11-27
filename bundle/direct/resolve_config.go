@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -190,13 +191,24 @@ func dependsOnSensitiveField(root dyn.Value, path dyn.Path, visited map[string]b
 	return found
 }
 
-// containsAny reports whether any string in v contains one of values.
+// containsAny reports whether any scalar in v, in its printed form, contains one of values.
+// Numbers count too: a numeric secret deployed into an int field is stored as a number.
 func containsAny(v dyn.Value, values []string) bool {
 	found := false
 	_ = dyn.WalkReadOnly(v, func(_ dyn.Path, leaf dyn.Value) error {
-		if s, ok := leaf.AsString(); ok && !found {
-			found = slices.ContainsFunc(values, func(value string) bool { return strings.Contains(s, value) })
+		if found {
+			return nil
 		}
+		var s string
+		switch leaf.Kind() {
+		case dyn.KindString:
+			s = leaf.MustString()
+		case dyn.KindInt, dyn.KindFloat, dyn.KindBool:
+			s = fmt.Sprint(leaf.AsAny())
+		default:
+			return nil
+		}
+		found = slices.ContainsFunc(values, func(value string) bool { return strings.Contains(s, value) })
 		return nil
 	})
 	return found
