@@ -206,6 +206,7 @@ func TestNewCacheOffForPinnedSource(t *testing.T) {
 
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_REF", "v1.0.0")), "a pinned ref stores nothing")
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "http://localhost:8080")), "a custom base URL stores nothing")
+	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_DIR", "testdata/release")), "a local folder stores nothing")
 }
 
 func TestNewCacheWithoutCacheFolderStoresNothing(t *testing.T) {

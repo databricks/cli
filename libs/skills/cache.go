@@ -40,17 +40,18 @@ type Cache struct {
 // NewCache returns the skills cache under the CLI's cache folder, beside the
 // other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
 // turns it off, as it does for the other caches, and so does a cache folder that
-// cannot be found. A pinned source, DATABRICKS_SKILLS_REF or
-// DATABRICKS_SKILLS_BASE_URL, also turns it off: the cache is keyed by release
-// version only, so a catalog from another source must not be stored under it.
-// The returned nil Cache stores nothing.
+// cannot be found. A non-default source also turns it off: a pinned ref
+// (DATABRICKS_SKILLS_REF), a custom base URL (DATABRICKS_SKILLS_BASE_URL) or a
+// local folder (DATABRICKS_SKILLS_DIR). The cache is keyed by release version
+// only, so a catalog from another source must not be stored under it. The
+// returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewCache(ctx context.Context) *Cache {
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
 		return nil
 	}
-	if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" || env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") != "" {
+	if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" || env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") != "" || env.Get(ctx, "DATABRICKS_SKILLS_DIR") != "" {
 		return nil
 	}
 	base, err := cache.BaseDir(ctx)
@@ -62,6 +63,8 @@ func NewCache(ctx context.Context) *Cache {
 }
 
 // Latest returns the cached catalog fetched most recently. It reads the disk only.
+// It never sets Stale: the chain does, because only the chain knows whether a
+// live read failed.
 func (c *Cache) Latest() (*Catalog, bool) {
 	if c == nil {
 		return nil, false
@@ -133,8 +136,9 @@ func (c *Cache) catalogs() []*Catalog {
 	return cats
 }
 
-// compareVersions orders release tags by semver, so 10.0.0 is newer than 9.0.0,
-// and by text when either is not a semver version.
+// compareVersions orders release tags by semver, so 10.0.0 is newer than 9.0.0.
+// semver ranks an invalid version below a valid one; only two invalid versions
+// fall to text order.
 func compareVersions(a, b string) int {
 	va, vb := "v"+strings.TrimPrefix(a, "v"), "v"+strings.TrimPrefix(b, "v")
 	return cmp.Or(semver.Compare(va, vb), strings.Compare(a, b))
