@@ -190,19 +190,19 @@ const (
 	AitoolsAutoInstallOutcomeSkippedCI AitoolsAutoInstallOutcome = "SKIPPED_CI"
 	// The user turned auto-install off: DATABRICKS_AITOOLS_AUTO_INSTALL=false,
 	// `aitools auto-install disable`, a global `aitools uninstall`, "no" at
-	// the prompt of an earlier version, or "no" to the skills prompt of
-	// `apps init`.
+	// the prompt of an earlier CLI, or "no" to the skills prompt of `apps
+	// init`.
 	AitoolsAutoInstallOutcomeSkippedOptOut AitoolsAutoInstallOutcome = "SKIPPED_OPTOUT"
 	// The machine is in the holdout cohort.
 	AitoolsAutoInstallOutcomeSkippedHoldout AitoolsAutoInstallOutcome = "SKIPPED_HOLDOUT"
 	// No supported coding agent has a config directory on the machine.
 	AitoolsAutoInstallOutcomeSkippedNoAgents AitoolsAutoInstallOutcome = "SKIPPED_NO_AGENTS"
 	// The user answered "no" at the install prompt, which also turns
-	// auto-install off.
+	// auto-install off. No longer sent: auto-install no longer asks.
 	AitoolsAutoInstallOutcomeDeclined AitoolsAutoInstallOutcome = "DECLINED"
 	// The install prompt got no answer: stdin was closed, Ctrl+C was pressed,
-	// it timed out, or the answer was neither yes nor no. Nothing is installed
-	// and auto-install stays on, so the next CLI version asks again.
+	// it timed out, or the answer was neither yes nor no. No longer sent:
+	// auto-install no longer asks.
 	AitoolsAutoInstallOutcomeUnanswered AitoolsAutoInstallOutcome = "UNANSWERED"
 	// The attempt failed or timed out; a later run of the same version
 	// retries.
@@ -228,18 +228,15 @@ const (
 // machine, plus once per retry after a failed attempt. A version whose outcome
 // is settled emits nothing, and so does a run that the remote gate turns off;
 // the CI and opt-out checks come before the gate, so they are emitted either
-// way. A run that has to ask before installing but cannot emits nothing and
-// leaves the version to a later run. An install with no tools installed yet
-// also emits an AitoolsInstallEvent with Trigger AUTO_FIRST_RUN.
+// way. A run on a machine whose user has not agreed to auto-install emits
+// nothing and leaves the version to a later run. An install with no tools
+// installed yet also emits an AitoolsInstallEvent with Trigger AUTO_FIRST_RUN.
 type AitoolsAutoInstallEvent struct {
 	Outcome    AitoolsAutoInstallOutcome `json:"outcome"`
 	HoldoutArm AitoolsHoldoutArm         `json:"holdout_arm"`
 
 	// Whether a person may be at the terminal (cmdio.HasTerminal and no
-	// coding agent detected). Such a run asks before the first install of a
-	// version, so DECLINED and UNANSWERED come only with true; INSTALLED with
-	// true may still have run without asking (an update, or a retry after an
-	// accepted attempt). A measurable false, so no omitempty.
+	// coding agent detected). A measurable false, so no omitempty.
 	Interactive bool `json:"interactive"`
 
 	// Set for FAILED and RETRIES_EXHAUSTED.

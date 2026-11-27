@@ -9,6 +9,11 @@ func (b *Bundle) SetIncludePatterns(patterns []string) {
 	b.includePatterns = patterns
 }
 
+// IncludePatterns returns the raw 'include' patterns set by SetIncludePatterns.
+func (b *Bundle) IncludePatterns() []string {
+	return b.includePatterns
+}
+
 // IsFileIncluded reports whether absPath is matched by any of the root
 // 'include' patterns. absPath must be an absolute path. Patterns are resolved
 // against the files currently on disk, so a file generated after load is

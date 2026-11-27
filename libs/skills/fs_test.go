@@ -217,3 +217,14 @@ func TestMissingCatalogRulesIsReported(t *testing.T) {
 	_, err := mapSource(`{"catalog_rules": "RULES.md", "skills": {}}`).Catalog(t.Context())
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
+
+// The label is kept as given. A backslash is a legal folder name character on
+// Linux and macOS, so NewFSSource must not rewrite it; Resolve converts host
+// paths with filepath.ToSlash before they get here.
+func TestLabelIsKeptAsGiven(t *testing.T) {
+	src := NewFSSource(fstest.MapFS{"manifest.json": {Data: []byte(`{"skills": {}}`)}}, `my\skills`)
+
+	catalog, err := src.Catalog(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, `my\skills`, catalog.Label)
+}

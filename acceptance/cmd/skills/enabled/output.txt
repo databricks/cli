@@ -24,6 +24,3 @@ Global Flags:
 Use "databricks skills [command] --help" for more information about a command.
 
 >>> [CLI] --help
-
->>> [CLI] skills list
-Error: databricks skills list is not implemented yet

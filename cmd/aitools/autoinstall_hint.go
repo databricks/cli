@@ -12,11 +12,14 @@ import (
 // agent agentName tools (see autoinstall.InstallsFor). It decides as
 // autoInstall does up to the gate lookup, which it skips: a run that would
 // look the gate up counts as installing, so on a version whose gate is off the
-// install hint moves to the end of the command. A machine whose stored ID puts
-// it in the holdout never installs. A first install gives tools to the agents
-// its plan names; an update gives skills to every agent with a config
-// directory when a skill changed, which is only known after the manifest is
-// fetched, so it counts as installing for each of them.
+// install hint moves to the end of the command. A machine whose user never
+// agreed installs nothing, unless the run counts its global installation as
+// the consent; that run stores the consent, and this check only reads. A
+// machine whose stored ID puts it in the holdout never installs. A first
+// install gives tools to the agents its plan names; an update gives skills to
+// every agent with a config directory when a skill changed, which is only
+// known after the manifest is fetched, so it counts as installing for each of
+// them.
 func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	ctx := cmd.Context()
 	in := autoInstallInputs(ctx, skipsAutoInstall(cmd))
@@ -25,7 +28,13 @@ func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	}
 	var err error
 	in.State, err = autoinstall.Load(ctx)
-	if err != nil || autoinstall.Decide(in) != autoinstall.ReasonGateOff {
+	if err != nil {
+		return false
+	}
+	if existingInstallConsents(ctx, in) {
+		in.State.Consented = true
+	}
+	if autoinstall.Decide(in) != autoinstall.ReasonGateOff {
 		return false
 	}
 	if in.State.ID != "" && autoinstall.InHoldout(autoinstall.Bucket(in.State.ID)) {

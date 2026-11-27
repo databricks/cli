@@ -1,5 +1,11 @@
 trace $CLI bundle deploy
 
-trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {bool_values}'
+print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event' > LOG.event.json
 
-rm "$OUT_REQUESTS"
+title "bool_values"
+trace jq '.experimental.bool_values' LOG.event.json
+
+# The bitmap's telemetry bits carry the same flags. app_lifecycle_started took both values, one per
+# app: bool_values reports it once, as true, and the bitmap records each value.
+title "Telemetry bits of the bundle bitmap"
+jq -r .bundle_bitmap LOG.event.json | $CLI bundle bitmap decode | grep ' telemetry\.'

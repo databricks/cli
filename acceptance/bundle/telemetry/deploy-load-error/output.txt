@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle deploy
+Error: syntax error in pattern
+

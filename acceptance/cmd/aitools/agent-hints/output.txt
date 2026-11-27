@@ -52,4 +52,4 @@ Before you work with Databricks, run: databricks skills list
 === With skill hints on, skills commands print no hint
 
 >>> DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-5 [CLI] skills list
-Error: databricks skills list is not implemented yet
+Error: no skills source is available in this build
