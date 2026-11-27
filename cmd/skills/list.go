@@ -1,7 +1,6 @@
 package skills
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"slices"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
@@ -52,14 +52,14 @@ func runList(cmd *cobra.Command, src libskills.Source, experimental bool) error 
 
 	list := visibleSkills(catalog.Skills, experimental)
 	if root.OutputType(cmd) == flags.OutputJSON {
-		return writeListJSON(cmd.OutOrStdout(), catalog, list)
+		return cmdio.Render(cmd.Context(), newListJSON(catalog, list))
 	}
 	_, err = io.WriteString(cmd.OutOrStdout(), renderText(catalog.Rules, list))
 	return err
 }
 
-// visibleSkills returns the skills to list, sorted by name so that the order
-// is the same on every run. Experimental skills are left out unless asked for.
+// visibleSkills returns the skills to list in the order the source serves them,
+// which is sorted by name. Experimental skills are left out unless asked for.
 func visibleSkills(all []libskills.Skill, experimental bool) []libskills.Skill {
 	var list []libskills.Skill
 	for _, s := range all {
@@ -68,9 +68,6 @@ func visibleSkills(all []libskills.Skill, experimental bool) []libskills.Skill {
 		}
 		list = append(list, s)
 	}
-	slices.SortFunc(list, func(a, b libskills.Skill) int {
-		return strings.Compare(a.Name, b.Name)
-	})
 	return list
 }
 
@@ -94,8 +91,13 @@ func renderText(rules string, list []libskills.Skill) string {
 	if full := layoutText(rules, list, maxLen); len(full) <= textBudget {
 		return full
 	}
-	// Find the widest width in [0, maxLen-1] that fits. Width 0 lists names only.
-	lo, hi := 0, maxLen-1
+	// Below the floor some description would be cut to "..." alone, so the
+	// search for the widest fitting width starts at the floor.
+	floor := narrowestKeepingWords(list, maxLen)
+	if len(layoutText(rules, list, floor)) > textBudget {
+		return layoutText(rules, list, 0)
+	}
+	lo, hi := floor, maxLen
 	for lo < hi {
 		mid := (lo + hi + 1) / 2
 		if len(layoutText(rules, list, mid)) <= textBudget {
@@ -107,22 +109,44 @@ func renderText(rules string, list []libskills.Skill) string {
 	return layoutText(rules, list, lo)
 }
 
+// narrowestKeepingWords returns the narrowest width, at most maxLen, at which
+// cutting every description keeps at least its first word.
+func narrowestKeepingWords(list []libskills.Skill, maxLen int) int {
+	lo, hi := 1, max(maxLen, 1)
+	for lo < hi {
+		mid := (lo + hi) / 2
+		if keepsFirstWords(list, mid) {
+			hi = mid
+		} else {
+			lo = mid + 1
+		}
+	}
+	return lo
+}
+
+// keepsFirstWords reports whether no description is cut to "..." alone at width.
+func keepsFirstWords(list []libskills.Skill, width int) bool {
+	for _, s := range list {
+		if len(s.Description) > width && cutWords(s.Description, width) == "..." {
+			return false
+		}
+	}
+	return true
+}
+
 // layoutText lays out the text output with descriptions cut to width. A width
 // of 0 leaves the descriptions out.
 func layoutText(rules string, list []libskills.Skill, width int) string {
 	var b strings.Builder
 	b.WriteString(withRules(rules))
 	for _, s := range list {
-		switch {
-		case width == 0:
+		if width == 0 || s.Description == "" {
 			b.WriteString(s.Name + "\n")
-		case s.Description == "":
-			b.WriteString(s.Name + "\n")
-		default:
+		} else {
 			fmt.Fprintf(&b, "%s: %s\n", s.Name, cutWords(s.Description, width))
 		}
 	}
-	if width == 0 {
+	if width == 0 && slices.ContainsFunc(list, func(s libskills.Skill) bool { return s.Description != "" }) {
 		b.WriteString(searchHint + "\n")
 	}
 	b.WriteString(readHint + "\n")
@@ -173,7 +197,7 @@ func nonNilList(list []string) []string {
 	return list
 }
 
-func writeListJSON(w io.Writer, catalog *libskills.Catalog, list []libskills.Skill) error {
+func newListJSON(catalog *libskills.Catalog, list []libskills.Skill) listJSON {
 	out := listJSON{
 		Source:         catalog.Label,
 		ReleaseVersion: catalog.Version,
@@ -188,7 +212,5 @@ func writeListJSON(w io.Writer, catalog *libskills.Catalog, list []libskills.Ski
 			Commands:    nonNilList(s.Commands),
 		})
 	}
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(out)
+	return out
 }
