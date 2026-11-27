@@ -153,3 +153,13 @@ func TestMissingCatalogRulesIsReported(t *testing.T) {
 	_, err := mapSource(`{"catalog_rules": "RULES.md", "skills": {}}`).Catalog(t.Context())
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
+
+// The label is the folder the release came from. A Windows path must read with
+// forward slashes whatever host runs the test.
+func TestLabelUsesForwardSlashes(t *testing.T) {
+	src := NewFSSource(fstest.MapFS{"manifest.json": {Data: []byte(`{"skills": {}}`)}}, `C:\Users\me\skills`)
+
+	catalog, err := src.Catalog(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "C:/Users/me/skills", catalog.Label)
+}
