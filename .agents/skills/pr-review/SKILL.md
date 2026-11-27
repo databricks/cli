@@ -207,9 +207,11 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      and one under `coverage=` passes without it unless the fix is already
      released. Revert the fix locally and run the test only when the report
      cannot tell: a unit test, a test it did not select, a released fix, or
-     a fix in the harness (`acceptance/*.go`, `acceptance/bin`,
-     `libs/testdiff`, `libs/testserver`). The report swaps only the CLI
-     binary, so for a harness fix restore the changed helper from `BASE`.
+     a fix in the harness, which is anything the CLI binary is not built
+     from: `acceptance/` code and scripts (`internal/`, `bin/`,
+     `script.prepare`), `libs/testdiff`, `libs/testserver`,
+     `libs/testproxy`. The report swaps only the CLI binary, so for a
+     harness fix restore the changed helper from `BASE`.
      When the fix has several parts, revert only the part the test targets.
      A variant that still passes does not assert the claim. A test that
      records a bug ahead of its fix (a `Badness` note) has nothing to revert:
