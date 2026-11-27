@@ -576,6 +576,9 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("PUT", "/api/2.0/git-webhooks", func(req Request) any {
 		return req.Workspace.GitWebhooksUpsert(req)
 	})
+	server.Handle("GET", "/api/2.0/git-webhooks/webhook-triggers", func(req Request) any {
+		return req.Workspace.GitWebhooksList(req)
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob

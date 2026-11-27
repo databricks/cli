@@ -1,0 +1,76 @@
+
+=== A bundle without triggers
+
+>>> [CLI] bundle auto-deploy list
+Target  Branch  Deploy as  Trigger ID
+
+=== The triggers of this bundle's targets
+
+>>> [CLI] bundle auto-deploy list
+Target  Branch  Deploy as    Trigger ID
+dev     main    its creator  [UUID][0]
+prod    main    its creator  [UUID][1]
+
+>>> [CLI] bundle auto-deploy list -o json
+[
+  {
+    "name": "webhook-triggers/[UUID][0]",
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "dev"
+      },
+      "trigger_id": "[UUID][0]"
+    }
+  },
+  {
+    "name": "webhook-triggers/[UUID][1]",
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "prod"
+      },
+      "trigger_id": "[UUID][1]"
+    }
+  }
+]
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\""
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\"",
+    "page_token": "1"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\""
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\"",
+    "page_token": "1"
+  }
+}

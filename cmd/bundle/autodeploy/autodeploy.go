@@ -23,5 +23,7 @@ Example:
 	}
 
 	cmd.AddCommand(newCreateCommand())
+	cmd.AddCommand(newGetCommand())
+	cmd.AddCommand(newListCommand())
 	return cmd
 }

@@ -1,0 +1,16 @@
+git-repo-init
+git remote add origin https://github.com/acme/repo
+
+title "A bundle without triggers"
+trace $CLI bundle auto-deploy list
+
+$CLI bundle auto-deploy create >> LOG.setup 2>&1
+$CLI bundle auto-deploy create -t prod >> LOG.setup 2>&1
+# Another bundle in the same repository, whose trigger is not this bundle's.
+withdir other $CLI bundle auto-deploy create >> LOG.setup 2>&1
+rm "$OUT_REQUESTS"
+
+title "The triggers of this bundle's targets"
+trace $CLI bundle auto-deploy list
+trace $CLI bundle auto-deploy list -o json
+print_requests.py --get //git-webhooks
