@@ -41,8 +41,9 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // a new task appended to the tasks array). Within the new element, a leaf is
 // restored only when a sibling element in the same sequence has a pure
 // variable reference at the exact same relative path whose resolved value
-// matches the leaf value. Non-sequence Adds (new map fields) are left
-// untouched.
+// matches the leaf value. A field Add is restored like a Replace when the config
+// defines the field, as for one inherited through a merge key that is written next
+// to it; other non-sequence Adds (new map fields) are left untouched.
 //
 // The caller supplies preResolved (see LoadPreResolvedConfig): the merged
 // config where ${var.X} and ${resources.X.Y.id} references are still literal
@@ -96,6 +97,10 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
+			if fieldValue, ok := definedField(preResolved, fc.originalPath); ok {
+				newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
+				break
+			}
 			siblings, ok := sequenceSiblings(preResolved, fc.originalPath)
 			if !ok {
 				continue
@@ -590,6 +595,20 @@ func ancestorIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
 		return ok && dynvar.ContainsVariableReference(s)
 	}
 	return false
+}
+
+// definedField returns the field a key path addresses in the pre-resolved config.
+// Index paths are left to the sibling lookup: an added element is new even when
+// another one sits at its position.
+func definedField(preResolved dyn.Value, fieldPath string) (dyn.Value, bool) {
+	node, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return dyn.InvalidValue, false
+	}
+	if _, ok := node.StringKey(); !ok {
+		return dyn.InvalidValue, false
+	}
+	return preResolvedValueAt(preResolved, fieldPath)
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when

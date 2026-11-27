@@ -410,6 +410,73 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 	return nil, nil
 }
 
+// sourceDocs caches files parsed as nodes, which unlike the merged configuration do not
+// hold keys inherited through a merge key ('<<: *anchor'): the patcher cannot reach those.
+type sourceDocs map[string]*yaml.Node
+
+// written reports whether the key is written at either path, and the path whose mapping
+// can take the key instead: writePath, unless only altWritePath has such a mapping or
+// a key at writePath would not take effect (shadowed), which also discounts one written
+// there. An unreadable file counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file, writePath, altWritePath string, shadowed bool) (key bool, addPath string) {
+	doc, ok := d[file]
+	if !ok {
+		doc = &yaml.Node{}
+		content, err := os.ReadFile(file)
+		if err != nil || yaml.Unmarshal(content, doc) != nil || len(doc.Content) != 1 {
+			doc = nil
+		}
+		d[file] = doc
+	}
+	if doc == nil {
+		return true, ""
+	}
+	key, parent := keyWrittenAt(doc.Content[0], writePath)
+	var altKey, altParent bool
+	if altWritePath != "" {
+		altKey, altParent = keyWrittenAt(doc.Content[0], altWritePath)
+	}
+	if shadowed {
+		key = false
+	}
+	switch {
+	case altParent && (shadowed || !parent):
+		addPath = altWritePath
+	case parent && !shadowed:
+		addPath = writePath
+	}
+	return key || altKey, addPath
+}
+
+// keyWrittenAt follows aliases like the patcher does, but a parent reached through one, or
+// under an anchor, is shared with whatever merges it and is no place to add the key.
+func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
+	path, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return true, true
+	}
+	parts := path.AsSlice()
+	current := root
+	shared := false
+	for i, part := range parts {
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+			shared = true
+		}
+		if current.Anchor != "" {
+			shared = true
+		}
+		if i == len(parts)-1 {
+			parent = current.Kind == yaml.MappingNode && !shared
+		}
+		current, _ = yamlChild(current, part)
+		if current == nil {
+			return false, parent
+		}
+	}
+	return true, parent
+}
+
 // yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
 // itself, with no anchor on or inside its value. Replacing a value that is or holds an
 // anchor would leave its aliases dangling; a key under an anchored mapping is replaced
