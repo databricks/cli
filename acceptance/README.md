@@ -8,7 +8,7 @@ A test can *additionally* opt into running against a real workspace by setting `
 
 - `CloudSlow = true` only narrows a `Cloud = true` test: its cloud run is skipped when `-short` is passed. On its own (without `Cloud = true`) it does not enable the cloud run.
 - `CloudEnvs` only narrows the cloud run further. It is ignored locally.
-- `RunsOnDbr` only applies to DBR runs (`-workspace-tmp-dir`, see `acceptance/dbr_test.go`). There, cloud runs are opt-in (`RunsOnDbr = true`) and local runs are opt-out (`RunsOnDbr = false`).
+- `RunsOnDbr` only applies to DBR runs (`-dbr`, see `acceptance/dbr_test.go`). There, cloud runs are opt-in (`RunsOnDbr = true`) and run on the workspace file system; local runs are opt-out (`RunsOnDbr = false`) and run on the driver's local disk.
 - `Cloud` is inherited from parent `test.toml` files, so a whole subtree can be opted in at once. The root `acceptance/test.toml` defaults it to `Cloud = false`, i.e. local only.
 - Each test's effective settings are visible in its generated `out.test.toml`.
 

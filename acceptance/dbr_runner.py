@@ -15,7 +15,7 @@
 # - test_metastore_id: Unity Catalog metastore ID
 # - test_sp_application_id: Service principal application ID
 # - debug_log_path: Workspace path for the debug log file (pre-created by the test runner)
-# - workspace_tmp_root: FUSE path for test directories (deleted by the test runner after the job)
+# - workspace_tmp_root: FUSE path for cloud test directories (deleted by the test runner after the job)
 
 import os
 import platform
@@ -196,10 +196,12 @@ def run_tests(
         "-timeout",
         "14400s",
         "-v",
-        "-workspace-tmp-dir",
-        "-workspace-tmp-root",
-        workspace_tmp_root,
+        "-dbr",
     ]
+    # Local tests run on the driver's local disk: thousands of them on the workspace file system
+    # took hours waiting for its async uploads and then failed with AsyncFlushFailedException.
+    if test_type == "cloud":
+        cmd.extend(["-workspace-tmp-dir", "-workspace-tmp-root", workspace_tmp_root])
 
     if test_filter:
         cmd.extend(["-run", f"^TestAccept/{test_filter}"])
@@ -337,8 +339,8 @@ def main():
         raise ValueError("cloud_env parameter is required for cloud tests")
     if not debug_log_path:
         raise ValueError("debug_log_path parameter is required")
-    if not workspace_tmp_root:
-        raise ValueError("workspace_tmp_root parameter is required")
+    if test_type == "cloud" and not workspace_tmp_root:
+        raise ValueError("workspace_tmp_root parameter is required for cloud tests")
 
     print("=" * 60)
     print(f"DBR Test Runner ({test_type})")
