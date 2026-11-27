@@ -288,7 +288,7 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestJobRunnerLogsFailedTaskTraceAsIs(t *testing.T) {
+func TestJobRunnerLogsFailedTaskTraceWithItsColors(t *testing.T) {
 	b := &bundle.Bundle{}
 	runner := jobRunner{key: "test", bundle: b, job: &resources.Job{ID: "123"}}
 
@@ -304,14 +304,16 @@ func TestJobRunnerLogsFailedTaskTraceAsIs(t *testing.T) {
 			State:   &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError, ResultState: jobs.RunResultStateFailed},
 		}},
 	}, nil)
-	// A notebook's trace is colored.
+	// A notebook's trace is colored. The error can quote a path from the task.
 	jobApi.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 789}).Return(&jobs.RunOutput{
-		Error:      "ValueError: boom",
-		ErrorTrace: "\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom",
+		Error:      "Unable to access the notebook \"/a\x1b[2J\x1b[31m\rb\"",
+		ErrorTrace: "\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom\x1b[2J",
 	}, nil)
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	runner.logFailedTasks(ctx, 456)
 
-	require.Equal(t, "Task main FAILED:\nValueError: boom\n\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom\n\n", stderr.String())
+	// Colors are off here: the trace keeps its own, nothing else gets through.
+	require.Equal(t, "Task main FAILED:\n"+`Unable to access the notebook "/a\u001b[2J\u001b[31m\rb"`+"\n"+
+		"\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom"+`\u001b[2J`+"\n\n", stderr.String())
 }

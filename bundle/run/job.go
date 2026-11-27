@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -72,9 +73,13 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", cmdio.Red(ctx, task.TaskKey), err)
 				continue
 			}
-			// The error and its trace are the task's own output, like its logs, and
-			// are passed through as is: a notebook's trace is colored.
-			cmdio.LogRawString(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace).String())
+			// A notebook's trace is colored, so its colors are kept whether or not
+			// the CLI's own are on. LogString would escape them with colors off.
+			cmdio.LogRawString(ctx, progress.NewTaskErrorEvent(
+				textutil.EscapeControlOneLine(task.TaskKey),
+				textutil.EscapeControl(taskInfo.Error),
+				textutil.EscapeControlKeepColors(taskInfo.ErrorTrace),
+			).String())
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				cmdio.Red(ctx, task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {

@@ -18,16 +18,8 @@ import (
 func executeTemplate(t *template.Template, w io.Writer, data any, keepColors bool) error {
 	var rendered strings.Builder
 	err := t.Execute(&rendered, data)
-	text := rendered.String()
-	if keepColors {
-		// Most templates render table rows: a style a value leaves on ends
-		// with its cell.
-		text = textutil.EscapeControlKeepColorsPerCell(text)
-	} else {
-		text = textutil.EscapeControl(text)
-	}
 	// As when executing on w itself, what was rendered before an error is written.
-	if _, writeErr := io.WriteString(w, text); err == nil {
+	if _, writeErr := io.WriteString(w, escapeComposed(rendered.String(), keepColors)); err == nil {
 		err = writeErr
 	}
 	return err

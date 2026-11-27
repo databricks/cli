@@ -38,7 +38,7 @@ func TestExecuteTemplateEscapesControlCharacters(t *testing.T) {
 
 	assert.Equal(t,
 		"\x1b[32m1\x1b[0m\t\x1b[1m"+`a\u001b]0;title\u0007b`+"\x1b[0m\t"+`in\u001bner`+"\t"+`k\r=v\u001b[2J`+"\t"+`a\u001b]0;title\u0007b`+"\n"+
-			"\x1b[32m2\x1b[0m\t\x1b[1m\x1b[32m●\x1b[0m plain\n\x1b[0m\t\t\x1b[32m●\x1b[0m plain\n\n",
+			"\x1b[32m2\x1b[0m\t\x1b[1m\x1b[32m●\x1b[0m plain\x1b[0m\n\t\t\x1b[32m●\x1b[0m plain\n\n",
 		out.String())
 	// The data is not modified.
 	assert.Equal(t, "a\x1b]0;title\x07b", rows[0].(escapeTestRow).Name)
