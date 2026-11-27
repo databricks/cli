@@ -17,6 +17,11 @@ trace $CLI bundle validate
 title "re-converting refuses to clobber the generated bundle"
 errcode trace $CLI air convert-to-dabs train.yaml
 
+title "removing only the bundle root leaves sidecar conflicts"
+rm databricks.yml
+musterr trace $CLI air convert-to-dabs train.yaml
+test ! -e databricks.yml
+
 title "--force overwrites it"
 trace $CLI air convert-to-dabs train.yaml --force
 
