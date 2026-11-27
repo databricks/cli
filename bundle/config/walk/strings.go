@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unsafe"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -39,23 +40,20 @@ type StringFunc func(n *Node, s string) (string, bool)
 // paying for the traversal once. Phase ordering limits which ones can be combined.
 func Strings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
-	n := RootWithReferences(root)
-	stringsConfigRoot(c, &n, root)
+	c.strct(rootInfo, c.root(RootWithReferences(root)), unsafe.Pointer(root))
 }
 
 // StringsWithoutResources is [Strings] for the configuration outside "resources".
 func StringsWithoutResources(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn, skipResources: true}
-	n := RootWithReferences(root)
-	stringsConfigRoot(c, &n, root)
+	c.strct(rootInfo, c.root(RootWithReferences(root)), unsafe.Pointer(root))
 }
 
 // ResourceStrings is [Strings] for "resources" only.
 func ResourceStrings(root *config.Root, mode Mode, fn StringFunc) {
 	c := &stringsWalk{mode: mode, fn: fn}
 	n := rootWithReferencesUnder(root, structpath.NewStringKey(nil, "resources"))
-	ch := n.Child("resources")
-	stringsConfigResources(c, &ch, &root.Resources)
+	c.strct(resourcesInfo, c.child(&n, "resources"), unsafe.Pointer(&root.Resources))
 }
 
 // ResourceStringsOf is [Strings] for the resource name of type typ.
@@ -63,7 +61,7 @@ func ResourceStringsOf(root *config.Root, typ, name string, mode Mode, fn String
 	c := &stringsWalk{mode: mode, fn: fn}
 	n := rootWithReferencesUnder(root, structpath.NewPath(nil, "resources", typ, name))
 	rn := n.Child("resources")
-	stringsResource(c, &rn, &root.Resources, typ, name)
+	c.resource(&rn, &root.Resources, typ, name)
 }
 
 // VariableLookupStrings is [Strings] for the lookups of the variables
@@ -79,11 +77,13 @@ func VariableLookupStrings(root *config.Root, mode Mode, fn StringFunc) {
 		}
 		ch := vn.Child(k)
 		ln := ch.Child("lookup")
-		stringsVariableLookup(c, &ln, v.Lookup)
+		c.strct(lookupInfo, c.root(ln), unsafe.Pointer(v.Lookup))
+		c.pop()
 	}
 }
 
 type stringsWalk struct {
+	arena
 	mode          Mode
 	fn            StringFunc
 	skipResources bool

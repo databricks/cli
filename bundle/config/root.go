@@ -824,6 +824,13 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 	return typedConfigPtr.Interface(), nil
 }
 
+// IsEmptyAt reports whether the map or slice at path was written as empty ({} or []): a
+// typed value cannot tell it from an unset one. It says nothing about a value that has
+// been filled in since: check that it is still empty.
+func (r Root) IsEmptyAt(path *structpath.PathNode) bool {
+	return r.locations.Sub(path).IsEmpty()
+}
+
 // IsReferenceAt is [Root.IsReference] for a path node.
 func (r Root) IsReferenceAt(path *structpath.PathNode) bool {
 	_, ok := r.refs[path.String()]

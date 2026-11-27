@@ -16,6 +16,12 @@ import (
 // unchanged subtrees, so copies of a struct holding one can share it safely.
 // A nil *Locations is an empty tree.
 type Locations struct {
+	// empty is set for a map or slice written as empty ({} or []): the typed value is
+	// then nil or empty, like when it was not written. Scalars and structs are not
+	// flagged: ForceSendFields records an explicit zero value. The flag says nothing
+	// about a value that has been filled in since.
+	empty bool
+
 	locs  []diag.Location
 	keys  map[string]*Locations
 	elems []*Locations
@@ -91,6 +97,12 @@ func (l *Locations) Elems() iter.Seq2[int, *Locations] {
 			}
 		}
 	}
+}
+
+// IsEmpty reports whether the map or slice was written as empty ({} or []). It says
+// nothing about a value that has been filled in since: check that it is still empty.
+func (l *Locations) IsEmpty() bool {
+	return l != nil && l.empty
 }
 
 // Get returns the locations recorded for the value itself.
@@ -245,6 +257,7 @@ func MergeLocations(a, b *Locations) *Locations {
 		return b.WithLocations(concatLocations(b.locs, a.locs))
 	}
 	c := a.clone()
+	c.empty = a.empty && b.empty
 	c.locs = concatLocations(a.locs, b.locs)
 	for k, bv := range b.keys {
 		if c.keys == nil {

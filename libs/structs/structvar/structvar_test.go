@@ -416,3 +416,32 @@ func TestMergeNullIntoValueKeepsIt(t *testing.T) {
 	require.NotNil(t, dst.Queue)
 	assert.True(t, dst.Queue.Enabled)
 }
+
+func TestIsEmpty(t *testing.T) {
+	type sub struct {
+		Tags []string `json:"tags,omitempty"`
+	}
+	type target struct {
+		List  []string          `json:"list,omitempty"`
+		Map   map[string]string `json:"map,omitempty"`
+		Sub   *sub              `json:"sub,omitempty"`
+		Other []string          `json:"other,omitempty"`
+	}
+	var dst target
+	sv, _, err := structvar.DecodeYAML("a.yml", strings.NewReader("list: []\nmap: {}\nsub: {tags: []}\n"), &dst)
+	require.NoError(t, err)
+
+	assert.True(t, sv.IsEmpty(structpath.NewPath(nil, "list")))
+	assert.True(t, sv.IsEmpty(structpath.NewPath(nil, "map")))
+	assert.False(t, sv.IsEmpty(structpath.NewPath(nil, "other")))
+	// A struct is not flagged: ForceSendFields records it. A slice in it is.
+	assert.False(t, sv.IsEmpty(structpath.NewPath(nil, "sub")))
+	assert.True(t, sv.IsEmpty(structpath.NewPath(nil, "sub", "tags")))
+
+	// Both are an empty slice in the typed value: the flag is what tells them apart.
+	assert.Empty(t, dst.List)
+	assert.Empty(t, dst.Other)
+
+	require.NoError(t, sv.Delete(structpath.NewPath(nil, "sub")))
+	assert.False(t, sv.IsEmpty(structpath.NewPath(nil, "sub", "tags")))
+}

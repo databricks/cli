@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/walk"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -26,7 +27,9 @@ func (f *required) Name() string {
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
 // The walker is generated (required_walk.go) by bundle/internal/validation.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := walkConfig(&b.Config, true, requiredConfigRoot)
+	w := &walker{}
+	walk.Required(&b.Config, w.missing)
+	diags := w.diags
 	sortDiagnostics(diags)
 	return diags
 }
