@@ -22,7 +22,8 @@ func NotAnAgent(ctx context.Context) bool {
 
 // Provider returns the agent name that useragent.AgentProvider reports, or "" when no agent is detected or
 // NotAnAgent holds. The CLI's own readers of the calling agent (output, telemetry, the User-Agent) go through it.
-// The SDK's agent request header still reads useragent.AgentProvider directly, so NotAnAgent does not reach it.
+// The SDK adds its agent token from useragent.AgentProvider directly; ApplyNotAnAgentHeader removes it from the
+// CLI's clients.
 func Provider(ctx context.Context) string {
 	if NotAnAgent(ctx) {
 		return ""

@@ -1,5 +1,7 @@
 Env.DATABRICKS_SKILLS_PREVIEW = "1"
 Env.DATABRICKS_SKILLS_HINTS = "1"
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
 # The throttle markers live in the file cache, which a host could disable.
 Env.DATABRICKS_CACHE_ENABLED = "true"
 Ignore = ["home"]

@@ -30,3 +30,10 @@ trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | contains.py '!dat
 
 title "A false value leaves agent detection on"
 trace DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
+
+# The SDK adds its own agent token to User-Agent, so the recorded request shows whether the variable reached it.
+title "The SDK's User-Agent follows the variable"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI current-user me > /dev/null
+print_requests.py --get //api/2.0/preview/scim/v2/Me
+trace CLAUDECODE=1 $CLI current-user me > /dev/null
+print_requests.py --get //api/2.0/preview/scim/v2/Me

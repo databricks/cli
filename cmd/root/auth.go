@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -239,6 +240,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -372,6 +374,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
