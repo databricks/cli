@@ -1,6 +1,3 @@
-# On DBR, git info for /Workspace paths comes from the workspace API, which adds recorded requests.
-RunsOnDbr = false
-
 Cloud = false
 
 Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"

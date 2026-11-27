@@ -1,5 +1,2 @@
-# git init does not work on the workspace file system.
-RunsOnDbr = false
-
 Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
 SuppressLines.warn_retry = ""

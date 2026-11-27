@@ -1,4 +1,1 @@
-# Needs a git repo; the DBR test archive has no .git and git init does not work on the workspace file system.
-RunsOnDbr = false
-
 Ignore = ["repo"]
