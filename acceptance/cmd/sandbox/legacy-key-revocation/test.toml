@@ -1,0 +1,9 @@
+RecordRequests = true
+
+[[Server]]
+Pattern = "GET /api/2.0/lakebox/ssh-keys"
+Response.Body = '{"sshKeys":[{"keyHash":"11111111111111111111111111111111","name":"retired-laptop"}]}'
+
+[[Server]]
+Pattern = "DELETE /api/2.0/lakebox/ssh-keys/11111111111111111111111111111111"
+Response.Body = '{}'

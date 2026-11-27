@@ -62,3 +62,19 @@ Removing these commands does not delete existing local keys, change existing
 `~/.ssh/config` entries or the legacy `~/.ssh/databricks-sandbox` include file,
 or revoke any server-side key registrations. Existing gateway aliases remain
 as they are; use the new OAuth-backed alias for supported sandbox connections.
+
+### Revoking a previously registered gateway key
+
+While the legacy gateway key registry remains available, you can revoke an old
+registration through the generic API command. Use the workspace profile from
+the original registration, list the keys, then delete only the selected key:
+
+```sh
+databricks api get /api/2.0/lakebox/ssh-keys --profile PROFILE
+databricks api delete /api/2.0/lakebox/ssh-keys/KEY_HASH --profile PROFILE
+```
+
+Replace `KEY_HASH` with the `keyHash` from the selected entry in `sshKeys`.
+Deletion revokes that key's legacy gateway access; it does not delete its local
+key files or affect the workspace-authenticated port-forwarding SSH connection.
+This cleanup is optional and is never performed automatically by this retirement.

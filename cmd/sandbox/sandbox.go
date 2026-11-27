@@ -24,7 +24,7 @@ microVM isolation. Each sandbox is a personal sandbox with pre-installed
 tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
 SSH uses workspace authentication; no separate SSH key registration is required.
-For editor Remote-SSH or native SSH tools, use sandbox ssh-setup.
+For editor Remote-SSH or native SSH tools, use databricks sandbox ssh-setup.
 
 Getting started:
   databricks auth login --host https://...   # authenticate to a Databricks workspace

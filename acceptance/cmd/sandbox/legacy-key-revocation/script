@@ -1,0 +1,4 @@
+title "Generic API access remains available for explicit legacy key revocation"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/lakebox/ssh-keys
+MSYS_NO_PATHCONV=1 trace $CLI api delete /api/2.0/lakebox/ssh-keys/11111111111111111111111111111111
+trace print_requests.py --get
