@@ -74,9 +74,9 @@ func setupFetchMock(t *testing.T) {
 
 func stubLatestSkillsReleaseRef(t *testing.T, ref string, err error) {
 	t.Helper()
-	orig := latestSkillsReleaseRefFn
-	t.Cleanup(func() { latestSkillsReleaseRefFn = orig })
-	latestSkillsReleaseRefFn = func(context.Context) (string, error) {
+	orig := skills.LatestSkillsReleaseRefFn
+	t.Cleanup(func() { skills.LatestSkillsReleaseRefFn = orig })
+	skills.LatestSkillsReleaseRefFn = func(context.Context) (string, error) {
 		return ref, err
 	}
 }
@@ -463,6 +463,189 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
 }
 
+// KeepHandPlacedSkills refuses the install when an agent's skills directory has
+// an entry named after a manifest skill that the install would move aside and
+// that is not a link to or a copy of that skill in the global directory. An
+// entry with any other name is left alone, so it installs.
+func TestInstallSkillsForAgentsKeepsHandPlacedSkills(t *testing.T) {
+	// canonical is what an install that did not finish left in the global
+	// directory: the files the fetch mock serves.
+	canonical := map[string]string{"SKILL.md": "# databricks-sql/SKILL.md", "references/a.md": "a"}
+
+	tests := []struct {
+		name string
+		// setup prepares the agent's skills directory; canonicalDir is the
+		// skill in the global directory, which exists only if setup made it.
+		setup   func(t *testing.T, agentSkillsDir, canonicalDir string)
+		refused bool
+	}{
+		{
+			name: "own directory named after a manifest skill",
+			setup: func(t *testing.T, agentSkillsDir, _ string) {
+				writeFiles(t, filepath.Join(agentSkillsDir, "databricks-sql"), map[string]string{"NOTES.md": "my notes"})
+			},
+			refused: true,
+		},
+		{
+			name: "own link named after a manifest skill",
+			setup: func(t *testing.T, agentSkillsDir, _ string) {
+				require.NoError(t, os.MkdirAll(agentSkillsDir, 0o755))
+				if err := os.Symlink(t.TempDir(), filepath.Join(agentSkillsDir, "databricks-sql")); err != nil {
+					t.Skipf("cannot create symlinks: %v", err)
+				}
+			},
+			refused: true,
+		},
+		{
+			name: "changed copy of a skill an earlier install left",
+			setup: func(t *testing.T, agentSkillsDir, canonicalDir string) {
+				writeFiles(t, canonicalDir, canonical)
+				writeFiles(t, filepath.Join(agentSkillsDir, "databricks-sql"), map[string]string{"SKILL.md": "my skill"})
+			},
+			refused: true,
+		},
+		{
+			name: "copy with a file of the user's",
+			setup: func(t *testing.T, agentSkillsDir, canonicalDir string) {
+				writeFiles(t, canonicalDir, canonical)
+				writeFiles(t, filepath.Join(agentSkillsDir, "databricks-sql"), map[string]string{"SKILL.md": canonical["SKILL.md"], "NOTES.md": "my notes"})
+			},
+			refused: true,
+		},
+		{
+			name: "link to a skill an earlier install left",
+			setup: func(t *testing.T, agentSkillsDir, canonicalDir string) {
+				writeFiles(t, canonicalDir, canonical)
+				require.NoError(t, os.MkdirAll(agentSkillsDir, 0o755))
+				if err := os.Symlink(canonicalDir, filepath.Join(agentSkillsDir, "databricks-sql")); err != nil {
+					t.Skipf("cannot create symlinks: %v", err)
+				}
+			},
+		},
+		{
+			name: "unfinished copy of a skill an earlier install left",
+			setup: func(t *testing.T, agentSkillsDir, canonicalDir string) {
+				writeFiles(t, canonicalDir, canonical)
+				writeFiles(t, filepath.Join(agentSkillsDir, "databricks-sql"), map[string]string{"SKILL.md": canonical["SKILL.md"]})
+			},
+		},
+		{
+			name: "own skill not named after a manifest skill",
+			setup: func(t *testing.T, agentSkillsDir, _ string) {
+				writeFiles(t, filepath.Join(agentSkillsDir, "databricks-team-conventions"), map[string]string{"SKILL.md": "my skill"})
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := setupTestHome(t)
+			ctx := cmdio.MockDiscard(t.Context())
+			setupFetchMock(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+			agent := testAgent(tmp)
+			agentSkillsDir := filepath.Join(tmp, ".test-agent", "skills")
+			globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+			tc.setup(t, agentSkillsDir, filepath.Join(globalDir, "databricks-sql"))
+			before := snapshotDir(t, agentSkillsDir)
+
+			err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{KeepHandPlacedSkills: true})
+			if !tc.refused {
+				require.NoError(t, err)
+				assert.DirExists(t, filepath.Join(agentSkillsDir, "databricks-jobs"))
+				// The install leaves alone what is not named after its skills.
+				after := snapshotDir(t, agentSkillsDir)
+				for rel, content := range before {
+					if name, _, _ := strings.Cut(filepath.ToSlash(rel), "/"); name != "databricks-sql" {
+						assert.Equal(t, content, after[rel], rel)
+					}
+				}
+				return
+			}
+			assert.ErrorAs(t, err, new(*RefusedError))
+			// Nothing was written: no state, and the agent's directory is as
+			// the user left it.
+			state, err := LoadState(globalDir)
+			require.NoError(t, err)
+			assert.Nil(t, state)
+			assert.Equal(t, before, snapshotDir(t, agentSkillsDir))
+		})
+	}
+}
+
+// One hand-placed entry refuses the install for every target agent, including
+// one whose skills directory has nothing in the way: the install state records
+// the skills for all of them at once.
+func TestInstallSkillsForAgentsKeepsHandPlacedSkillsForEveryAgent(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	first := testAgent(tmp)
+	second := &agents.Agent{
+		Name:        "other-agent",
+		DisplayName: "Other Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmp, ".other-agent"), nil
+		},
+	}
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".other-agent"), 0o755))
+	firstSkillsDir := filepath.Join(tmp, ".test-agent", "skills")
+	writeFiles(t, filepath.Join(firstSkillsDir, "databricks-sql"), map[string]string{"NOTES.md": "my notes"})
+	before := snapshotDir(t, firstSkillsDir)
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{first, second}, InstallOptions{KeepHandPlacedSkills: true})
+	assert.ErrorAs(t, err, new(*RefusedError))
+	assert.ErrorContains(t, err, "databricks-sql skill in the skills directory of Test Agent")
+	assert.Equal(t, before, snapshotDir(t, firstSkillsDir))
+	assert.NoDirExists(t, filepath.Join(tmp, ".other-agent", "skills"))
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Nil(t, state)
+}
+
+// writeFiles writes files, keyed by their path relative to dir, under dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	}
+}
+
+// snapshotDir returns each entry under dir with its file contents or link
+// target.
+func snapshotDir(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	entries := map[string]string{}
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		switch {
+		case d.Type()&fs.ModeSymlink != 0:
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			entries[rel] = "-> " + target
+		case d.Type().IsRegular():
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			entries[rel] = string(data)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	return entries
+}
+
 // --skills-only records the agents that could have had the plugin (their CLI
 // is on PATH), so update keeps them on raw skills. An agent whose CLI is
 // missing is not recorded: install suggests --skills-only for it, and update
@@ -513,7 +696,7 @@ func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string)
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
 	t.Setenv("DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	stubLatestSkillsReleaseRef(t, "v9.9.9", latestErr)
 	fallbackVersion, err := clicompat.ResolveEmbeddedAgentSkillsVersion()
 	require.NoError(t, err)
@@ -671,7 +854,7 @@ func testSkillsRefSelection(t *testing.T, run func(context.Context, ManifestSour
 			case tc.compatPin:
 				withCachedCompat(t, DisplaySkillsVersion(tc.selectedRef))
 			default:
-				withCachedCompat(t, skillsLatestSentinel)
+				withCachedCompat(t, clicompat.AgentSkillsLatest)
 			}
 			stubLatestSkillsReleaseRef(t, tc.selectedRef, nil)
 			err := run(ctx, &mockManifestSource{manifest: testManifest()}, targetAgents)
@@ -1505,7 +1688,7 @@ func TestGetSkillsRefDefaultsToLatest(t *testing.T) {
 	// cli-compat reports "latest", so we resolve it to the skills repo's
 	// latest release tag rather than tracking the default branch.
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	stubLatestSkillsReleaseRef(t, "v0.2.8", nil)
 
 	ref, explicit, err := GetSkillsRef(t.Context())
@@ -1575,7 +1758,7 @@ func TestGetSkillsRefDefaultManifest(t *testing.T) {
 func TestGetSkillsRefLatestReleaseLookupFails(t *testing.T) {
 	setBuildVersion(t, "1.22.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "")
-	withCachedCompat(t, skillsLatestSentinel)
+	withCachedCompat(t, clicompat.AgentSkillsLatest)
 	latestErr := errors.New("network down")
 	stubLatestSkillsReleaseRef(t, "", latestErr)
 
@@ -1694,7 +1877,7 @@ func TestFetchLatestSkillsReleaseRefRateLimited(t *testing.T) {
 			t.Cleanup(server.Close)
 			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
 
-			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			_, err := skills.FetchLatestSkillsReleaseRef(t.Context())
 			ferr, ok := errors.AsType[*FetchError](err)
 			require.True(t, ok, "want *FetchError, got %T", err)
 			assert.Equal(t, FetchStageRelease, ferr.Stage)
@@ -1722,7 +1905,7 @@ func TestFetchLatestSkillsReleaseRefUnusableResponse(t *testing.T) {
 			t.Cleanup(server.Close)
 			t.Setenv("DATABRICKS_CLI_GITHUB_API_URL", server.URL)
 
-			_, err := fetchLatestSkillsReleaseRef(t.Context())
+			_, err := skills.FetchLatestSkillsReleaseRef(t.Context())
 			ferr, ok := errors.AsType[*FetchError](err)
 			require.True(t, ok, "want *FetchError, got %T", err)
 			assert.Equal(t, FetchStageRelease, ferr.Stage)

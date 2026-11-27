@@ -224,14 +224,38 @@ def del_path(body, field):
     body.pop(leaf, None)
 
 
+def is_batch_operation_update(req):
+    return req.get("method") == "POST" and req.get("path", "").endswith("/operations:batchUpdate")
+
+
+def split_batch_operation_updates(requests):
+    """Print a deployment-history batch update as one request per operation it updates.
+
+    Which operations share a batch depends on how many were waiting when the CLI sent it, so a
+    golden of whole batches would change from run to run.
+
+    >>> batch = {"method": "POST", "path": "/v/1/operations:batchUpdate", "body": {"requests": [{"operation": {"name": "a"}}, {"operation": {"name": "b"}}]}}
+    >>> [req["body"] for req in split_batch_operation_updates([batch])]
+    [{'operation': {'name': 'a'}}, {'operation': {'name': 'b'}}]
+    """
+    result = []
+    for req in requests:
+        if is_batch_operation_update(req):
+            result.extend(dict(req, body=entry) for entry in (req.get("body") or {}).get("requests", []))
+        else:
+            result.append(req)
+    return result
+
+
 def fold_pending_operation_writes(requests):
-    """Drop a deployment-history PATCH that marks an operation PENDING when a later PATCH to
-    the same operation follows, and drop sequence_id from every operation PATCH.
+    """Drop a deployment-history write that marks an operation PENDING when a later write to
+    the same operation follows, and drop sequence_id from every operation write.
 
     A recreate writes an operation twice: the drop marks it PENDING, the save (or failure)
     finishes it. The CLI uploads writes in the background and merges a write still waiting
     to be sent into the next one for the same resource, so depending on timing the service
-    gets one PATCH at sequence_id 0 or two at 0 and 1. Folding makes both read the same.
+    gets one write at sequence_id 0 or two at 0 and 1. Folding makes both read the same.
+    A write is a PATCH of one operation, or one entry of a batch update split per operation.
 
     >>> pending = {"method": "PATCH", "path": "/v/1/operations/a", "body": {"sequence_id": 0, "status": "OPERATION_STATUS_PENDING"}}
     >>> done = {"method": "PATCH", "path": "/v/1/operations/a", "body": {"sequence_id": 1, "status": "OPERATION_STATUS_SUCCEEDED"}}
@@ -242,22 +266,37 @@ def fold_pending_operation_writes(requests):
     [{'method': 'PATCH', 'path': '/v/1/operations/a', 'body': {'status': 'OPERATION_STATUS_SUCCEEDED'}}]
     >>> fold_pending_operation_writes([pending])
     [{'method': 'PATCH', 'path': '/v/1/operations/a', 'body': {'status': 'OPERATION_STATUS_PENDING'}}]
+    >>> entry = lambda seq, status: {"method": "POST", "path": "/v/1/operations:batchUpdate", "body": {"operation": {"name": "a", "sequence_id": seq, "status": status}}}
+    >>> fold_pending_operation_writes([entry(0, "OPERATION_STATUS_PENDING"), entry(1, "OPERATION_STATUS_SUCCEEDED")])
+    [{'method': 'POST', 'path': '/v/1/operations:batchUpdate', 'body': {'operation': {'name': 'a', 'status': 'OPERATION_STATUS_SUCCEEDED'}}}]
     """
 
-    def is_operation_patch(req):
-        return req.get("method") == "PATCH" and "/operations/" in req.get("path", "")
+    def written_operation(req):
+        """Return the operation a write names and the fields it sends, or None for other requests."""
+        body = req.get("body") or {}
+        if req.get("method") == "PATCH" and "/operations/" in req.get("path", ""):
+            return req["path"], body
+        if is_batch_operation_update(req):
+            operation = body.get("operation") or {}
+            return operation.get("name"), operation
+        return None
 
     result = []
     for i, req in enumerate(requests):
-        if not is_operation_patch(req):
+        written = written_operation(req)
+        if written is None:
             result.append(req)
             continue
-        body = req.get("body") or {}
-        if body.get("status") == "OPERATION_STATUS_PENDING" and any(
-            is_operation_patch(r) and r["path"] == req["path"] for r in requests[i + 1 :]
+        name, fields = written
+        if fields.get("status") == "OPERATION_STATUS_PENDING" and any(
+            (later := written_operation(r)) is not None and later[0] == name for r in requests[i + 1 :]
         ):
             continue
-        result.append(dict(req, body={k: v for k, v in body.items() if k != "sequence_id"}))
+        fields = {k: v for k, v in fields.items() if k != "sequence_id"}
+        if is_batch_operation_update(req):
+            result.append(dict(req, body=dict(req["body"], operation=fields)))
+        else:
+            result.append(dict(req, body=fields))
     return result
 
 
@@ -342,7 +381,7 @@ def main():
     if not data:
         return
 
-    requests = read_json_many(data)
+    requests = split_batch_operation_updates(read_json_many(data))
     filtered_requests = filter_requests(
         requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms
     )
