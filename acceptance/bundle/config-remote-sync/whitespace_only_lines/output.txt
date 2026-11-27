@@ -16,15 +16,12 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -12,5 +12,9 @@
+@@ -12,5 +12,6 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -            spark_env_vars: null
 +            spark_env_vars:
-+              BANNER: |-
-+                line one
-+
-+                line three
++              BANNER: "line one\n    \nline three"
        tasks:
          - task_key: main
 
@@ -34,6 +31,17 @@ json.resources.jobs.my_job.job_clusters[0].new_cluster.spark_env_vars.BANNER = "
 >>> [CLI] bundle config-remote-sync --save
 No changes detected.
 
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  job_clusters[job_cluster_key='main'].new_cluster.num_workers: replace
+
+
+
+>>> [CLI] bundle validate -o json
+json.resources.jobs.my_job.job_clusters[0].new_cluster.spark_env_vars.BANNER = "line one\n    \nline three";
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

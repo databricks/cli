@@ -627,6 +627,29 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 	}
 }
 
+func TestApplyChangeQuotesWhitespaceOnlyLinesUnderNullParent(t *testing.T) {
+	sync := func(content, path, value string) string {
+		change := FieldChange{
+			WritePath: path,
+			Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: value},
+		}
+		result, err := applyChange(t.Context(), preserveBlankLines([]byte(content)), change)
+		require.NoError(t, err)
+		result, err = clearAddedFlowStyle(result, []FieldChange{change})
+		require.NoError(t, err)
+		return string(restoreBlankLines(result))
+	}
+
+	assert.Equal(t, "tags:\n  key: |-\n    one\n    two\n", sync("tags: null\n", "tags.key", "one\ntwo"))
+
+	out := sync("tags: null\n", "tags.key", "one\n    \nthree")
+	assert.Equal(t, "tags:\n  key: \"one\\n    \\nthree\"\n", out)
+
+	// A later sync that rewrites the file keeps the value.
+	out = sync(out, "tags.other", "x")
+	assert.YAMLEq(t, `tags: {key: "one\n    \nthree", other: x}`, out)
+}
+
 func TestApplyChangeReusesExistingParent(t *testing.T) {
 	for _, parent := range []string{"null", "~", "", "{}"} {
 		t.Run(parent, func(t *testing.T) {

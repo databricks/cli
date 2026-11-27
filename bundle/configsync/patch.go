@@ -234,6 +234,7 @@ func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte
 			if err := replacement.Encode(value); err != nil {
 				return nil, err
 			}
+			quoteWhitespaceOnlyLines(&replacement)
 			replacement.HeadComment = current.HeadComment
 			replacement.FootComment = current.FootComment
 			// Block containers cannot carry the scalar's inline comment themselves.
@@ -254,6 +255,24 @@ func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte
 		}
 	}
 	return nil, nil
+}
+
+// quoteWhitespaceOnlyLines double-quotes strings with whitespace-only lines. yaml.v4 writes them as
+// block scalars, and preserveBlankLines empties such lines the next time the file is synced.
+func quoteWhitespaceOnlyLines(node *yaml.Node) {
+	if node.Kind == yaml.ScalarNode && node.ShortTag() == "!!str" && hasWhitespaceOnlyLine(node.Value) {
+		node.Style = yaml.DoubleQuotedStyle
+	}
+	for _, child := range node.Content {
+		quoteWhitespaceOnlyLines(child)
+	}
+}
+
+func hasWhitespaceOnlyLine(s string) bool {
+	lines := strings.Split(s, "\n")
+	return len(lines) > 1 && slices.ContainsFunc(lines, func(line string) bool {
+		return line != "" && strings.TrimRight(line, " \t") == ""
+	})
 }
 
 // isParentPathError checks if error indicates missing parent path.
