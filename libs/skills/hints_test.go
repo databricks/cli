@@ -56,3 +56,21 @@ func TestWriteGroupHintLeavesOutSkillNameTheInstallerRejects(t *testing.T) {
 	require.Equal(t, "\nCoding agents: read the skills for this command group before you use it.\n"+
 		"  databricks skills read alpha\n", buf.String())
 }
+
+// With DATABRICKS_SKILLS_PREVIEW unset the feature is off, so the footer stays
+// off even with hints on and the same manifest.
+func TestWriteGroupHintIsOffWithoutPreview(t *testing.T) {
+	dir := t.TempDir()
+	const manifest = `{"version": "1.0.0", "skills": {
+		"-foo": {"version": "1.0.0", "description": "A skill whose name starts with a hyphen.", "files": ["SKILL.md"], "commands": ["jobs"]},
+		"alpha": {"version": "1.0.0", "description": "A valid skill.", "files": ["SKILL.md"], "commands": ["jobs"]}}}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644))
+
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", dir)
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+
+	var buf bytes.Buffer
+	WriteGroupHint(ctx, &buf, "jobs")
+	require.Empty(t, buf.String())
+}

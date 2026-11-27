@@ -23,8 +23,10 @@ var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 })
 
-// IsSkillName reports whether name is a skill name the installer accepts: at
-// most MaxSkillNameLength lowercase letters, digits and single hyphens.
+// IsSkillName reports whether name has the Agent Skills name format: at most
+// MaxSkillNameLength lowercase letters, digits and single hyphens. The installer
+// also rejects Windows device names such as "con"; that check is separate, in
+// the installer, and IsSkillName does not make it.
 func IsSkillName(name string) bool {
 	return len(name) <= MaxSkillNameLength && skillNamePattern().MatchString(name)
 }

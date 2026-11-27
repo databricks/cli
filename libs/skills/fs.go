@@ -100,14 +100,15 @@ func (s *fsSource) FileSize(ctx context.Context, skill, file string) (int64, err
 }
 
 // filePath returns the path of a skill file in the release. The manifest must
-// list the file for the skill.
+// list the file for the skill, and a name IsSkillName rejects is unknown, as it
+// is to Catalog.
 func (s *fsSource) filePath(ctx context.Context, skill, file string) (string, error) {
 	m, err := s.manifest(ctx)
 	if err != nil {
 		return "", err
 	}
 	meta, ok := m.Skills[skill]
-	if !ok {
+	if !ok || !IsSkillName(skill) {
 		return "", fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
 	}
 	if !slices.Contains(meta.Files, file) {
