@@ -66,22 +66,6 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 	}
 }
 
-func TestCapabilities_SupportsLinePrompt(t *testing.T) {
-	full := Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: true}
-	assert.True(t, full.SupportsLinePrompt())
-
-	// A plain-text line needs no redraw, so TERM=dumb, which turns off the
-	// TUI prompts, still gets it.
-	dumb := full
-	dumb.dumb = true
-	assert.False(t, dumb.SupportsPrompt())
-	assert.True(t, dumb.SupportsLinePrompt())
-
-	assert.False(t, Capabilities{stdinIsTTY: false, stdoutIsTTY: true, stderrIsTTY: true}.SupportsLinePrompt(), "stdin not TTY")
-	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: false, stderrIsTTY: true}.SupportsLinePrompt(), "stdout not TTY")
-	assert.False(t, Capabilities{stdinIsTTY: true, stdoutIsTTY: true, stderrIsTTY: false}.SupportsLinePrompt(), "stderr not TTY")
-}
-
 func TestCapabilities_SupportsPager(t *testing.T) {
 	tests := []struct {
 		name     string

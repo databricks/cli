@@ -1,10 +1,12 @@
 # DATABRICKS_AGENT_FEATURES_DISABLED turns off the aitools hint and auto-install,
-# with the skills preview and hints on. The unset run after it installs for the
-# same agent, so the quiet run is not quiet for lack of a gate.
+# with the skills preview and hints on. The user agreed to auto-install, so the
+# unset run after it installs for the same agent, and the quiet run is not
+# quiet for lack of a gate or consent.
 unset AGENT CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION
 use_home home
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate true
+trace $CLI aitools auto-install enable
 export DATABRICKS_SKILLS_PREVIEW=1
 export DATABRICKS_SKILLS_HINTS=1
 

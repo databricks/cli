@@ -1,6 +1,8 @@
 use_home home
 gate true
 
+# CI and the opt-outs settle the version and are reported whether or not the
+# user agreed: these first cases run before the user answered.
 title "CI: not installed, reported once for the version"
 trace CI=true $CLI jobs list
 trace print_telemetry
@@ -20,6 +22,12 @@ trace $CLI jobs list
 trace print_telemetry
 trace cursor_skills
 trace $CLI aitools auto-install enable
+
+export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.1
+title "DATABRICKS_AITOOLS_AUTO_INSTALL=false wins over the consent"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL=false $CLI jobs list
+trace print_telemetry
+trace auto_install_state
 
 export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0
 title "commands that never trigger it"
@@ -47,6 +55,7 @@ trace cursor_skills
 
 title "a machine in the holdout: not installed"
 use_home holdout-home holdout-machine
+trace $CLI aitools auto-install enable
 trace $CLI jobs list
 trace print_telemetry
 trace cursor_skills
@@ -54,5 +63,6 @@ trace cursor_skills
 title "no agent config directory: nothing to install"
 use_home no-agents-home
 "$rm_bin" -r "${USERPROFILE:-$HOME}/.cursor"
+trace $CLI aitools auto-install enable
 trace $CLI jobs list
 trace print_telemetry

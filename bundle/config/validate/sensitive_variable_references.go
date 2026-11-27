@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type sensitiveVariableReferences struct{}
@@ -106,7 +105,7 @@ func inferSensitiveVariables(b *bundle.Bundle, refs []variableReference) error {
 		for _, r := range refs {
 			// A reference to an undeclared variable is reported by variable resolution.
 			v, ok := b.Config.Variables[r.name]
-			if !ok || config.IsExplicitlyEnabled(v.Sensitive) || !isSensitiveResourceField(r.path) {
+			if !ok || config.IsExplicitlyEnabled(v.Sensitive) || !dresources.IsSensitiveResourceField(r.path) {
 				continue
 			}
 			var err error
@@ -145,23 +144,5 @@ func isSensitiveLocation(b *bundle.Bundle, p dyn.Path) bool {
 	if len(p) >= 2 && p[0].Key() == "variables" {
 		return isSensitiveVariable(b, p[1].Key())
 	}
-	return isSensitiveResourceField(p)
-}
-
-// isSensitiveResourceField reports whether p is a field under resources.<type>.<key>
-// that the resource type declares as sensitive.
-func isSensitiveResourceField(p dyn.Path) bool {
-	if len(p) < 4 || p[0].Key() != "resources" {
-		return false
-	}
-	field, err := structpath.ParsePath(p[3:].String())
-	if err != nil {
-		return false
-	}
-	for _, rule := range dresources.GetResourceConfig(p[1].Key()).SensitiveFields {
-		if field.HasPatternPrefix(rule.Field) {
-			return true
-		}
-	}
-	return false
+	return dresources.IsSensitiveResourceField(p)
 }

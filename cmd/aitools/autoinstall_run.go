@@ -34,15 +34,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	// installTimeout bounds the install or update (its downloads and the
-	// agent CLIs it runs). One that runs out of time counts as a failed
-	// attempt and is retried on a later run.
-	installTimeout = 10 * time.Second
-
-	// promptTimeout bounds the wait for an answer at the install prompt.
-	promptTimeout = time.Minute
-)
+// installTimeout bounds the install or update (its downloads and the agent
+// CLIs it runs). One that runs out of time counts as a failed attempt and is
+// retried on a later run.
+const installTimeout = 10 * time.Second
 
 // gateTimeout bounds the gate lookup, one compatibility manifest fetch. Every
 // machine pays it once per version while the gate is off, and a machine that
@@ -59,9 +54,6 @@ var now = time.Now
 
 // rootInUserHome is autoinstall.RootInUserHome; tests replace it.
 var rootInUserHome = autoinstall.RootInUserHome
-
-// inContainer is autoinstall.InContainer; tests replace it.
-var inContainer = autoinstall.InContainer
 
 // notifyInterrupt catches sigs: it returns a context that is canceled when
 // the CLI receives one of them, and a function that stops catching them and
@@ -100,24 +92,22 @@ var notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Cont
 // errInterrupted is why a run stopped when it caught a signal.
 var errInterrupted = errors.New("interrupted")
 
-// autoInstallDisable is the opt-out command named in the notice.
-const autoInstallDisable = "databricks aitools auto-install disable"
+// autoInstallNoticeCommands is the end of the notice: how to turn auto-install
+// off and how to remove what it installed.
+const autoInstallNoticeCommands = "Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall"
 
 // AutoInstall installs Databricks AI tools for the coding agents on this
 // machine, or updates an existing installation, on the first run of a new CLI
-// version. The root command runs it after a command succeeded. It never fails
-// the command and never writes to stdout. On stderr it prints the install
-// prompt (in a terminal) and one line on what it did; why it skipped or failed
-// goes only to the debug log.
+// version, once the user agreed to it (see autoinstall.Consent). It asks
+// nothing. The root command runs it after a command succeeded. It never fails
+// the command and never writes to stdout. On stderr it prints one line on what
+// it did; why it skipped or failed goes only to the debug log.
 //
-// It returns the signal that stopped it, if one did: Ctrl+C at the question,
-// or Ctrl+C, a request to terminate or the terminal closing during the gate
-// lookup. It records what it must first. The root command then ends the CLI
-// by the signal, so that the shell stops the script, loop or command list
-// that ran the command, as it would have without auto-install.
-//
-// It does nothing when DATABRICKS_AGENT_FEATURES_DISABLED is set: it neither
-// prompts nor installs.
+// It returns the signal that stopped it, if one did: Ctrl+C, a request to
+// terminate or the terminal closing during the gate lookup. It records what it
+// must first. The root command then ends the CLI by the signal, so that the
+// shell stops the script, loop or command list that ran the command, as it
+// would have without auto-install.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
 	if skills.AgentFeaturesDisabled(ctx) {
@@ -193,25 +183,15 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
 		return nil
 	}
-	// A run that would ask before installing but cannot skips before the lock
-	// and the gate lookup, since it repeats on every such run until a run that
-	// can ask. A holdout machine or a gate-off version would otherwise settle
-	// after the lookup; they wait for that run too, so holdout and treatment
-	// machines are counted alike.
-	//
-	// A machine with no coding agent skips there as well: the gate changes
-	// nothing for it, and such machines (containers, job pods) often have no
-	// route to the manifest and a home directory that keeps no state, so they
-	// would wait for the lookup on every run. The version is not settled, so
-	// an agent set up later is still found.
+	// A machine with no coding agent skips before the lock and the gate
+	// lookup: the gate changes nothing for it, and such machines (containers,
+	// job pods) often have no route to the manifest and a home directory that
+	// keeps no state, so they would wait for the lookup on every run. The
+	// version is not settled, so an agent set up later is still found.
 	if reason == autoinstall.ReasonGateOff {
 		tools, err := planTools(quietContext(ctx), in.State)
 		if err == nil && tools.skip == protos.AitoolsAutoInstallOutcomeSkippedNoAgents {
 			log.Debugf(ctx, "auto-install: skipped: %s", tools.skipWhy)
-			return nil
-		}
-		if err == nil && autoInstallAsks() && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
-			skipUnaskable(ctx, in.State.ID)
 			return nil
 		}
 	}
@@ -232,8 +212,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 	in.Now = now()
 	id := in.State.ID
 	if id == "" {
-		// Saved before it decides anything, so this run and one that cannot
-		// ask (skipUnaskable, which does not hold this lock) use the same ID.
+		// Saved before it decides anything, so the bucket the run decides
+		// with is the stored one.
 		id, err = autoinstall.SaveID(ctx, autoinstall.NewID())
 		if err != nil {
 			log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
@@ -279,7 +259,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		version:     version,
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
-		interactive: cmdio.HasTerminal(ctx) && autoInstallAsks(),
+		interactive: cmdio.HasTerminal(ctx) && useragent.AgentProvider() == "",
 		now:         in.Now,
 	}
 	if !reason.Due() {
@@ -300,43 +280,28 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		run.settle(ctx, outcome)
 		return nil
 	}
-	return run.attempt(ctx, in.State)
+	run.attempt(ctx, in.State)
+	return nil
 }
 
 // attempt installs or updates the tools and reports the outcome. prior is the
 // state the run was decided on.
-func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os.Signal {
+func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	attempt := autoinstall.NextAttempt(prior, r.version)
 	qctx := quietContext(ctx)
 	tools, err := planTools(qctx, prior)
-	// A caller that is not a coding agent is asked before a first install,
-	// once per version: a "yes" covers that version's retries. A planning
-	// failure is a failed attempt, and its retry asks.
-	asked := false
-	if err == nil && autoInstallAsks() && prior.AcceptedVersion != r.version && len(tools.newAgents()) > 0 {
-		// autoInstall skips this case before the lock; the state it decided
-		// on may have changed since.
-		if !canAsk(ctx) {
-			skipUnaskable(ctx, r.id)
-			return nil
-		}
-		if ok, sig := r.ask(ctx, tools.newAgents()); !ok {
-			return sig
-		}
-		asked = true
-	}
 	// Count the attempt before making it: an attempt that never finishes (the
 	// process is killed) still counts, and a state that cannot be saved stops
 	// auto-install instead of retrying it on every run.
 	started, recErr := autoinstall.StartAttempt(ctx, r.version, attempt, r.id, r.now)
 	if recErr != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", recErr)
-		return nil
+		return
 	}
 	if !started {
 		// The user opted out after this run read the state.
 		r.settle(ctx, protos.AitoolsAutoInstallOutcomeSkippedOptOut)
-		return nil
+		return
 	}
 	if err == nil && tools.fresh() {
 		// Skills an unfinished install leaves have no install state; the
@@ -367,7 +332,7 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		// directory for its own.
 		log.Debugf(ctx, "auto-install: kept the installed tools: %v", err)
 		unfinished := tools.fresh() && (prior.Installing || installStateSaved(tools.globalDir))
-		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: unfinished, refusal: err}, nil
+		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: unfinished}, nil
 	}
 	switch {
 	case err != nil:
@@ -377,10 +342,6 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		}
 		log.Debugf(ctx, "auto-install: attempt %d of %d failed: %v", attempt, autoinstall.MaxAttempts, err)
 		r.report(ctx, outcome, classifyInstallError(err))
-		if asked {
-			// The user is waiting for the answer to take effect.
-			cmdio.LogString(ctx, "Could not install Databricks AI tools. To install them, run: databricks aitools install")
-		}
 	default:
 		if result.unfinished {
 			r.settleUnfinished(ctx, result.outcome)
@@ -392,15 +353,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 			if result.updated {
 				verb = "Updated"
 			}
-			cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. Disable: %s", verb, strings.Join(result.agents, ", "), autoInstallDisable))
-		}
-		if asked && result.refusal != nil {
-			// The user said yes and waits for the skills; the refusal names
-			// what was kept and the command that replaces it.
-			cmdio.LogString(ctx, "Did not install the Databricks AI tools skills: "+result.refusal.Error())
+			cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. %s", verb, strings.Join(result.agents, ", "), autoInstallNoticeCommands))
 		}
 	}
-	return nil
 }
 
 // installStateSaved reports whether the global directory has install state.
@@ -411,32 +366,11 @@ func installStateSaved(globalDir string) bool {
 }
 
 // consentExistingInstall stores the consent of a machine whose user never
-// answered but has a global installation that the CLI made (one with install
-// state): the user installed the tools, so auto-install keeps them up to date.
-// Skills without install state may be the user's own copies, and a project
-// installation belongs to the project, so neither counts. Nor does install
-// state that auto-install wrote itself without consent (a coding agent's run,
-// or a first install that did not finish). in is a run past stateFreeSkips;
-// one in CI or with auto-install turned off in the environment stores nothing.
-// in.State gets the stored consent.
+// answered but has a global installation that the CLI made (see
+// existingInstallConsents). in is a run past stateFreeSkips. in.State gets the
+// stored consent.
 func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
-	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
-		return
-	}
-	if in.State.Installing || in.State.InstalledWithoutConsent {
-		return
-	}
-	globalDir, err := installer.GlobalSkillsDir(ctx)
-	if err != nil {
-		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
-		return
-	}
-	existing, err := installer.LoadState(globalDir)
-	if err != nil {
-		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
-		return
-	}
-	if existing == nil {
+	if !existingInstallConsents(ctx, *in) {
 		return
 	}
 	previous, err := autoinstall.GiveConsentIfUnknown(ctx)
@@ -444,11 +378,37 @@ func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
 		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 		return
 	}
-	// An opt-out stored since the state was read stays, and the run finds it
-	// when it reads the state again under the run lock.
-	if previous != autoinstall.ConsentOptedOut {
+	// An opt-out stored since the state was read stays, and the run settles
+	// the version for it.
+	if previous == autoinstall.ConsentOptedOut {
+		in.State.OptedOut = true
+	} else {
 		in.State.Consented = true
 	}
+}
+
+// existingInstallConsents reports whether the run in counts a global
+// installation that the CLI made (one with install state) as the consent of a
+// user who never answered: the user installed the tools, so auto-install keeps
+// them up to date. Skills without install state may be the user's own copies,
+// and a project installation belongs to the project, so neither counts. A run
+// in CI or with auto-install turned off in the environment does not count it.
+// It only reads.
+func existingInstallConsents(ctx context.Context, in autoinstall.Inputs) bool {
+	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
+		return false
+	}
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return false
+	}
+	existing, err := installer.LoadState(globalDir)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return false
+	}
+	return existing != nil
 }
 
 // saveInstallStateDigest records the digest of the install state that a first
@@ -472,114 +432,6 @@ func saveInstallStateDigest(ctx context.Context, globalDir string) {
 	}
 }
 
-// autoInstallAsks reports whether auto-install asks before a first install:
-// no coding agent is detected. A run that cannot ask (see canAsk) skips;
-// coding agents install without a question.
-func autoInstallAsks() bool {
-	return useragent.AgentProvider() == ""
-}
-
-// canAsk reports whether the question can be seen and answered: see
-// cmdio.IsLinePromptSupported. A CLI process that the CLI started itself does
-// not ask either; the parent asks after its own command. Nor does a run in a
-// container: `docker run -t` without `-i` gives it a terminal that never
-// delivers an answer, and a container's home often keeps no state, so the
-// unanswered question would wait promptTimeout on every run.
-func canAsk(ctx context.Context) bool {
-	return cmdio.IsLinePromptSupported(ctx) && !agents.IsSelfExec(ctx) && !inContainer()
-}
-
-// skipUnaskable skips a run that would ask before installing but cannot: the
-// question could not be seen or answered safely, and installing without it
-// would skip the consent. The version is not settled, so a later run that can
-// ask does. A machine with no stored ID gets one, so that such runs do not
-// draw a new holdout bucket each time.
-func skipUnaskable(ctx context.Context, storedID string) {
-	log.Debugf(ctx, "auto-install: skipped: cannot ask (a stream is not a terminal, the CLI runs in the background, in a container or for another CLI process, or stdin is in use)")
-	if storedID != "" {
-		return
-	}
-	if _, err := autoinstall.SaveID(ctx, autoinstall.NewID()); err != nil {
-		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
-	}
-}
-
-// skippedNotice is printed when the question was answered with neither yes nor
-// no, or the "no" could not be saved.
-const skippedNotice = "Skipped. To install Databricks AI tools later, run: databricks aitools install"
-
-// ask asks whether to install for the agents names and reports whether to go
-// ahead, and the signal that ended the question, if one did (see
-// AutoInstall). What was typed before the question, such as the next command
-// typed while this one ran, is discarded unread; where it cannot be (a pipe
-// that Git Bash's mintty counts as a terminal), the question is not asked.
-// The version is settled before asking, so the question is asked once per
-// version even when it is never answered: the process is killed, stdin is
-// closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
-// unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
-// no. "Yes" is recorded so that the version's retries do not ask again, and
-// stores the consent; "no" stores the opt-out.
-func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signal) {
-	if err := cmdio.DiscardInput(ctx); err != nil {
-		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
-		skipUnaskable(ctx, r.id)
-		return false, nil
-	}
-	if err := autoinstall.Record(ctx, r.version, 0, r.id, r.now); err != nil {
-		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
-		return false, nil
-	}
-	actx, cancel := context.WithTimeout(ctx, promptTimeout)
-	defer cancel()
-	// Ctrl+C ends the question. The version is settled as unanswered, and
-	// the signal is returned for the CLI to end by.
-	actx, stop := notifyInterrupt(actx, os.Interrupt)
-	ans, err := cmdio.AskCancellable(actx, "Install Databricks AI tools for "+strings.Join(names, ", ")+"? [Y/n]", "")
-	sig := stop()
-	if err == nil && sig != nil {
-		// Ctrl+C right after an answer: the user asked the CLI to stop.
-		err = errInterrupted
-	}
-	if err != nil {
-		log.Debugf(ctx, "auto-install: skipped: the prompt was not answered: %v", err)
-		// End the question's line.
-		cmdio.LogString(ctx, "")
-		r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
-		return false, sig
-	}
-	switch strings.ToLower(strings.TrimSpace(ans)) {
-	case "", "y", "yes":
-		if err := autoinstall.Accept(ctx, r.version); err != nil {
-			// The install goes ahead; a retry of it asks again.
-			log.Debugf(ctx, "auto-install: could not save the answer: %v", err)
-		}
-		// The consent stays even if the install then fails or is refused.
-		if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
-			log.Debugf(ctx, "auto-install: could not save the consent: %v", err)
-		}
-		return true, nil
-	case "n", "no":
-		r.decline(ctx)
-		return false, nil
-	}
-	log.Debugf(ctx, "auto-install: skipped: the answer was neither yes nor no")
-	r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
-	cmdio.LogString(ctx, skippedNotice)
-	return false, nil
-}
-
-// decline stores a "no" at the prompt as the opt-out, so no later version
-// asks again.
-func (r autoInstallRun) decline(ctx context.Context) {
-	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
-	if _, err := autoinstall.Decline(ctx); err != nil {
-		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
-		cmdio.LogString(ctx, skippedNotice)
-		return
-	}
-	cmdio.LogString(ctx, "Skipped. You won't be asked again; to install Databricks AI tools later, run: databricks aitools install")
-}
-
 // stateFreeSkips are the reasons Decide finds without the state.
 var stateFreeSkips = []autoinstall.Reason{
 	autoinstall.ReasonSkippedCommand,
@@ -598,9 +450,11 @@ var skipOutcomes = map[autoinstall.Reason]protos.AitoolsAutoInstallOutcome{
 
 // autoInstallRun is what the outcome of one auto-install run is reported with.
 type autoInstallRun struct {
-	version     string
-	id          string
-	arm         protos.AitoolsHoldoutArm
+	version string
+	id      string
+	arm     protos.AitoolsHoldoutArm
+	// interactive is set when a person may be at the terminal: there is one,
+	// and no coding agent is detected.
 	interactive bool
 	// now is the time the run was decided at.
 	now time.Time
@@ -660,8 +514,6 @@ type installResult struct {
 	// unfinished is set when a first install was refused the skills after
 	// it left something behind: an agent did not get its tools.
 	unfinished bool
-	// refusal is why the skills were refused, if they were.
-	refusal error
 }
 
 // toolsPlan is what an auto-install attempt does: update the existing global
@@ -821,7 +673,7 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	// caller reports it as kept.
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused && len(names) > 0 {
 		log.Debugf(ctx, "auto-install: kept the skills: %v", err)
-		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true, refusal: err}, nil
+		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true}, nil
 	}
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }
