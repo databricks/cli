@@ -14,7 +14,7 @@ trap cleanup EXIT
 title "The create request is applied but answered with a 503: the SDK repeats it, and the repeat fails because the endpoint exists"
 fault.py --after-handler "POST /api/2.0/vector-search/endpoints" 503 0 1
 trace musterr $CLI bundle deploy
-trace print_requests.py --get //vector-search/endpoints | jq -r '.method + " " + .path'
+trace print_requests.py --get --summary //vector-search/endpoints
 
 title "The endpoint exists, but it is not in the bundle's state"
 trace $CLI vector-search-endpoints get-endpoint "$ENDPOINT" | jq '{name}'

@@ -28,7 +28,7 @@ Created schemas.my_schema
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --get //unity-catalog/schemas //scim/v2/Me
+>>> print_requests.py --get --summary //unity-catalog/schemas //scim/v2/Me
 POST /api/2.1/unity-catalog/schemas
 GET /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
 GET /api/2.0/preview/scim/v2/Me
@@ -49,8 +49,8 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //unity-catalog/schemas
-DELETE /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
+>>> print_requests.py --summary //unity-catalog/schemas
+DELETE /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME] force=true
 
 >>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.

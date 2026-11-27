@@ -16,10 +16,10 @@ rm -f "$OUT_REQUESTS"
 title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the project"
 fault.py "POST /api/2.0/postgres/projects" 504 0 1 DEADLINE_EXCEEDED
 trace $CLI bundle deploy
-trace print_requests.py --get //postgres/projects | jq -r '.method + " " + .path'
+trace print_requests.py --get --summary //postgres/projects
 trace $CLI bundle plan
 
 title "Destroy deletes the project the bundle did not create"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //postgres/projects | jq -r '.method + " " + .path'
+trace print_requests.py --summary //postgres/projects
 trace musterr $CLI postgres get-project projects/test-pg-proj

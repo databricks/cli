@@ -20,10 +20,10 @@ rm -f "$OUT_REQUESTS"
 title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the endpoint"
 fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
 trace $CLI bundle deploy
-trace print_requests.py --get //vector-search/endpoints | jq -r '.method + " " + .path'
+trace print_requests.py --get --summary //vector-search/endpoints
 trace $CLI bundle plan
 
 title "Destroy deletes the endpoint the bundle did not create"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //vector-search/endpoints | jq -r '.method + " " + .path'
+trace print_requests.py --summary //vector-search/endpoints
 trace musterr $CLI vector-search-endpoints get-endpoint "$ENDPOINT"

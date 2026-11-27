@@ -27,8 +27,8 @@ Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --get //postgres/projects
-POST /api/2.0/postgres/projects
+>>> print_requests.py --get --summary //postgres/projects
+POST /api/2.0/postgres/projects project_id=test-pg-proj
 GET /api/2.0/postgres/projects/test-pg-proj
 GET /api/2.0/postgres/projects/test-pg-proj/branches/production
 
@@ -49,7 +49,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //postgres/projects
+>>> print_requests.py --summary //postgres/projects
 DELETE /api/2.0/postgres/projects/test-pg-proj
 
 >>> musterr [CLI] postgres get-project projects/test-pg-proj

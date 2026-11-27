@@ -2,14 +2,9 @@ Badness = "After a create request fails with a 504, deploy looks the schema up b
 
 # Faults are injected through the testserver.
 Cloud = false
-RecordRequests = true
 EnvMatrix.READPLAN = []
 Env.DATABRICKS_BUNDLE_ENGINE = "direct"
 Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
 SuppressLines.warn_retry = ""
 
-Ignore = [
-    ".databricks",
-    ".gitignore",
-    "databricks.yml",
-]
+Ignore = ["databricks.yml"]

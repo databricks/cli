@@ -12,7 +12,7 @@ API message: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please
 
 Files: 0 uploaded, 0 deleted
 
->>> print_requests.py --get //vector-search/endpoints
+>>> print_requests.py --get --summary //vector-search/endpoints
 POST /api/2.0/vector-search/endpoints
 POST /api/2.0/vector-search/endpoints
 

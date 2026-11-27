@@ -28,7 +28,7 @@ Created vector_search_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --get //vector-search/endpoints
+>>> print_requests.py --get --summary //vector-search/endpoints
 POST /api/2.0/vector-search/endpoints
 GET /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
 GET /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
@@ -46,7 +46,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //vector-search/endpoints
+>>> print_requests.py --summary //vector-search/endpoints
 DELETE /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
 
 >>> musterr [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]

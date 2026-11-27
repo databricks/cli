@@ -15,20 +15,15 @@ fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
 DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=10000 $CLI bundle deploy > LOG.deploy 2>&1 &
 deploy_pid=$!
 # Wait until deploy has looked for the endpoint and started the pause before it repeats the request.
-for _ in $(seq 150); do
-    if grep -q "retrying after" LOG.deploy; then
-        break
-    fi
-    sleep 0.2
-done
+RETRY_MAX_ATTEMPTS=150 RETRY_INTERVAL_MS=200 retry --until "retrying after" cat LOG.deploy > /dev/null
 
 title "Meanwhile, outside the bundle, an endpoint with the name the bundle uses is created"
 trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STANDARD --no-wait | jq '{name, endpoint_type}'
 
 title "Deploy repeats its request, is told the endpoint exists, and takes it"
 errcode wait "$deploy_pid"
-grep -v '^Warn: ' LOG.deploy
-trace print_requests.py //vector-search/endpoints | jq -r '.method + " " + .path'
+cat LOG.deploy
+trace print_requests.py --get --summary //vector-search/endpoints
 trace $CLI bundle plan
 
 title "Destroy deletes the endpoint the bundle did not create"
