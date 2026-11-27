@@ -21,6 +21,10 @@ export CLAUDE_CODE_SESSION_ID=session-2
 title "With the variable set, no hint is printed"
 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI jobs list
 
+# The same session without the variable still gets the hint, so the run above wrote no throttle marker.
+title "Without the variable, the hint still shows on the same session"
+trace CLAUDECODE=1 $CLI jobs list
+
 title "With the variable set, the help has no skills footer"
 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI fs --help | tail -n 3
 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI --help | tail -n 2

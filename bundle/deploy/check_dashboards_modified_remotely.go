@@ -108,7 +108,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"before proceeding with the deployment.\n" +
 				"\n" +
 				"To overwrite the remote changes with your local version, use --force.\n" +
-				"The remote modifications will be lost." + agent.AgentNotice(ctx),
+				"The remote modifications will be lost." + agent.AgentNotice(),
 			Paths:     []*structpath.PathNode{path},
 			Locations: []diag.Location{loc},
 		})

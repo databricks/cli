@@ -19,6 +19,11 @@ Coding agents: run `databricks skills list` to find skills for the commands you 
 
 >>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] jobs list
 
+=== Without the variable, the hint still shows on the same session
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
 === With the variable set, the help has no skills footer
 
 >>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] fs --help

@@ -21,7 +21,7 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		return errors.New("this command will destroy all resources deployed by this bundle, " +
 			"including workspace files in the deployment directory.\n" +
 			phases.DataLossWarning + "\n" +
-			"To proceed, use --auto-approve." + agent.AgentNotice(cmd.Context()))
+			"To proceed, use --auto-approve." + agent.AgentNotice())
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)

@@ -10,31 +10,32 @@ import (
 
 func TestAgentNote(t *testing.T) {
 	testutil.SetAgent(t, "test-agent")
-	assert.Equal(t, "Note for AI agents (test-agent): ask the user.", AgentNote(t.Context(), "ask the user."))
+	assert.Equal(t, "Note for AI agents (test-agent): ask the user.", AgentNote("ask the user."))
 }
 
 func TestAgentNoteWithoutAgent(t *testing.T) {
 	testutil.SetAgent(t, "")
-	assert.Empty(t, AgentNote(t.Context(), "ask the user."))
+	assert.Empty(t, AgentNote("ask the user."))
 }
 
-func TestAgentNoteNotAnAgent(t *testing.T) {
+// The safety notes keep the detected agent under DATABRICKS_NOT_AN_AGENT: only nudges and records drop it.
+func TestAgentNoteKeepsSafetyNoteNotAnAgent(t *testing.T) {
 	testutil.SetAgent(t, "test-agent")
-	ctx := env.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
-	assert.Empty(t, AgentNote(ctx, "ask the user."))
-	assert.Empty(t, AgentNotice(ctx))
+	t.Setenv(NotAnAgentEnv, "1")
+	assert.Equal(t, "Note for AI agents (test-agent): ask the user.", AgentNote("ask the user."))
+	assert.NotEmpty(t, AgentNotice())
 }
 
 func TestAgentNotice(t *testing.T) {
 	testutil.SetAgent(t, "test-agent")
 	assert.Equal(t, "\n\nNote for AI agents (test-agent): do not retry with the flag suggested above\n"+
 		"unless the user has explicitly approved it. The flag bypasses a safety check\n"+
-		"and the operation may be irreversible.", AgentNotice(t.Context()))
+		"and the operation may be irreversible.", AgentNotice())
 }
 
 func TestAgentNoticeWithoutAgent(t *testing.T) {
 	testutil.SetAgent(t, "")
-	assert.Empty(t, AgentNotice(t.Context()))
+	assert.Empty(t, AgentNotice())
 }
 
 func TestNotAnAgent(t *testing.T) {
