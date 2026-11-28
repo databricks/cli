@@ -24,4 +24,6 @@ title "The cluster's own wheel is still required: without it, deploy --plan fail
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 rm -r dist
 errcode trace $CLI bundle deploy --plan tmp.plan.json
-trace print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //clusters //libraries | jq -c '[.method, .path, .body.path]'
+# Full API paths: on Windows the leading // becomes /, which print_requests.py strips, and a
+# bare "libraries" would also match every path that contains the bundle name.
+trace print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //api/2.1/clusters //api/2.0/libraries | jq -c '[.method, .path, .body.path]'

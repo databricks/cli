@@ -25,5 +25,5 @@ Error: the plan references my_test_code-0.0.1-py3-none-any.whl, which no local f
 
 Exit code: 1
 
->>> print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //clusters //libraries
+>>> print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //api/2.1/clusters //api/2.0/libraries
 ["POST","/api/2.0/workspace/delete","/Workspace/Users/[USERNAME]/.bundle/cluster-policy-libraries/default/state/deploy.lock"]

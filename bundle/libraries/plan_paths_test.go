@@ -68,11 +68,21 @@ func TestPlanUploadReferences(t *testing.T) {
 				map[string]any{"jar": up + "/own.jar"},
 				map[string]any{"jar": up + "/old.jar"},
 			}},
-			Changes: deployplan.Changes{"libraries[jar='" + up + "/old.jar']": {
-				Action: deployplan.Skip,
-				Reason: deployplan.ReasonRemoteAddition,
-				Remote: map[string]any{"jar": up + "/old.jar"},
-			}},
+			Changes: deployplan.Changes{
+				"libraries[jar='" + up + "/old.jar']": {
+					Action: deployplan.Skip,
+					Reason: deployplan.ReasonRemoteAddition,
+					Remote: map[string]any{"jar": up + "/old.jar"},
+				},
+				// A skipped change whose configured value also names the file: the
+				// configuration declares own.jar, so it stays required.
+				"libraries[jar='" + up + "/own.jar']": {
+					Action: deployplan.Skip,
+					Reason: deployplan.ReasonRemoteAlreadySet,
+					New:    map[string]any{"jar": up + "/own.jar"},
+					Remote: map[string]any{"jar": up + "/own.jar"},
+				},
+			},
 		},
 		"resources.jobs.deleted": {
 			Action:      deployplan.Delete,
