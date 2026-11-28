@@ -171,10 +171,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	if !immutable {
 		if plan != nil {
 			// Applying a saved plan: upload the local artifact files the plan was
-			// computed against. LocalLibraryPaths expands any library globs that
-			// haven't been processed yet and computes patched paths for
-			// dynamic_version wheels from the cache left by "bundle plan".
-			planLocalPaths, err := libraries.LocalLibraryPaths(ctx, b)
+			// computed against. PlanLocalLibraryPaths expands any library globs that
+			// haven't been processed yet, computes patched paths for dynamic_version
+			// wheels from the cache left by "bundle plan", and adds or reports any
+			// other file the plan's resources reference.
+			planLocalPaths, err := libraries.PlanLocalLibraryPaths(ctx, b, plan)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return

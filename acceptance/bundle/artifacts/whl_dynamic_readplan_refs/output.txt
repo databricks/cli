@@ -1,0 +1,83 @@
+
+=== A plan made before a newer build
+
+>>> find.py my_test_code/dist/.*whl
+my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
+my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl
+my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl
+
+>>> [CLI] bundle deploy --plan tmp.plan_a.json
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.2+[UNIX_TIME_NANOS][1]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_other_test_code/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl...
+Uploading my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/files...
+Created jobs.my_job
+Created pipelines.my_pipeline
+Files: [N] uploaded, [N] deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Wheels the job and the pipeline reference
+
+>>> print_requests.py --keep //jobs/create
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+
+>>> print_requests.py --keep //pipelines
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+
+=== Wheels uploaded
+
+>>> print_requests.py --sort //.internal/
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+
+=== A wheel touched after the plan, with its planned patched copy still cached
+
+>>> print_requests.py --keep //jobs/reset
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+
+>>> print_requests.py --sort //.internal/
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2+1577836800000000000-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+
+=== A redeploy that leaves the pipeline unchanged
+
+>>> [CLI] bundle deploy --plan tmp.plan_e.json
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.2+[UNIX_TIME_NANOS][3]-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_other_test_code/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl...
+Uploading my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl...
+Uploading my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/files...
+Updated jobs.my_job
+Files: [N] uploaded, [N] deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --sort //.internal/
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][3]-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/my_test_code-0.0.2-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
+
+=== A wheel touched after the plan, with the patched wheel cache gone
+
+>>> [CLI] bundle deploy --plan tmp.plan_d.json
+Error: the plan references my_test_code-0.0.2+[UNIX_TIME_NANOS][4]-py3-none-any.whl, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run "bundle plan" again
+
+
+Exit code: 1
+
+=== Nothing was deleted, uploaded or changed
+
+>>> print_requests.py //workspace/delete //workspace/mkdirs //import-file //jobs //pipelines
+["POST","/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/state/deploy.lock",null]
+["POST","/api/2.0/workspace/delete","/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan-refs/default/state/deploy.lock"]
