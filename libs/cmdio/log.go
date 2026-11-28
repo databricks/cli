@@ -11,8 +11,21 @@ func Log(ctx context.Context, str fmt.Stringer) {
 	LogString(ctx, str.String())
 }
 
-// LogString writes str to the error writer, followed by a newline.
+// LogString writes str to the error writer, followed by a newline. str is
+// usually the CLI's own text around a value from an API response (a name, a
+// state message), so terminal control characters in it are escaped; the colors
+// the CLI added are kept.
 func LogString(ctx context.Context, str string) {
+	c := fromContext(ctx)
+	_, _ = io.WriteString(c.err, escapeComposed(str, c.colorsInLogs())+"\n")
+}
+
+// LogRawString writes str to the error writer as is, followed by a newline. It
+// is for output passed through from a local process, such as a bundle script,
+// where escape sequences (a progress bar, cursor movement) are the process's
+// own, and for text in which the caller escaped each value itself. Everything
+// else goes through [LogString].
+func LogRawString(ctx context.Context, str string) {
 	c := fromContext(ctx)
 	_, _ = io.WriteString(c.err, str+"\n")
 }

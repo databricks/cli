@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -77,7 +78,7 @@ func runLogsSnapshot(ctx context.Context, w *databricks.WorkspaceClient, runID i
 		return "", fmt.Errorf("failed to fetch logs: %w", err)
 	}
 	if ids := mlflowIDs(ctx, w, run); ids != nil {
-		fmt.Fprintf(&buf, "\nMLflow URL%s: %s\n", ids.retryNote(), mlflowLogsURL(w.Config.Host, ids))
+		fmt.Fprintf(&buf, "\nMLflow URL%s: %s\n", ids.retryNote(), textutil.EscapeControlOneLine(mlflowLogsURL(w.Config.Host, ids)))
 	}
 	return buf.String(), nil
 }

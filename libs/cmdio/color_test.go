@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )
@@ -151,4 +152,15 @@ func TestRenderFuncMap(t *testing.T) {
 	red := fm["red"].(func(string, ...any) string)
 	assert.Equal(t, "\x1b[31mhi 1\x1b[0m", red("%s %d", "hi", 1))
 	assert.Equal(t, "\x1b[31mhi\x1b[0m", red("hi"))
+}
+
+func TestColorHelpersStyleEachLine(t *testing.T) {
+	ctx := ttyContext(t)
+	const yellow, reset = "\x1b[33m", "\x1b[0m"
+
+	assert.Equal(t, yellow+"one"+reset, cmdio.Yellow(ctx, "one"))
+	assert.Equal(t, yellow+"one"+reset+"\n\n"+yellow+"two"+reset+"\n", cmdio.Yellow(ctx, "one\n\ntwo\n"))
+	assert.Equal(t, yellow+"one"+reset+"\r\n"+yellow+"two\r"+reset, cmdio.Yellow(ctx, "one\r\ntwo\r"))
+	// So that the text is unchanged when it is written to the terminal.
+	assert.Equal(t, cmdio.Yellow(ctx, "one\ntwo"), textutil.EscapeControlKeepColors(cmdio.Yellow(ctx, "one\ntwo")))
 }

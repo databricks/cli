@@ -34,13 +34,13 @@ func TestRunStepShowsOutputOnFailure(t *testing.T) {
 
 	sentinel := errors.New("install failed")
 	err := runStep(cmdio.InContext(t.Context(), mockCmdio), "Installing ucode", func(out io.Writer) error {
-		_, _ = io.WriteString(out, "line to stdout\nline to stderr")
+		_, _ = io.WriteString(out, "line to stdout\nline to stderr\rprogress\x1b[K")
 		return sentinel
 	})
 	require.ErrorIs(t, err, sentinel)
 
-	// On failure the cross line and the full captured output are printed, with a
-	// trailing newline added.
+	// On failure the cross line and the full captured output are printed as is,
+	// with a trailing newline added.
 	assert.Contains(t, w.String(), "✗ Installing ucode")
-	assert.Contains(t, w.String(), "line to stdout\nline to stderr\n")
+	assert.Contains(t, w.String(), "line to stdout\nline to stderr\rprogress\x1b[K\n")
 }

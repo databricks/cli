@@ -45,8 +45,8 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	}
 	question += `: `
 
-	// Print prompt.
-	_, err := io.WriteString(c.err, question)
+	// Print prompt. The question can name a remote object; see LogString.
+	_, err := io.WriteString(c.err, escapeComposed(question, c.colorsInLogs()))
 	if err != nil {
 		return "", err
 	}

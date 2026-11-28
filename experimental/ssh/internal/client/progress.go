@@ -30,7 +30,7 @@ func runStep(ctx context.Context, desc string, fn func(out io.Writer) error) err
 	if err != nil {
 		cmdio.LogProgress(ctx, cmdio.Red(ctx, "✗ "+desc))
 		if out := buf.String(); out != "" {
-			cmdio.LogString(ctx, out)
+			cmdio.LogRawString(ctx, out)
 		}
 		return err
 	}

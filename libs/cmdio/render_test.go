@@ -110,6 +110,42 @@ func makeTestCases() []testCase {
 			expected:     `123  abc`,
 		},
 		{
+			name:         "Workspace with control characters and template",
+			v:            provisioning.Workspace{WorkspaceId: 1, WorkspaceName: "a\x1b]0;t\x07\x1b[2J\rb"},
+			outputFormat: flags.OutputText,
+			template:     "{{.WorkspaceId}}\t{{.WorkspaceName}}",
+			expected:     `1  a\u001b]0;t\u0007\u001b[2J\rb`,
+		},
+		{
+			name:         "Workspace Iterator with control characters and template",
+			v:            &dummyIterator{items: []*provisioning.Workspace{{WorkspaceId: 1, WorkspaceName: "a\x1b[2J\rb"}}},
+			outputFormat: flags.OutputText,
+			template:     "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
+			expected:     `1  a\u001b[2J\rb` + "\n",
+		},
+		{
+			// 20 items fill the iterator renderer's buffer, which is then flushed.
+			name: "Workspace Iterator with control characters in a full batch",
+			v: &dummyIterator{items: append(
+				[]*provisioning.Workspace{{WorkspaceId: 1, WorkspaceName: "a\x1b[2J\rb"}},
+				makeWorkspaces(19)...,
+			)},
+			outputFormat: flags.OutputText,
+			template:     "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
+			expected:     `1    a\u001b[2J\rb` + "\n" + makeBigOutput(19),
+		},
+		{
+			name:         "Workspace with control characters as JSON",
+			v:            provisioning.Workspace{WorkspaceId: 1, WorkspaceName: "a\x1b[2J\rb"},
+			outputFormat: flags.OutputJSON,
+			template:     "{{.WorkspaceId}}\t{{.WorkspaceName}}",
+			expected: `{
+  "workspace_id": 1,
+  "workspace_name": "a\u001b[2J\rb"
+}
+`,
+		},
+		{
 			name:         "Workspace with no header and no template",
 			v:            dummyWorkspace1,
 			outputFormat: flags.OutputText,

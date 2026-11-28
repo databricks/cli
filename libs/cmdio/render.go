@@ -152,7 +152,7 @@ func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Te
 		}
 		buf = append(buf, n)
 		if len(buf) == cap(buf) {
-			err = t.Execute(w, buf)
+			err = executeTemplate(t, w, buf, colorEnabled(ctx))
 			if err != nil {
 				return err
 			}
@@ -164,7 +164,7 @@ func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Te
 		}
 	}
 	if len(buf) > 0 {
-		err := t.Execute(w, buf)
+		err := executeTemplate(t, w, buf, colorEnabled(ctx))
 		if err != nil {
 			return err
 		}
@@ -193,8 +193,8 @@ func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
 	return w.Flush()
 }
 
-func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
-	return t.Execute(w, d.t)
+func (d defaultRenderer) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
+	return executeTemplate(t, w, d.t, colorEnabled(ctx))
 }
 
 // Returns something implementing one of the following interfaces:
@@ -496,7 +496,7 @@ func renderDiagnostics(ctx context.Context, out io.Writer, diags diag.Diagnostic
 		}
 
 		// Render the diagnostic with the appropriate template.
-		err := t.Execute(out, d)
+		err := executeTemplate(t, out, d, colorEnabled(ctx))
 		if err != nil {
 			return fmt.Errorf("failed to render template: %w", err)
 		}

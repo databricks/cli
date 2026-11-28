@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -142,8 +143,8 @@ func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 
 // fetchMLflowRunName fetches a run's MLflow run_name via the MLflow REST API,
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
-// enrichment. The name is stripped of control characters here, before it is
-// shortened to a column width or cached, so no caller can show it raw.
+// enrichment. The name is returned as the server sent it, as JSON output shows
+// it; the cells that display it escape control characters.
 func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
 	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
 	if err != nil {
@@ -153,7 +154,7 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 	if resp.Run == nil || resp.Run.Info == nil {
 		return ""
 	}
-	return stripControl(resp.Run.Info.RunName)
+	return resp.Run.Info.RunName
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or
@@ -161,7 +162,8 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 // behind a leading "…", because run names often share a prefix and differ at
 // the end. A width of 0 or less means no limit.
 func mlflowRunLabel(name, mlflowRunID string, width int) string {
-	label := name
+	// Escaped before it is shortened, so that the width is that of the text shown.
+	label := textutil.EscapeControlOneLine(name)
 	if label == "" {
 		label = mlflowRunID
 	}

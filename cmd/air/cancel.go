@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -246,12 +247,12 @@ func displayCancelPreview(ctx context.Context, rows []listRow, taskKeys map[stri
 	tw := tabwriter.NewWriter(&sb, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "Run ID\tExperiment\tAI Runtime tasks\tStarted")
 	for i := range rows {
-		experiment := orNA(rows[i].Experiment)
+		experiment := orNA(textutil.EscapeControlOneLine(rows[i].Experiment))
 		started := na
 		if rows[i].StartedAt != nil {
 			started = *rows[i].StartedAt
 		}
-		tasks := orNA(strings.Join(taskKeys[rows[i].RunID], ", "))
+		tasks := orNA(textutil.EscapeControlOneLine(strings.Join(taskKeys[rows[i].RunID], ", ")))
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", rows[i].RunID, experiment, tasks, started)
 	}
 	tw.Flush()

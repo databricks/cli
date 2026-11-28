@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // seenRecord keys the dedup set. Older responses without record IDs fall back
@@ -296,5 +298,6 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 		printLogEvent(out, "ERROR", req.node, msg)
 		return
 	}
-	fmt.Fprintln(out, msg)
+	// The state and its message are the server's text.
+	fmt.Fprintln(out, textutil.EscapeControl(msg))
 }

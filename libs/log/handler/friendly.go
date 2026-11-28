@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // friendlyHandler implements a custom [slog.Handler] that writes
@@ -168,8 +169,9 @@ func (s *handleState) appendAttr(a slog.Attr) {
 		str := a.Value.String()
 		format := "%s"
 
-		// Quote values with spaces, to make them easy to parse.
-		if strings.ContainsAny(str, " \t\n") {
+		// Quote values with spaces, to make them easy to parse, and values
+		// with control characters, which %q escapes.
+		if strings.ContainsAny(str, " \t\n") || textutil.EscapeControl(str) != str {
 			format = "%q"
 		}
 
@@ -191,7 +193,10 @@ func (h *friendlyHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	state.appendf("%s ", h.coloredLevel(r))
-	state.append(h.sprint(ttyColorMessage, r.Message))
+	// Messages and attribute values quote API responses (error text, names,
+	// paths), and this handler writes to the terminal. Callers color parts of
+	// some messages themselves, so colors are kept in the message.
+	state.append(h.sprint(ttyColorMessage, textutil.EscapeControlKeepColors(r.Message)))
 
 	if h.opts.Level.Level() <= slog.LevelDebug {
 

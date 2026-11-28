@@ -1,6 +1,7 @@
 package cmdio
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -203,4 +204,21 @@ func TestAskCancellable_Cancelled(t *testing.T) {
 	cancel()
 	_, err := AskCancellable(ctx, "Question", "")
 	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestAskEscapesControlCharactersInQuestion(t *testing.T) {
+	const question = "Delete \x1b[1mjob\x1b[0m 'a\x1b]0;t\x07\x1b[2J\rb'?"
+
+	// Colors on, as when a line prompt is asked: the CLI's own styling is kept.
+	var stderr bytes.Buffer
+	ctx := InContext(t.Context(), NewTestIO(strings.NewReader("\n"), io.Discard, &stderr))
+	_, err := Ask(ctx, question, "")
+	require.NoError(t, err)
+	assert.Equal(t, "Delete \x1b[1mjob\x1b[0m "+`'a\u001b]0;t\u0007\u001b[2J\rb'?: `, stderr.String())
+
+	stderr.Reset()
+	ctx = InContext(t.Context(), NewIO(t.Context(), flags.OutputText, strings.NewReader("\n"), io.Discard, &stderr, "", ""))
+	_, err = Ask(ctx, question, "")
+	require.NoError(t, err)
+	assert.Equal(t, `Delete \u001b[1mjob\u001b[0m 'a\u001b]0;t\u0007\u001b[2J\rb'?: `, stderr.String())
 }

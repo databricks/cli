@@ -15,8 +15,10 @@ import (
 
 // ansiCSIPattern matches ANSI SGR escape sequences so colored cells
 // aren't counted toward column widths. The color helpers in this package
-// emit CSI ... m, which is all our templates produce.
-var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
+// emit CSI ... m, which is all our templates produce. It matches what
+// textutil.EscapeControlKeepColors keeps in a row, so that a sequence in a
+// value is not counted either.
+var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;:]*m")
 
 // renderIteratorPagedTemplate pages an iterator through the template
 // renderer, prompting between batches. SPACE advances one page, ENTER
@@ -40,6 +42,8 @@ type templatePager struct {
 	headerStr  string
 	widths     []int
 	headerDone bool
+	// keepColors is whether the templates add colors; see executeTemplate.
+	keepColors bool
 }
 
 // flushLines renders the header (on the first call) plus any buffered
@@ -57,7 +61,7 @@ func (p *templatePager) flushLines(buf []any) ([]string, error) {
 		rendered.WriteByte('\n')
 	}
 	if len(buf) > 0 {
-		if err := p.rowT.Execute(&rendered, buf); err != nil {
+		if err := executeTemplate(p.rowT, &rendered, buf, p.keepColors); err != nil {
 			return nil, err
 		}
 	}
@@ -99,9 +103,10 @@ func renderIteratorPagedTemplateCore[T any](
 		return err
 	}
 	pager := &templatePager{
-		headerT:   headerT,
-		rowT:      rowT,
-		headerStr: headerTemplate,
+		headerT:    headerT,
+		rowT:       rowT,
+		headerStr:  headerTemplate,
+		keepColors: colorEnabled(ctx),
 	}
 	m := newPagerModel(ctx, out, iter, pager, pageSize, limitFromContext(ctx))
 	p := tea.NewProgram(

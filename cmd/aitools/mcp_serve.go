@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -581,7 +582,7 @@ func authFailed(err error) bool {
 // serveFailure prints err to stderr as `Error: <err>`, the form Execute uses for every other failure, and returns it
 // with the exit status. Execute does not print it again, so the message is written exactly once.
 func serveFailure(cmd *cobra.Command, err error, status int) error {
-	fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err)
+	fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", textutil.EscapeControl(err.Error()))
 	return exitAlreadyPrinted(err, status)
 }
 

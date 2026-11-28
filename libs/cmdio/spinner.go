@@ -18,6 +18,9 @@ type spinnerModel struct {
 	suffix    string
 	quitting  bool
 	startTime time.Time // non-zero when elapsed time display is enabled
+
+	// keepColors says whether colors in the suffix are kept; see escapeComposed.
+	keepColors bool
 }
 
 // Message types for spinner updates.
@@ -49,7 +52,8 @@ func newSpinnerModel(ctx context.Context, w io.Writer, opts ...SpinnerOption) sp
 	s.Style = r.NewStyle().Foreground(lipgloss.Color("10")) // Green
 
 	m := spinnerModel{
-		spinner: s,
+		spinner:    s,
+		keepColors: fromContext(ctx).colorsInLogs(),
 	}
 	for _, opt := range opts {
 		opt(&m)
@@ -64,7 +68,9 @@ func (m spinnerModel) Init() tea.Cmd {
 func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case suffixMsg:
-		m.suffix = string(msg)
+		// The message can quote an API response (a status or state message), so
+		// terminal control characters in it are escaped; see LogString.
+		m.suffix = escapeComposed(string(msg), m.keepColors)
 		return m, nil
 
 	case quitMsg:

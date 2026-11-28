@@ -3,6 +3,7 @@
 Executing 'preinit' script
 line 1
 line 2
+progress 1/2<0x0d>progress 2/2<0x1b>[K
 line without newline
 Name: scripts_no_trailing_newline
 Target: default

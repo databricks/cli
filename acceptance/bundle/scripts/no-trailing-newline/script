@@ -1,1 +1,3 @@
-trace $CLI bundle validate
+# The output of a script is passed through as is, its escape sequences included:
+# show_control.py shows them as <0x0d> and <0x1b>.
+trace $CLI bundle validate 2>&1 | show_control.py

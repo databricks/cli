@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/databricks/cli/libs/tableview"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -48,7 +49,8 @@ func newInteractiveTextSink(out io.Writer) *textSink {
 func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
 	s.columns = make([]string, len(fields))
 	for i, f := range fields {
-		s.columns[i] = f.Name
+		// A column name is chosen by the query or the table's owner.
+		s.columns[i] = textutil.EscapeControlOneLine(f.Name)
 	}
 	return nil
 }
@@ -56,23 +58,12 @@ func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
 func (s *textSink) Row(values []any) error {
 	row := make([]string, len(values))
 	for i, v := range values {
-		row[i] = escapeControlForTabwriter(textValue(v))
+		// tabwriter uses '\t' as a column boundary and '\n' as a row boundary,
+		// so line breaks and tabs are escaped too, as psql's text mode does.
+		row[i] = textutil.EscapeControlOneLine(textValue(v))
 	}
 	s.rows = append(s.rows, row)
 	return nil
-}
-
-// escapeControlForTabwriter replaces tabs, newlines, and carriage returns in
-// a cell value with the two-character backslash-letter sequence. tabwriter
-// uses '\t' as a column boundary and '\n' as a row boundary, so an embedded
-// tab silently shifts subsequent columns and an embedded newline splits one
-// logical row into two. psql's text mode applies the same escapes.
-func escapeControlForTabwriter(s string) string {
-	if !strings.ContainsAny(s, "\t\n\r") {
-		return s
-	}
-	r := strings.NewReplacer("\t", `\t`, "\n", `\n`, "\r", `\r`)
-	return r.Replace(s)
 }
 
 func (s *textSink) End(ctx context.Context, commandTag string) error {

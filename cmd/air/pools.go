@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -355,15 +356,15 @@ func renderPoolTable(out io.Writer, rows []poolRow) {
 	}
 	fmt.Fprintf(out, "%-40s %-14s %s\n", "ID", "ACCELERATOR", "RESERVED")
 	for _, r := range rows {
-		fmt.Fprintf(out, "%-40s %-14s %d\n", orNA(r.ID), orNA(r.AcceleratorType), r.ReservedAccelerators)
+		fmt.Fprintf(out, "%-40s %-14s %d\n", orNA(textutil.EscapeControlOneLine(r.ID)), orNA(textutil.EscapeControlOneLine(r.AcceleratorType)), r.ReservedAccelerators)
 	}
 }
 
 // renderPoolDetail prints the get view as aligned label/value lines.
 func renderPoolDetail(out io.Writer, d poolDetailData) {
 	line := func(label, value string) { fmt.Fprintf(out, "%-24s %s\n", label+":", value) }
-	line("Pool ID", orNA(d.ID))
-	line("Accelerator Type", orNA(d.AcceleratorType))
+	line("Pool ID", orNA(textutil.EscapeControlOneLine(d.ID)))
+	line("Accelerator Type", orNA(textutil.EscapeControlOneLine(d.AcceleratorType)))
 	line("Reserved Accelerators", strconv.FormatInt(d.ReservedAccelerators, 10))
 	line("Used Accelerators", acceleratorCell(d.UsedAccelerators))
 	line("Idle Accelerators", acceleratorCell(d.IdleAccelerators))

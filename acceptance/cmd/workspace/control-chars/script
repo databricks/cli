@@ -1,0 +1,25 @@
+# The control characters are \u escapes in the JSON files, and the server sends
+# them back decoded: an OSC set-window-title sequence, a CSI clear-screen
+# sequence, an SGR color code and a carriage return. Text output must show them
+# escaped; show_control.py would show a raw one as <0x1b>.
+
+title "API error message: the server quotes the scope name"
+trace musterr $CLI secrets put-secret --json @secret.json 2>&1 | show_control.py
+
+title "list as a table"
+add_repl "$($CLI jobs create --json @job.json | jq -r .job_id)" JOB_ID
+trace $CLI jobs list | show_control.py
+
+title "list as JSON: unchanged, the JSON encoder escapes the name itself"
+trace $CLI jobs list -o json | show_control.py | gron.py | grep settings.name
+
+title "an exported file is written as is, tabs included"
+printf 'line 1\rline 2\033[2J\n\tindented\n' > raw.txt
+MSYS_NO_PATHCONV=1 $CLI workspace import /Users/raw.txt --format AUTO --file raw.txt
+trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt | show_control.py
+trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt --file exported.txt
+# cmp compares the bytes; diff.py reads a carriage return as a line break.
+trace cmp raw.txt exported.txt
+
+title "export as JSON: the response, with the content in base64"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt -o json | show_control.py | gron.py | grep content

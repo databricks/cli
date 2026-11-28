@@ -3,27 +3,18 @@ package aircmd
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 )
 
-// stripControl removes terminal escape sequences (CSI, OSC, DCS, ...) and C0/C1
-// control characters from s, so a server-supplied string such as an MLflow run
-// name can be shown without letting whoever chose it clear the screen, retitle
-// the window, write the clipboard or overwrite a line of output. Printable text,
-// including non-ASCII, is kept. Apply it to display values only: JSON output and
-// link targets are left as the server sent them.
-func stripControl(s string) string {
-	// Drop whole escape sequences first, so "\x1b[2J" does not leave "[2J"
-	// behind once the ESC is removed below.
-	s = ansi.Strip(s)
-	if !strings.ContainsFunc(s, unicode.IsControl) {
-		return s
+// osc8 wraps label in an OSC 8 terminal hyperlink to url. A control character
+// in url (or a byte that is not valid UTF-8, which can be one to the terminal)
+// would end the sequence early and let the rest of url act on the terminal, so
+// such a url gets no link.
+func osc8(url, label string) string {
+	if !utf8.ValidString(url) || strings.ContainsFunc(url, unicode.IsControl) {
+		return label
 	}
-	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
-			return -1
-		}
-		return r
-	}, s)
+	return termenv.Hyperlink(url, label)
 }

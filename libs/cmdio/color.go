@@ -46,7 +46,34 @@ func render(ctx context.Context, code, msg string) string {
 	if !colorEnabled(ctx) {
 		return msg
 	}
-	return code + msg + ansiReset
+	return styleLines(code, msg)
+}
+
+// styleLines wraps each line of msg in the SGR code and a reset.
+func styleLines(code, msg string) string {
+	if !strings.Contains(msg, "\n") {
+		return code + msg + ansiReset
+	}
+	// Each line is styled by itself: text written to the terminal has a style
+	// that is still on at the end of a line reset there (see
+	// textutil.EscapeControlKeepColors), which would leave the following
+	// lines unstyled.
+	lines := strings.Split(msg, "\n")
+	for i, line := range lines {
+		// The carriage return of a CRLF stays next to its newline.
+		cr := false
+		if i < len(lines)-1 {
+			line, cr = strings.CutSuffix(line, "\r")
+		}
+		if line != "" {
+			line = code + line + ansiReset
+		}
+		if cr {
+			line += "\r"
+		}
+		lines[i] = line
+	}
+	return strings.Join(lines, "\n")
 }
 
 // Bold renders msg with increased intensity (bold).

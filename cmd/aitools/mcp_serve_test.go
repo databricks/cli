@@ -462,6 +462,16 @@ func TestServeFailurePrintsOnceWithStatus(t *testing.T) {
 	assert.ErrorIs(t, err, cause)
 }
 
+func TestServeFailureEscapesControlCharacters(t *testing.T) {
+	cmd := NewMcpServeCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
+	_ = serveFailure(cmd, errors.New("upstream said: a\x1b]0;t\x07\x1b[2J\x1b[31m\rb"), 1)
+
+	assert.Equal(t, `Error: upstream said: a\u001b]0;t\u0007\u001b[2J\u001b[31m\rb`+"\n", stderr.String())
+}
+
 // TestServeBindFailureTokenStatus checks that a token failure at startup is classified as it is at runtime. A
 // rejection needs a new login, so it keeps the login hint and exits 2. Any other failure is temporary: it has no hint
 // and exits 1, the status of the other failures, since exit 2 says the credential was rejected.

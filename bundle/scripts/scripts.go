@@ -79,7 +79,7 @@ func logOutput(ctx context.Context, out io.Reader) {
 	for {
 		line, err := reader.ReadString('\n')
 		if line != "" {
-			cmdio.LogString(ctx, strings.TrimSpace(line))
+			cmdio.LogRawString(ctx, strings.TrimSpace(line))
 		}
 		if err != nil {
 			break

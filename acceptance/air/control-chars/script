@@ -1,8 +1,11 @@
-title "get (text): control characters are stripped from the Metadata box"
-trace $CLI air get 123
+title "get (text): control characters are escaped in the Metadata box and the failure reason"
+trace $CLI air get 123 | show_control.py
 
-title "list (text): control characters are stripped from the table"
-trace $CLI air list --all-users
+title "get (json): strings are passed through as the server sent them"
+trace $CLI air get 123 -o json | show_control.py
+
+title "list (text): control characters are escaped in the table"
+trace $CLI air list --all-users | show_control.py
 
 title "list (json): strings are passed through as the server sent them"
 trace $CLI air list --all-users -o json

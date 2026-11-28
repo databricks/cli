@@ -96,7 +96,8 @@ func runValidate(cmd *cobra.Command) error {
 
 	if !result.Success {
 		if result.Details != nil {
-			cmdio.LogString(ctx, result.Details.Error())
+			// The package manager's output is passed through as is.
+			cmdio.LogRawString(ctx, result.Details.Error())
 		}
 		return errors.New("validation failed")
 	}
