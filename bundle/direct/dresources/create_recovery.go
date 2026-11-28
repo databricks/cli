@@ -10,10 +10,8 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // createTimeSkew is how much earlier than our first create request a found resource's create time
@@ -217,12 +215,12 @@ func isAlreadyExists(err error) bool {
 // createdByCurrentUser is createRecovery.createdByCaller for resources whose read response names
 // the principal that created them, as Unity Catalog's created_by does: a user name, or the
 // application id of a service principal.
-func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClient, createdBy string) (bool, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{Attributes: "", ExcludedAttributes: "", ForceSendFields: nil})
-	if err != nil {
-		return false, err
+func createdByCurrentUser(ctx context.Context, createdBy string) (bool, error) {
+	me := currentUser(ctx)
+	if me == "" {
+		return false, errors.New("the deploying user is not known")
 	}
-	return createdBy == me.UserName, nil
+	return createdBy == me, nil
 }
 
 // isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,

@@ -81,7 +81,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (str
 			createTime:    func(found *catalog.VolumeInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
 			alreadyExists: isAlreadyExists,
 			createdByCaller: func(ctx context.Context, found *catalog.VolumeInfo) (bool, error) {
-				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+				return createdByCurrentUser(ctx, found.CreatedBy)
 			},
 			use:    useFound[catalog.VolumeInfo],
 			create: repeatCreate(create),

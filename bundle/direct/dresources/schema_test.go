@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -89,12 +88,14 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 type schemaCreateScript struct {
 	creates []any
 	gets    []any
+	// currentUser is the deploying user the context carries; empty for none.
+	currentUser string
 
 	createCount int
 	getCount    int
 }
 
-func (s *schemaCreateScript) createSchema(t *testing.T) (*catalog.SchemaInfo, string, error) {
+func (s *schemaCreateScript) createSchema(t *testing.T) (*catalog.SchemaInfo, error) {
 	server := testserver.New(t)
 	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req testserver.Request) any {
 		s.createCount++
@@ -106,17 +107,22 @@ func (s *schemaCreateScript) createSchema(t *testing.T) (*catalog.SchemaInfo, st
 		require.LessOrEqual(t, s.getCount, len(s.gets), "unexpected get request")
 		return s.gets[s.getCount-1]
 	})
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		t.Error("recovery must take the deploying user from the context, not from the API")
+		return testserver.TestUser
+	})
 	testserver.AddDefaultHandlers(server)
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
 	require.NoError(t, err)
-	me, err := client.CurrentUser.Me(t.Context(), iam.MeRequest{})
-	require.NoError(t, err)
 
 	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	if s.currentUser != "" {
+		ctx = WithCurrentUser(ctx, s.currentUser)
+	}
 	_, remote, err := (*ResourceSchema)(nil).New(client).DoCreate(ctx, &SchemaState{
 		CatalogName: "main", Name: "s",
 	})
-	return remote, me.UserName, err
+	return remote, err
 }
 
 func testSchema(createdBy string) catalog.SchemaInfo {
@@ -125,10 +131,11 @@ func testSchema(createdBy string) catalog.SchemaInfo {
 
 func TestSchemaCreateRecoveryRejectsSchemaOfAnotherUser(t *testing.T) {
 	s := &schemaCreateScript{
-		creates: []any{featureTimeout},
-		gets:    []any{testSchema("someone-else@example.com")},
+		creates:     []any{featureTimeout},
+		gets:        []any{testSchema("someone-else@example.com")},
+		currentUser: testserver.TestUser.UserName,
 	}
-	_, _, err := s.createSchema(t)
+	_, err := s.createSchema(t)
 	require.EqualError(t, err, "schema main.s exists but was created by another user")
 	requireStatus(t, err, 504)
 	assert.Equal(t, 1, s.createCount)
@@ -140,12 +147,25 @@ func TestSchemaCreateRecoveryLooksAgainAfterSchemaAlreadyExists(t *testing.T) {
 	// The first request lands after the first lookup: the repeat is rejected because the schema
 	// exists, and the next lookup finds it.
 	s := &schemaCreateScript{
-		creates: []any{featureTimeout, alreadyExists},
-		gets:    []any{notFound, testSchema(testserver.TestUser.UserName)},
+		creates:     []any{featureTimeout, alreadyExists},
+		gets:        []any{notFound, testSchema(testserver.TestUser.UserName)},
+		currentUser: testserver.TestUser.UserName,
 	}
-	remote, user, err := s.createSchema(t)
+	remote, err := s.createSchema(t)
 	require.NoError(t, err)
-	assert.Equal(t, user, remote.CreatedBy)
+	assert.Equal(t, testserver.TestUser.UserName, remote.CreatedBy)
 	assert.Equal(t, 2, s.createCount)
 	assert.Equal(t, 2, s.getCount)
+}
+
+// Without the deploying user, a found schema cannot be told apart from another user's, so the
+// deploy fails with the create error instead of taking the schema over.
+func TestSchemaCreateRecoveryRequiresCurrentUser(t *testing.T) {
+	s := &schemaCreateScript{
+		creates: []any{featureTimeout},
+		gets:    []any{testSchema(testserver.TestUser.UserName)},
+	}
+	_, err := s.createSchema(t)
+	requireStatus(t, err, 504)
+	assert.Equal(t, 1, s.createCount)
 }

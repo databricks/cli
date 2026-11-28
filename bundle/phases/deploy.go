@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
@@ -62,6 +63,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	// Apply resources and capture post-apply state. Finalize flushes the WAL to disk and
 	// returns the state; called even if Apply failed so partial progress is saved.
+	if u := b.Config.Workspace.CurrentUser; u != nil && u.User != nil {
+		ctx = dresources.WithCurrentUser(ctx, u.UserName)
+	}
 	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
 	state, err := b.DeploymentBundle.StateDB.Finalize(ctx)
 	// Capture the finalized state for deploy telemetry. It carries each

@@ -79,7 +79,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 			createTime:    func(found *catalog.SchemaInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
 			alreadyExists: isAlreadyExists,
 			createdByCaller: func(ctx context.Context, found *catalog.SchemaInfo) (bool, error) {
-				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+				return createdByCurrentUser(ctx, found.CreatedBy)
 			},
 			use:    useFound[catalog.SchemaInfo],
 			create: repeatCreate(create),
