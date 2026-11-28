@@ -1,0 +1,26 @@
+# The plan pins the jar a glob matched at plan time. If that jar is gone when the plan
+# is applied, deploy --plan must fail before it touches the uploaded artifacts, instead
+# of deploying a job that points at a jar that was never uploaded.
+trap "rm -fr target" EXIT
+mkdir target
+cp jars/app-1.0.jar target/
+$CLI bundle deploy > LOG.deploy 2>&1
+rm "$OUT_REQUESTS"
+
+title "An unchanged job: plan against app-1.0.jar, then replace it with app-1.1.jar"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+rm target/app-1.0.jar
+cp jars/app-1.1.jar target/
+errcode trace $CLI bundle deploy --plan tmp.plan.json
+
+title "A changed job: the same, with a new job name in the plan"
+rm target/app-1.1.jar
+cp jars/app-1.0.jar target/
+update_file.py databricks.yml "name: jar-replaced-job" "name: jar-replaced-job-renamed"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+rm target/app-1.0.jar
+cp jars/app-1.1.jar target/
+errcode trace $CLI bundle deploy --plan tmp.plan.json
+
+title "Nothing was deleted, uploaded or changed"
+trace print_requests.py //workspace/delete //workspace/mkdirs //import-file //jobs | jq -c '[.method, .path, .body.path]'

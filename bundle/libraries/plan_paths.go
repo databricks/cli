@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
 )
 
@@ -23,9 +24,9 @@ import (
 // that existed at "bundle plan" time. The two differ when the files changed in between,
 // and for references SwitchToPatchedWheels does not rewrite (such as pipeline
 // environment dependencies on a dynamic_version wheel). The upload step empties the
-// remote directory first, so a referenced file that is not uploaded is lost. If a
-// wheel that a resource the plan changes references has no local counterpart, it
-// returns an error, before anything is cleaned up or uploaded.
+// remote directory first, so a referenced file that is not uploaded is lost. If a file
+// the bundle itself uploads for a resource (see planUploadReferences) has no local
+// counterpart, it returns an error, before anything is cleaned up or uploaded.
 func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) ([]string, error) {
 	paths, err := LocalLibraryPaths(ctx, b)
 	if err != nil {
@@ -43,9 +44,12 @@ func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deploypl
 	for _, p := range paths {
 		have[filepath.Base(p)] = true
 	}
-	planned, unchanged := planUploadReferences(plan, uploadPath)
+	// Artifact cleanup empties the upload directory, so unchanged resources lose their
+	// files too unless they are uploaded again.
+	skipCleanup := b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.SkipArtifactCleanup)
+	required, optional := planUploadReferences(plan, uploadPath, !skipCleanup, newUploadOwners(b))
 	var missing []string
-	for _, name := range slices.Concat(planned, unchanged) {
+	for _, name := range slices.Concat(required, optional) {
 		if !have[name] {
 			missing = append(missing, name)
 			have[name] = true
@@ -56,9 +60,9 @@ func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deploypl
 	}
 
 	candidates := localUploadCandidates(ctx, b, missing)
-	required := make(map[string]bool, len(planned))
-	for _, name := range planned {
-		required[name] = true
+	isRequired := make(map[string]bool, len(required))
+	for _, name := range required {
+		isRequired[name] = true
 	}
 	var notFound []string
 	for _, name := range missing {
@@ -66,16 +70,12 @@ func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deploypl
 			paths = append(paths, p)
 			continue
 		}
-		// Only wheels the plan is about to deploy are required. Unchanged resources
-		// can reference files the bundle does not produce (libraries installed on a
-		// cluster by a job run, uploads kept by skip_artifact_cleanup), and other
-		// strings under the upload path are not necessarily uploads.
-		if _, err := patchwheel.ParseWheelFilename(name); err == nil && required[name] {
+		if isRequired[name] {
 			notFound = append(notFound, name)
 		}
 	}
 	if len(notFound) > 0 {
-		return nil, fmt.Errorf("the plan references %s, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run \"bundle plan\" again", strings.Join(notFound, ", "))
+		return nil, fmt.Errorf("the plan references %s, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run 'bundle plan' again", strings.Join(notFound, ", "))
 	}
 
 	slices.Sort(paths)
@@ -83,21 +83,30 @@ func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deploypl
 }
 
 // planUploadReferences returns the sorted base names of the files directly under
-// uploadPath that the plan's resources reference: from the planned state of the
-// resources the plan changes, and from the remote state of the resources it leaves
-// unchanged (their entries carry no planned state), leaving out remote values the plan
-// marks as unmanaged (such as libraries a job run installed on a cluster). Resources
-// the plan deletes are skipped. A reference can be a whole string or part of one, such as a "%pip install"
-// line or a "--wheel=" argument.
-func planUploadReferences(plan *deployplan.Plan, uploadPath string) (planned, unchanged []string) {
-	plannedNames := make(map[string]bool)
-	unchangedNames := make(map[string]bool)
-	for _, entry := range plan.Plan {
+// uploadPath that the plan's resources reference, split by whether the deploy needs them.
+//
+// Required are the files the bundle itself uploads for a resource, as owners tells:
+//   - in the planned state of a resource the plan creates or updates, a reference
+//     anywhere to an artifact's output, or a value that is exactly the uploaded path of
+//     one of the resource's own local libraries, at the field where the configuration
+//     declares that library;
+//   - if requireUnchanged is set, the same library values in the remote state of a
+//     resource the plan leaves unchanged (its entry carries no planned state), because
+//     artifact cleanup deletes them too.
+//
+// Optional are all other references, which can name files the bundle does not
+// produce: a path the configuration names directly, the output of a job, or a
+// library a job run installed on a cluster. Remote values the plan marks as unmanaged
+// are left out. Resources the plan deletes are skipped.
+func planUploadReferences(plan *deployplan.Plan, uploadPath string, requireUnchanged bool, owners uploadOwners) (required, optional []string) {
+	requiredNames := make(map[string]bool)
+	optionalNames := make(map[string]bool)
+	for resourceKey, entry := range plan.Plan {
 		if entry == nil || entry.Action == deployplan.Delete {
 			continue
 		}
 		var raw []byte
-		names, fromRemote := plannedNames, false
+		fromRemote := false
 		if entry.NewState != nil && len(entry.NewState.Value) > 0 {
 			raw = entry.NewState.Value
 		} else if entry.RemoteState != nil {
@@ -106,7 +115,7 @@ func planUploadReferences(plan *deployplan.Plan, uploadPath string) (planned, un
 				continue
 			}
 			raw = b
-			names, fromRemote = unchangedNames, true
+			fromRemote = true
 		} else {
 			continue
 		}
@@ -120,22 +129,111 @@ func planUploadReferences(plan *deployplan.Plan, uploadPath string) (planned, un
 				if change == nil || change.Reason != deployplan.ReasonUnmanaged {
 					continue
 				}
-				forEachString(jsonValue(change.Remote), func(s string) {
+				forEachField(jsonValue(change.Remote), "", func(_, s string) {
 					for _, name := range uploadNamesIn(s, uploadPath) {
 						unmanaged[name] = true
 					}
 				})
 			}
 		}
-		forEachString(v, func(s string) {
+		forEachField(v, "", func(key, s string) {
 			for _, name := range uploadNamesIn(s, uploadPath) {
-				if !unmanaged[name] {
-					names[name] = true
+				ownLibrary := isUploadPathValue(s, uploadPath, name) && owners.isLibraryOf(resourceKey, key, name)
+				switch {
+				case unmanaged[name]:
+				case !fromRemote && (ownLibrary || owners.isArtifactOutput(name)):
+					requiredNames[name] = true
+				case fromRemote && requireUnchanged && ownLibrary:
+					requiredNames[name] = true
+				default:
+					optionalNames[name] = true
 				}
 			}
 		})
 	}
-	return slices.Sorted(maps.Keys(plannedNames)), slices.Sorted(maps.Keys(unchangedNames))
+	for name := range requiredNames {
+		delete(optionalNames, name)
+	}
+	return slices.Sorted(maps.Keys(requiredNames)), slices.Sorted(maps.Keys(optionalNames))
+}
+
+// uploadOwners holds the base name patterns (paths or globs) of the local files the
+// bundle uploads: for local libraries per resource ("resources.jobs.my_job") and field
+// ("tasks.libraries.whl", without list indices), and for artifact outputs.
+type uploadOwners struct {
+	libraries map[string]map[string][]string
+	artifacts []string
+}
+
+func newUploadOwners(b *bundle.Bundle) uploadOwners {
+	owners := uploadOwners{libraries: make(map[string]map[string][]string)}
+	libs, err := collectLocalLibraries(b)
+	if err != nil {
+		return owners
+	}
+	for _, source := range slices.Sorted(maps.Keys(libs)) {
+		pattern := filepath.Base(source)
+		for _, loc := range libs[source] {
+			p := loc.configPath
+			switch {
+			case len(p) >= 1 && p[0].Key() == "artifacts":
+				owners.artifacts = append(owners.artifacts, pattern)
+			case len(p) >= 4 && p[0].Key() == "resources":
+				key := "resources." + p[1].Key() + "." + p[2].Key()
+				if owners.libraries[key] == nil {
+					owners.libraries[key] = make(map[string][]string)
+				}
+				field := fieldPath(p[3:])
+				owners.libraries[key][field] = append(owners.libraries[key][field], pattern)
+			}
+		}
+	}
+	return owners
+}
+
+func (o uploadOwners) isLibraryOf(resourceKey, field, name string) bool {
+	return matchesUploadName(o.libraries[resourceKey][field], name)
+}
+
+// fieldPath joins the keys of p with dots, leaving out list indices.
+func fieldPath(p dyn.Path) string {
+	var keys []string
+	for _, c := range p {
+		if k := c.Key(); k != "" {
+			keys = append(keys, k)
+		}
+	}
+	return strings.Join(keys, ".")
+}
+
+func (o uploadOwners) isArtifactOutput(name string) bool {
+	return matchesUploadName(o.artifacts, name)
+}
+
+// matchesUploadName reports whether name is a file one of the patterns matches, or the
+// patched copy of one ("pkg-1.0+<n>-..." for "pkg-1.0-...").
+func matchesUploadName(patterns []string, name string) bool {
+	candidates := []string{name}
+	if parts := strings.SplitN(name, "-", 3); len(parts) == 3 && strings.HasSuffix(name, ".whl") {
+		if version, _, ok := strings.Cut(parts[1], "+"); ok {
+			candidates = append(candidates, parts[0]+"-"+version+"-"+parts[2])
+		}
+	}
+	for _, pattern := range patterns {
+		for _, c := range candidates {
+			if ok, _ := filepath.Match(pattern, c); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isUploadPathValue reports whether s is exactly the uploaded path of name, optionally
+// followed by pip extras.
+func isUploadPathValue(s, uploadPath, name string) bool {
+	base, _ := patchwheel.SplitWheelExtras(s)
+	return base == uploadPath+"/"+name
 }
 
 // uploadNamesIn returns the base names of the files directly under uploadPath that s
@@ -193,17 +291,23 @@ func jsonValue(v any) any {
 	return out
 }
 
-func forEachString(v any, fn func(string)) {
+// forEachField calls fn for every string in v with its field path: the map keys
+// leading to it joined with dots, without list indices.
+func forEachField(v any, path string, fn func(path, s string)) {
 	switch v := v.(type) {
 	case string:
-		fn(v)
+		fn(path, v)
 	case []any:
 		for _, x := range v {
-			forEachString(x, fn)
+			forEachField(x, path, fn)
 		}
 	case map[string]any:
-		for _, x := range v {
-			forEachString(x, fn)
+		for k, x := range v {
+			next := path + "." + k
+			if path == "" {
+				next = k
+			}
+			forEachField(x, next, fn)
 		}
 	}
 }
@@ -228,7 +332,7 @@ func localUploadCandidates(ctx context.Context, b *bundle.Bundle, names []string
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		// Patched wheels left by "bundle plan" are exactly what it planned to upload.
 		if cacheDir != "" {
-			cached, _ := filepath.Glob(filepath.Join(cacheDir, "patched_wheels", artifactName+"_*", "*.whl"))
+			cached, _ := filepath.Glob(filepath.Join(patchwheel.CacheDir(cacheDir, artifactName, "*"), "*.whl"))
 			files = append(files, cached...)
 		}
 	}
@@ -249,7 +353,7 @@ func localUploadCandidates(ctx context.Context, b *bundle.Bundle, names []string
 				if err != nil || !hasPatchedName(filepath.Base(source), names) {
 					continue
 				}
-				dir := filepath.Join(cacheDir, "patched_wheels", artifactName+"_"+info.Distribution)
+				dir := patchwheel.CacheDir(cacheDir, artifactName, info.Distribution)
 				if os.MkdirAll(dir, 0o700) != nil {
 					continue
 				}

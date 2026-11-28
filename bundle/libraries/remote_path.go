@@ -66,7 +66,7 @@ func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) 
 					if err != nil {
 						continue
 					}
-					dir := filepath.Join(cacheDir, "patched_wheels", artifactName+"_"+info.Distribution)
+					dir := patchwheel.CacheDir(cacheDir, artifactName, info.Distribution)
 					patchedPath, _, err := patchwheel.PatchWheel(source, dir)
 					if err == nil {
 						patches[source] = patchedPath

@@ -71,7 +71,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 === A wheel touched after the plan, with the patched wheel cache gone
 
 >>> [CLI] bundle deploy --plan tmp.plan_d.json
-Error: the plan references my_test_code-0.0.2+[UNIX_TIME_NANOS][4]-py3-none-any.whl, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run "bundle plan" again
+Error: the plan references my_test_code-0.0.2+[UNIX_TIME_NANOS][4]-py3-none-any.whl, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run 'bundle plan' again
 
 
 Exit code: 1
