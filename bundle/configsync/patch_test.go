@@ -257,6 +257,58 @@ next: value
 `),
 		},
 		{
+			name:     "tab lines ending a block scalar",
+			input:    "key: |\n  line1\n      \n  \t\n\n  \nnext: value\n",
+			expected: "key: |\n  line1\n\n  \t\n# __YAMLPATCH_BLANK_LINE__\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+		},
+		{
+			name:     "tab line before the first content line",
+			input:    "key: |\n  \t\n  line1\nnext: value\n",
+			expected: "key: |\n\n  line1\nnext: value\n",
+		},
+		{
+			name:     "folded block scalar empties tab lines",
+			input:    "key: >+\n  line1\n  \t\n  line2\n\nnext: value\n",
+			expected: "key: >+\n  line1\n\n  line2\n\nnext: value\n",
+		},
+		{
+			name: "keep chomping keeps trailing blanks",
+			input: nl(`
+key: |+
+  line1
+
+next: value
+`),
+			expected: nl(`
+key: |+
+  line1
+
+next: value
+`),
+		},
+		{
+			name: "block scalar under a list item key",
+			input: nl(`
+- key: |+
+    line1
+  other: value
+
+- next: value
+`),
+			expected: nl(`
+- key: |+
+    line1
+  other: value
+# __YAMLPATCH_BLANK_LINE__
+- next: value
+`),
+		},
+		{
+			name:     "keep chomping under a list item key",
+			input:    "- key: >+\n    line1\n\n  other: value\n- empty: |+\n\n  other: value\n",
+			expected: "- key: >+\n    line1\n\n  other: value\n- empty: |+\n\n  other: value\n",
+		},
+		{
 			name: "trailing blank line",
 			input: `key: value
 
@@ -379,6 +431,11 @@ key: |
 
 next: value
 `),
+		},
+		{
+			name:     "whitespace-only block scalar lines are kept",
+			input:    "key: |-\n  line1\n      \n  \t\n\n  line2\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+			expected: "key: |-\n  line1\n      \n  \t\n\n  line2\n\nnext: value\n",
 		},
 	}
 
@@ -538,6 +595,57 @@ func TestApplyChangeNullParentComments(t *testing.T) {
 			}
 		})
 	}
+}
+
+// syncField runs the steps ApplyChangesToYAML runs on a file for one added field.
+func syncField(t *testing.T, content, path, value string) string {
+	change := FieldChange{
+		WritePath: path,
+		Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: value},
+	}
+	result, err := applyChange(t.Context(), preserveBlankLines([]byte(content)), change)
+	require.NoError(t, err)
+	result, err = clearAddedFlowStyle(result, []FieldChange{change})
+	require.NoError(t, err)
+	return string(restoreBlankLines(result))
+}
+
+func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		value   string
+		want    string
+	}{
+		// The encoder can write these values as block scalars.
+		{"spaces under null parent", "tags: null\n", "one\n    \nthree", `tags: {key: "one\n    \nthree"}`},
+		{"tab under null parent", "tags: null\n", "one\n\t\nthree", `tags: {key: "one\n\t\nthree"}`},
+		{"tab under existing parent", "tags:\n  other: x\n", "one\n\t\nthree", `tags: {other: x, key: "one\n\t\nthree"}`},
+		// Space-only lines of untouched block scalars are emptied, so yaml.v3 keeps their block style.
+		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n\n\t\nthree", tags: {key: value}}`},
+		{"untouched keep block scalar", "script: |+\n  one\n\ntags: null\n", "value", `{script: "one\n\n", tags: {key: value}}`},
+		{"untouched block scalar at end of file", "tags: null\nscript: |\n  one\n  \t\n", "value", `{script: "one\n\t\n", tags: {key: value}}`},
+		{"untouched keep block scalars under list item keys", "items:\n  - script: >+\n      one\n\n    other: x\n  - script: |+\n\n    other: x\ntags: null\n", "value", `{items: [{script: "one\n\n", other: x}, {script: "\n", other: x}], tags: {key: value}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := syncField(t, tc.content, "tags.key", tc.value)
+			assert.YAMLEq(t, tc.want, out)
+			if strings.Contains(tc.content, "script: |") {
+				assert.Contains(t, out, "script: |")
+			}
+		})
+	}
+}
+
+func TestApplyChangeQuotesWhitespaceOnlyLinesUnderNullParent(t *testing.T) {
+	assert.Equal(t, "tags:\n  key: |-\n    one\n    two\n", syncField(t, "tags: null\n", "tags.key", "one\ntwo"))
+
+	out := syncField(t, "tags: null\n", "tags.key", "one\n    \nthree")
+	assert.Equal(t, "tags:\n  key: \"one\\n    \\nthree\"\n", out)
+
+	// A later sync that rewrites the file keeps the value.
+	out = syncField(t, out, "tags.other", "x")
+	assert.YAMLEq(t, `tags: {key: "one\n    \nthree", other: x}`, out)
 }
 
 func TestApplyChangeReusesExistingParent(t *testing.T) {
