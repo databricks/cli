@@ -47,11 +47,6 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
       "new": "myvolume-moved",
       "remote": "myvolume-moved"
     },
-    "storage_location": {
-      "action": "skip",
-      "reason": "immutable_backend_value",
-      "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[VOLUME_ID]"
-    },
     "volume_id": {
       "action": "skip",
       "reason": "internal_id",

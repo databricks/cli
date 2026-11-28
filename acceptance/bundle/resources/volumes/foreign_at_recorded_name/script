@@ -28,7 +28,7 @@ trace $CLI bundle plan
 
 title "Point the config at the bundle's renamed volume: the plan finds it there by its volume_id"
 envsubst < databricks-moved.yml.tmpl > databricks.yml
-trace $CLI bundle plan --output json | plan_filter.py resources.volumes.volume1
+trace $CLI bundle plan --output json | plan_filter.py resources.volumes.volume1 | normalize_uc_payload.py storage_location
 
 title "Deploy takes the renamed volume for the bundle's, and sends nothing to the other one"
 trace $CLI bundle deploy
