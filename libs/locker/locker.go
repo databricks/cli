@@ -223,8 +223,8 @@ func (locker *Locker) lock(ctx context.Context, isForced bool) error {
 // writeLock writes the lock file with buf, overwriting an existing one only if isForced.
 func (locker *Locker) writeLock(ctx context.Context, buf []byte, isForced bool) error {
 	if isForced {
-		// The retrying filer already retries overwrite writes, on the errors [retry.IsTransient]
-		// covers; an "unexpected EOF" is not retried there, only read back in lock.
+		// The retrying filer already retries overwrite writes, on the errors [retry.IsTransientRead]
+		// covers; if the last attempt still fails, lock reads the lock back.
 		return locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), filer.CreateParentDirectories, filer.OverwriteIfExists)
 	}
 	// The retrying filer does not repeat writes that do not overwrite. Repeating this one is

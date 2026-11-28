@@ -5,13 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"os"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -56,6 +63,14 @@ func TestIsTransientRead(t *testing.T) {
 	// The HTTP/2 health check closed a dead connection; the retry dials a new one.
 	connLost := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a?overwrite=true", Err: errors.New("http2: client connection lost")}
 	assert.True(t, IsTransientRead(ctx, connLost))
+	// The server closed the connection during the TLS handshake, seen on GET /preview/scim/v2/Me.
+	eof := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/preview/scim/v2/Me", Err: io.EOF}
+	assert.True(t, IsTransientRead(ctx, eof))
+	assert.False(t, IsTransient(ctx, eof))
+	// WSAECONNRESET, Windows' connection reset, which the SDK's "connection reset by peer" match misses.
+	windowsReset := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a?overwrite=true", Err: &net.OpError{Op: "read", Net: "tcp", Err: os.NewSyscallError("wsarecv", syscall.Errno(10054))}}
+	assert.True(t, IsTransientRead(ctx, windowsReset))
+	assert.False(t, IsTransient(ctx, windowsReset))
 	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
 	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
 	assert.False(t, IsTransientRead(ctx, connRefused))
@@ -136,3 +151,39 @@ func TestRetryMessage(t *testing.T) {
 	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
 	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
 }
+
+// The EOF in TestIsTransientRead must match what a real SDK call returns when the server closes
+// the connection without responding.
+func TestIsTransientReadOnServerClosingConnection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/2.0/preview/scim/v2/Me" {
+			http.NotFound(w, r)
+			return
+		}
+		conn, _, err := w.(http.Hijacker).Hijack()
+		if assert.NoError(t, err) {
+			conn.Close()
+		}
+	}))
+	defer server.Close()
+
+	// noEnvLoader keeps ambient DATABRICKS_* variables and ~/.databrickscfg out of the config
+	// without clearing the process environment, which Windows needs to open sockets.
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:     server.URL,
+		Token:    "token",
+		AuthType: "pat",
+		Loaders:  []config.Loader{noEnvLoader{}},
+	})
+	require.NoError(t, err)
+	_, err = w.CurrentUser.Me(t.Context(), iam.MeRequest{})
+	_, isURLError := errors.AsType[*url.Error](err)
+	assert.True(t, isURLError)
+	assert.ErrorIs(t, err, io.EOF)
+	assert.True(t, IsTransientRead(t.Context(), err))
+}
+
+type noEnvLoader struct{}
+
+func (noEnvLoader) Name() string                   { return "none" }
+func (noEnvLoader) Configure(*config.Config) error { return nil }
