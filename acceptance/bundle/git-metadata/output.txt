@@ -10,6 +10,17 @@
   "origin_url": "https://github.com/databricks/cli"
 }
 
+=== a linked worktree: branch and origin URL come from the main checkout's .git
+
+>>> [CLI] bundle validate -o json
+{
+  "actual_branch": "feature",
+  "branch": "feature",
+  "bundle_root_path": ".",
+  "commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/cli"
+}
+
 === a malformed .git: the worktree root is still found, with no metadata
 {
   "bundle_root_path": "."
