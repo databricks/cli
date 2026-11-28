@@ -2,15 +2,7 @@
 === number property set to null in the config file
 
 >>> musterr [CLI] bundle init . --config-file ratio-null.json --output-dir rendered
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
-
-CLI Version: [CLI_VERSION]
-
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-Stack Trace:
+Error: failed to load config from file ratio-null.json: incorrect type for property ratio: expected type float, but value is <nil>
 
 === integer property set to null in the config file
 
@@ -20,28 +12,12 @@ Error: failed to load config from file count-null.json: failed to parse property
 === null in the enum of a number property
 
 >>> musterr [CLI] bundle init ./enum-null --output-dir rendered
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
-
-CLI Version: [CLI_VERSION]
-
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-Stack Trace:
+Error: failed to load schema: type validation for enum at index 1 failed for property ratio: expected type float, but value is <nil>
 
 === integer property declared only in anyOf set to null in the config file
 
 >>> musterr [CLI] bundle init ./any-of --config-file extra-null.json --output-dir rendered
-The Databricks CLI unexpectedly had a fatal error.
-Please report this issue to Databricks in the form of a GitHub issue at:
-https://github.com/databricks/cli
-
-CLI Version: [CLI_VERSION]
-
-Panic Payload: runtime error: invalid memory address or nil pointer dereference
-
-Stack Trace:
+Error: failed to load config from file extra-null.json: instance does not match any of the schemas in anyOf
 
 === integer property declared only in anyOf set to a valid integer in the config file
 
