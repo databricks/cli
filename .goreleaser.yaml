@@ -3,6 +3,9 @@ version: 2
 before:
   hooks:
     - go mod download
+    # Fills the bundled skills snapshot before the binaries are compiled. Fails the
+    # release when the skills release cannot be downloaded. See internal/build/README.md.
+    - go run ./internal/build/skillssnapshot
 
 builds:
   - env:

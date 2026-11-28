@@ -126,22 +126,8 @@ func (s *fsSource) manifest(ctx context.Context) (*Manifest, error) {
 		return nil, fmt.Errorf("parse %s: %w", manifestFile, err)
 	}
 	NormalizeManifest(&m)
-	if err := CheckManifestPaths(&m); err != nil {
+	if err := CheckManifest(&m); err != nil {
 		return nil, err
-	}
-	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
-		if repoDir := m.Skills[name].RepoDir; escapesDir(repoDir) {
-			return nil, fmt.Errorf("%w: skill %q has repo_dir %q", ErrUnsafeManifestPath, name, repoDir)
-		}
-	}
-	if m.CatalogRules != "" {
-		// Clean the path the way skill files are cleaned by path.Join, so that
-		// "./RULES.md" and "docs/../RULES.md" are read like "RULES.md".
-		m.CatalogRules = path.Clean(m.CatalogRules)
-	}
-	// "docs/.." cleans to ".", a directory that cannot be read as rules.
-	if m.CatalogRules == "." || escapesDir(m.CatalogRules) {
-		return nil, fmt.Errorf("%w: catalog_rules %q", ErrUnsafeManifestPath, m.CatalogRules)
 	}
 	return &m, nil
 }

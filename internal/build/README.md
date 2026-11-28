@@ -84,6 +84,17 @@ This checks: valid JSON, at least one entry, valid semver keys and AppKit versio
 
 Entries MUST NOT be removed from the manifest. Older CLI binaries use the lowest entry as their floor when the CLI version is older than all entries. Pruning it causes them to silently resolve to a newer entry that may require CLI features they lack. If the manifest grows too large, consider archiving very old entries to a separate file while keeping the oldest entry as a sentinel.
 
+## Bundled skills snapshot
+
+The embedded fallback for skills lives in `libs/skills/snapshot`. Only its empty `manifest.json` is committed. The release build fills it, so release binaries carry the skills release that is current when they are built. No skill files are committed.
+
+`internal/build/skillssnapshot` does the fill. The `before` hooks in `.goreleaser.yaml` run it before the binaries compile, so every release build from GoReleaser runs it. Development builds (`./task build`, `./task snapshot`) do not, and leave the working tree unchanged.
+
+- It resolves the latest skills release (or the tag passed with `-ref`, for example `go run ./internal/build/skillssnapshot -ref v0.2.54`), downloads its `manifest.json`, applies the manifest path checks of `skills.CheckManifest`, and downloads the catalog rules and every skill file into a staging folder beside the snapshot.
+- A file that cannot be downloaded, a manifest that names a path outside the release, or a file that `go:embed` would skip (a path element starting with `.` or `_`) fails the command. The snapshot is replaced only after every file is in place and the staged release reads back through the bundled source, so a failed run leaves the snapshot as it was.
+- To check locally, run the command from the repository root, then build. Restore the committed placeholder afterwards with `git checkout -- libs/skills/snapshot` and `git clean -fd libs/skills/snapshot`.
+- The latest-release lookup is unauthenticated, like the installer's, so it shares the GitHub API rate limit of the runner's IP address.
+
 ## Trust model
 
 The live manifest is fetched over HTTPS from GitHub (`raw.githubusercontent.com`). The trust boundary is: TLS certificate validation + GitHub's access controls + write access to the `main` branch of `databricks/cli`. A compromised manifest can steer clients to existing published tags (AppKit or skills), and through `auto_install` make them install those published skills and plugins without a command from the user; it cannot inject arbitrary code. The CLI binary always ships an embedded fallback manifest that limits exposure to cache-TTL windows (1 hour). The local cache (`~/.cache/databricks/compat-manifest.json`) is trust-on-disk: an attacker with user-level write access to the cache directory could swap in a malicious manifest pointing to different tags.

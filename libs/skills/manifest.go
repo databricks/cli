@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path"
 	"slices"
 	"strings"
 )
@@ -93,6 +94,33 @@ func CheckManifestPaths(m *Manifest) error {
 				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
 			}
 		}
+	}
+	return nil
+}
+
+// CheckManifest fails a manifest that names a path outside the release: a skill
+// or file as CheckManifestPaths reports, or a repo_dir or catalog_rules that
+// escapes it. Every source checks a manifest this way before it reads the
+// release, and the release build checks it before it downloads any file. It
+// expects NormalizeManifest to have run, and it cleans catalog_rules the way
+// the source reads it.
+func CheckManifest(m *Manifest) error {
+	if err := CheckManifestPaths(m); err != nil {
+		return err
+	}
+	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
+		if repoDir := m.Skills[name].RepoDir; escapesDir(repoDir) {
+			return fmt.Errorf("%w: skill %q has repo_dir %q", ErrUnsafeManifestPath, name, repoDir)
+		}
+	}
+	if m.CatalogRules != "" {
+		// Clean the path the way skill files are cleaned by path.Join, so that
+		// "./RULES.md" and "docs/../RULES.md" are read like "RULES.md".
+		m.CatalogRules = path.Clean(m.CatalogRules)
+	}
+	// "docs/.." cleans to ".", a directory that cannot be read as rules.
+	if m.CatalogRules == "." || escapesDir(m.CatalogRules) {
+		return fmt.Errorf("%w: catalog_rules %q", ErrUnsafeManifestPath, m.CatalogRules)
 	}
 	return nil
 }
