@@ -1,0 +1,101 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "job_name": "7",
+  "job_tags": {
+    "big_int": "123456789012345680000000000000",
+    "bool_title": "true",
+    "date": "2024-01-01",
+    "exponent": "1000",
+    "float_int": "1",
+    "hex": "31",
+    "inf": "+Inf",
+    "leading_dot": "0.5",
+    "leading_zero": "42",
+    "nan": "NaN",
+    "octal": "15",
+    "plus_sign": "12",
+    "q_big_int": "123456789012345678901234567890",
+    "q_bool_title": "True",
+    "q_date": "2024-01-01",
+    "q_exponent": "1e3",
+    "q_float_int": "1.0",
+    "q_hex": "0x1F",
+    "q_inf": ".inf",
+    "q_leading_dot": ".5",
+    "q_leading_zero": "0042",
+    "q_nan": ".NaN",
+    "q_octal": "0o17",
+    "q_plus_sign": "+12",
+    "q_trailing_zero": "1.10",
+    "q_underscore": "1_000",
+    "trailing_zero": "1.1",
+    "underscore": "1000"
+  },
+  "job_parameters": [
+    {
+      "default": "1",
+      "name": "leading_zero"
+    },
+    {
+      "default": "3.1",
+      "name": "version"
+    }
+  ],
+  "git_commit": "123400000000000000000000000000000000000000000000000000000000",
+  "tasks": [
+    {
+      "new_cluster": {
+        "custom_tags": {
+          "cost_center": "42"
+        },
+        "policy_id": "12345678901234",
+        "spark_conf": {
+          "spark.sql.shuffle.partitions": "200"
+        },
+        "spark_env_vars": {
+          "PYTHON_VERSION": "3.1"
+        },
+        "spark_version": "13.3"
+      },
+      "notebook_task": {
+        "base_parameters": {
+          "leading_zero": "42",
+          "q_leading_zero": "0042"
+        },
+        "source": "GIT"
+      },
+      "task_key": "cluster_policy"
+    },
+    {
+      "new_cluster": {
+        "policy_id": "12345678901000000000000000000000000000000000000000000",
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "notebook_task": {
+        "source": "GIT"
+      },
+      "task_key": "cluster_policy_exponent"
+    },
+    {
+      "existing_cluster_id": "123",
+      "sql_task": {
+        "query": {
+          "query_id": "100000"
+        },
+        "warehouse_id": "123456789012345"
+      },
+      "task_key": "existing_cluster"
+    }
+  ],
+  "pipeline": {
+    "catalog": "1",
+    "schema": "2024",
+    "configuration": {
+      "leading_zero": "42",
+      "version": "1.1"
+    },
+    "policy_id": "12345678901234"
+  },
+  "dashboard_warehouse_id": "123456789012345"
+}

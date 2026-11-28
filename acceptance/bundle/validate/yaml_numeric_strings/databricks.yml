@@ -1,0 +1,100 @@
+# Unquoted scalars that YAML resolves to a number, bool or timestamp, used in
+# string-typed fields. Each value is written twice: unquoted and quoted ("q_").
+# The quoted value is kept verbatim; the unquoted one is converted from the
+# resolved number and may not match the source text.
+bundle:
+  name: yaml-numeric-strings
+
+resources:
+  jobs:
+    job:
+      name: 007
+      tags:
+        leading_zero: 0042
+        q_leading_zero: "0042"
+        trailing_zero: 1.10
+        q_trailing_zero: "1.10"
+        float_int: 1.0
+        q_float_int: "1.0"
+        exponent: 1e3
+        q_exponent: "1e3"
+        hex: 0x1F
+        q_hex: "0x1F"
+        octal: 0o17
+        q_octal: "0o17"
+        underscore: 1_000
+        q_underscore: "1_000"
+        plus_sign: +12
+        q_plus_sign: "+12"
+        leading_dot: .5
+        q_leading_dot: ".5"
+        big_int: 123456789012345678901234567890
+        q_big_int: "123456789012345678901234567890"
+        inf: .inf
+        q_inf: ".inf"
+        nan: .NaN
+        q_nan: ".NaN"
+        bool_title: True
+        q_bool_title: "True"
+        date: 2024-01-01
+        q_date: "2024-01-01"
+      parameters:
+        - name: leading_zero
+          default: 01
+        - name: version
+          default: 3.10
+      git_source:
+        git_url: https://github.com/databricks/cli
+        git_provider: gitHub
+        # 7-char short SHA with a single "e" and digits only around it
+        git_commit: 1234e56
+      tasks:
+        - task_key: cluster_policy
+          new_cluster:
+            # Cluster policy ids are 16 hex characters.
+            policy_id: 0012345678901234
+            spark_version: 13.30
+            num_workers: 1
+            spark_conf:
+              spark.sql.shuffle.partitions: 0200
+            spark_env_vars:
+              PYTHON_VERSION: 3.10
+            custom_tags:
+              cost_center: 0042
+          notebook_task:
+            notebook_path: /Workspace/notebook
+            base_parameters:
+              leading_zero: 0042
+              q_leading_zero: "0042"
+        - task_key: cluster_policy_exponent
+          new_cluster:
+            policy_id: 12345678901E0042
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+          notebook_task:
+            notebook_path: /Workspace/notebook
+        - task_key: existing_cluster
+          existing_cluster_id: 0123
+          sql_task:
+            # SQL warehouse ids are 16 hex characters.
+            warehouse_id: 0123456789012345
+            query:
+              query_id: 1e5
+
+  pipelines:
+    pipeline:
+      name: pipeline
+      catalog: 0001
+      schema: 2024
+      configuration:
+        leading_zero: 0042
+        version: 1.10
+      clusters:
+        - label: default
+          policy_id: 0012345678901234
+
+  dashboards:
+    dashboard:
+      display_name: dashboard
+      warehouse_id: 0123456789012345
+      file_path: dashboard.lvdash.json
