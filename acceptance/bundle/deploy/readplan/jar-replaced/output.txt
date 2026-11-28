@@ -1,0 +1,24 @@
+
+=== An unchanged job: plan against app-1.0.jar, then replace it with app-1.1.jar
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Error: the plan references app-1.0.jar, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run 'bundle plan' again
+
+
+Exit code: 1
+
+=== A changed job: the same, with a new job name in the plan
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Error: the plan references app-1.0.jar, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run 'bundle plan' again
+
+
+Exit code: 1
+
+=== Nothing was deleted, uploaded or changed
+
+>>> print_requests.py //workspace/delete //workspace/mkdirs //import-file //jobs
+["POST","/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/jar-replaced/default/state/deploy.lock",null]
+["POST","/api/2.0/workspace/delete","/Workspace/Users/[USERNAME]/.bundle/jar-replaced/default/state/deploy.lock"]
+["POST","/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/jar-replaced/default/state/deploy.lock",null]
+["POST","/api/2.0/workspace/delete","/Workspace/Users/[USERNAME]/.bundle/jar-replaced/default/state/deploy.lock"]

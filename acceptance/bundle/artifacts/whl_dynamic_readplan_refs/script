@@ -1,0 +1,42 @@
+trap "rm -fr my_test_code" EXIT
+cp -r $TESTDIR/../whl_explicit/my_test_code .
+# A second package next to the built one; a fixed mtime keeps its patched name stable.
+mkdir -p my_test_code/dist
+cp $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-any.whl my_test_code/dist/
+setmtime.py "2020-01-01 00:00:00.0" my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl
+
+title "A plan made before a newer build"
+$CLI bundle plan -o json > tmp.plan_a.json 2>>LOG.plan
+update_file.py my_test_code/src/__init__.py 0.0.1 0.0.2
+$CLI bundle plan -o json > tmp.plan_b.json 2>>LOG.plan
+trace find.py 'my_test_code/dist/.*whl'
+trace $CLI bundle deploy --plan tmp.plan_a.json
+
+title "Wheels the job and the pipeline reference"
+trace print_requests.py --keep //jobs/create | jq '.body.tasks[].libraries[].whl'
+trace print_requests.py --keep //pipelines | jq '.body.environment.dependencies[]'
+
+title "Wheels uploaded"
+trace print_requests.py --sort //.internal/ | jq .path
+
+title "A wheel touched after the plan, with its planned patched copy still cached"
+$CLI bundle plan -o json > tmp.plan_c.json 2>>LOG.plan
+setmtime.py "2020-01-01 00:00:00.0" my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl
+trace $CLI bundle deploy --plan tmp.plan_c.json &> LOG.deploy_c
+trace print_requests.py --keep //jobs/reset | jq '.body.new_settings.tasks[].libraries[].whl'
+trace print_requests.py --sort //.internal/ | jq .path
+
+title "A redeploy that leaves the pipeline unchanged"
+# The plan entry of an unchanged resource carries only its remote state.
+$CLI bundle plan -o json > tmp.plan_e.json 2>>LOG.plan
+trace $CLI bundle deploy --plan tmp.plan_e.json
+trace print_requests.py --sort //.internal/ | jq .path
+
+title "A wheel touched after the plan, with the patched wheel cache gone"
+$CLI bundle plan -o json > tmp.plan_d.json 2>>LOG.plan
+setmtime.py "2020-01-02 00:00:00.0" my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl
+rm -r .databricks/bundle/default/patched_wheels
+errcode trace $CLI bundle deploy --plan tmp.plan_d.json
+
+title "Nothing was deleted, uploaded or changed"
+trace print_requests.py //workspace/delete //workspace/mkdirs //import-file //jobs //pipelines | jq -c '[.method, .path, .body.path]'

@@ -1,0 +1,11 @@
+RecordRequests = true
+Ignore = ['tmp.plan_a.json', 'tmp.plan_b.json', 'tmp.plan_c.json', 'tmp.plan_d.json', 'tmp.plan_e.json']
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+# The synced file count depends on build leftovers.
+[[Repls]]
+Old = 'Files: \d+ uploaded, \d+ deleted'
+New = 'Files: [N] uploaded, [N] deleted'

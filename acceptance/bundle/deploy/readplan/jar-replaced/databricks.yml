@@ -1,0 +1,17 @@
+bundle:
+  name: jar-replaced
+
+resources:
+  jobs:
+    my_job:
+      name: jar-replaced-job
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+          spark_jar_task:
+            main_class_name: com.example.Main
+          libraries:
+            - jar: ./target/*.jar

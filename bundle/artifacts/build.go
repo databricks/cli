@@ -142,7 +142,7 @@ func makePatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string,
 		return ""
 	}
 
-	dir := filepath.Join(cacheDir, "patched_wheels", artifactName+"_"+info.Distribution)
+	dir := patchwheel.CacheDir(cacheDir, artifactName, info.Distribution)
 	if !cleanedDirs[dir] {
 		createAndCleanupDirectory(ctx, dir)
 		cleanedDirs[dir] = true

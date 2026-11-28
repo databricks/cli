@@ -1,0 +1,32 @@
+bundle:
+  name: whl-dynamic-readplan-refs
+
+artifacts:
+  my_test_code:
+    type: whl
+    path: "./my_test_code"
+    # Use 'python' because 'python3' does not exist in Windows virtualenvs.
+    build: python setup.py bdist_wheel
+    dynamic_version: true
+
+resources:
+  jobs:
+    my_job:
+      name: whl-dynamic-readplan-refs-job
+      tasks:
+        - task_key: main
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+          libraries:
+            - whl: ./my_test_code/dist/*.whl
+  pipelines:
+    my_pipeline:
+      name: whl-dynamic-readplan-refs-pipeline
+      serverless: true
+      # Pipeline environment dependencies are not switched to patched wheels,
+      # so the plan references the unpatched files.
+      environment:
+        dependencies:
+          - ./my_test_code/dist/*.whl

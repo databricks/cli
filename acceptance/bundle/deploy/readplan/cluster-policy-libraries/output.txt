@@ -1,0 +1,29 @@
+
+=== A job run installs a wheel the bundle does not build
+
+=== The plan leaves the cluster unchanged and marks the extra wheel a remote addition
+
+>>> jq -c .plan["resources.clusters.my_cluster"] | [.action, ([.changes // {} | to_entries[] | select(.value.reason == "remote_addition") | .key])] tmp.plan.json
+["skip",["libraries[whl='/Workspace/Users/[USERNAME]/.bundle/cluster-policy-libraries/default/artifacts/.internal/installed_by_run-0.9-py3-none-any.whl']"]]
+
+=== deploy --plan uploads the bundle's wheel and keeps the cluster
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-policy-libraries/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //.internal/
+["POST","/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/cluster-policy-libraries/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"]
+
+=== The cluster's own wheel is still required: without it, deploy --plan fails before cleanup
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Error: the plan references my_test_code-0.0.1-py3-none-any.whl, which no local file provides; the local files changed since the plan was created or the plan comes from another checkout, run 'bundle plan' again
+
+
+Exit code: 1
+
+>>> print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //api/2.1/clusters //api/2.0/libraries
+["POST","/api/2.0/workspace/delete","/Workspace/Users/[USERNAME]/.bundle/cluster-policy-libraries/default/state/deploy.lock"]
