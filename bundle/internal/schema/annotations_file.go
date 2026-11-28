@@ -64,7 +64,10 @@ const annotationsFileHeader = `# This file contains the documentation the CLI ow
 #
 # Running "task generate-schema" keeps this file in sync with the
 # configuration structure: it adds placeholders for new undocumented fields
-# and drops entries for fields that no longer exist.
+# and drops entries for fields that no longer exist. For a new resource type
+# it writes the standard description of the entry under "resources" and of
+# the "lifecycle" field instead of a placeholder; edit them like any other
+# entry.
 `
 
 // descriptorKeys is the set of YAML keys a node carries inline (the JSON tags

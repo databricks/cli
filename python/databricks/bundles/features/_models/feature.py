@@ -62,6 +62,9 @@ class Feature(Resource):
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     lineage_context: VariableOrOptional[LineageContext] = None
     """
@@ -119,6 +122,9 @@ class FeatureDict(TypedDict, total=False):
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     lineage_context: VariableOrOptional[LineageContextParam]
     """
