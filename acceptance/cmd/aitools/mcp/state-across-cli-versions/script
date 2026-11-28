@@ -10,14 +10,18 @@ MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=sch
 
 # repoint makes the profile name the same fake workspace under another host name, as a profile that was logged in to
 # another workspace does. restore undoes it.
-cp .databrickscfg original.databrickscfg
+setup_custom_host
 repoint() {
-    sed 's|//127.0.0.1:|//localhost:|' original.databrickscfg > .databrickscfg
+    update_file.py .databrickscfg "$DATABRICKS_HOST" "$CUSTOM_HOST"
 }
 restore() {
-    cp original.databrickscfg .databrickscfg
+    update_file.py .databrickscfg "$CUSTOM_HOST" "$DATABRICKS_HOST"
 }
-frames='split("\n") | map(select(length > 0) | fromjson) | sort_by(.id)[] | {id, tools: [.result.tools[]?.name], error}'
+# frames prints the JSON-RPC responses in a file of serve's stdout, one per line and sorted by id, since they may arrive
+# in any order.
+frames() {
+    jq -Rsc 'split("\n") | map(select(length > 0) | fromjson) | sort_by(.id)[] | {id, tools: [.result.tools[]?.name], error}' "$@"
+}
 
 title "Claude Code and Cursor get the server"
 trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,cursor
@@ -50,8 +54,10 @@ title "serve starts for a profile that now points at another host"
 # Badness: the record held the host the server was added for. Without it serve takes the host the profile names now, so
 # the agent talks to another workspace than the one the user chose, with one line on stderr.
 repoint
-trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -Rsc "$frames"
-trace cat LOG.stderr
+# trace prints the command to stderr, which goes to the file here, so the command is shown with the file.
+trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr > LOG.frames
+cat LOG.stderr
+trace frames LOG.frames
 restore
 
 title "This CLI saves a state file that a newer CLI wrote"

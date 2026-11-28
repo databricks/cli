@@ -1,8 +1,3 @@
 Badness = "after a CLI older than v1.28.0 saves the aitools state file, the MCP install records are gone: remove cannot remove the servers this CLI added, and serve starts for a profile that points at another host than the one the server was added for"
 
-Ignore = ["home", "original.databrickscfg"]
-
-# The profile is re-pointed at the fake workspace under another spelling of its host, so that serve can reach it.
-[[Repls]]
-Old = 'http://localhost:\d+'
-New = '[OTHER_HOST_URL]'
+Ignore = ["home"]
