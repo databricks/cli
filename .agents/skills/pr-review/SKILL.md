@@ -79,6 +79,10 @@ For every new type, function, flag, env var, config field, or code path:
   Under a "keep in sync with X" comment, check every copy, not only the ones
   the comment lists, and check that the parity test has an input that
   exercises the change.
+- When the change deletes or renames something comments refer to by name
+  (a `Badness` entry in `test.toml`, a TODO, an issue link), grep for the
+  comments that point at it ("see the test's Badness note"). The pointer
+  is outside the diff, and the change leaves it dangling.
 - For every new option, flag or branch, find the concrete input that makes
   it do something (a file, a directory, an API response, a config value) and
   confirm that input can still be produced at `TARGET`. A mechanism whose
@@ -172,7 +176,12 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    Docstrings and `--help` text in `acceptance/bin/*.py` count, and so does
    the doc comment of a new test function when the change is test-only;
    otherwise those passes come up empty for exactly the changes where the
-   comment is the point.
+   comment is the point. Notes in acceptance tests count too, indented or
+   not: `Badness` strings and `#` comments in `test.toml` (`'*/test.toml'`
+   with `^\+\s*(#|Badness)`) and `#` comments in `script`,
+   `script.prepare` and `script.cleanup` (`'*/script*'` with `^\+\s*#`).
+   Check each against the golden output and the `script` titles, and grep
+   the API or helper names it mentions in the code and the pinned SDK.
    Each comment above a new top-level declaration goes in the table. It
    should say what is decided, from which input, and where the result comes
    from. Flag comments that are wrong, that blur similar nouns, or that
@@ -181,6 +190,13 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    tool (adds a suffix, strips a prefix, retries a specific error) without
    a comment saying why; ask why it happens. When a new comment states such
    a quirk, check that the other callers of the same API agree with it.
+   When a comment or `Badness` note says something is disabled until a bug
+   is fixed ("Re-enable once", "known issue, see #N"), check that the bug
+   still exists. `git log -S` a phrase from the note finds the commit that
+   added it, but not a fix that left the note in place, so search
+   `<that commit>..origin/main` for one: `git log -S` the API or helper
+   the note names and `--grep` its `#N`. Then run the disabled steps in a
+   scratch copy.
    Table: `line | what the comment claims | what the code does | precise
    enough?`
 9. **Tests.** Review test code as carefully as the code under test.
