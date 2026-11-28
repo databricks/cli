@@ -1,21 +1,37 @@
-# Reproduces https://github.com/databricks/cli/issues/1976: after the remote bundle
-# files are deleted out-of-band, a plain redeploy does not re-upload them.
+# Regression test for https://github.com/databricks/cli/issues/1976: after the remote
+# bundle files are deleted out-of-band, a plain redeploy must upload them again.
 
 BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete/default"
 
 trace $CLI bundle deploy
 
 title "After the initial deploy the python_file exists"
-trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
 
 title "Delete the remote bundle directory out-of-band (simulates deleting it in the UI)"
 trace $CLI workspace delete --recursive "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete"
 
-title "Redeploy reuses the stale snapshot, so the python_file is NOT re-uploaded"
+title "Redeploy uploads the files again"
 trace $CLI bundle deploy
-trace musterr $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py"
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
 
-title "Removing the sync snapshot forces a full re-upload, restoring the python_file"
-trace rm -rf .databricks/bundle/default/sync-snapshots
+title "A redeploy without changes uploads nothing"
 trace $CLI bundle deploy
-trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+
+title "Delete only the files directory out-of-band"
+trace $CLI workspace delete --recursive "$BUNDLE_PATH/files"
+
+title "A dry run reports the files as pending and does not recreate the directory"
+# The output lists the files in non-deterministic order, so it goes to LOG.sync and only the uploads are asserted.
+trace $CLI bundle sync --dry-run --output text > LOG.sync
+# Unset MSYS_NO_PATHCONV for the Python helper, otherwise Python cannot find contains.py on Windows.
+env -u MSYS_NO_PATHCONV contains.py 'Uploaded databricks.yml' 'Uploaded hello_world.py' < LOG.sync > /dev/null
+trace musterr $CLI workspace get-status "$BUNDLE_PATH/files"
+
+title "bundle validate recreates the files directory without uploading anything"
+trace $CLI bundle validate
+trace $CLI workspace get-status "$BUNDLE_PATH/files" | get_status_fields
+
+title "The next deploy still uploads the files again"
+trace $CLI bundle deploy
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
