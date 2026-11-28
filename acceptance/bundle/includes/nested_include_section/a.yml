@@ -1,0 +1,3 @@
+# An included file with its own include section.
+include:
+  - c.yml

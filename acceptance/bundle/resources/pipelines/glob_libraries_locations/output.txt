@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle validate
+Warning: required field "coordinates" is not set
+  at resources.pipelines.p.libraries[0].maven
+  in databricks.yml:12:13
+
+Warning: required field "coordinates" is not set
+  at resources.pipelines.p.libraries[1].maven
+
+Warning: required field "coordinates" is not set
+  at resources.pipelines.p.libraries[2].maven
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 3 warnings
