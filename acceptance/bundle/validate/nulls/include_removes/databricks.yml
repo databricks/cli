@@ -1,0 +1,34 @@
+bundle:
+  name: test-bundle
+  cluster_id: base-cluster
+
+include:
+  - override.yml
+
+presets:
+  name_prefix: base-
+  tags:
+    removed: "1"
+    kept: "1"
+
+sync:
+  include:
+    - databricks.yml
+
+permissions:
+  - level: CAN_VIEW
+    group_name: users
+
+variables:
+  with_default:
+    default: base
+
+run_as:
+  user_name: base@example.com
+
+resources:
+  jobs:
+    foo:
+      name: foo
+    bar:
+      name: bar

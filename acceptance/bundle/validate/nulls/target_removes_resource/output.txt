@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Error: job not_in_base is not defined
+  at resources.jobs.not_in_base
+  in databricks.yml:19:22
+
+
+Exit code: 1
+{
+  "jobs": [
+    "bar",
+    "foo",
+    "not_in_base"
+  ],
+  "pipelines": [
+    "baz"
+  ]
+}
+
+>>> [CLI] bundle validate -o json -t prod
+{
+  "jobs": [
+    "bar",
+    "foo"
+  ],
+  "pipelines": [
+    "baz"
+  ]
+}
