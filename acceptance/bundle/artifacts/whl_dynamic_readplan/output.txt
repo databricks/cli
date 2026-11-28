@@ -1,14 +1,16 @@
 
-=== Bump the version and add a second package next to the built wheels
+=== Bump the version twice and add a second package next to the built wheels
 
 >>> find.py my_test_code/dist/.*whl
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl
+my_test_code/dist/my_test_code-0.0.3-py3-none-any.whl
 my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl
 
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading my_test_code/dist/my_test_code-0.0.2-py3-none-any.whl...
+Uploading my_test_code/dist/my_test_code-0.0.3-py3-none-any.whl...
 Uploading my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/files...
 Updated jobs.my_job
@@ -17,7 +19,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 === Wheels the job references
 
 >>> print_requests.py --keep //jobs/reset
-"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.3+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
 
@@ -26,4 +28,5 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --sort //.internal/
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.2-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.3-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"

@@ -5,8 +5,11 @@ $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy --plan tmp.plan.json &> LOG.deploy
 rm "$OUT_REQUESTS"
 
-title "Bump the version and add a second package next to the built wheels"
+title "Bump the version twice and add a second package next to the built wheels"
+# The pinned task keeps 0.0.1; 0.0.2 is a stale build that nothing references.
 update_file.py my_test_code/src/__init__.py 0.0.1 0.0.2
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+update_file.py my_test_code/src/__init__.py 0.0.2 0.0.3
 cp $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-any.whl my_test_code/dist/
 # A fixed mtime keeps the patched version of the copied wheel stable in the output.
 setmtime.py "2020-01-01 00:00:00.0" my_test_code/dist/other_test_code-0.0.1-py3-none-any.whl
