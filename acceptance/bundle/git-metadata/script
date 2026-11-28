@@ -8,6 +8,31 @@ trace $CLI bundle validate -o json | jq .bundle.git
 cd ..
 rm -fr withremote
 
+title "a submodule checkout: branch, commit and origin URL come from the submodule's git dir"
+mkdir lib
+cd lib
+cp ../databricks.yml .
+git-repo-init
+# git-repo-init's commit can be identical to the first case's (same content and
+# timestamp); a second commit keeps this SHA unique.
+git commit -q --allow-empty -m 'Second commit'
+add_repl "$(git rev-parse HEAD)" LIB_COMMIT
+cd ..
+mkdir outer
+cd outer
+# The superproject has another branch, no commit and no remote, so none of the
+# values below can come from it.
+git init -qb outer
+# The submodule's .git is a file pointing into the superproject's .git/modules,
+# a full git dir without the "commondir" file a linked worktree has.
+git -c protocol.file.allow=always submodule add -q ../lib lib
+cd lib
+# The clone's origin is a local path; pin it so the output is the same on every platform.
+git remote set-url origin https://example.test/lib.git
+trace $CLI bundle validate -o json | jq .bundle.git
+cd ../..
+rm -fr lib outer
+
 title "a malformed .git: the worktree root is still found, with no metadata"
 mkdir broken
 cd broken

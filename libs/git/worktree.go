@@ -90,7 +90,7 @@ func resolveGitDirs(root vfs.Path) (vfs.Path, vfs.Path, error) {
 		return gitDir, gitDir, nil
 	}
 
-	// If the path is not a directory, then it is a worktree.
+	// If the path is not a directory, then it is a linked worktree or a submodule.
 	// Read value for $GIT_DIR.
 	gitDirValue, err := readGitDir(root)
 	if err != nil {
@@ -105,8 +105,25 @@ func resolveGitDirs(root vfs.Path) (vfs.Path, vfs.Path, error) {
 		gitDir = vfs.MustNew(filepath.Join(root.Native(), gitDirValue))
 	}
 
+	// Check $GIT_DIR is a directory so that a dangling `.git` file is reported
+	// instead of being mistaken for a git folder without "commondir" below.
+	gitDirInfo, err := gitDir.Stat(".")
+	if err != nil {
+		return nil, nil, fmt.Errorf("expected %q to point to a git folder at %q: %w", filepath.Join(root.Native(), GitDirectoryName), gitDir.Native(), err)
+	}
+	if !gitDirInfo.IsDir() {
+		return nil, nil, fmt.Errorf("expected %q to point to a git folder at %q: not a directory", filepath.Join(root.Native(), GitDirectoryName), gitDir.Native())
+	}
+
 	// Read value for $GIT_COMMON_DIR.
 	gitCommonDirValue, err := readGitCommonDir(gitDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		// Without a "commondir" file, $GIT_DIR is a complete repository and is
+		// also $GIT_COMMON_DIR. A submodule's `.git` file points to such a folder
+		// under the superproject's `.git/modules`.
+		// See https://git-scm.com/docs/gitrepository-layout#Documentation/gitrepository-layout.txt-commondir
+		return gitDir, gitDir, nil
+	}
 	if err != nil {
 		return nil, nil, fmt.Errorf(`expected "commondir" file in worktree git folder at %q: %w`, gitDir.Native(), err)
 	}

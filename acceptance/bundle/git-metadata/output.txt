@@ -10,6 +10,17 @@
   "origin_url": "https://github.com/databricks/cli"
 }
 
+=== a submodule checkout: branch, commit and origin URL come from the submodule's git dir
+
+>>> [CLI] bundle validate -o json
+{
+  "actual_branch": "main",
+  "branch": "main",
+  "bundle_root_path": ".",
+  "commit": "[LIB_COMMIT]",
+  "origin_url": "https://example.test/lib.git"
+}
+
 === a malformed .git: the worktree root is still found, with no metadata
 {
   "bundle_root_path": "."
