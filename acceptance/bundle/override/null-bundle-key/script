@@ -1,0 +1,3 @@
+for target in with_mode with_cluster_id with_git without_overrides; do
+  trace errcode $CLI bundle validate -o json -t $target | jq -c '.bundle | {mode, cluster_id, git_branch: .git.branch}'
+done

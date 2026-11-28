@@ -1,0 +1,16 @@
+# The bundle key is present but empty (null), for example because every key under it is
+# commented out. The name is left out on purpose; root_path makes the bundle valid without it.
+bundle:
+
+workspace:
+  root_path: ~/.bundle/null-bundle-key
+
+targets:
+  with_mode:
+    mode: development
+  with_cluster_id:
+    cluster_id: "0123-456789-abcdef"
+  with_git:
+    git:
+      branch: main
+  without_overrides: {}

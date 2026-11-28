@@ -1,0 +1,28 @@
+
+>>> errcode [CLI] bundle validate -o json -t with_mode
+Error: failed to perform target override for target=with_mode: expected a map to index "bundle.mode", found nil
+
+
+Exit code: 1
+{"mode":null,"cluster_id":null,"git_branch":null}
+
+>>> errcode [CLI] bundle validate -o json -t with_cluster_id
+Error: failed to perform target override for target=with_cluster_id: expected a map to index "bundle.cluster_id", found nil
+
+
+Exit code: 1
+{"mode":null,"cluster_id":null,"git_branch":null}
+
+>>> errcode [CLI] bundle validate -o json -t with_git
+Error: failed to perform target override for target=with_git: expected a map to index "bundle.git", found nil
+
+
+Exit code: 1
+{"mode":null,"cluster_id":null,"git_branch":null}
+
+>>> errcode [CLI] bundle validate -o json -t without_overrides
+Warning: required field "name" is not set
+  at bundle
+  in databricks.yml:3:8
+
+{"mode":null,"cluster_id":null,"git_branch":null}

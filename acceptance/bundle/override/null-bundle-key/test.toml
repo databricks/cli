@@ -1,0 +1,1 @@
+Badness = "When the bundle key is null, a target that sets mode, cluster_id or git fails with 'expected a map to index \"bundle.mode\", found nil'. It should apply the override, as it does when the bundle key is an empty map."
