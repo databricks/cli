@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+include:
+  - a.yml
+  - b.yml
+
+resources:
+  jobs:
+    foo:
+      name: foo-root
+      tags:
+        root: "1"
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          tags:
+            root_dev: "1"

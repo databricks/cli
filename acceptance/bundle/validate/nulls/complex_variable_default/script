@@ -1,0 +1,2 @@
+# A null inside a complex variable default is ignored when merged from an include, but kept when the target replaces the whole default.
+trace $CLI bundle validate -o json -t dev | jq '.variables | map_values(.value)'

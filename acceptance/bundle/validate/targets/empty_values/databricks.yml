@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle
+
+presets:
+  name_prefix: root-
+  jobs_max_concurrent_runs: 7
+  pipelines_development: true
+
+sync:
+  include:
+    - databricks.yml
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      tags:
+        root: "1"
+
+targets:
+  dev:
+    presets:
+      name_prefix: ""
+      jobs_max_concurrent_runs: 0
+      pipelines_development: false
+    sync:
+      include: []
+    permissions: []
+    resources:
+      jobs:
+        foo:
+          tags: {}

@@ -1,0 +1,45 @@
+bundle:
+  cluster_id: override-cluster
+  git:
+    origin_url: https://override.example.com
+
+workspace:
+  root_path: /Workspace/override
+
+artifacts:
+  whl:
+    build: build-override
+    files:
+      - source: override.whl
+
+experimental:
+  python_wheel_wrapper: true
+
+presets:
+  name_prefix: override-
+  tags:
+    override: "1"
+
+sync:
+  include:
+    - "*.yml"
+
+permissions:
+  - level: CAN_VIEW
+    group_name: viewers
+
+variables:
+  scalar:
+    default: override
+  complex:
+    default:
+      override: override
+      shared: override
+      list: [override]
+
+scripts:
+  override_script:
+    content: echo override
+
+run_as:
+  service_principal_name: override-sp

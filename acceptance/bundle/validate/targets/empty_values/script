@@ -1,0 +1,2 @@
+# A target overrides with "", 0 and false, but [] and {} do not clear a list or a map.
+trace $CLI bundle validate -o json -t dev | jq '{presets, sync, permissions, tags: .resources.jobs.foo.tags}'

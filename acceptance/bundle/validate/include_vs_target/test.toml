@@ -1,0 +1,10 @@
+Ignore = [".databricks"]
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+# Both bundles resolve paths against their own directory.
+[[Repls]]
+Old = '\[TEST_TMP_DIR\]/(include|target)'
+New = '[BUNDLE_ROOT]'

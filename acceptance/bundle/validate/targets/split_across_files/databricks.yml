@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+include:
+  - a.yml
+
+workspace:
+  root_path: /Workspace/root
+
+targets:
+  dev:
+    workspace:
+      root_path: /Workspace/dev-root
+      file_path: /Workspace/dev-root/files
+    sync:
+      include:
+        - databricks.yml

@@ -1,0 +1,5 @@
+presets:
+  name_prefix: z-
+
+workspace:
+  root_path: /Workspace/z

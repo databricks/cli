@@ -1,0 +1,2 @@
+# A null resource in an included file counts as a second definition of the resource.
+errcode trace $CLI bundle validate -o json | jq .resources

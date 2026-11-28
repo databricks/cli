@@ -1,0 +1,43 @@
+
+>>> [CLI] bundle validate -o json -t dev
+{
+  "name": "foo-dev",
+  "description": "root",
+  "tags": {
+    "dev": "1",
+    "root": "1",
+    "shared": "dev"
+  },
+  "email_notifications": {
+    "on_failure": [
+      "root@example.com",
+      "dev@example.com"
+    ]
+  },
+  "tasks": [
+    {
+      "libraries": [
+        {
+          "pypi": {
+            "package": "root"
+          }
+        },
+        {
+          "pypi": {
+            "package": "dev"
+          }
+        }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files/root"
+      },
+      "task_key": "t1"
+    },
+    {
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files/dev"
+      },
+      "task_key": "t2"
+    }
+  ]
+}

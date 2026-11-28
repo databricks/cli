@@ -1,0 +1,2 @@
+# A target override merges into the job field by field: maps merge, lists are concatenated, tasks merge by task_key.
+trace $CLI bundle validate -o json -t dev | jq '.resources.jobs.foo | {name, description, tags, email_notifications, tasks}'

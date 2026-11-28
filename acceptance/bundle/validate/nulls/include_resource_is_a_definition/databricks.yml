@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+resources:
+  jobs:
+    foo:
+      name: foo

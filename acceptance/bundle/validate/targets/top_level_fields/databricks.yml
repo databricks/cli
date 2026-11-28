@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+  cluster_id: root-cluster
+  git:
+    branch: root-branch
+    origin_url: https://root.example.com
+
+targets:
+  dev:
+    mode: development
+    cluster_id: dev-cluster
+    git:
+      branch: dev-branch
+    bundle:
+      cluster_id: dev-bundle-cluster

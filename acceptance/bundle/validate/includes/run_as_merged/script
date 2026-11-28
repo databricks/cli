@@ -1,0 +1,2 @@
+# An included run_as is merged into the root one rather than replacing it (unlike a target run_as).
+errcode trace $CLI bundle validate -o json | jq .run_as
