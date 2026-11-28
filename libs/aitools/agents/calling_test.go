@@ -274,6 +274,14 @@ func TestDatabricksTooling(t *testing.T) {
 			want: agents.ToolingSkills,
 		},
 		{
+			name:  "codex project-scoped skills in .agents",
+			agent: agents.NameCodex,
+			setup: func(t *testing.T, home, cwd string) {
+				mkdir(t, cwd, ".agents", "skills", "databricks")
+			},
+			want: agents.ToolingSkills,
+		},
+		{
 			name:  "project skills at the repository root, CLI in a subdirectory",
 			agent: agents.NameClaudeCode,
 			setup: func(t *testing.T, home, cwd string) {

@@ -52,6 +52,9 @@ func TestValidatorNumber(t *testing.T) {
 
 	err = validateNumber("abc")
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
+
+	err = validateNumber(nil)
+	assert.EqualError(t, err, "expected type float, but value is <nil>")
 }
 
 func TestValidatorInt(t *testing.T) {
@@ -72,6 +75,9 @@ func TestValidatorInt(t *testing.T) {
 
 	err = validateInteger("abc")
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
+
+	err = validateInteger(nil)
+	assert.EqualError(t, err, "expected type integer, but value is <nil>")
 }
 
 func TestTemplateValidateType(t *testing.T) {

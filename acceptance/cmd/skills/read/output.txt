@@ -1,0 +1,69 @@
+
+=== A skill with a supporting file: SKILL.md, then the file list
+
+>>> [CLI] skills read guide-skill
+---
+name: guide-skill
+description: A skill with a supporting file.
+---
+
+# Guide skill
+
+Read the guide in references for details.
+
+Other files in this skill, each read with its command:
+  databricks skills read-file guide-skill references/guide.md
+  databricks skills read-file -- guide-skill -notes.md
+
+=== A file whose name starts with a hyphen: the printed command ends the flags and runs as printed
+
+>>> eval databricks skills read-file -- guide-skill -notes.md
+Notes that start with a hyphen.
+
+=== read-file accepts -- before a leading-hyphen file name
+
+>>> [CLI] skills read-file -- guide-skill -notes.md
+Notes that start with a hyphen.
+
+=== A skill without supporting files
+
+>>> [CLI] skills read demo-skill
+---
+name: demo-skill
+description: A skill for tests.
+---
+
+# Demo skill
+
+=== JSON output, with and without supporting files
+
+>>> [CLI] skills read guide-skill -o json
+{
+  "name": "guide-skill",
+  "version": "0.0.1",
+  "source": "[TESTROOT]/cmd/skills/read/../release",
+  "content": "---\nname: guide-skill\ndescription: A skill with a supporting file.\n---\n\n# Guide skill\n\nRead the guide in references for details.\n",
+  "files": [
+    "references/guide.md",
+    "-notes.md"
+  ]
+}
+
+>>> [CLI] skills read demo-skill -o json
+{
+  "name": "demo-skill",
+  "version": "0.0.1",
+  "source": "[TESTROOT]/cmd/skills/read/../release",
+  "content": "---\nname: demo-skill\ndescription: A skill for tests.\n---\n\n# Demo skill\n",
+  "files": []
+}
+
+=== An unknown skill exits non-zero and points at skills list
+
+>>> [CLI] skills read no-such-skill
+Error: unknown skill "no-such-skill": run "databricks skills list" to see the available skills
+
+=== A skill that needs a newer CLI: the warning goes to stderr, the skill to stdout
+
+>>> [CLI] skills read future-skill
+Warning: skill "future-skill" needs CLI version 99.0.0 or newer, this CLI is [CLI_VERSION]. Update the CLI to use it.

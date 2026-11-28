@@ -1,0 +1,13 @@
+Cloud = false
+
+# The rest of acceptance/ssh only runs on Linux; nothing here needs another OS.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+# The client key pair is generated per run; the server's home is checked to be empty.
+Ignore = [
+  "client_key",
+  "client_key.pub",
+  "server-home",
+]

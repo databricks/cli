@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -27,23 +26,6 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
-
-var deployApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
-	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
-	{group: "volumes", message: deleteOrRecreateVolumeMessage},
-	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
-	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
-	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
-	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
-	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
-	{group: "features", message: deleteOrRecreateFeatureMessage},
-	{group: "feature_specs", message: deleteOrRecreateFeatureSpecMessage},
-}
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
@@ -57,7 +39,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	total := logApprovalGroups(ctx, actions, deployApprovalGroups, false, deployplan.Recreate, deployplan.Delete)
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups(), false, deployplan.Recreate, deployplan.Delete)
 	if total == 0 {
 		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil
@@ -232,7 +214,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
-		metrics.TrackUsedCompute(),
+		trackUsedComputeMutator(),
 		deploy.ResourcePathMkdir(),
 	)
 

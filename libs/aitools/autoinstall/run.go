@@ -95,7 +95,7 @@ func Record(ctx context.Context, version string, attempts int, id string, now ti
 // StartAttempt records attempt as Record does, unless the state is opted out
 // by then, and reports whether it did. A run counts the attempt right before
 // it installs, so an opt-out stored after the run read the state (during the
-// gate lookup or the install prompt, say) still stops it.
+// gate lookup, say) still stops it.
 func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time) (started bool, err error) {
 	err = updateState(ctx, func(s *State) {
 		if s.OptedOut {
@@ -113,6 +113,7 @@ func record(s *State, version string, attempts int, id string, now time.Time) {
 	s.Attempts = attempts
 	if attempts == 0 {
 		s.Installing = false
+		s.InstallStateDigest = ""
 		s.LastAttempt = time.Time{}
 	} else {
 		s.LastAttempt = now.UTC()
@@ -122,9 +123,27 @@ func record(s *State, version string, attempts int, id string, now time.Time) {
 	}
 }
 
+// RecordUnfinished settles version as Record does with attempts 0, but keeps
+// State.Installing and State.InstallStateDigest: the first install was
+// refused the skills, so an agent did not get its tools, and a later version
+// finishes the install.
+func RecordUnfinished(ctx context.Context, version, id string) error {
+	return updateState(ctx, func(s *State) {
+		installing, digest := s.Installing, s.InstallStateDigest
+		record(s, version, 0, id, time.Time{})
+		s.Installing, s.InstallStateDigest = installing, digest
+	})
+}
+
 // MarkInstalling sets State.Installing before a first install starts.
 func MarkInstalling(ctx context.Context) error {
 	return updateState(ctx, func(s *State) { s.Installing = true })
+}
+
+// SaveInstallStateDigest sets State.InstallStateDigest after a first install
+// that did not finish.
+func SaveInstallStateDigest(ctx context.Context, digest string) error {
+	return updateState(ctx, func(s *State) { s.InstallStateDigest = digest })
 }
 
 // SaveID stores id as the machine identifier unless one is stored already,
@@ -139,12 +158,6 @@ func SaveID(ctx context.Context, id string) (string, error) {
 		id = s.ID
 	})
 	return id, err
-}
-
-// Accept records that the user answered "yes" at the install prompt of
-// version (State.AcceptedVersion).
-func Accept(ctx context.Context, version string) error {
-	return updateState(ctx, func(s *State) { s.AcceptedVersion = version })
 }
 
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI

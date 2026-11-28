@@ -9,10 +9,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.ambiguous_rename_job
-  tasks[task_key='aaa']: add
-  tasks[task_key='alpha']: remove
-  tasks[task_key='beta']: remove
-  tasks[task_key='zzz']: add
+  tasks[task_key='aaa']: skip (several elements with the same contents were renamed at once, in different blocks)
+  tasks[task_key='alpha']: skip (several elements with the same contents were renamed at once, in different blocks)
+  tasks[task_key='beta']: skip (several elements with the same contents were renamed at once, in different blocks)
+  tasks[task_key='zzz']: skip (several elements with the same contents were renamed at once, in different blocks)
 
 
 

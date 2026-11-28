@@ -1,0 +1,26 @@
+
+>>> [CLI] skills --help
+List, read and search Databricks skills
+
+Usage:
+  databricks skills [command]
+
+Available Commands:
+  list        List the available skills
+  list-files  List the files of a skill
+  read        Read a skill's instructions
+  read-file   Read one file of a skill
+  search      Search the skills for words
+
+Flags:
+  -h, --help[=true|false]   help for skills
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks skills [command] --help" for more information about a command.
+
+>>> [CLI] --help

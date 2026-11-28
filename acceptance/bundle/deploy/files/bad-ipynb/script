@@ -1,0 +1,18 @@
+cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
+trap cleanup EXIT
+envsubst < databricks.yml.tmpl > databricks.yml
+R="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/zz-bad-ipynb-${UNIQUE_NAME}/default"
+VALID_NOTEBOOK="$(cat n.ipynb)"
+trace $CLI bundle deploy
+trace list_notebook
+
+title "Break the notebook JSON and redeploy"
+trace echo '{"cells": [' > n.ipynb
+trace musterr $CLI bundle deploy
+trace list_notebook
+
+title "Restore the notebook with an mtime older than its last upload and redeploy"
+printf '%s\n' "$VALID_NOTEBOOK" > n.ipynb
+trace setmtime.py "2000-01-01 00:00:00.0" n.ipynb
+trace $CLI bundle deploy
+trace list_notebook

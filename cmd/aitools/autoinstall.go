@@ -20,14 +20,17 @@ On the first run of a new CLI version, the CLI can install the Databricks AI
 tools (skills and plugins) for the coding agents already on this machine, as
 'databricks aitools install --scope=global' does, or update an existing
 installation, as 'databricks aitools update' does. It never runs in CI or on
-Databricks Runtime, and only touches the global scope. In a terminal it asks
-before the first install.
+Databricks Runtime, only touches the global scope, and asks nothing.
 
+It runs only once the user agreed to it with 'databricks aitools auto-install
+enable', a global-scope 'databricks aitools install' or a "yes" to the skills
+prompt of 'databricks apps init', or when it finds a global installation that
+the CLI made.
 It stays off after 'databricks aitools auto-install disable', a global-scope
-'databricks aitools uninstall', a "no" at that prompt, or a "no" to the skills
-prompt of 'databricks apps init', until 'databricks aitools auto-install enable'.
-Setting ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes,
-on) turns it off in that environment.`,
+'databricks aitools uninstall', or a "no" to the skills prompt of 'databricks
+apps init', until 'databricks aitools auto-install enable'. Setting
+` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes, on) turns
+it off in that environment.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newAutoInstallToggleCmd(true))
@@ -39,7 +42,7 @@ on) turns it off in that environment.`,
 func newAutoInstallToggleCmd(enable bool) *cobra.Command {
 	use, short := "disable", "Turn off the automatic installation of Databricks AI tools"
 	if enable {
-		use, short = "enable", "Turn the automatic installation of Databricks AI tools back on"
+		use, short = "enable", "Turn on the automatic installation of Databricks AI tools"
 	}
 	return &cobra.Command{
 		Use:   use,
@@ -47,7 +50,11 @@ func newAutoInstallToggleCmd(enable bool) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if err := autoinstall.SetOptedOut(ctx, !enable); err != nil {
+			consent := autoinstall.ConsentOptedOut
+			if enable {
+				consent = autoinstall.ConsentGiven
+			}
+			if _, err := autoinstall.SetConsent(ctx, consent); err != nil {
 				return fmt.Errorf("failed to save the auto-install setting: %w", err)
 			}
 			printAutoInstallSetting(ctx, enable)

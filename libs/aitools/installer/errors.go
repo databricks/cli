@@ -3,7 +3,10 @@ package installer
 import (
 	"errors"
 	"fmt"
-	"net/http"
+	"strings"
+
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // ErrNothingInstalled reports that update or uninstall found no install state
@@ -71,69 +74,26 @@ func (e *SkillError) Error() string {
 	return fmt.Sprintf("skill %q %s", e.Skill, e.Reason)
 }
 
-// maxFetchBodySize caps how much of a skills manifest or release lookup
-// response is read.
-const maxFetchBodySize = 1 << 20
-
-// ErrManifestTooLarge reports a manifest response larger than maxFetchBodySize.
-// The command layer classifies it like a manifest that does not parse.
-var ErrManifestTooLarge = fmt.Errorf("skills manifest is larger than %d MiB", maxFetchBodySize>>20)
-
 // ErrUnsafeManifestPath reports a skills manifest that names a skill or file
 // outside the skills directory. The command layer classifies it like a
 // manifest that does not parse.
-var ErrUnsafeManifestPath = errors.New("skills manifest names a path outside the skills directory")
+var ErrUnsafeManifestPath = skills.ErrUnsafeManifestPath
+
+// ErrManifestTooLarge reports a manifest response larger than the cap on
+// skills manifests. See skills.ErrManifestTooLarge.
+var ErrManifestTooLarge = skills.ErrManifestTooLarge
 
 // Stages of fetching skills content, recorded on FetchError so a failed
 // release lookup can be told apart from a failed download.
 const (
-	// FetchStageRelease: resolving the latest skills release on api.github.com.
-	FetchStageRelease = "release"
-	// FetchStageManifest: downloading the skills manifest.
-	FetchStageManifest = "manifest"
-	// FetchStageFile: downloading one skill file.
-	FetchStageFile = "file"
+	FetchStageRelease  = skills.FetchStageRelease
+	FetchStageManifest = skills.FetchStageManifest
+	FetchStageFile     = skills.FetchStageFile
 )
 
-// FetchError reports that skills content could not be downloaded, or that a
-// response arrived but could not be used (an unparsable manifest or release
-// payload). It wraps the cause without changing its message; StatusCode is 0
-// when no HTTP response arrived (DNS, proxy, TLS, timeout). A manifest that is
-// not at the ref wraps clicompat.ErrNotFound, so clicompat.IsNotFoundError
-// recognizes it like any other missing ref; check a 404 that way, not through
-// StatusCode.
-type FetchError struct {
-	Stage      string
-	StatusCode int
-	// RateLimited is set when the server said the request exceeded a rate
-	// limit, as opposed to an ordinary 403 from an access policy or proxy.
-	RateLimited bool
-	Err         error
-}
-
-func (e *FetchError) Error() string { return e.Err.Error() }
-func (e *FetchError) Unwrap() error { return e.Err }
-
-// newHTTPFetchError builds the FetchError for a response with a non-OK status.
-func newHTTPFetchError(stage string, resp *http.Response, err error) *FetchError {
-	return &FetchError{Stage: stage, StatusCode: resp.StatusCode, RateLimited: isRateLimited(resp), Err: err}
-}
-
-// isRateLimited reports whether a response is a rate-limit refusal. 429 always
-// is; GitHub also answers 403 for exceeded limits, and then says so with
-// x-ratelimit-remaining: 0 (primary limit) or retry-after (secondary limit).
-// Any other 403 is an access failure.
-// See https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api#exceeding-the-rate-limit.
-func isRateLimited(resp *http.Response) bool {
-	switch resp.StatusCode {
-	case http.StatusTooManyRequests:
-		return true
-	case http.StatusForbidden:
-		return resp.Header.Get("X-RateLimit-Remaining") == "0" || resp.Header.Get("Retry-After") != ""
-	default:
-		return false
-	}
-}
+// FetchError reports that skills content could not be downloaded or used. See
+// skills.FetchError.
+type FetchError = skills.FetchError
 
 // StateError reports that the install state file exists but its content is
 // invalid. Path is the state file that failed to parse.
@@ -146,6 +106,62 @@ type StateError struct {
 
 func (e *StateError) Error() string { return e.Err.Error() }
 func (e *StateError) Unwrap() error { return e.Err }
+
+// AgentSkillsError reports agents that did not get every skill, because their
+// skills directory could not be written. The skills are still installed in
+// the canonical directory and recorded in the install state, and every agent
+// not listed got them.
+type AgentSkillsError struct {
+	Failures []AgentSkillsFailure
+}
+
+// AgentSkillsFailure is one agent that did not get some of the skills: Skills
+// is how many, Total is how many the install had, and Err is the first error.
+type AgentSkillsFailure struct {
+	Agent  *agents.Agent
+	Skills int
+	Total  int
+	Err    error
+}
+
+// Partial reports whether the agent got some of the skills.
+func (f AgentSkillsFailure) Partial() bool { return f.Skills < f.Total }
+
+// Reason describes the failure without naming the agent.
+func (f AgentSkillsFailure) Reason() string {
+	if f.Partial() {
+		return fmt.Sprintf("could not install %d of %d skills: %v", f.Skills, f.Total, f.Err)
+	}
+	noun := "skills"
+	if f.Skills == 1 {
+		noun = "skill"
+	}
+	return fmt.Sprintf("could not install %d %s: %v", f.Skills, noun, f.Err)
+}
+
+// Notice is the line that reports the failure under the agent's name.
+func (f AgentSkillsFailure) Notice() string {
+	if f.Partial() {
+		return fmt.Sprintf("%s is missing %d of %d skills: %v", f.Agent.DisplayName, f.Skills, f.Total, f.Err)
+	}
+	return fmt.Sprintf("Skipped %s: %s", f.Agent.DisplayName, f.Reason())
+}
+
+func (e *AgentSkillsError) Error() string {
+	msgs := make([]string, len(e.Failures))
+	for i, f := range e.Failures {
+		msgs[i] = f.Agent.DisplayName + ": " + f.Reason()
+	}
+	return strings.Join(msgs, "; ")
+}
+
+func (e *AgentSkillsError) Unwrap() []error {
+	errs := make([]error, len(e.Failures))
+	for i, f := range e.Failures {
+		errs[i] = f.Err
+	}
+	return errs
+}
 
 // RefusedError reports an install the installer declines to run in the
 // current state, such as a downgrade or a targeted install over untracked

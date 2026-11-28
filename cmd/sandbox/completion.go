@@ -32,31 +32,6 @@ func completeSandboxIDs(cmd *cobra.Command, args []string, toComplete string) ([
 	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }
 
-// completeSSHKeyHashes returns registered key hashes for `ssh-key delete`.
-// Hashes aren't cached locally, so this path calls the API.
-func completeSSHKeyHashes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) > 0 {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-	if err := root.MustWorkspaceClient(cmd, args); err != nil {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-	ctx := cmd.Context()
-	api, err := newSandboxAPI(cmdctx.WorkspaceClient(ctx))
-	if err != nil {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-	keys, err := api.listKeys(ctx)
-	if err != nil {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-	hashes := make([]string, 0, len(keys))
-	for _, k := range keys {
-		hashes = append(hashes, k.KeyHash)
-	}
-	return hashes, cobra.ShellCompDirectiveNoFileComp
-}
-
 // completionProfile returns the profile name the cache is keyed under,
 // matching the resolution used by the runtime commands (see cacheProfile).
 // Returns "" if the workspace client can't be bootstrapped.

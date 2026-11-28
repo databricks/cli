@@ -185,8 +185,8 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.Equal(t, "Claude Code", byName["claude-code"].DisplayName)
 	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
-	// SupportsProjectScope is wired straight from the registry: claude-code allows
-	// project scope, whereas the managed/skills-only global-only agents below do not.
+	// SupportsProjectScope follows the default delivery: claude-code's plugin allows
+	// project scope, whereas codex's plugin and cursor's skills do not.
 	assert.True(t, byName["claude-code"].SupportsProjectScope)
 
 	require.Contains(t, byName, "codex")
@@ -201,6 +201,10 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.False(t, byName["cursor"].Managed)
 	assert.Empty(t, byName["cursor"].Installed)
 	assert.False(t, byName["cursor"].SupportsProjectScope)
+
+	// A skills-only agent with project skills supports project scope.
+	require.Contains(t, byName, "pi")
+	assert.True(t, byName["pi"].SupportsProjectScope)
 
 	require.Contains(t, byName, "copilot")
 	assert.True(t, byName["copilot"].Managed)

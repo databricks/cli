@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -390,6 +391,10 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}()
 
 			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
+			// Auto-install keeps only the global scope up to date.
+			if scope == installer.ScopeGlobal && anyInstalled(outcomes) {
+				storeInstallConsent(ctx)
+			}
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}
@@ -697,7 +702,7 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
 		// support project-scoped skills, so skip the rest up front instead of
 		// offering an option that fails at install time.
-		if scope == installer.ScopeProject && !a.SupportsProjectScope {
+		if scope == installer.ScopeProject && !a.SupportsProjectSkills {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
 			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
@@ -870,6 +875,11 @@ const (
 // are printed above it, so the message only has to make the exit code non-zero.
 var errNoAgentSetUp = errors.New("nothing was installed; follow the steps above")
 
+// errAgentsPartlySetUp is returned instead of errNoAgentSetUp when an agent
+// that failed still got some of the skills, so the message does not claim that
+// nothing was installed.
+var errAgentsPartlySetUp = errors.New("some skills were not installed; follow the steps above")
+
 // agentErrors wraps failures that are already reported in the per-agent
 // outcomes: those of agents named via --agents, and errNoAgentSetUp when no
 // detected agent was set up. Wrapping lets the JSON and telemetry
@@ -918,12 +928,13 @@ func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents
 }
 
 // forgetStalePluginRecords drops the CLI's plugin records of plugin agents
-// that just got skill files: those whose CLI is missing, and those under
-// --skills-only. They have no plugin (see pluginAlreadyInstalled and
-// planItemFor), so a record left by a removal with the agent's own CLI, or in
-// the agent itself, is stale, and list and update would keep treating them as
-// plugin agents and never refresh their skill files. The skills are already
-// installed, so a failure here is only a warning.
+// that were just given skill files, whether or not every file could be
+// written: those whose CLI is missing, and those under --skills-only. They
+// have no plugin (see pluginAlreadyInstalled and planItemFor), so a record
+// left by a removal with the agent's own CLI, or in the agent itself, is
+// stale, and list and update would keep treating them as plugin agents and
+// never refresh their skill files. The skills are already installed, so a
+// failure here is only a warning.
 func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPlanItem) {
 	if len(items) == 0 {
 		return
@@ -960,18 +971,22 @@ func topLevelFailure(runErr error) error {
 
 // executePlan carries out the plan and returns each agent's outcome. Skills
 // installs, including those of agents whose CLI is missing, go through the
-// existing skills path as one group. A failed plugin install is a warning,
-// unless the agent was explicitly named via --agents, which is an error. A run
-// that sets up no agent at all is an error too, so callers never mistake it for
-// success. The per-agent recovery steps repeat rerun for the agent at hand.
+// existing skills path as one group. An agent whose plugin or skill files
+// could not be installed is a warning, unless the agent was explicitly named
+// via --agents, which is an error. A run that sets up no agent at all is an
+// error too, so callers never mistake it for success. The per-agent recovery
+// steps repeat rerun for the agent at hand.
 func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
-	var fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
+	var skillsItems, fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
 	skillsExplicit := false
+	// partlySetUp is set when a skills agent that failed got some skills.
+	partlySetUp := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
 			skillsAgents = append(skillsAgents, it.agent)
+			skillsItems = append(skillsItems, it)
 			skillsExplicit = skillsExplicit || it.explicit
 			if it.cliMissing {
 				fallbackItems = append(fallbackItems, it)
@@ -1033,10 +1048,43 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
 		skillsErr = installSkillsForAgentsFn(ctx, src, skillsAgents, opts)
-		if skillsErr == nil {
-			for _, a := range skillsAgents {
-				outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+		failed := map[*agents.Agent]installer.AgentSkillsFailure{}
+		if agentsErr, ok := errors.AsType[*installer.AgentSkillsError](skillsErr); ok {
+			// The skills were installed and recorded; only these agents did not
+			// get them, so each is reported like a failed plugin agent.
+			for _, f := range agentsErr.Failures {
+				failed[f.Agent] = f
 			}
+			skillsErr = nil
+		}
+		if skillsErr == nil {
+			for _, it := range skillsItems {
+				f, ok := failed[it.agent]
+				if !ok {
+					outcomes = append(outcomes, agentOutcome{agent: it.agent, delivery: deliverySkills, status: outcomeInstalled})
+					continue
+				}
+				reason := f.Reason()
+				recovery := installRecovery(ctx, skillsAgentRerun(rerun, it), f.Err)
+				if !quiet {
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
+					cmdio.LogString(ctx, "  "+recovery)
+				}
+				outcomes = append(outcomes, agentOutcome{
+					agent:         it.agent,
+					delivery:      deliverySkills,
+					status:        outcomeFailed,
+					errorCategory: classifyInstallError(f.Err),
+					message:       reason,
+					recovery:      recovery,
+				})
+				if it.explicit {
+					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: f.Err})
+				}
+				partlySetUp = partlySetUp || f.Partial()
+			}
+			// A failed agent has no plugin either, and keeping its record would
+			// keep update from refreshing the skill files it did get.
 			forgetStalePluginRecords(ctx, opts.Scope, staleRecordItems)
 		}
 	}
@@ -1191,6 +1239,9 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
 	}
 	if !anyInstalled(outcomes) {
+		if partlySetUp {
+			return outcomes, &agentErrors{err: errAgentsPartlySetUp}
+		}
 		return outcomes, &agentErrors{err: errNoAgentSetUp}
 	}
 	return outcomes, nil
@@ -1305,4 +1356,13 @@ func printNoAgentsMessage(ctx context.Context, rerun installInvocation) {
 	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
 	named, _ := commandText(runtime.GOOS, rerun, nil, "--agents=<name>")
 	cmdio.LogString(ctx, "Install one, then re-run "+rerunPhrase(runtime.GOOS, rerun)+". To set up an agent that was not detected, name it: "+named)
+}
+
+// storeInstallConsent records a global install as the user's consent to
+// installing the tools and keeping them up to date, unless the user answered
+// before: an earlier opt-out stays.
+func storeInstallConsent(ctx context.Context) {
+	if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+		log.Debugf(ctx, "Could not save the consent to install Databricks AI tools automatically: %v", err)
+	}
 }

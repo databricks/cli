@@ -1,0 +1,3 @@
+# With the variable set, the group lists its five subcommands and stays hidden from the root help.
+trace $CLI skills --help
+trace $CLI --help | contains.py "!  skills " > LOG.help

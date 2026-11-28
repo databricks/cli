@@ -12,6 +12,10 @@ type diff struct { //nolint:recvcheck // value receivers for read-only methods, 
 	rmdir  []string
 	mkdir  []string
 	put    []string
+
+	// resetMtimes is set when the new snapshot resets the mtime of a file that
+	// can't be read, so the snapshot must be saved even if nothing is synced.
+	resetMtimes bool
 }
 
 func (d diff) IsEmpty() bool {

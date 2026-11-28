@@ -193,7 +193,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	s.fileCounts = FileCounts{Uploaded: len(change.put), Deleted: len(change.delete)}
 
 	s.notifyStart(ctx, change)
-	if change.IsEmpty() {
+	if change.IsEmpty() && !change.resetMtimes {
 		s.notifyComplete(ctx, change)
 		return files, nil
 	}
