@@ -12,7 +12,7 @@ YML
 echo '{"data":[{"tag_name":"v0.1.0"}]}' > $LABS/cache/databrickslabs-foo-releases.json
 
 # The stack trace (if any) is cut off because it depends on the local Go setup.
-errcode trace $CLI labs install foo --offline 2>&1 | sed '/^goroutine /,/^$/d'
+trace $CLI labs install foo --offline 2>&1 | sed '/^goroutine /,/^$/d'
 
 trace find $LABS -type f | sort
 

@@ -2,6 +2,6 @@ RecordRequests = false
 # Inherits Cloud = true from the parent. On a real workspace this validates that the
 # API still rejects a message-level update_mask exactly as the testserver models it
 # (libs/testserver/postgres.go, probed 2026-08-31): the deploy is expected to 400
-# there (tolerated by errcode).
+# there (asserted by musterr).
 
 Badness = "Adding the whole default_endpoint_settings block masks the enclosing message (update_mask=spec.default_endpoint_settings) instead of the changed leaves, so the deploy fails with 400 \"Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request\". The plan records one block-level change instead of descending to leaves; the mask should name only the leaf fields set in config."

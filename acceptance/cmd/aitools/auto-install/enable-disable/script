@@ -22,12 +22,12 @@ trace auto_install_state
 $CLI aitools auto-install enable &> LOG.enable-reset-1
 
 title "a global uninstall that removes nothing leaves it on"
-errcode trace $CLI aitools uninstall --scope=global
+musterr trace $CLI aitools uninstall --scope=global
 trace auto_install_state
 
 title "a global uninstall of a mistyped skill leaves it on"
 $CLI aitools install --skills-only --scope=global --agents=cursor &> LOG.install-global
-errcode trace $CLI aitools uninstall --scope=global --skills databricks-tset
+musterr trace $CLI aitools uninstall --scope=global --skills databricks-tset
 trace auto_install_state
 
 title "a global uninstall turns it off"

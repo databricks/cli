@@ -10,4 +10,4 @@ title "install a specific experimental skill"
 trace $CLI experimental aitools install --skills-only --global --skills test-exp --experimental
 
 title "asking for an experimental skill without --experimental flag errors out"
-errcode trace $CLI experimental aitools install --skills-only --global --skills test-exp
+musterr trace $CLI experimental aitools install --skills-only --global --skills test-exp

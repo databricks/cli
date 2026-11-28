@@ -8,7 +8,7 @@
 # harness-provided helpers, then `bash` this file:
 #   export CLI=databricks UNIQUE_NAME=$(date +%s)
 #   trace()   { echo "+ $*" >&2; "$@"; }
-#   errcode() { "$@" || echo "Exit code: $?"; }
+#   musterr() { ! "$@" || { echo "Unexpected success"; return 1; }; }
 #   retry()   { "$@"; }
 #   title()   { printf '\n=== %s\n' "$*"; }
 #   project_fields()    { jq '{name, project_id, status}'; }
@@ -29,7 +29,7 @@ trace retry $CLI postgres get-project "$name" | project_fields
 
 title "update_mask=* with a partial body (omits history_retention_duration + default_endpoint_settings)"
 # * requires every field, so it rejects this body field by field.
-errcode trace $CLI postgres update-project "$name" '*' --json '{"spec":{"display_name":"changed","pg_version":16}}' | project_fields
+musterr trace $CLI postgres update-project "$name" '*' --json '{"spec":{"display_name":"changed","pg_version":16}}' | project_fields
 trace print_requests.py //postgres/projects --method PATCH
 
 title "Set default_endpoint_settings to a non-default value (leaf mask)"
@@ -39,6 +39,6 @@ trace print_requests.py //postgres/projects --method PATCH
 
 title "update_mask=* with a body that now omits the non-default default_endpoint_settings"
 # Still rejected: * demands every field regardless of what changed.
-errcode trace $CLI postgres update-project "$name" '*' --json '{"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}' | project_fields
+musterr trace $CLI postgres update-project "$name" '*' --json '{"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}' | project_fields
 trace print_requests.py //postgres/projects --method PATCH
 trace retry $CLI postgres get-project "$name" | project_fields

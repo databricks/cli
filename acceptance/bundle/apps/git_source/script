@@ -29,7 +29,7 @@ title "Verify no drift after deployment"
 trace $CLI bundle plan
 
 title "Run the app to verify it works"
-$CLI bundle run my_app &> tmp.app-run || true
+$CLI bundle run my_app &> tmp.app-run
 trace cat tmp.app-run | head -20
 
 title "Update git_source branch and redeploy"

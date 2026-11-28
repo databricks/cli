@@ -46,4 +46,4 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> errcode [CLI] catalogs delete othercat_[UNIQUE_NAME] --force
+>>> [CLI] catalogs delete othercat_[UNIQUE_NAME] --force

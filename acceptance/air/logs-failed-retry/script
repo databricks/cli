@@ -1,2 +1,2 @@
 title "logs of a failed retry with no logs point to earlier retries"
-errcode trace $CLI air logs 123
+musterr trace $CLI air logs 123

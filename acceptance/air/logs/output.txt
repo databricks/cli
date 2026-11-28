@@ -31,8 +31,6 @@ CUDA out of memory
 >>> [CLI] air logs 123 --tail 0
 Error: invalid --tail 0: must be positive
 
-Exit code: 1
-
 === logs from a specific retry
 
 >>> [CLI] air logs 123 --retry 0
@@ -44,8 +42,6 @@ CUDA out of memory
 
 >>> [CLI] air logs 123 --tail 100 --minutes 30
 Error: cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window
-
-Exit code: 1
 
 === logs --tail and --minutes are mutually exclusive (json)
 
@@ -61,21 +57,15 @@ Exit code: 1
   }
 }
 
-Exit code: 1
-
 === invalid run id
 
 >>> [CLI] air logs notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
-Exit code: 1
-
 === negative node
 
 >>> [CLI] air logs 123 --node -1
 Error: invalid --node -1: must not be negative
-
-Exit code: 1
 
 === out-of-range node
 

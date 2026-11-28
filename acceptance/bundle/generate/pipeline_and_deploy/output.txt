@@ -39,8 +39,8 @@ Destroy: 0 deleted
 
 === Cleanup: delete the original pipeline and files
 
->>> errcode [CLI] pipelines delete [PIPELINE_ID]
+>>> [CLI] pipelines delete [PIPELINE_ID]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME]
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook-[UNIQUE_NAME]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME].py

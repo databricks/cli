@@ -3,5 +3,5 @@
 # output: script: line 1: Y:cliacceptancebuildwindows_amd64databricks.exe: command not found
 
 # Adding single quotes around $CLI helps:
-trap "errcode trace '$CLI' missing-command" EXIT
+trap "musterr trace '$CLI' missing-command" EXIT
 echo "run first"

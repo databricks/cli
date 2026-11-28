@@ -16,8 +16,6 @@ Error: subdir/a[.txt: syntax error in pattern
   at artifacts.test.files[3].source
   in databricks.yml:10:17
 
-
-Exit code: 1
 {
   "test": {
     "files": [

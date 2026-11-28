@@ -2,17 +2,20 @@ kill_after.py "GET /api/2.0/preview/scim/v2/Me" 0 2
 kill_after.py "GET /api/2.0/workspace/list" 0 1
 
 # Test pattern 1: /Me endpoint (kills first 2, then allows)
-trace errcode $CLI current-user me
+trace musterr $CLI current-user me
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Me attempt 1 done"
 
-trace errcode $CLI current-user me
+trace musterr $CLI current-user me
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Me attempt 2 done"
 
 trace $CLI current-user me
 echo "Me attempt 3 done - success!"
 
 # Test pattern 2: /workspace/list endpoint (kills first 1, then allows)
-trace errcode $CLI workspace list /
+trace musterr $CLI workspace list /
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Workspace attempt 1 done"
 
 trace $CLI workspace list /

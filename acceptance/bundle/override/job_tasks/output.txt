@@ -28,11 +28,9 @@
   ]
 }
 
->>> errcode [CLI] bundle validate -o json -t staging
+>>> musterr [CLI] bundle validate -o json -t staging
 Error: file test1.py not found
 
-
-Exit code: 1
 {
   "max_concurrent_runs": 1,
   "name": "job",
@@ -63,7 +61,7 @@ Exit code: 1
   ]
 }
 
->>> errcode [CLI] bundle validate -t staging
+>>> musterr [CLI] bundle validate -t staging
 Error: file test1.py not found
 
 Name: test-bundle
@@ -73,5 +71,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/staging
 
 Found 1 error
-
-Exit code: 1

@@ -1,0 +1,5 @@
+# Scripts run with pipefail, so an unexpected success fails the script even when musterr is on
+# the left side of a pipeline.
+trace musterr false | cat
+trace musterr true | cat
+echo "not reached"

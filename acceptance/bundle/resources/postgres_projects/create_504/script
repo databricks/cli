@@ -8,5 +8,5 @@ rm -f "$OUT_REQUESTS"
 title "The project cannot be read after the create request times out: deploy fails with the create error"
 fault.py "POST /api/2.0/postgres/projects" 504 0 1 DEADLINE_EXCEEDED
 fault.py "GET /api/2.0/postgres/projects/test-pg-proj" 403 0 1 PERMISSION_DENIED
-errcode trace $CLI bundle deploy
+musterr trace $CLI bundle deploy
 trace print_requests.py --get //postgres/projects | jq -r '.method + " " + .path'

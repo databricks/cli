@@ -7,7 +7,7 @@ STDERR
 STDOUT
 
 === Capturing exit code
->>> errcode python3 -c raise SystemExit(5)
+>>> musterr python3 -c raise SystemExit(5)
 
 Exit code: 5
 

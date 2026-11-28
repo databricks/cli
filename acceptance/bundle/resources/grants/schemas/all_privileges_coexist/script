@@ -3,7 +3,7 @@ SCHEMA_FULL_NAME=main.schema_all_priv_coexist_$UNIQUE_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace errcode $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve || true
 }
 trap cleanup EXIT
 

@@ -16,8 +16,6 @@
   ]
 }
 
-Exit code: 1
-
 === install --skills-only --scope=project installs Codex skills into .agents/skills
 
 >>> [CLI] aitools install --skills-only --scope=project --agents=codex --output json

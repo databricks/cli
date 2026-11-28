@@ -1,2 +1,2 @@
 # A timestamp nested inside a complex variable default.
-errcode trace $CLI bundle validate
+musterr trace $CLI bundle validate

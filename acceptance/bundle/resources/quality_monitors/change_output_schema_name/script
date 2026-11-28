@@ -7,8 +7,8 @@ trace create_table.py "$TABLE_NAME"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    errcode $CLI schemas delete "$SCHEMA_NAME" --force &> LOG.schema-delete
-    errcode $CLI schemas delete "main.qm_test_${UNIQUE_NAME}_2" --force &> LOG.schema2-delete
+    $CLI schemas delete "$SCHEMA_NAME" --force &> LOG.schema-delete || true
+    $CLI schemas delete "main.qm_test_${UNIQUE_NAME}_2" --force &> LOG.schema2-delete || true
     rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT

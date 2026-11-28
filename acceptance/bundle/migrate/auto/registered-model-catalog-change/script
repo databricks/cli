@@ -9,7 +9,7 @@ TARGET_CATALOG="othercat_$UNIQUE_NAME"
 cleanup() {
   title "Cleanup"
   trace $CLI bundle destroy --auto-approve
-  trace errcode $CLI catalogs delete "$TARGET_CATALOG" --force
+  trace $CLI catalogs delete "$TARGET_CATALOG" --force || true
 }
 trap cleanup EXIT
 

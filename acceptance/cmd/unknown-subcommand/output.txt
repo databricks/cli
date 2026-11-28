@@ -1,5 +1,5 @@
 
->>> errcode [CLI] secrets list-scopes
+>>> [CLI] secrets list-scopes
 Scope  Backend Type
 
 >>> musterr [CLI] secrets unknown

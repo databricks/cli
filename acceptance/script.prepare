@@ -4,28 +4,21 @@
 # or override this in their own script.prepare or script.
 export DATABRICKS_AUTH_STORAGE=plaintext
 
-errcode() {
-    # Temporarily disable 'set -e' to prevent the script from exiting on error
-    set +e
-    # Execute the provided command with all arguments
-    "$@"
-    local exit_code=$?
-    # Re-enable 'set -e' if it was previously set
-    set -e
-    if [ $exit_code -ne 0 ]; then
-        >&2 printf "\nExit code: $exit_code\n"
-    fi
-}
-
+# Assert that a command fails: the test fails if it succeeds, also inside a pipeline (scripts run
+# with pipefail); on the expected failure the script continues. Use it for every expected failure.
+# The exit code is saved in MUSTERR_EXIT_CODE, not printed. Print it only where the exact code is
+# what the test checks (a killed process, a script exit code passed through by `bundle run`):
+#   printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
+# MUSTERR_EXIT_CODE is not set when musterr runs in a subshell (in a pipeline, or `trace VAR=x musterr`).
 musterr() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e
     # Execute the provided command with all arguments
     "$@"
-    local exit_code=$?
+    MUSTERR_EXIT_CODE=$?
     # Re-enable 'set -e'
     set -e
-    if [ $exit_code -eq 0 ]; then
+    if [ $MUSTERR_EXIT_CODE -eq 0 ]; then
         >&2 printf "\nUnexpected success\n"
         exit 1
     fi
@@ -141,7 +134,7 @@ nostamp() {
 # legitimately diverge across variants. Drop them here so this shared helper stays
 # matrix-agnostic; engine selection is asserted in bundle/telemetry/deploy.
 print_telemetry_bool_values() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -Ev '^(engine_terraform_|deployment_history_enabled )' | sort
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | sed -E '/^(engine_terraform_|deployment_history_enabled )/d' | sort
 }
 
 sethome() {

@@ -8,8 +8,6 @@ Automatic installation of Databricks AI tools is enabled.
 Error: invalid JOB_ID: abc
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 
-Exit code: 1
-
 >>> print_telemetry
 {"command":"jobs_get","exit_code":1,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 

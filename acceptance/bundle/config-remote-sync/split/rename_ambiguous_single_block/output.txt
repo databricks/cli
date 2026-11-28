@@ -52,12 +52,8 @@ Resource: resources.jobs.ambiguous_single_block_job
 >>> grep -c task_key: alpha databricks.yml
 0
 
-Exit code: 1
-
 >>> grep -c task_key: beta databricks.yml
 0
-
-Exit code: 1
 
 === Checking for new task keys:
 

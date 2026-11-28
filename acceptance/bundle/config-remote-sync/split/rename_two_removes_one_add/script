@@ -23,13 +23,13 @@ PYEDIT
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 
 title "Neither block is rewritten: the pairing is not forced"
 trace diff.py databricks.yml.backup databricks.yml
 echo
 title "Both tasks keep their original keys, and no new key was written"
-errcode trace grep -c "task_key: task_toplevel" databricks.yml
-errcode trace grep -c "task_key: task_target" databricks.yml
-errcode trace grep -c "task_key: task_renamed" databricks.yml
+trace grep -c "task_key: task_toplevel" databricks.yml
+trace grep -c "task_key: task_target" databricks.yml
+musterr trace grep -c "task_key: task_renamed" databricks.yml
 rm databricks.yml.backup

@@ -1,0 +1,8 @@
+
+>>> musterr false
+
+>>> musterr true
+
+Unexpected success
+
+Exit code: 1

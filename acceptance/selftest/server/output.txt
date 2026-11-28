@@ -15,10 +15,8 @@ custom
 ---
 response
 
->>> errcode [CLI] workspace get-status /a/b/c
+>>> musterr [CLI] workspace get-status /a/b/c
 Error: Path (/a/b/c) doesn't exist.
-
-Exit code: 1
 
 >>> print_requests.py --get //
 {

@@ -50,4 +50,4 @@ trace musterr $CLI bundle config-remote-sync -t other -p myprofile
 DATABRICKS_BUNDLE_TARGET=other trace musterr $CLI bundle config-remote-sync -p myprofile
 trace musterr $CLI bundle config-remote-sync -t auth-error -p myprofile
 
-trace errcode print_requests.py //telemetry-ext
+trace musterr print_requests.py //telemetry-ext

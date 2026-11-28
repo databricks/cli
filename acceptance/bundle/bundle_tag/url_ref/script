@@ -1,10 +1,10 @@
-errcode $CLI bundle validate &> out.validate.txt
-errcode $CLI bundle validate -o json > out.validate.json.tmp 2>> out.validate.txt
+musterr $CLI bundle validate &> out.validate.txt
+musterr $CLI bundle validate -o json > out.validate.json.tmp 2>> out.validate.txt
 jq .resources out.validate.json.tmp >> out.validate.txt
 rm out.validate.json.tmp
-errcode $CLI bundle plan &> out.plan.txt
-errcode $CLI bundle deploy &> out.deploy.txt
-errcode print_requests.py //jobs &> out.deploy-requests.txt
-errcode $CLI bundle summary &> out.summary.txt
-errcode $CLI bundle destroy --auto-approve &> out.destroy.txt
-errcode print_requests.py //jobs &> out.destroy-requests.txt
+musterr $CLI bundle plan &> out.plan.txt
+musterr $CLI bundle deploy &> out.deploy.txt
+print_requests.py //jobs &> out.deploy-requests.txt
+musterr $CLI bundle summary &> out.summary.txt
+musterr $CLI bundle destroy --auto-approve &> out.destroy.txt
+musterr print_requests.py //jobs &> out.destroy-requests.txt

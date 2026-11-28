@@ -71,8 +71,6 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 >>> [CLI] air get notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
-Exit code: 1
-
 === invalid run id (json)
 
 >>> [CLI] air get notanumber -o json
@@ -86,5 +84,3 @@ Exit code: 1
     "retryable": false
   }
 }
-
-Exit code: 1

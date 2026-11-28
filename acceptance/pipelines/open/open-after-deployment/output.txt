@@ -4,8 +4,6 @@
 >>> [CLI] pipelines open
 Error: pipeline does not have a URL associated with it (has it been deployed?)
 
-Exit code: 1
-
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/default/files...
 Created pipelines.test-pipelines-open

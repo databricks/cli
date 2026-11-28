@@ -15,17 +15,17 @@ add_repl "$alert_id" ALERT_ID
 title "trashed alert is still readable"
 trace $CLI alerts-v2 trash-alert $alert_id
 trace $CLI alerts-v2 get-alert $alert_id | jq '{lifecycle_state}'
-errcode trace $CLI alerts-v2 trash-alert $alert_id
-errcode trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
+musterr trace $CLI alerts-v2 trash-alert $alert_id
+musterr trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
 
 title "purged alert is gone"
 trace $CLI alerts-v2 trash-alert $alert_id --purge
-errcode trace $CLI alerts-v2 get-alert $alert_id
-errcode trace $CLI alerts-v2 trash-alert $alert_id
-errcode trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
+musterr trace $CLI alerts-v2 get-alert $alert_id
+musterr trace $CLI alerts-v2 trash-alert $alert_id
+musterr trace $CLI alerts-v2 update-alert $alert_id display_name --json '{"display_name": "x"}'
 
 title "unknown alert"
 unknown_id=00000000-0000-0000-0000-000000000000
-errcode trace $CLI alerts-v2 get-alert $unknown_id
-errcode trace $CLI alerts-v2 trash-alert $unknown_id
-errcode trace $CLI alerts-v2 update-alert $unknown_id display_name --json '{"display_name": "x"}'
+musterr trace $CLI alerts-v2 get-alert $unknown_id
+musterr trace $CLI alerts-v2 trash-alert $unknown_id
+musterr trace $CLI alerts-v2 update-alert $unknown_id display_name --json '{"display_name": "x"}'

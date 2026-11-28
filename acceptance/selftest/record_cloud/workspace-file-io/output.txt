@@ -104,8 +104,6 @@ hello, world
 >>> [CLI] workspace get-status /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
 Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt) doesn't exist.
 
-Exit code: 1
-
 >>> print_requests
 {
   "method": "GET",
@@ -144,8 +142,6 @@ ID  Type  Language  Path
 
 >>> [CLI] workspace list /Users/[USERNAME]/[UNIQUE_NAME]
 Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]) doesn't exist.
-
-Exit code: 1
 
 >>> print_requests
 {

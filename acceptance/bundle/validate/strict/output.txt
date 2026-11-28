@@ -26,8 +26,6 @@ Workspace:
 Found 1 warning
 Error: 1 warning was found. Warnings are treated as errors in strict mode
 
-Exit code: 1
-
 >>> [CLI] bundle validate --strict -t bar
 Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
   at variables.my_variable.type
@@ -45,5 +43,3 @@ Workspace:
 
 Found 2 warnings
 Error: 2 warnings were found. Warnings are treated as errors in strict mode
-
-Exit code: 1

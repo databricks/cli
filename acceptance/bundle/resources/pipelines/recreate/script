@@ -21,4 +21,4 @@ trace update_file.py databricks.yml "target: \${resources.schemas.bar.name}" "#t
 trace $CLI bundle plan 2>&1
 
 title "Redeploy the bundle (should recreate the pipeline)"
-trace errcode $CLI bundle deploy --force-lock
+trace musterr $CLI bundle deploy --force-lock

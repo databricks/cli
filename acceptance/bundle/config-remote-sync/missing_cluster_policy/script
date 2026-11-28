@@ -2,10 +2,10 @@ export POLICY_ID=""
 bundle_configured=false
 cleanup() {
     if $bundle_configured; then
-        errcode trace $CLI bundle destroy --auto-approve
+        trace $CLI bundle destroy --auto-approve || true
     fi
     if [ -n "$POLICY_ID" ]; then
-        errcode trace $CLI cluster-policies delete "$POLICY_ID"
+        trace $CLI cluster-policies delete "$POLICY_ID" || true
     fi
     print_requests.py //policies/clusters/get --get --oneline > LOG.cleanup-requests
 }

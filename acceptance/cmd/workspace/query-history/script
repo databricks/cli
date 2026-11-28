@@ -1,1 +1,1 @@
-trace errcode $CLI query-history list
+trace $CLI query-history list

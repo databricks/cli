@@ -4,14 +4,10 @@
 >>> [CLI] bundle open
 Error: expected a KEY of the resource to open
 
-Exit code: 1
-
 === not deployed yet
 
 >>> [CLI] bundle open foo
 Error: resource does not have a URL associated with it (has it been deployed?)
-
-Exit code: 1
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/caterpillar/default/files...

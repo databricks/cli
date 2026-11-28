@@ -16,8 +16,6 @@ Workspace:
 
 Found 2 errors
 
-Exit code: 1
-
 >>> [CLI] bundle validate -t comma
 Error: dashboard display_name is required
   at resources.dashboards['a,b']
@@ -34,5 +32,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/comma
 
 Found 2 errors
-
-Exit code: 1

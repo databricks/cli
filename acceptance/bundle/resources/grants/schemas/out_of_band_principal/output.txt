@@ -18,7 +18,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.grants_schema
 

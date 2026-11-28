@@ -14,8 +14,8 @@ PYEDIT
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 title "Both copies must be gone, else the next deploy pushes the value back"
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c "max_retries" databricks.yml
+trace grep -c "max_retries" databricks.yml
 rm databricks.yml.backup

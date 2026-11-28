@@ -28,9 +28,9 @@ add_repl "$PIPELINE_ID" PIPELINE_ID
 
 cleanup() {
     title "Cleanup: delete the original pipeline and files"
-    trace errcode $CLI pipelines delete "$PIPELINE_ID"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/notebook-${UNIQUE_NAME}"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test-${UNIQUE_NAME}.py"
+    trace $CLI pipelines delete "$PIPELINE_ID" || true
+    trace $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/notebook-${UNIQUE_NAME}" || true
+    trace $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test-${UNIQUE_NAME}.py" || true
 }
 trap cleanup EXIT
 

@@ -41,10 +41,10 @@ trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "An unknown resource id alone is rejected (no match at all must not silently succeed)"
-errcode trace $CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
+musterr trace $CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
 
 title "An id that exists under a different type matches nothing and is rejected too"
-errcode trace $CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"
+musterr trace $CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"
 
 title "A selector without a type is still rejected"
-errcode trace $CLI bundle config-remote-sync --select-ids no-such-id-123
+musterr trace $CLI bundle config-remote-sync --select-ids no-such-id-123

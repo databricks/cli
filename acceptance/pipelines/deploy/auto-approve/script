@@ -4,7 +4,7 @@ title "Remove resources from configuration to test auto-approve"
 trace rm resources.yml
 
 title "Try to redeploy without --auto-approve - should fail"
-trace errcode $CLI pipelines deploy
+trace musterr $CLI pipelines deploy
 
 title "Redeploy with --auto-approve - should succeed"
 trace $CLI pipelines deploy --auto-approve

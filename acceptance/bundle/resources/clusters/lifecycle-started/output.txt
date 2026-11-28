@@ -1,7 +1,7 @@
 
 === Deploy with started=true: cluster created and running
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.mycluster
 Files: 2 uploaded, 0 deleted
@@ -20,12 +20,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "RUNNING"
 
 === Stop cluster externally while config says started=true: plan detects drift
 
->>> errcode [CLI] clusters delete [UUID]
+>>> [CLI] clusters delete [UUID]
 "TERMINATED"
 
 >>> [CLI] bundle plan
@@ -35,7 +35,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Deploy fixes the drift: cluster restarted
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 0 uploaded, 0 deleted
@@ -57,17 +57,17 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "RUNNING"
 
 === Deploy with started=false while cluster is stopped: cluster stays terminated
 
->>> errcode [CLI] clusters delete [UUID]
+>>> [CLI] clusters delete [UUID]
 "TERMINATED"
 
 >>> update_file.py databricks.yml started: true started: false
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
@@ -81,14 +81,14 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "TERMINATED"
 
 === Deploy with started=true: cluster restarted
 
 >>> update_file.py databricks.yml started: false started: true
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 1 uploaded, 0 deleted
@@ -103,7 +103,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "RUNNING"
 
 >>> [CLI] bundle destroy --auto-approve

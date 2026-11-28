@@ -1,1 +1,2 @@
-errcode trace $CLI bundle run foo
+musterr trace $CLI bundle run foo
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"

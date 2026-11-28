@@ -34,4 +34,4 @@ json_in_json_normalize.py out.plan.json
 
 trace $CLI bundle deploy -qq
 
-trace errcode $CLI lakeview get-published $DASHBOARD_ID &> out.get_published.txt
+trace $CLI lakeview get-published $DASHBOARD_ID &> out.get_published.txt

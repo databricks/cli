@@ -12,7 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs delete [FOO_ID]
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Destroy: 0 deleted

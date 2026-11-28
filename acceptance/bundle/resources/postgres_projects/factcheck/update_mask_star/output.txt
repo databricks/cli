@@ -29,8 +29,6 @@
 >>> [CLI] postgres update-project projects/factcheck-star-[UNIQUE_NAME] * --json {"spec":{"display_name":"changed","pg_version":16}}
 Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
 
-Exit code: 1
-
 >>> print_requests.py //postgres/projects --method PATCH
 {
   "method": "PATCH",
@@ -93,8 +91,6 @@ Exit code: 1
 
 >>> [CLI] postgres update-project projects/factcheck-star-[UNIQUE_NAME] * --json {"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}
 Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
-
-Exit code: 1
 
 >>> print_requests.py //postgres/projects --method PATCH
 {

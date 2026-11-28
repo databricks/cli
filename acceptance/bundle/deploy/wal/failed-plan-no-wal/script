@@ -19,11 +19,11 @@ replace_ids.py
 fault.py "GET /api/2.2/jobs/get" 403 0 2
 
 title "Deploy 2 (planning fails, must not leave a WAL)"
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy
 trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
 title "Deploy 3 (planning fails again, must not leave a WAL)"
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy
 trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
 title "Deploy 4 (fault expired: recovers and succeeds)"

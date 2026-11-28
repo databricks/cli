@@ -9,10 +9,10 @@ cleanup() {
   trace $CLI bundle destroy --auto-approve
 
   title "Assert pipeline is deleted"
-  trace errcode $CLI pipelines get "${PIPELINE_ID}"
+  trace musterr $CLI pipelines get "${PIPELINE_ID}"
 
   title "Assert job is deleted:"
-  errcode $CLI jobs get "${JOB_ID}" 2>&1
+  musterr $CLI jobs get "${JOB_ID}" 2>&1
 
   # Print the whole state tree so a lingering snapshot file or an empty scaffolding
   # dir (e.g. sync-snapshots/ or .internal/) both show up.
@@ -20,7 +20,7 @@ cleanup() {
   trace find.py --dirs '^\.databricks(/|$)'
 
   title "Assert bundle deployment path is deleted"
-  trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"
+  trace musterr $CLI workspace get-status "${DEPLOYMENT_PATH}"
 }
 trap cleanup EXIT
 

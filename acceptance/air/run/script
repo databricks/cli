@@ -8,10 +8,10 @@ title "override applies and logs the change"
 trace $CLI air run -f valid.yaml --dry-run --override compute.num_accelerators=2 --override timeout_minutes=45
 
 title "override of an unknown field is rejected"
-errcode trace $CLI air run -f valid.yaml --dry-run --override bogus=1
+musterr trace $CLI air run -f valid.yaml --dry-run --override bogus=1
 
 title "override still runs schema validation"
-errcode trace $CLI air run -f valid.yaml --dry-run --override compute.num_accelerators=0
+musterr trace $CLI air run -f valid.yaml --dry-run --override compute.num_accelerators=0
 
 title "watch is ignored with dry-run (nothing is submitted)"
 trace $CLI air run -f valid.yaml --dry-run --watch
@@ -40,7 +40,7 @@ title "git-ignored root_path is rejected instead of selecting no files"
 echo '.scratch/' > .gitignore
 mkdir -p .scratch/proj
 echo 'print(1)' > .scratch/proj/main.py
-errcode trace $CLI air run -f ignored-root.yaml --dry-run
+musterr trace $CLI air run -f ignored-root.yaml --dry-run
 rm -fr .git .gitignore .scratch
 
 title "a non-git root_path selects the same files when run from its subdirectory"
@@ -60,10 +60,10 @@ title "the Databricks AI environment provides torch, so no warning"
 trace $CLI air run -f torch-databricks-ai.yaml --dry-run
 
 title "git.remote is rejected"
-errcode trace $CLI air run -f git-remote.yaml --dry-run
+musterr trace $CLI air run -f git-remote.yaml --dry-run
 
 title "invalid config is rejected"
-errcode trace $CLI air run -f invalid.yaml --dry-run
+musterr trace $CLI air run -f invalid.yaml --dry-run
 
 title "invalid config is rejected (json)"
 musterr trace $CLI air run -f invalid.yaml --dry-run -o json
@@ -92,13 +92,13 @@ musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run --id
 musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 title "unknown field suggests the near match"
-errcode trace $CLI air run -f unknown-field.yaml --dry-run
+musterr trace $CLI air run -f unknown-field.yaml --dry-run
 
 title "missing --file"
-errcode trace $CLI air run --dry-run
+musterr trace $CLI air run --dry-run
 
 title "experimental path directs users to the top-level command"
-errcode trace $CLI experimental air run -f valid.yaml --dry-run
+musterr trace $CLI experimental air run -f valid.yaml --dry-run
 
 title "removed pool field is rejected"
 musterr trace $CLI air run -f removed-pool.yaml --dry-run

@@ -8,8 +8,6 @@ Error: subdir/*.txt: no matching files
   at artifacts.test.files[1].source
   in databricks.yml:8:17
 
-
-Exit code: 1
 {
   "test": {
     "files": [
@@ -29,8 +27,6 @@ Error: subdir/*.txt: no matching files
   at artifacts.test.files[1].source
   in databricks.yml:8:17
 
-
-Exit code: 1
 {
   "test": {
     "files": [

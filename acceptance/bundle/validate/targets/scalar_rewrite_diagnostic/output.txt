@@ -4,5 +4,3 @@ Error: failed to rewrite [TEST_TMP_DIR]/databricks.yml: expected a map or sequen
 
 
 Found 1 error
-
-Exit code: 1

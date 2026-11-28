@@ -1,1 +1,1 @@
-trace errcode $CLI bundle validate
+trace musterr $CLI bundle validate

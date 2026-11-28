@@ -26,8 +26,6 @@ API message: Fault injected by test.
 
 Files: 0 uploaded, 0 deleted
 
-Exit code: 1
-
 >>> print_requests.py --get //postgres/projects
 POST /api/2.0/postgres/projects
 GET /api/2.0/postgres/projects/test-pg-proj

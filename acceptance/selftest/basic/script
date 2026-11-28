@@ -5,10 +5,12 @@ printf "\n=== Capturing STDOUT"
 trace python3 -c 'import sys; sys.stderr.write("STDOUT\n")'
 
 printf "\n=== Capturing exit code"
-trace errcode python3 -c 'raise SystemExit(5)'
+trace musterr python3 -c 'raise SystemExit(5)'
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 
 printf "\n=== Capturing exit code (alt)"
-errcode trace python3 -c 'raise SystemExit(7)'
+musterr trace python3 -c 'raise SystemExit(7)'
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 
 printf "\n=== Capturing pwd"
 trace python3 -c 'import os; print(os.getcwd())'

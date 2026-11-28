@@ -50,8 +50,8 @@ In order to write `output.txt` for the first time or overwrite it with the curre
 The scripts are run with `bash -e` so any errors will be propagated. They are captured in `output.txt` by appending `Exit code: N` line at the end.
 
 For more complex tests one can also use:
-- `errcode` helper: if the command fails with non-zero code, it appends `Exit code: N` to the output but returns success to caller (bash), allowing continuation of script.
-- `musterr` helper: runs the command and fails the test if it *succeeds*; on the expected failure the script continues. Use it to assert a command must error.
+- `musterr` helper: runs the command and fails the test if it *succeeds*, also inside a pipeline (scripts run with `pipefail`); on the expected failure the script continues. Use it for every command that must error; commands expected to succeed run without a wrapper. The exit code is saved in `MUSTERR_EXIT_CODE` (not set in a subshell); print it only when the exact code is what the test checks: `printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"`.
+- `cmd || true` is only for best-effort cleanup (inside cleanup functions and EXIT traps), or where the exit code legitimately differs (e.g. local test server vs. cloud) and the next command asserts on the output, with a comment saying why.
 - `trace` helper: prints the arguments before executing the command.
 - `title` helper: prints a `=== <text>` section header to label a phase of the script.
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.

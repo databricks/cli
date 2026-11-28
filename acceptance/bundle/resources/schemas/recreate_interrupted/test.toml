@@ -18,7 +18,7 @@ Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'
 New = '[PROCESS_KILLED]'
 
 [[Repls]]
-Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
+Old = '(\n>>> musterr [^\n]+\n)\nExit code:'
 New = "${1}[PROCESS_KILLED]\n\nExit code:"
 
 [[Repls]]

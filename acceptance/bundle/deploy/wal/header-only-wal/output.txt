@@ -1,7 +1,7 @@
 
 === First deploy (killed before recording the job, leaves a header-only WAL)
 
->>> errcode [CLI] bundle deploy
+>>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 [PROCESS_KILLED]
 
@@ -12,7 +12,7 @@ Exit code: [KILLED]
 
 === Second deploy (killed again, leaves another header-only WAL)
 
->>> errcode [CLI] bundle deploy --force-lock
+>>> musterr [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 [PROCESS_KILLED]
 
@@ -23,15 +23,15 @@ Exit code: [KILLED]
 
 === Third deploy (must recover and succeed, not blocked by the leftover WAL)
 
->>> errcode [CLI] bundle deploy --force-lock
+>>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
->>> errcode print_state.py
+>>> print_state.py
 {
   "serial": 1,
   "state_keys": [

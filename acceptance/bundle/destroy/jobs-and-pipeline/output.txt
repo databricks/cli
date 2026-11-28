@@ -67,15 +67,11 @@ Destroy: 2 deleted
 
 === Assert pipeline is deleted
 
->>> errcode [CLI] pipelines get [UUID]
+>>> musterr [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
-
-Exit code: 1
 
 === Assert job is deleted:
 Error: Job [FOO_ID] does not exist.
-
-Exit code: 1
 
 === Assert destroy leaves the bundle state dir clean:
 
@@ -89,7 +85,5 @@ Exit code: 1
 
 === Assert bundle deployment path is deleted
 
->>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+>>> musterr [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Error: Path (//Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
-
-Exit code: 1

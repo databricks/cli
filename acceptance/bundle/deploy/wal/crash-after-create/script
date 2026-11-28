@@ -7,7 +7,8 @@ echo "=== First deploy (crashes after job_a create, before job_b) ==="
 # -q: the per-resource "Created" line races the kill signal, so whether it flushes
 # before the process dies is not stable (notably on Windows). This test asserts WAL
 # content, not deploy stdout.
-trace errcode $CLI bundle deploy -q
+trace musterr $CLI bundle deploy -q
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 
 trace assert_exists.py .databricks/bundle/default/resources.json.wal
 trace assert_not_exists.py .databricks/bundle/default/resources.json

@@ -5,9 +5,9 @@ remote_deployment_state() {
     trace MSYS_NO_PATHCONV=1 $CLI workspace export "$BUNDLE_PATH/state/deployment.json" | jq -c '{seq, files: [.files[].local_path] | sort}'
 }
 
-# Whether b.py is in the workspace: its path, or the error and exit code.
-b_py_status() {
-    trace errcode env MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_PATH/files/b.py" | jq -c '{path}'
+# b.py must not be in the workspace.
+b_py_absent() {
+    trace musterr env MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_PATH/files/b.py"
 }
 
 trace $CLI bundle deploy
@@ -22,12 +22,12 @@ trace rm -rf .databricks
 trace $CLI bundle deploy --plan tmp.plan.json
 
 title "Is b.py, removed from the bundle, still in the workspace?"
-b_py_status
+b_py_absent
 
 title "Remote deployment state"
 remote_deployment_state
 
 title "A regular deploy afterwards"
 trace $CLI bundle deploy
-b_py_status
+b_py_absent
 remote_deployment_state

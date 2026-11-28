@@ -21,7 +21,7 @@ json.privilege_assignments[].privileges[] = "CREATE_TABLE";
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.grants_schema
 

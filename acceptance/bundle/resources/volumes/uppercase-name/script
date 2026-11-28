@@ -7,7 +7,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-errcode $CLI bundle deploy &> out.deploy.txt
+$CLI bundle deploy &> out.deploy.txt
 print_requests.py //unity-catalog >> out.deploy.txt
 
 echo "=== Bundle summary shows lowercase IDs after UC normalizes names" >> out.deploy.txt
@@ -27,5 +27,5 @@ $CLI bundle plan -o json | nostamp \
 
 echo "=== Redeploy without changes - should be a no-op" >> out.deploy.txt
 # &>> requires bash 4+; macOS CI runs the stock bash 3.2, so use >> ... 2>&1.
-errcode $CLI bundle deploy >> out.deploy.txt 2>&1
+$CLI bundle deploy >> out.deploy.txt 2>&1
 print_requests.py //unity-catalog >> out.deploy.txt

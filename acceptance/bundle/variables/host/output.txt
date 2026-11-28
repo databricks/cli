@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle validate -o json
+>>> musterr [CLI] bundle validate -o json
 Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
@@ -31,9 +31,7 @@ Error: failed during request visitor: parse "https://${var.host}": invalid chara
   }
 }
 
-Exit code: 1
-
->>> errcode [CLI] bundle validate
+>>> musterr [CLI] bundle validate
 Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
@@ -51,9 +49,7 @@ Workspace:
 
 Found 1 error and 1 warning
 
-Exit code: 1
-
->>> errcode [CLI] bundle summary
+>>> musterr [CLI] bundle summary
 Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
@@ -64,5 +60,3 @@ the DATABRICKS_HOST environment variable if you wish to configure this field at 
 
 Error: failed during request visitor: parse "https://${var.host}": invalid character "{" in host name
 
-
-Exit code: 1

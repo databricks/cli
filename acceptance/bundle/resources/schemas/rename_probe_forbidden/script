@@ -1,5 +1,5 @@
 cleanup() {
-    trace errcode $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve || true
 }
 trap cleanup EXIT
 

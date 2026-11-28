@@ -1,4 +1,4 @@
-errcode trace $CLI bundle deploy
+musterr trace $CLI bundle deploy
 
 cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
 

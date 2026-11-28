@@ -33,7 +33,7 @@ for src_kind in local dbfs volume; do
   for dst in local ${DBFS} ${VOLUME}; do
     title "$src -> $dst"
     trace $CLI fs cp $src $dst/$existing/
-    errcode trace $CLI fs cp $src $dst/nonexistent/mydir/
+    musterr trace $CLI fs cp $src $dst/nonexistent/mydir/
   done
 done
 

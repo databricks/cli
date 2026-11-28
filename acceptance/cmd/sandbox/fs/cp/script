@@ -16,7 +16,7 @@ trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/target
 trace $CLI sandbox fs ls $SANDBOX_ROOT/target
 
 title "Writing into a directory that does not exist fails"
-errcode trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/missing/file.txt
+musterr trace $CLI sandbox fs cp local.txt $SANDBOX_ROOT/missing/file.txt
 
 title "Copy a directory recursively, and back"
 trace $CLI sandbox fs cp -r localdir $SANDBOX_ROOT/dir 2>&1 | sort

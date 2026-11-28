@@ -10,8 +10,6 @@ Target: bad_engine
 
 Found 1 error
 
-Exit code: 1
-
 === trigger_pause_status overridden in development target
 
 >>> [CLI] bundle validate -t dev_trigger
@@ -26,8 +24,6 @@ Workspace:
 
 Found 1 error
 
-Exit code: 1
-
 === name_prefix overridden in development target
 
 >>> [CLI] bundle validate -t dev_prefix
@@ -41,5 +37,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev_prefix
 
 Found 1 error
-
-Exit code: 1

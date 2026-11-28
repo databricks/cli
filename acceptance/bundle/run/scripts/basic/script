@@ -2,4 +2,4 @@ trace $CLI bundle run foo
 
 trace $CLI bundle run me
 
-errcode trace $CLI bundle run foo arg1 arg2
+musterr trace $CLI bundle run foo arg1 arg2

@@ -21,7 +21,8 @@ trace update_file.py databricks.yml test-schema- test-schema-renamed-
 trace update_file.py databricks.yml s3://mybucket/a s3://mybucket/b
 kill_after.py "DELETE /api/2.1/unity-catalog/volumes/$OLD_VOLUME" 0 1
 # -q: the per-resource lines race the kill signal.
-trace errcode $CLI bundle deploy -q --auto-approve
+trace musterr $CLI bundle deploy -q --auto-approve
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 trace print_requests.py //unity-catalog
 
 title "The volume went with the old schema. Nothing with its volume_id is at its new path, so the plan creates it"

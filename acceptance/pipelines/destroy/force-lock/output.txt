@@ -1,5 +1,5 @@
 
->>> errcode [CLI] pipelines deploy
+>>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
 Created pipelines.foo
 Files: 2 uploaded, 0 deleted
@@ -12,7 +12,7 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
 === test deployment without force-lock (should fail)
 
->>> errcode [CLI] pipelines destroy --auto-approve
+>>> musterr [CLI] pipelines destroy --auto-approve
 Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
 conflict with the other deployment if it is still active
@@ -20,8 +20,6 @@ Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +000
 Another deployment may be in progress. Use --force-lock to override, but this may
 conflict with the other deployment if it is still active
 
-
-Exit code: 1
 
 === test deployment with force-lock (should succeed)
 

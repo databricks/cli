@@ -38,6 +38,6 @@ Destroy: 0 deleted
 
 === Cleanup: delete the original job and notebook
 
->>> errcode [CLI] jobs delete [JOB_ID]
+>>> [CLI] jobs delete [JOB_ID]
 
->>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME]
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME]

@@ -7,5 +7,3 @@ API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Warehouse doesnotexist does not exist
 
 Files: 5 uploaded, 0 deleted
-
-Exit code: 1

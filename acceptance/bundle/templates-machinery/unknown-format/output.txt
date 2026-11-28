@@ -10,10 +10,8 @@ retries: 5
 
 === integer with format: int32
 
->>> errcode [CLI] bundle init . --output-dir defaults
+>>> musterr [CLI] bundle init . --output-dir defaults
 Error: validation for template input parameters failed. incorrect type for property retries: expected type integer, but value is ""
-
-Exit code: 1
 
 >>> cat defaults/values.txt
 cat: defaults/values.txt: No such file or directory

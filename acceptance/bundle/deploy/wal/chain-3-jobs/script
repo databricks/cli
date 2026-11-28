@@ -6,7 +6,8 @@ echo "=== First deploy (crashes on job_03) ==="
 # -q: the per-resource "Created" lines race the kill signal, so which of them flush
 # before the process dies is not stable (notably on Windows). This test asserts WAL
 # content, not deploy stdout.
-trace errcode $CLI bundle deploy -q
+trace musterr $CLI bundle deploy -q
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 
 echo ""
 echo "=== WAL content after crash ==="

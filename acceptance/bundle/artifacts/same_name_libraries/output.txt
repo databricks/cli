@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy
+>>> musterr [CLI] bundle deploy
 Building whl1...
 Building whl2...
 Error: Duplicate local library names: my_default_python-0.0.1-py3-none-any.whl
@@ -10,5 +10,3 @@ Error: Duplicate local library names: my_default_python-0.0.1-py3-none-any.whl
 
 Local library names must be unique but found libraries with the same name: whl1/dist/my_default_python-0.0.1-py3-none-any.whl, whl2/dist/my_default_python-0.0.1-py3-none-any.whl
 
-
-Exit code: 1

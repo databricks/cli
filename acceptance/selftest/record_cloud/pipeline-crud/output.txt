@@ -80,8 +80,6 @@
 >>> [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 
-Exit code: 1
-
 >>> print_requests
 {
   "method": "GET",

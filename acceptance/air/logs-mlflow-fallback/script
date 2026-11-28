@@ -1,12 +1,12 @@
 # Bricklens is gated off (FEATURE_DISABLED), so the command falls back to the
 # MLflow log path. With no MLflow run id resolvable, the fallback reports no
-# logs and exits non-zero — proving the try/catch routes to MLflow.
+# logs and exits 0, proving the try/catch routes to MLflow.
 
 title "logs falls back to mlflow (no logs)"
-errcode trace $CLI air logs 123
+trace $CLI air logs 123
 
 title "logs falls back to mlflow (json)"
-errcode trace $CLI air logs 123 -o json
+trace $CLI air logs 123 -o json
 
 title "logs falls back to mlflow for a specific node"
 trace $CLI air logs 123 --node 0

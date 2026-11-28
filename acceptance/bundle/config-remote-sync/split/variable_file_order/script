@@ -14,8 +14,8 @@ PYEDIT
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync --save
+$CLI bundle config-remote-sync --save
 title "aaa keeps its own variable reference"
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c 'var.aaa_dir' databricks.yml
+trace grep -c 'var.aaa_dir' databricks.yml
 rm databricks.yml.backup

@@ -28,7 +28,7 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 
 title "job_b is updated, and job_a's rename is written in both blocks"
 trace diff.py databricks.yml.backup databricks.yml
