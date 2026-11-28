@@ -27,7 +27,7 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil, false))
 	mustFinalize(t, &db)
 
 	// Re-open and verify persisted data.
@@ -310,7 +310,7 @@ func TestCLIVersionRecordsLastWriter(t *testing.T) {
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	require.NoError(t, db.SaveState(t.Context(), "resources.jobs.my_job", "123", map[string]string{"k": "v"}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "resources.jobs.my_job", "123", map[string]string{"k": "v"}, nil, false))
 	mustFinalize(t, &db)
 
 	var reopened DeploymentState
@@ -349,7 +349,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	// Commit serial 1 with one resource.
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, false))
 	mustFinalize(t, &db)
 
 	var committed DeploymentState
@@ -399,7 +399,7 @@ func TestDeleteState(t *testing.T) {
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, false))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
@@ -432,7 +432,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	// Upgrading to write reuses the same lineage (it goes into the WAL header),
 	// and a write makes it durable.
 	require.NoError(t, db.UpgradeToWrite())
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, false))
 	mustFinalize(t, &db)
 
 	// Re-open: the persisted lineage matches the one read before the write.
@@ -460,6 +460,30 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
+}
+
+func TestPreventDestroyRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// A state written before the flag was recorded loads as unprotected.
+	seed := `{"state_version":3,"lineage":"test-lineage","serial":1,"state":{"resources.schemas.legacy":{"__id__":"main.legacy","state":{}}}}`
+	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WritingFile, WithRecovery(true), OpenDmsArgs{}))
+	legacy, ok := db.GetResourceEntry("resources.schemas.legacy")
+	require.True(t, ok)
+	assert.False(t, legacy.PreventDestroy)
+
+	require.NoError(t, db.SaveState(t.Context(), "resources.schemas.protected", "main.protected", map[string]string{}, nil, true))
+	mustFinalize(t, &db)
+
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, ReadingFile, WithRecovery(false), OpenDmsArgs{}))
+	protected, ok := reopened.GetResourceEntry("resources.schemas.protected")
+	require.True(t, ok)
+	assert.True(t, protected.PreventDestroy)
+	mustFinalize(t, &reopened)
 }
 
 func TestGetSerialWithHistoryUsesLatestCounter(t *testing.T) {

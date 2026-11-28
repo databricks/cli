@@ -169,6 +169,11 @@ type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+
+	// PreventDestroy is lifecycle.prevent_destroy as of the deploy that wrote the entry. It is
+	// kept with the state because once the resource is removed from the configuration there is
+	// nowhere else to read it from, and that is exactly when it must still protect the resource.
+	PreventDestroy bool `json:"prevent_destroy,omitempty"`
 }
 
 type WALEntry struct {
@@ -289,7 +294,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 	var recorded json.RawMessage
 	if entry, ok := db.GetResourceEntry(resourceKey); resourceID != "" && ok && len(entry.State) > 0 {
 		var err error
-		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn, PreventDestroy: entry.PreventDestroy})
 		if err != nil {
 			// Nothing the caller can act on, so record the failure without the state.
 			recorded = nil
@@ -314,7 +319,7 @@ func NewDatabase(lineage string, serial int) Database {
 }
 
 // SaveState records the resource's state after an operation was applied to it.
-func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, preventDestroy bool) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -328,9 +333,10 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		return err
 	}
 	entry := ResourceEntry{
-		ID:        newID,
-		State:     json.RawMessage(jsonMessage),
-		DependsOn: dependsOn,
+		ID:             newID,
+		State:          json.RawMessage(jsonMessage),
+		DependsOn:      dependsOn,
+		PreventDestroy: preventDestroy,
 	}
 
 	switch db.mode {
@@ -344,7 +350,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, PreventDestroy: preventDestroy})
 			if err != nil {
 				return err
 			}
@@ -359,7 +365,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		}
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
-			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn, PreventDestroy: preventDestroy})
 			if err != nil {
 				return err
 			}

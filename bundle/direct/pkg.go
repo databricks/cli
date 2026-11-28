@@ -37,6 +37,9 @@ type DeploymentUnit struct {
 	// DependsOn lists resources this resource depends on (persisted in state).
 	DependsOn []deployplan.DependsOnEntry
 
+	// PreventDestroy is the resource's lifecycle.prevent_destroy (persisted in state).
+	PreventDestroy bool
+
 	// MaxWait caps how long to wait for this resource to reach its target state. Must be set
 	// to maxWaitUnset to fall back to the resource's own timeout: the zero value is a valid
 	// cap meaning "do not wait at all". See resourceMaxWait and unitMaxWait.

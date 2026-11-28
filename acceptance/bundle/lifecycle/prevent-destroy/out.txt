@@ -46,6 +46,48 @@ Recreated schemas.my_schema
 Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 2 deleted, 0 unchanged
 
+>>> [CLI] bundle plan -o json
+{
+  "resources.pipelines.my_pipelines": {
+    "action": "skip",
+    "prevent_destroy": true,
+    "prevent_destroy_changed": true
+  },
+  "resources.schemas.my_schema": {
+    "action": "skip",
+    "prevent_destroy": true,
+    "prevent_destroy_changed": true
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> errcode [CLI] bundle plan
+delete pipelines.my_pipelines
+delete schemas.my_schema
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Error: resources.pipelines.my_pipelines was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+resources.schemas.my_schema was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+
+Files: 3 uploaded, 2 deleted
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: resources.pipelines.my_pipelines was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+resources.schemas.my_schema was removed from the configuration, but its last deployment has lifecycle.prevent_destroy set. To delete it, add it back with lifecycle.prevent_destroy: false and deploy, then remove it again
+
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+Files: 3 uploaded, 2 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
 delete schemas.my_schema

@@ -108,10 +108,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		d := &DeploymentUnit{
-			ResourceKey: resourceKey,
-			Adapter:     adapter,
-			DependsOn:   entry.DependsOn,
-			MaxWait:     unitWait,
+			ResourceKey:    resourceKey,
+			Adapter:        adapter,
+			DependsOn:      entry.DependsOn,
+			PreventDestroy: entry.PreventDestroy,
+			MaxWait:        unitWait,
 		}
 
 		if action == deployplan.Delete {
@@ -137,6 +138,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// We don't keep NewState around for 'skip' nodes
+
+		if action == deployplan.Skip && entry.PreventDestroyChanged {
+			// The resource is left alone, but its state entry must pick up the new
+			// lifecycle.prevent_destroy for a later plan to read.
+			if err := d.RecordPreventDestroy(ctx, &b.StateDB); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("cannot record lifecycle.prevent_destroy for %s: %w", resourceKey, err))
+				return false
+			}
+		}
 
 		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {

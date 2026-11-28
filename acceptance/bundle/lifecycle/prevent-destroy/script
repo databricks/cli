@@ -22,11 +22,25 @@ update_file.py resources/pipeline.yml 'prevent_destroy: true' 'prevent_destroy: 
 update_file.py resources/schema.yml 'prevent_destroy: true' 'prevent_destroy: false'
 trace errcode $CLI bundle plan >>out.txt 2>&1
 trace $CLI bundle deploy --auto-approve >>out.txt 2>&1
+
+# Setting prevent_destroy back to true leaves the resources unchanged, but the plan marks them
+# so that the deploy records the flag in the state
 update_file.py resources/pipeline.yml 'prevent_destroy: false' 'prevent_destroy: true'
 update_file.py resources/schema.yml 'prevent_destroy: false' 'prevent_destroy: true'
+{ trace $CLI bundle plan -o json | jq '.plan | map_values({action, prevent_destroy, prevent_destroy_changed})'; } >>out.txt 2>&1
+trace $CLI bundle deploy >>out.txt 2>&1
 
+# Removing the pipeline and schema: their last deployment had prevent_destroy set, so neither deploy nor destroy may delete them
+mv resources removed
+trace errcode $CLI bundle plan >>out.txt 2>&1
+trace musterr $CLI bundle deploy --auto-approve >>out.txt 2>&1
+trace musterr $CLI bundle destroy --auto-approve >>out.txt 2>&1
 
-# Removing the pipeline and schema, deploy must succeed
+# Adding them back with prevent_destroy: false and deploying records that; only then can they be removed
+mv removed resources
+update_file.py resources/pipeline.yml 'prevent_destroy: true' 'prevent_destroy: false'
+update_file.py resources/schema.yml 'prevent_destroy: true' 'prevent_destroy: false'
+trace $CLI bundle deploy >>out.txt 2>&1
 rm resources/pipeline.yml resources/schema.yml
 trace errcode $CLI bundle plan >>out.txt 2>&1
 trace $CLI bundle deploy --auto-approve >>out.txt 2>&1
