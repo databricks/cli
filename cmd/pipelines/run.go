@@ -280,7 +280,11 @@ Refreshes all tables in the pipeline unless otherwise specified.
 				return runOptions.Pipeline.ResolveRefreshSelectors(ctx, b)
 			},
 			ErrorOnEmptyState: true,
-			SkipInitContext:   true,
+			EmptyStateFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				_, err := bundleresources.Lookup(b, key, run.IsRunnable)
+				return err
+			},
+			SkipInitContext: true,
 		})
 		if err != nil {
 			return err

@@ -1,0 +1,60 @@
+
+=== pipelines run with an undefined key
+
+>>> musterr [CLI] pipelines run foo
+Error: resource with key "foo" not found
+
+
+=== pipelines run with a defined key
+
+>>> musterr [CLI] pipelines run my_pipeline
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
+
+=== pipelines stop with an undefined key
+
+>>> musterr [CLI] pipelines stop foo
+Error: resource with key "foo" not found
+
+
+=== pipelines stop with a defined key
+
+>>> musterr [CLI] pipelines stop my_pipeline
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
+
+=== pipelines dry-run with an undefined key
+
+>>> musterr [CLI] pipelines dry-run foo
+Error: resource with key "foo" not found
+
+
+=== pipelines dry-run with a defined key
+
+>>> musterr [CLI] pipelines dry-run my_pipeline
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
+
+=== pipelines test with an undefined key
+
+>>> musterr [CLI] pipelines test foo
+Error: "foo" is not a pipeline in this bundle (pipelines: my_pipeline). Usage: databricks pipelines test my_pipeline foo
+
+
+=== pipelines test with a defined key
+
+>>> musterr [CLI] pipelines test my_pipeline
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
+
+=== pipelines dry-run with a key that is not a pipeline
+
+>>> musterr [CLI] pipelines dry-run my_job
+Error: resource my_job is not a pipeline
+
+
+=== pipelines dry-run without a key keeps the deploy hint
+
+>>> musterr [CLI] pipelines dry-run
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+

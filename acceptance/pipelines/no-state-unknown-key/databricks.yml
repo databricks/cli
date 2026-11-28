@@ -1,0 +1,10 @@
+bundle:
+  name: test-pipelines-no-state
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline
+  jobs:
+    my_job:
+      name: test-job

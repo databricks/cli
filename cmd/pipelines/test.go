@@ -322,7 +322,13 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 			return err
 		},
 		ErrorOnEmptyState: true,
-		SkipInitContext:   true,
+		EmptyStateFunc: func(ctx context.Context, b *bundle.Bundle) error {
+			if _, err := resources.Lookup(b, key, isPipeline); err != nil {
+				return notPipelineKeyError(cmd, b, key, args)
+			}
+			return nil
+		},
+		SkipInitContext: true,
 	})
 	if err != nil {
 		return testTarget{}, err

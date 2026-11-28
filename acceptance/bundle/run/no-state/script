@@ -1,1 +1,11 @@
+title "Never deployed, key not defined in config"
 musterr $CLI bundle run foo
+
+title "Never deployed, key defined in config"
+musterr $CLI bundle run bar
+
+title "After deploy, a resource removed from config still runs from the deployed state"
+trace $CLI bundle deploy
+replace_ids.py
+cp databricks.removed.yml databricks.yml
+trace $CLI bundle run bar

@@ -105,14 +105,9 @@ func resolvePipelineArgument(ctx context.Context, b *bundle.Bundle, args []strin
 // resolvePipelineIdFromKey resolves a pipeline KEY to its actual pipeline ID.
 // This function handles the bundle initialization, resource lookup, and pipeline ID extraction.
 func resolvePipelineIdFromKey(ctx context.Context, b *bundle.Bundle, key string) (string, error) {
-	ref, err := resources.Lookup(b, key)
+	ref, pipeline, err := lookupPipeline(b, key)
 	if err != nil {
 		return "", err
-	}
-
-	pipeline, ok := ref.Resource.(*configresources.Pipeline)
-	if !ok {
-		return "", fmt.Errorf("resource %s is not a pipeline", key)
 	}
 
 	pipelineId := pipeline.ID
@@ -121,6 +116,21 @@ func resolvePipelineIdFromKey(ctx context.Context, b *bundle.Bundle, key string)
 	}
 
 	return pipelineId, nil
+}
+
+// lookupPipeline finds the pipeline with the given KEY in the bundle config.
+func lookupPipeline(b *bundle.Bundle, key string) (resources.Reference, *configresources.Pipeline, error) {
+	ref, err := resources.Lookup(b, key)
+	if err != nil {
+		return resources.Reference{}, nil, err
+	}
+
+	pipeline, ok := ref.Resource.(*configresources.Pipeline)
+	if !ok {
+		return resources.Reference{}, nil, fmt.Errorf("resource %s is not a pipeline", key)
+	}
+
+	return ref, pipeline, nil
 }
 
 // Copied from cmd/bundle/run.go

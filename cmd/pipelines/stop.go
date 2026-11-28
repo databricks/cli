@@ -57,7 +57,11 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			ErrorOnEmptyState: true,
-			SkipInitContext:   opts.SkipInitContext,
+			EmptyStateFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				_, err := resources.Lookup(b, key, run.IsRunnable)
+				return err
+			},
+			SkipInitContext: opts.SkipInitContext,
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, err = resolveStopArgument(ctx, b, args)

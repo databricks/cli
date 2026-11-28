@@ -75,6 +75,12 @@ type ProcessOptions struct {
 	// Implies ReadState
 	ErrorOnEmptyState bool
 
+	// EmptyStateFunc is called with ErrorOnEmptyState when the deployment state is empty,
+	// before the generic "not yet deployed" error. It returns a more specific error
+	// (for example, that the requested key is not defined in config), or nil to keep
+	// the generic one.
+	EmptyStateFunc func(ctx context.Context, b *bundle.Bundle) error
+
 	// If true, configure outputHandler for phases.Deploy
 	Verbose bool
 
@@ -455,12 +461,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
 		if opts.InitIDs || opts.ErrorOnEmptyState {
+			state := b.DeploymentBundle.ExportState(ctx)
 			var modes []statemgmt.LoadMode
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
+				if len(state) == 0 && opts.EmptyStateFunc != nil {
+					if err := opts.EmptyStateFunc(ctx, b); err != nil {
+						logdiag.LogError(ctx, err)
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
+				}
 			}
 			mutators := []bundle.Mutator{
-				statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...),
+				statemgmt.Load(state, modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {

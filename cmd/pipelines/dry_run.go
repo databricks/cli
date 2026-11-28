@@ -3,11 +3,13 @@
 package pipelines
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
@@ -39,7 +41,14 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			ErrorOnEmptyState: true,
-			SkipInitContext:   true,
+			EmptyStateFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				if len(args) == 0 {
+					return nil
+				}
+				_, _, err := lookupPipeline(b, args[0])
+				return err
+			},
+			SkipInitContext: true,
 		})
 		if err != nil {
 			return err
