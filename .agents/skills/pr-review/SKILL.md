@@ -108,6 +108,10 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    if the change ships a benchmark, run it with `-benchmem`. For bundle
    config changes, run the edge inputs through `bundle validate` in a
    scratch directory and quote the real output in the comment.
+   For a race, write down its preconditions: which fault (a timeout, a
+   lost response, a 5xx), which second actor, and how wide the window is.
+   Then check what BASE does under the same interleaving. When BASE has
+   the same exposure, the finding is a design question, not a bug.
    Table: `line | input or state | what happens | is that right?`
 2. **One mechanism per job.** Does the change add a second way to do
    something the codebase already does, or copy logic that now has to be kept
@@ -285,7 +289,7 @@ in the Evidence section.
 - State what you expected when the code contradicts it: "I thought this
   would fall back to Y."
 - Give an out on genuine judgment calls ("or is this not worth it?"), not on
-  bugs.
+  bugs. A race BASE already has is a judgment call.
 - No praise, no verdict, no summary of the change.
 
 **Order.** List inline comments by severity: wrong behavior users can hit
@@ -300,15 +304,25 @@ short list if there are several.
    misread it.
 3. Edit each comment: cut what doesn't help the author act, remove praise
    and verdicts, and drop any comment that answers its own question.
-4. Raise each issue once. When the same problem appears in several places,
-   comment on the first and list the other locations in that comment. The
-   review body doesn't repeat inline comments; use it for cross-cutting asks
-   (missing tests, a design question that spans files).
+4. Raise each class of problem once. Name the mechanism that makes the
+   code wrong and look for every instance: the same request retried by
+   another layer (our retry, the SDK's), the same race in another function
+   or command, the same pattern at BASE. Comment on the first instance the
+   change adds and name the others in that comment. An instance that exists
+   only at BASE is context, not an ask of its own. Don't hold one back for
+   a later round. The review body doesn't repeat inline comments; use it
+   for cross-cutting asks (missing tests, a design question that spans
+   files).
 5. If the PR already has review threads, yours or another reviewer's, read
    them now. Drop a comment that repeats a point already raised there or
    that the author already answered (verification evidence often lives in a
    thread, not in the description), and add a short one where an earlier
-   ask was not addressed.
+   ask was not addressed. If an earlier thread of yours asked for a fix and
+   the new code shows the same hazard one layer down, your ask was
+   incomplete: write one follow-up with every remaining layer, say which
+   the design can close, and give your position. Print it under that
+   thread's `path:LINE`, marked as a reply to the thread. Don't open a new
+   thread per layer.
 
 ## 5. Output
 
