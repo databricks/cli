@@ -61,6 +61,34 @@ func TestNoAgentHeaderTransportDropsAgentAndKeepsRequest(t *testing.T) {
 	assert.Equal(t, "cli/1.0 agent/claude-code auth/pat", req.Header.Get("User-Agent"))
 }
 
+// skippingTransport is a fixture transport that asks the SDK not to retry on I/O errors.
+type skippingTransport struct {
+	recordingTransport
+}
+
+func (*skippingTransport) SkipRetryOnIO() bool { return true }
+
+func TestNoAgentHeaderTransportForwardsSkipRetryOnIO(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
+	cases := []struct {
+		name string
+		base http.RoundTripper
+		want bool
+	}{
+		{name: "fixture", base: &skippingTransport{}, want: true},
+		{name: "plain", base: &recordingTransport{}, want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &config.Config{HTTPTransport: tc.base}
+			ApplyNotAnAgentHeader(ctx, cfg)
+			skippable, ok := cfg.HTTPTransport.(interface{ SkipRetryOnIO() bool })
+			require.True(t, ok)
+			assert.Equal(t, tc.want, skippable.SkipRetryOnIO())
+		})
+	}
+}
+
 func TestApplyNotAnAgentHeaderUnsetLeavesConfig(t *testing.T) {
 	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
 	base := &recordingTransport{}

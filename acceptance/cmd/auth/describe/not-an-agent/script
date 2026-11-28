@@ -1,0 +1,8 @@
+# auth describe verifies the workspace credentials with its own SDK client, so the variable must reach it too.
+title "With the variable set, the verification request has no agent token"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI auth describe > /dev/null
+print_requests.py --get //api/2.0/preview/scim/v2/Me | contains.py '!agent/claude-code'
+
+title "With the variable unset, the verification request carries the agent token"
+trace CLAUDECODE=1 $CLI auth describe > /dev/null
+print_requests.py --get //api/2.0/preview/scim/v2/Me | contains.py 'agent/claude-code'

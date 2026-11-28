@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
@@ -1738,7 +1739,7 @@ func TestGuardedClientSendsNoSentinelWorkspaceID(t *testing.T) {
 	require.NoError(t, os.WriteFile(cfgFile, []byte(body), 0o600))
 	refresh := &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}}
 
-	w, err := guardedClient(&config.Config{Profile: testProfile, ConfigFile: cfgFile}, refresh)
+	w, err := guardedClient(t.Context(), &config.Config{Profile: testProfile, ConfigFile: cfgFile}, refresh)
 	require.NoError(t, err)
 	_, err = mcp.GetService(t.Context(), w, testService)
 
@@ -2005,4 +2006,49 @@ func TestServeSignInPageIsNotCancelledWithTheRequest(t *testing.T) {
 
 	require.ErrorIs(t, <-signInErr, context.Canceled)
 	assert.NoError(t, <-pageErr, "the page is opened with a context the request's cancellation does not reach")
+}
+
+// TestGuardedClientNotAnAgentDropsAgentHeader checks that the serve's client leaves the agent token out of User-Agent
+// under DATABRICKS_NOT_AN_AGENT, and keeps it without the variable.
+func TestGuardedClientNotAnAgentDropsAgentHeader(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
+
+	cases := []struct {
+		name    string
+		noAgent bool
+	}{
+		{name: "variable set", noAgent: true},
+		{name: "variable unset", noAgent: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var userAgent string
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				userAgent = r.Header.Get("User-Agent")
+				rw.WriteHeader(http.StatusNotFound)
+				_, _ = io.WriteString(rw, `{"error_code":"NOT_FOUND","message":"nope"}`)
+			}))
+			t.Cleanup(server.Close)
+			cfgFile := filepath.Join(t.TempDir(), "cfg")
+			body := "[" + testProfile + "]\nhost = " + server.URL + "\ntoken = test-token\nworkspace_id = none\n"
+			require.NoError(t, os.WriteFile(cfgFile, []byte(body), 0o600))
+			refresh := &refreshGuard{authenticate: func(*http.Request) error { return nil }, profile: testProfile, cancel: func() {}}
+
+			ctx := t.Context()
+			if tc.noAgent {
+				t.Setenv("DATABRICKS_NOT_AN_AGENT", "1")
+			}
+			w, err := guardedClient(ctx, &config.Config{Profile: testProfile, ConfigFile: cfgFile}, refresh)
+			require.NoError(t, err)
+			// The service call fails on the 404; only the User-Agent of the request matters here.
+			_, _ = mcp.GetService(ctx, w, testService)
+
+			require.NotEmpty(t, userAgent)
+			if tc.noAgent {
+				assert.NotContains(t, userAgent, "agent/")
+			} else {
+				assert.Contains(t, userAgent, "agent/claude-code")
+			}
+		})
+	}
 }

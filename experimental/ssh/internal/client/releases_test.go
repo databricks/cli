@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"path"
 	"strings"
 	"sync"
@@ -15,11 +16,13 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
@@ -89,7 +92,7 @@ func TestNewHTTP11WorkspaceClient(t *testing.T) {
 		InsecureSkipVerify: true,
 	}
 
-	w, err := newHTTP11WorkspaceClient(src)
+	w, err := newHTTP11WorkspaceClient(t.Context(), src)
 	require.NoError(t, err)
 
 	// Auth-relevant attributes are carried over to the reconstructed config.
@@ -405,5 +408,50 @@ func TestUploadReleasesFromPyPI(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, r.Close())
 		assert.Equal(t, binary, got, arch)
+	}
+}
+
+// TestNewHTTP11WorkspaceClientNotAnAgentDropsAgentHeader checks that the upload client leaves the agent token out of
+// User-Agent under DATABRICKS_NOT_AN_AGENT, and keeps it without the variable.
+func TestNewHTTP11WorkspaceClientNotAnAgentDropsAgentHeader(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
+
+	cases := []struct {
+		name    string
+		noAgent bool
+	}{
+		{name: "variable set", noAgent: true},
+		{name: "variable unset", noAgent: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var userAgent string
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				// The SDK first asks for the host's well-known config; only the Me call is checked.
+				if r.URL.Path != "/api/2.0/preview/scim/v2/Me" {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				userAgent = r.Header.Get("User-Agent")
+				rw.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(rw, `{"id":"1","userName":"user@example.com"}`)
+			}))
+			t.Cleanup(server.Close)
+
+			ctx := t.Context()
+			if tc.noAgent {
+				t.Setenv("DATABRICKS_NOT_AN_AGENT", "1")
+			}
+			w, err := newHTTP11WorkspaceClient(ctx, &config.Config{Host: server.URL, Token: "dapi-test"})
+			require.NoError(t, err)
+			_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
+			require.NoError(t, err)
+
+			if tc.noAgent {
+				assert.NotContains(t, userAgent, "agent/")
+			} else {
+				assert.Contains(t, userAgent, "agent/claude-code")
+			}
+		})
 	}
 }

@@ -6,11 +6,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // dockerWorkspace holds the selected profile and its resolved workspace ID.
@@ -62,7 +64,7 @@ func loadDockerWorkspace(ctx context.Context, name string, region *string) (*doc
 	}
 	var client *databricks.WorkspaceClient
 	if region == nil || p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
-		client, err = databricks.NewWorkspaceClient(&databricks.Config{
+		profileCfg := &config.Config{
 			Profile:           p.Name,
 			Host:              p.Host,
 			AccountID:         p.AccountID,
@@ -70,7 +72,9 @@ func loadDockerWorkspace(ctx context.Context, name string, region *string) (*doc
 			ConfigFile:        env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 			Loaders:           databrickscfg.ProfileAuthLoaders,
 			DatabricksCliPath: executable,
-		})
+		}
+		agent.ApplyNotAnAgentHeader(ctx, profileCfg)
+		client, err = databricks.NewWorkspaceClient((*databricks.Config)(profileCfg))
 		if err != nil {
 			err = fmt.Errorf("load workspace profile %q: %w. Run databricks auth login --host <workspace-url> and retry with that profile", p.Name, err)
 			return nil, dockercredentials.RewriteProfileError(ctx, p, err)

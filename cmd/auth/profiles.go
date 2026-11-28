@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -69,6 +70,8 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 			return nil, nil
 		}
 	}
+	// Guard before EnsureResolved, which fetches the host's well-known config through the same transport.
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"

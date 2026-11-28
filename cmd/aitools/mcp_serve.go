@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
@@ -250,7 +251,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	// needs no sign-in skips the startup service lookup.
 	var w *databricks.WorkspaceClient
 	if entry == nil || entry.SignInRequired {
-		w, err = guardedClient(cfg, refresh)
+		w, err = guardedClient(ctx, cfg, refresh)
 		if err != nil {
 			return serveFailure(cmd, err, 1)
 		}
@@ -366,7 +367,7 @@ func checkBindingWithRetry(check func() error) error {
 // guardedClient returns the client of the bound profile whose requests the refresh guard authenticates. The SDK calls
 // the guard for each request the client makes, so a token that cannot be refreshed stops the proxy from any of them. The
 // profile's config is read again for the client, since its own credentials are the guard's.
-func guardedClient(cfg *config.Config, refresh *refreshGuard) (*databricks.WorkspaceClient, error) {
+func guardedClient(ctx context.Context, cfg *config.Config, refresh *refreshGuard) (*databricks.WorkspaceClient, error) {
 	guarded, err := mcp.BoundConfig(cfg.Profile, cfg.ConfigFile)
 	if err != nil {
 		return nil, err
@@ -376,6 +377,7 @@ func guardedClient(cfg *config.Config, refresh *refreshGuard) (*databricks.Works
 		guarded.WorkspaceID = ""
 	}
 	guarded.Credentials = guardCredentials{refresh: refresh}
+	agent.ApplyNotAnAgentHeader(ctx, guarded)
 	return databricks.NewWorkspaceClient((*databricks.Config)(guarded))
 }
 

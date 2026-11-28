@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -96,6 +97,7 @@ func (i *installer) Install(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		agent.ApplyNotAnAgentHeader(ctx, cfg)
 		w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		if err != nil {
 			return fmt.Errorf("no ~/.databrickscfg: %w", err)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
@@ -30,6 +31,7 @@ func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*d
 	if err != nil {
 		return nil, fmt.Errorf("profile: %w", err)
 	}
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("client: %w", err)

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -326,4 +327,63 @@ func TestProfileLoadTimesOutOnUnresponsiveHost(t *testing.T) {
 	// A regression that drops the bound would blow past this and the whole
 	// package would then hit the go test -timeout instead.
 	assert.Less(t, elapsed, 60*time.Second, "Load must be bounded by profileValidationTimeout, not the SDK default")
+}
+
+// TestProfileLoadNotAnAgentDropsAgentHeader checks that a profile's validation client leaves the agent token out of
+// User-Agent under DATABRICKS_NOT_AN_AGENT, and keeps it without the variable.
+func TestProfileLoadNotAnAgentDropsAgentHeader(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
+
+	cases := []struct {
+		name    string
+		noAgent bool
+	}{
+		{name: "variable set", noAgent: true},
+		{name: "variable unset", noAgent: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var userAgent, wellKnownUserAgent string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				// EnsureResolved asks for the host's well-known config before the validation call.
+				if r.URL.Path == "/.well-known/databricks-config" {
+					wellKnownUserAgent = r.Header.Get("User-Agent")
+				}
+				if r.URL.Path != "/api/2.0/preview/scim/v2/Me" {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				userAgent = r.Header.Get("User-Agent")
+				_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+			}))
+			t.Cleanup(server.Close)
+
+			dir := t.TempDir()
+			configFile := filepath.Join(dir, ".databrickscfg")
+			t.Setenv("HOME", dir)
+			if runtime.GOOS == "windows" {
+				t.Setenv("USERPROFILE", dir)
+			}
+			content := "[ws-profile]\nhost = " + server.URL + "\ntoken = test-token\n"
+			require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+			if tc.noAgent {
+				t.Setenv("DATABRICKS_NOT_AN_AGENT", "1")
+			}
+
+			p := profileMetadata{Name: "ws-profile"}
+			p.Load(t.Context(), configFile, false, profileValidationTimeout)
+			require.True(t, p.Valid)
+
+			// The SDK's host metadata fetch does not add the agent token even without the variable, so only the
+			// validation call's User-Agent tells the two cases apart.
+			require.NotEmpty(t, wellKnownUserAgent)
+			if tc.noAgent {
+				assert.NotContains(t, wellKnownUserAgent, "agent/")
+				assert.NotContains(t, userAgent, "agent/")
+			} else {
+				assert.Contains(t, userAgent, "agent/claude-code")
+			}
+		})
+	}
 }

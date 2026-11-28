@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -105,6 +106,7 @@ func makeCommand(method string) *cobra.Command {
 			// Skips the default profile when DATABRICKS_HOST is set (#5616).
 			root.ResolveDefaultProfile(cmd.Context(), cfg)
 
+			agent.ApplyNotAnAgentHeader(cmd.Context(), cfg)
 			api, err := client.New(cfg)
 			if err != nil {
 				return err

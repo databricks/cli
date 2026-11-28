@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/releases"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -46,7 +47,7 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 	// buys us nothing, and some corporate proxies reset large HTTP/2 request bodies
 	// with RST_STREAM(NO_ERROR), which aborts the upload. Forcing HTTP/1.1 only for
 	// this client keeps the rest of the connect flow on HTTP/2.
-	uploadClient, err := newHTTP11WorkspaceClient(client.Config)
+	uploadClient, err := newHTTP11WorkspaceClient(ctx, client.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create upload client: %w", err)
 	}
@@ -107,7 +108,7 @@ func fallbackHint(ctx context.Context) string {
 // on its config. config.Config embeds a sync.Mutex and cannot be copied by value,
 // so we reconstruct a fresh config from src's public attributes rather than clone
 // the struct; the client then re-resolves auth from those attributes.
-func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, error) {
+func newHTTP11WorkspaceClient(ctx context.Context, src *config.Config) (*databricks.WorkspaceClient, error) {
 	cfg := &config.Config{}
 	for _, attr := range config.ConfigAttributes {
 		if attr.IsZero(src) {
@@ -118,6 +119,7 @@ func newHTTP11WorkspaceClient(src *config.Config) (*databricks.WorkspaceClient, 
 		}
 	}
 	cfg.HTTPTransport = newHTTP11Transport(src)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
 

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
@@ -523,12 +524,14 @@ a new profile is created.
 			// Create a workspace client to list clusters for interactive selection.
 			// We use a custom CredentialsStrategy that wraps the token we just minted,
 			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			wCfg := &config.Config{
 				Host:        authArguments.Host,
 				AccountID:   authArguments.AccountID,
 				WorkspaceID: authArguments.WorkspaceID,
 				Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
-			})
+			}
+			agent.ApplyNotAnAgentHeader(ctx, wCfg)
+			w, err := databricks.NewWorkspaceClient((*databricks.Config)(wCfg))
 			if err != nil {
 				return err
 			}
@@ -1054,7 +1057,7 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", nil
 	}
 
-	a, err := databricks.NewAccountClient(&databricks.Config{
+	aCfg := &config.Config{
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
 		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
@@ -1063,7 +1066,9 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		// don't spend the SDK's default 5 minute retry budget on a 503 here.
 		HTTPTimeoutSeconds:  workspaceListTimeoutSeconds,
 		RetryTimeoutSeconds: workspaceListTimeoutSeconds,
-	})
+	}
+	agent.ApplyNotAnAgentHeader(ctx, aCfg)
+	a, err := databricks.NewAccountClient((*databricks.Config)(aCfg))
 	if err != nil {
 		return "", err
 	}

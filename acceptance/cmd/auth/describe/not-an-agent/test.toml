@@ -1,0 +1,11 @@
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
+
+# Normalize OS-dependent and CI-only User-Agent segments so the recorded requests are stable everywhere.
+[[Repls]]
+Old = '(linux|darwin|windows)'
+New = '[OS]'
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""

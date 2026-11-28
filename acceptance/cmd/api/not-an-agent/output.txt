@@ -1,0 +1,39 @@
+
+=== With the variable set, the request has no agent token
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] api get /api/2.0/clusters/list
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_get cmd-exec-id/[UUID][0] interactive/none auth/pat"
+    ],
+    "X-Databricks-Workspace-Id": [
+      "[WORKSPACE_ID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/clusters/list"
+}
+
+=== With the variable unset, the request carries the agent token
+
+>>> CLAUDECODE=1 [CLI] api get /api/2.0/clusters/list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_get cmd-exec-id/[UUID][1] interactive/none aitools-agent/none auth/pat agent/claude-code"
+    ],
+    "X-Databricks-Workspace-Id": [
+      "[WORKSPACE_ID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/clusters/list"
+}

@@ -32,6 +32,13 @@ type noAgentHeaderTransport struct {
 	cfg  *config.Config
 }
 
+// SkipRetryOnIO forwards the SDK's optional fixture hook from base. The SDK looks for it on cfg.HTTPTransport, so
+// without this a fixture transport would lose its skip-retry behaviour behind the wrapper.
+func (t *noAgentHeaderTransport) SkipRetryOnIO() bool {
+	skippable, ok := t.base.(interface{ SkipRetryOnIO() bool })
+	return ok && skippable.SkipRetryOnIO()
+}
+
 func (t *noAgentHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	next := t.base
 	if next == nil {
