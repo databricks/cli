@@ -1,0 +1,14 @@
+title "Bind a job whose dependency, not deployed yet, references another job that is not deployed yet"
+job_id=$($CLI jobs create --json '{"name": "external job"}' | jq -r '.job_id')
+add_repl "$job_id" EXTERNAL_JOB_ID
+trace $CLI bundle deployment bind job_1 $job_id --auto-approve
+trace jq '.state | map_values({__id__, depends_on, description: .state.description})' .databricks/bundle/default/resources.json
+
+title "Deploy creates both dependencies and updates the bound job"
+trace $CLI bundle deploy
+read_id.py leaf > /dev/null
+read_id.py middle > /dev/null
+trace $CLI jobs get $job_id | jq -r .settings.description
+
+title "Nothing is left to deploy"
+trace $CLI bundle plan

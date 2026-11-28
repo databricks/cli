@@ -1,0 +1,17 @@
+title "Deploy an experiment and a job that reads its tag"
+trace $CLI bundle deploy
+reader_id=$(read_id.py reader)
+trace $CLI jobs get $reader_id | jq -r .settings.description
+
+title "Point the tag at a new job: experiment tag changes are ignored, so the experiment is skipped"
+update_file.py databricks.yml "value: initial" 'value: "${resources.jobs.new_job.id}"'
+update_file.py databricks.yml "#TO_ADD:" ""
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py new_job > /dev/null
+
+title "The reader still has the tag the experiment holds"
+trace $CLI jobs get $reader_id | jq -r .settings.description
+
+title "Plan after the deploy"
+trace $CLI bundle plan

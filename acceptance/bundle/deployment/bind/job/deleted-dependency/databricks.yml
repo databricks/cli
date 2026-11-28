@@ -1,0 +1,11 @@
+bundle:
+  name: bind-deleted-dependency
+
+resources:
+  jobs:
+    upstream:
+      name: upstream
+
+#TO_ADD:    job_1:
+#TO_ADD:      name: bound job
+#TO_ADD:      description: "runs after ${resources.jobs.upstream.id}"

@@ -1,0 +1,17 @@
+bundle:
+  name: skipped-tag-reference
+
+resources:
+  experiments:
+    e:
+      name: /Users/${workspace.current_user.userName}/skipped-tag-reference
+      tags:
+        - key: owner
+          value: initial
+
+  jobs:
+    #TO_ADD:new_job:
+    #TO_ADD:  name: new job
+    reader:
+      name: reader
+      description: "tag is ${resources.experiments.e.tags[0].value}"

@@ -1,0 +1,14 @@
+bundle:
+  name: bind-undeployed-dependency
+
+resources:
+  jobs:
+    deployed:
+      name: deployed upstream
+
+#TO_ADD:    new_upstream:
+#TO_ADD:      name: new upstream
+#TO_ADD:
+#TO_ADD:    job_1:
+#TO_ADD:      name: bound job
+#TO_ADD:      description: "runs after ${resources.jobs.deployed.id} and ${resources.jobs.new_upstream.id}"

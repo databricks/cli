@@ -1,0 +1,15 @@
+bundle:
+  name: bind-undeployed-chain
+
+resources:
+  jobs:
+    leaf:
+      name: leaf
+
+    middle:
+      name: middle
+      description: "runs after ${resources.jobs.leaf.id}"
+
+    job_1:
+      name: bound job
+      description: "runs after ${resources.jobs.middle.id}"

@@ -21,6 +21,7 @@ trap cleanupRemoveSchema EXIT
 
 title "Bind schema: "
 $CLI bundle deployment bind schema1 ${CATALOG_NAME}.${SCHEMA_NAME} --auto-approve
+jq '{schema_id_recorded: (.state["resources.schemas.schema1"].state.schema_id != null)}' .databricks/bundle/default/resources.json
 
 title "Deploy bundle: "
 $CLI bundle deploy --force-lock --auto-approve

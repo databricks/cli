@@ -1,0 +1,22 @@
+title "Deploy the upstream job, then delete it outside of the bundle"
+trace $CLI bundle deploy
+upstream_id=$(read_id.py upstream)
+trace $CLI jobs delete $upstream_id
+
+title "Add a job that references the deleted upstream job"
+update_file.py databricks.yml "#TO_ADD:" ""
+job_id=$($CLI jobs create --json '{"name": "external job"}' | jq -r '.job_id')
+add_repl "$job_id" EXTERNAL_JOB_ID
+
+title "Bind records the job; the deleted upstream stays in the state"
+trace $CLI bundle deployment bind job_1 $job_id --auto-approve
+trace jq '.state | map_values({__id__, depends_on, description: .state.description})' .databricks/bundle/default/resources.json
+
+title "Deploy recreates the upstream job and updates the bound job"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py upstream > /dev/null
+trace $CLI jobs get $job_id | jq -r .settings.description
+
+title "Nothing is left to deploy"
+trace $CLI bundle plan

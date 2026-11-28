@@ -1,0 +1,90 @@
+
+=== Deploy the bundle with only the upstream job
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-undeployed-dependency/default/files...
+Created jobs.deployed
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a job that references both the deployed job and a job that is not deployed yet
+
+=== Bind without auto-approve shows the changes and does not touch the state
+
+>>> errcode [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID]
+Plan: update resources.jobs.job_1
+
+Changes detected:
+  ~ deployment: null -> {"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/bind-undeployed-dependency/default/state/metadata.json"}
+  ~ description: null -> "runs after [DEPLOYED_ID] and ${resources.jobs.new_upstream.id}"
+  ~ edit_mode: null -> "UI_LOCKED"
+  ~ format: null -> "MULTI_TASK"
+  ~ max_concurrent_runs: null -> 1
+  ~ name: "external job" -> "bound job"
+  ~ queue: null -> {"enabled":true}
+
+Error: this bind operation requires user confirmation, but the current console does not support prompting.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+Exit code: 1
+
+>>> jq .state | keys .databricks/bundle/default/resources.json
+[
+  "resources.jobs.deployed"
+]
+
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
+
+=== Bind with auto-approve records the job and its dependencies
+
+>>> [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
+Successfully bound job with an id '[EXTERNAL_JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> jq {serial, job_1: .state["resources.jobs.job_1"] | {__id__, depends_on, description: .state.description}} .databricks/bundle/default/resources.json
+{
+  "serial": 3,
+  "job_1": {
+    "__id__": "[EXTERNAL_JOB_ID]",
+    "depends_on": [
+      {
+        "node": "resources.jobs.deployed",
+        "label": "${resources.jobs.deployed.id}"
+      },
+      {
+        "node": "resources.jobs.new_upstream",
+        "label": "${resources.jobs.new_upstream.id}"
+      }
+    ],
+    "description": "runs after [DEPLOYED_ID] and ${resources.jobs.new_upstream.id}"
+  }
+}
+
+>>> ls .databricks/bundle/default
+deployment.json
+resources.json
+sync-snapshots
+
+=== Deploy creates the new upstream and updates the bound job
+
+>>> [CLI] bundle plan
+update jobs.job_1
+create jobs.new_upstream
+
+Plan: 1 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-undeployed-dependency/default/files...
+Created jobs.new_upstream
+Updated jobs.job_1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] jobs get [EXTERNAL_JOB_ID]
+runs after [DEPLOYED_ID] and [NEW_UPSTREAM_ID]
+
+=== Nothing is left to deploy
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
