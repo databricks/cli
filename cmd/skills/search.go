@@ -17,23 +17,6 @@ const searchTemplate = `{{if .Skills}}{{range .Skills}}{{.Name}}{{with .Descript
 {{else}}No skill matches. Run databricks skills list to see every skill.
 {{end}}`
 
-// searchJSON is the JSON output of skills search. It has the envelope and the
-// per-skill fields of skills list, so one parser reads both. skills list defines
-// the same shape in its own file; the two should share one type once both land.
-type searchJSON struct {
-	Source         string            `json:"source"`
-	ReleaseVersion string            `json:"release_version"`
-	Skills         []searchJSONSkill `json:"skills"`
-}
-
-type searchJSONSkill struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Version     string   `json:"version"`
-	Files       []string `json:"files"`
-	Commands    []string `json:"commands"`
-}
-
 func newSearchCmd() *cobra.Command {
 	var experimental bool
 	cmd := &cobra.Command{
@@ -41,41 +24,31 @@ func newSearchCmd() *cobra.Command {
 		Short: "Search the skills for words",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, words []string) error {
-			return runSearch(cmd, words, experimental)
+			if err := checkWords(words); err != nil {
+				return err
+			}
+			src, err := skills.Resolve(cmd.Context())
+			if err != nil {
+				return err
+			}
+			return runSearch(cmd, src, words, experimental)
 		},
 	}
 	cmd.Flags().BoolVar(&experimental, "experimental", false, "Also search the experimental skills")
 	return cmd
 }
 
-func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
-	if err := checkWords(words); err != nil {
-		return err
-	}
+func runSearch(cmd *cobra.Command, src skills.Source, words []string, experimental bool) error {
 	ctx := cmd.Context()
-	src, err := skills.Resolve(ctx)
-	if err != nil {
-		return err
-	}
 	catalog, err := src.Catalog(ctx)
 	if err != nil {
 		return err
 	}
+	if catalog.Stale {
+		cmdio.LogString(ctx, provenanceLine(catalog))
+	}
 	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
-	out := searchJSON{
-		Source:         catalog.Label,
-		ReleaseVersion: catalog.Version,
-		Skills:         make([]searchJSONSkill, 0, len(matches)),
-	}
-	for _, s := range matches {
-		out.Skills = append(out.Skills, searchJSONSkill{
-			Name:        s.Name,
-			Description: s.Description,
-			Version:     s.Version,
-			Files:       copyList(s.Files),
-			Commands:    copyList(s.Commands),
-		})
-	}
+	out := newCatalogJSON(catalog, matches)
 	return cmdio.RenderWithTemplate(ctx, out, "", searchTemplate)
 }
 
@@ -87,11 +60,6 @@ func checkWords(words []string) error {
 		}
 	}
 	return nil
-}
-
-// copyList returns a non-nil copy of list, so that JSON prints [] rather than null.
-func copyList(list []string) []string {
-	return append(make([]string, 0, len(list)), list...)
 }
 
 // searchableSkills returns the skills that search covers. Experimental skills are

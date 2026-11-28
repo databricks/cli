@@ -24,6 +24,9 @@ To read a skill, run: databricks skills read <name>
 {
   "source": "[TESTROOT]/cmd/skills/release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "Pick the skill whose description matches the task.\nRead the skill before you act on it.",
   "skills": [
     {
       "name": "-foo",
@@ -40,6 +43,7 @@ To read a skill, run: databricks skills read <name>
       "name": "demo-skill",
       "description": "A skill for tests.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -52,6 +56,7 @@ To read a skill, run: databricks skills read <name>
       "name": "future-skill",
       "description": "A skill that needs a newer CLI.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -61,6 +66,7 @@ To read a skill, run: databricks skills read <name>
       "name": "guide-skill",
       "description": "A skill with a supporting file.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md",
         "references/guide.md",
@@ -75,6 +81,9 @@ To read a skill, run: databricks skills read <name>
 {
   "source": "[TESTROOT]/cmd/skills/release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "Pick the skill whose description matches the task.\nRead the skill before you act on it.",
   "skills": [
     {
       "name": "-foo",
@@ -91,6 +100,7 @@ To read a skill, run: databricks skills read <name>
       "name": "demo-skill",
       "description": "A skill for tests.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -103,6 +113,7 @@ To read a skill, run: databricks skills read <name>
       "name": "future-skill",
       "description": "A skill that needs a newer CLI.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -112,6 +123,7 @@ To read a skill, run: databricks skills read <name>
       "name": "guide-skill",
       "description": "A skill with a supporting file.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md",
         "references/guide.md",
@@ -123,6 +135,7 @@ To read a skill, run: databricks skills read <name>
       "name": "preview-skill",
       "description": "An experimental skill for tests.",
       "version": "0.0.2",
+      "experimental": true,
       "files": [
         "SKILL.md"
       ],

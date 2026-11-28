@@ -19,11 +19,15 @@ No skill matches. Run databricks skills list to see every skill.
 {
   "source": "[TESTROOT]/cmd/skills/search/release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "Pick the skill whose description matches the task.\nRead the skill before you act on it.",
   "skills": [
     {
       "name": "pipeline-guide",
       "description": "Build and debug data pipelines.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -38,11 +42,15 @@ No skill matches. Run databricks skills list to see every skill.
 {
   "source": "[TESTROOT]/cmd/skills/search/release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "Pick the skill whose description matches the task.\nRead the skill before you act on it.",
   "skills": [
     {
       "name": "demo-skill",
       "description": "A skill for tests.",
       "version": "0.0.1",
+      "experimental": false,
       "files": [
         "SKILL.md"
       ],
@@ -55,6 +63,9 @@ No skill matches. Run databricks skills list to see every skill.
 {
   "source": "[TESTROOT]/cmd/skills/search/release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "Pick the skill whose description matches the task.\nRead the skill before you act on it.",
   "skills": []
 }
 
@@ -73,11 +84,15 @@ To read a skill, run: databricks skills read <name>
 {
   "source": "[TESTROOT]/cmd/skills/search/experimental-release",
   "release_version": "0.0.1",
+  "stale": false,
+  "fetched_at": "[TIMESTAMP]",
+  "rules": "",
   "skills": [
     {
       "name": "pipeline-bare",
       "description": "",
       "version": "0.0.1",
+      "experimental": true,
       "files": [
         "SKILL.md"
       ],
@@ -89,6 +104,7 @@ To read a skill, run: databricks skills read <name>
       "name": "pipeline-lab",
       "description": "An experimental pipeline skill.",
       "version": "0.0.1",
+      "experimental": true,
       "files": [
         "SKILL.md"
       ],
