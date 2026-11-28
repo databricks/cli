@@ -32,7 +32,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy --plan plan.json --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Warn: destroying resources.clusters.foo: Treating resources.clusters.foo id=[FOO_ID_2] as already deleted despite delete error: Cluster [FOO_ID_2] does not exist
 Deleted clusters.foo
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
