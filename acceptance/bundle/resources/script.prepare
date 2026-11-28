@@ -1,0 +1,9 @@
+# The *_fields helpers are the allow-lists of fields the acceptance tests assert on. Anything the
+# backend returns outside a list is dropped, so a new field in the API response does not break the
+# golden.
+schema_fields() {
+    jq '{full_name, schema_id} | with_entries(select(.value != null))'
+}
+volume_fields() {
+    jq '{full_name, volume_id} | with_entries(select(.value != null))'
+}

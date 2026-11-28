@@ -62,6 +62,8 @@ If the ID is built from the resource's own fields (a UC full name), implement `I
 
 If the backend also has its own ID that a rename keeps (a volume's `volume_id`), add it to the state type, copy it in `RemapState`, and name it in the config as `internal_id_field`. The framework records it on every save and skips its changes in the plan. When nothing is at the recorded ID, the plan reads at the ID the config gives the resource and takes what it finds only if the internal ID matches. This covers a rename done out of band, or by a deploy that stopped before re-keying the resource.
 
+An object at the recorded ID with a different internal ID is someone else's (ours was renamed away and another created under its name, or ours was deleted and created again): the plan treats ours as not there, so it never updates or deletes the other object. A deploy then looks for ours at the ID the config gives it, as above. A delete (by destroy, or of a resource removed from config) has no config to give a new name, so it only drops the state entry and leaves the other object in place.
+
 ## Empty states: IsEmptyState
 
 If a desired state describes no resource at all (e.g. an empty grants list), implement `IsEmptyState`. The planner omits such a node instead of planning a create, and apply drops its state entry instead of persisting one.

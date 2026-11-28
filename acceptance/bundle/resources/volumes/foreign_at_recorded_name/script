@@ -1,0 +1,45 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# The schema is not in the bundle, so destroy deletes the volume itself rather than its schema.
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+
+cleanup() {
+    errcode $CLI schemas delete "$SCHEMA" --force > LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+$CLI schemas create "test-schema-${UNIQUE_NAME}" main > LOG.create
+
+title "Deploy a volume"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI volumes read "$SCHEMA.myvolume" | jq -r .volume_id)" VOLUME_ID
+
+title "Out of band, rename the volume away, and create another one under its name"
+trace $CLI volumes update "$SCHEMA.myvolume" --new-name myvolume-moved | volume_fields
+add_repl "$($CLI volumes create main "test-schema-${UNIQUE_NAME}" myvolume MANAGED | jq -r .volume_id)" FOREIGN_VOLUME_ID
+print_requests.py //unity-catalog &> LOG.oob_requests
+
+title "The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create"
+trace $CLI bundle plan
+
+title "Point the config at the bundle's renamed volume: the plan finds it there by its volume_id"
+envsubst < databricks-moved.yml.tmpl > databricks.yml
+trace $CLI bundle plan --output json | plan_filter.py resources.volumes.volume1 | normalize_uc_payload.py storage_location
+
+title "Deploy takes the renamed volume for the bundle's, and sends nothing to the other one"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$SCHEMA.myvolume-moved" | volume_fields
+trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields
+
+title "Destroy deletes the bundle's volume at its new name, not the other one"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace musterr $CLI volumes read "$SCHEMA.myvolume-moved"
+
+title "The other volume is left alone"
+trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields

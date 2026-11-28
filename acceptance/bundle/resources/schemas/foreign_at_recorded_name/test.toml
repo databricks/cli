@@ -1,4 +1,3 @@
-Badness = "The plan reads the recorded name and takes whatever schema is there without checking schema_id: a schema someone else created at that name after ours was renamed is planned as an update and then deleted by destroy, while ours is left behind. A schema_id mismatch should mean the bundle's schema is not there, and the plan should look for it by its schema_id."
 Cloud = true
 
 Ignore = [

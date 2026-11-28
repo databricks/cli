@@ -13,10 +13,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Drop the remote_state fields that differ between clouds or from the test server.
-plan() {
-    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
-}
 
 title "Deploy a schema"
 trace $CLI bundle deploy
@@ -24,17 +20,31 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 add_repl "$($CLI schemas get "$SCHEMA" | jq -r .schema_id)" SCHEMA_ID
 
 title "Out of band, rename the schema away, and create another one under its name"
-trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}" | schema_fields
 add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schema_id)" FOREIGN_SCHEMA_ID
 print_requests.py //unity-catalog &> LOG.oob_requests
 
-title "The plan takes the other schema for the bundle's, though its schema_id differs, and plans to update it"
-plan
+title "The other schema has another schema_id, so the plan does not take it for the bundle's: it plans a create"
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
 
-title "Destroy deletes the other schema"
+title "Deploy leaves the other schema alone: the create fails on its name"
+trace musterr $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "Point the config at the bundle's renamed schema: the plan finds it there by its schema_id"
+envsubst < databricks-moved.yml.tmpl > databricks.yml
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
+
+title "Deploy takes the renamed schema for the bundle's, and sends nothing to the other one"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI schemas get "$MOVED_SCHEMA" | schema_fields
+trace $CLI schemas get "$SCHEMA" | schema_fields
+
+title "Destroy deletes the bundle's schema at its new name, not the other one"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace musterr $CLI schemas get "$SCHEMA"
+trace musterr $CLI schemas get "$MOVED_SCHEMA"
 
-title "The bundle's own schema is left behind"
-trace $CLI schemas get "$MOVED_SCHEMA" | jq '{full_name, schema_id}'
+title "The other schema is left alone"
+trace $CLI schemas get "$SCHEMA" | schema_fields

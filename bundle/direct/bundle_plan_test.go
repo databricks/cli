@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -988,6 +989,66 @@ func TestAddParentMoves(t *testing.T) {
 			require.NoError(t, b.addParentMoves(plan))
 			assert.Equal(t, tt.wantID, plan.Plan[volumeKey].ID)
 			assert.Equal(t, tt.wantDependsOn, plan.Plan[volumeKey].DependsOn)
+		})
+	}
+}
+
+func TestOtherInternalID(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	adapter := adapters["schemas"]
+
+	for name, tt := range map[string]struct {
+		saved, remote, want string
+	}{
+		"same":                 {saved: "uuid-1", remote: "uuid-1", want: ""},
+		"different":            {saved: "uuid-1", remote: "uuid-2", want: "uuid-2"},
+		"not recorded":         {saved: "", remote: "uuid-2", want: ""},
+		"not in remote":        {saved: "uuid-1", remote: "", want: ""},
+		"neither has internal": {saved: "", remote: "", want: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			saved := &dresources.SchemaState{SchemaId: tt.saved}
+			remote := &catalog.SchemaInfo{SchemaId: tt.remote}
+			got, err := otherInternalID(adapter, saved, remote)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	got, err := otherInternalID(adapter, &dresources.SchemaState{SchemaId: "uuid-1"}, nil)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func TestOtherObjectAtRecordedID(t *testing.T) {
+	const key = "resources.schemas.schema1"
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	remote := &catalog.SchemaInfo{FullName: "main.s1", SchemaId: "uuid-1"}
+
+	for name, tc := range map[string]struct {
+		state []byte
+		other bool
+	}{
+		// The deployment metadata service can hold an entry with only an ID.
+		"id-only entry":       {state: nil},
+		"same internal id":    {state: []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-1"}`)},
+		"internal id unset":   {state: []byte(`{"catalog_name": "main", "name": "s1"}`)},
+		"another internal id": {state: []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-0"}`), other: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			b := &DeploymentBundle{Adapters: adapters}
+			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
+				key: {ID: "main.s1", State: tc.state},
+			}})
+			message, err := b.otherObjectAtRecordedID(key, adapters["schemas"], "main.s1", remote)
+			require.NoError(t, err)
+			if tc.other {
+				assert.Contains(t, message, `its schema_id is "uuid-1", not "uuid-0" as recorded`)
+			} else {
+				assert.Empty(t, message)
+			}
 		})
 	}
 }

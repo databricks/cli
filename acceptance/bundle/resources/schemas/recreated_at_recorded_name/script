@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    errcode $CLI schemas delete "$SCHEMA" --force > LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "$SCHEMA" | jq -r .schema_id)" SCHEMA_ID
+
+title "Out of band, drop the schema and create it again under the same name"
+trace $CLI schemas delete "$SCHEMA" --force
+add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schema_id)" NEW_SCHEMA_ID
+print_requests.py //unity-catalog &> LOG.oob_requests
+
+title "The new schema has another schema_id: the bundle does not take it for its own, and deploy fails on its name"
+trace $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "Binding it again makes it the bundle's"
+trace $CLI bundle deployment unbind schema1
+trace $CLI bundle deployment bind schema1 "$SCHEMA" --auto-approve
+trace $CLI bundle deploy
+trace $CLI bundle plan

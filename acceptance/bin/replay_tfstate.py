@@ -126,6 +126,9 @@ def main():
         for nf in NAME_FIELDS:
             if attrs.get(nf):
                 name_to_attrs[str(attrs[nf])] = attrs
+                # UC lowercases names (a schema created as MySchema is stored as myschema), so the
+                # tfstate may hold the lowercased form of the name the create request sent.
+                name_to_attrs.setdefault(str(attrs[nf]).lower(), attrs)
 
     id_map = {}
     for req in requests:
@@ -150,6 +153,8 @@ def main():
         create_name = None
         if isinstance(body, dict):
             create_name = next((str(body[nf]) for nf in NAME_FIELDS if body.get(nf)), None)
+        if create_name is not None and create_name not in name_to_attrs:
+            create_name = create_name.lower()
         if req["method"] == "POST" and create_name in name_to_attrs:
             attrs = name_to_attrs[create_name]
             if str(attrs["id"]) != create_name:

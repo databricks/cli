@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -260,6 +261,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				// DELETING) that a GET still returns but a second delete would reject.
 				// Treat it as gone: apply cleans up state without re-issuing the delete.
 				entry.Gone = true
+			} else {
+				// Someone else's resource under the name ours had is never deleted: no delete is
+				// sent for it, and only the state entry is dropped.
+				message, err := b.otherObjectAtRecordedID(resourceKey, adapter, id, remoteState)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
+				if message != "" {
+					logdiag.LogDiag(ctx, diag.Warningf("%s: %s, so no delete is sent for it, and %s is dropped from the deployment state. %s",
+						resourceKey, message, resourceKey, otherObjectDeleteAdvice)[0])
+					entry.Gone = true
+					remoteState = nil
+				}
 			}
 
 			entry.RemoteState = remoteState
@@ -349,12 +364,26 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 		}
+		// Someone else's resource under the name ours had is not ours: plan as if ours were not
+		// there, so the plan neither updates nor later deletes it.
+		otherID, err := otherInternalID(adapter, savedState, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+		if otherID != "" {
+			remoteState = nil
+		}
 		if remoteState == nil {
 			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry.ID, savedState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
+		}
+		if otherID != "" && remoteState == nil {
+			logdiag.LogDiag(ctx, diag.Warningf("%s: %s, so this bundle does not take it for its own. %s",
+				resourceKey, otherObjectMessage(adapter, dbentry.ID, savedState, otherID), otherObjectDeployAdvice)[0])
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -868,6 +897,69 @@ func (b *DeploymentBundle) addParentMoves(plan *deployplan.Plan) error {
 func isParentIDField(adapter *dresources.Adapter, path *structpath.PathNode) bool {
 	_, ok := findMatchingRule(path, adapter.ResourceConfig().ParentIDFields)
 	return ok
+}
+
+// otherInternalID returns the internal ID of remote, read at the recorded ID, if it is another
+// object than the one savedState records: ours was renamed away and another one created under its
+// old name. It is "" when the resource is ours, or when either side has no internal ID to compare.
+func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (string, error) {
+	if !adapter.HasInternalID() || remote == nil {
+		return "", nil
+	}
+	saved, err := adapter.InternalID(savedState)
+	if err != nil || saved == "" {
+		return "", err
+	}
+	remapped, err := adapter.RemapState(remote)
+	if err != nil {
+		return "", err
+	}
+	found, err := adapter.InternalID(remapped)
+	if err != nil || found == saved {
+		return "", err
+	}
+	return found, nil
+}
+
+// otherObjectMessage describes the object at the recorded ID id, whose internal ID is otherID and
+// not the one savedState records. Callers add the advice, because a resource deleted and created
+// again out of band looks the same.
+func otherObjectMessage(adapter *dresources.Adapter, id string, savedState any, otherID string) string {
+	saved, _ := adapter.InternalID(savedState)
+	return fmt.Sprintf("id=%q holds another object: its %s is %q, not %q as recorded",
+		id, adapter.ResourceConfig().InternalIDField, otherID, saved)
+}
+
+// otherObjectDeployAdvice follows otherObjectMessage for a resource in the config. The bundle's own
+// may still exist under another name (renamed out of band), which findMoved takes once the config
+// names it. Bind needs a free state entry, hence unbind first.
+const otherObjectDeployAdvice = "If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again."
+
+// otherObjectDeleteAdvice follows otherObjectMessage for a resource being deleted: its state entry
+// is dropped, and it may no longer be in the config, so binding it is not an option.
+const otherObjectDeleteAdvice = "If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle."
+
+// otherObjectAtRecordedID returns, for a resource to be deleted, what otherObjectMessage says when
+// remote, read at its recorded ID id, is another object than the one the state records; "" when it
+// is ours, or when there is no internal ID to tell (a state entry with only the ID). The bundle's
+// own is not looked for: a renamed one is left behind, as before.
+func (b *DeploymentBundle) otherObjectAtRecordedID(resourceKey string, adapter *dresources.Adapter, id string, remote any) (string, error) {
+	if !adapter.HasInternalID() {
+		return "", nil
+	}
+	dbentry, _ := b.StateDB.GetResourceEntry(resourceKey)
+	if len(dbentry.State) == 0 {
+		return "", nil
+	}
+	savedState, err := parseState(adapter.StateType(), dbentry.State)
+	if err != nil {
+		return "", fmt.Errorf("interpreting state: %w", err)
+	}
+	otherID, err := otherInternalID(adapter, savedState, remote)
+	if err != nil || otherID == "" {
+		return "", err
+	}
+	return otherObjectMessage(adapter, id, savedState, otherID), nil
 }
 
 // recordRefTypes records, for each pure-reference field of resourceKey, the type of the resource it
