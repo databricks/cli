@@ -1,0 +1,6 @@
+Cloud = false
+
+# Progress lines include the time waited so far.
+[[Repls]]
+Old = '\((\d+m)?\d+s\)'
+New = '([ELAPSED])'

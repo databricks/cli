@@ -1,0 +1,34 @@
+
+=== Create waits and reports progress on stderr; stdout is the endpoint JSON
+
+>>> [CLI] serving-endpoints create --json @input.json
+{
+  "name": "iris-clf",
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+=== Create with --no-wait prints the create response and no progress
+
+>>> [CLI] serving-endpoints create --no-wait --json {"name": "iris-clf-2"}
+{
+  "name": "iris-clf-2"
+}
+
+=== Update config waits and reports progress
+
+>>> [CLI] serving-endpoints update-config iris-clf --json @update.json
+current status: IN_PROGRESS ([ELAPSED])
+{
+  "name": "iris-clf",
+  "state": {
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
+  }
+}
+
+=== Help mentions the wait and --no-wait
+
+>>> [CLI] serving-endpoints create --help

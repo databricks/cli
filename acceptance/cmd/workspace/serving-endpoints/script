@@ -1,0 +1,13 @@
+title "Create waits and reports progress on stderr; stdout is the endpoint JSON"
+trace $CLI serving-endpoints create --json @input.json > out.create.json
+jq '{name, state}' out.create.json
+rm out.create.json
+
+title "Create with --no-wait prints the create response and no progress"
+trace $CLI serving-endpoints create --no-wait --json '{"name": "iris-clf-2"}' | jq '{name}'
+
+title "Update config waits and reports progress"
+trace $CLI serving-endpoints update-config iris-clf --json @update.json | jq '{name, state}'
+
+title "Help mentions the wait and --no-wait"
+trace $CLI serving-endpoints create --help | contains.py "Use --no-wait to return immediately" > /dev/null
