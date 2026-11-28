@@ -35,6 +35,8 @@ func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) 
 	for source, locs := range libs {
 		if strings.ContainsAny(source, "*?[") {
 			matches, _ := filepath.Glob(source)
+			// Keep only the latest version of each wheel, as ExpandGlobReferences does.
+			matches = patchwheel.FilterLatestWheels(ctx, matches)
 			for _, match := range matches {
 				expanded[match] = append(expanded[match], locs...)
 			}
@@ -55,7 +57,10 @@ func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) 
 				continue
 			}
 			for _, f := range artifact.Files {
+				// Build is skipped when applying a saved plan, so f.Source may still be
+				// the glob a build command's output was matched with.
 				sources, _ := filepath.Glob(f.Source)
+				sources = patchwheel.FilterLatestWheels(ctx, sources)
 				for _, source := range sources {
 					info, err := patchwheel.ParseWheelFilename(filepath.Base(source))
 					if err != nil {
@@ -66,7 +71,6 @@ func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) 
 					if err == nil {
 						patches[source] = patchedPath
 					}
-					break
 				}
 			}
 		}
