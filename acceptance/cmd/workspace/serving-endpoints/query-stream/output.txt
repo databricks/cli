@@ -1,0 +1,39 @@
+
+=== --stream prints one JSON chunk per line
+
+>>> [CLI] serving-endpoints query chat-endpoint --stream --json {"messages": [{"role": "user", "content": "hi"}]}
+{"choices":[{"delta":{"content":"Hel"},"index":0}]}
+{"choices":[{"delta":{"content":"lo"},"finish_reason":"stop","index":0}]}
+
+=== "stream": true in --json also streams
+
+>>> [CLI] serving-endpoints query chat-endpoint --json {"messages": [{"role": "user", "content": "hi"}], "stream": true}
+Hello
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "POST",
+  "path": "/serving-endpoints/chat-endpoint/invocations",
+  "body": {
+    "messages": [
+      {
+        "content": "hi",
+        "role": "user"
+      }
+    ],
+    "stream": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/serving-endpoints/chat-endpoint/invocations",
+  "body": {
+    "messages": [
+      {
+        "content": "hi",
+        "role": "user"
+      }
+    ],
+    "stream": true
+  }
+}
