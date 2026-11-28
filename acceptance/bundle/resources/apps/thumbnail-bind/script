@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# thumbnail_url is null on the fake server and "" on cloud, so print whether it is set.
+title "An app created outside the bundle has no thumbnail"
+trace $CLI apps create app-$UNIQUE_NAME --no-compute --no-wait | jq '.thumbnail_url // "" | length > 0'
+
+title "Bind it to a bundle app that sets thumbnail_path"
+trace $CLI bundle deployment bind mykey app-$UNIQUE_NAME --auto-approve
+
+title "BUG: bind records the thumbnail in state without uploading it"
+trace jq '.state["resources.apps.mykey"].state.thumbnail' .databricks/bundle/default/resources.json
+
+title "BUG: so the plan has nothing to do and the deploy never uploads it"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //apps '^//api/2.0/bundle' | jq -c 'select(.path | test("thumbnail"))'
+trace $CLI apps get app-$UNIQUE_NAME | jq '.thumbnail_url // "" | length > 0'
+
+title "Removing thumbnail_path then deletes a thumbnail the app never had"
+update_file.py databricks.yml $'      thumbnail_path: ./thumbnail.png\n' ''
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //apps '^//api/2.0/bundle' | jq -c 'select(.path | test("thumbnail"))'

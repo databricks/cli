@@ -9,6 +9,7 @@ Ignore = [
     "*.py",
     "*.json",
     "app",
+    "*.png",
 ]
 
 Env.DATABRICKS_BUNDLE_ENGINE = "direct"

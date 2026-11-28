@@ -75,6 +75,9 @@ var commonMissingInStateType = []string{
 	"grants",
 	"lifecycle",
 	"permissions",
+	// BaseResource fields the CLI sets for summary output; not part of the deployed object.
+	"modified_status",
+	"url",
 }
 
 // knownMissingInStateType lists resource-specific fields that exist in InputType but not in StateType.
@@ -99,6 +102,8 @@ var knownMissingInStateType = map[string][]string{
 		"lifecycle.depends_on",
 	},
 	"job_runs": {
+		// Read from state to build the run URL; the state keeps the job_id it was read from.
+		"resolved_job_id",
 		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
 		"lifecycle.prevent_destroy",
 		"lifecycle.depends_on",
@@ -124,6 +129,10 @@ var knownMissingInStateType = map[string][]string{
 
 // TestInputSubset validates that all fields in InputType exist in StateType.
 //
+// Internal fields are checked too: a mutator that fills an internal field (e.g. apps.thumbnail,
+// read from thumbnail_path) must use the name the state uses, or the plan reports changes under a
+// path the config does not have.
+//
 // This is important because the "changes" block in JSON plan contains paths that work on StateType.
 // If that does not align with config, we cannot use the path to relate changes back to input config.
 //
@@ -143,11 +152,11 @@ func TestInputSubset(t *testing.T) {
 				if path.IsRoot() {
 					return true
 				}
-				// Skip fields marked as internal or readonly in bundle tags
+				// Skip readonly fields: they are output-only and set from the remote, not the config.
 				if field != nil {
 					btag := structtag.BundleTag(field.Tag.Get("bundle"))
-					if btag.Internal() || btag.ReadOnly() {
-						return false // don't recurse into internal/readonly fields
+					if btag.ReadOnly() {
+						return false // don't recurse into readonly fields
 					}
 				}
 				if structaccess.ValidatePattern(stateType, path) != nil {

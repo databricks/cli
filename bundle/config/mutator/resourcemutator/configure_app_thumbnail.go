@@ -18,7 +18,7 @@ const maxAppThumbnailBytes = 250_000
 type configureAppThumbnail struct{}
 
 // ConfigureAppThumbnail reads the image at resources.apps.*.thumbnail_path, checks that it
-// is a PNG or JPEG within the size limit, and stores it base64-encoded in thumbnail_content.
+// is a PNG or JPEG within the size limit, and stores it base64-encoded in thumbnail.
 func ConfigureAppThumbnail() bundle.Mutator {
 	return &configureAppThumbnail{}
 }
@@ -74,7 +74,7 @@ func (c configureAppThumbnail) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				return v, nil
 			}
 
-			return dyn.Set(v, "thumbnail_content", dyn.V(base64.StdEncoding.EncodeToString(contents)))
+			return dyn.Set(v, "thumbnail", dyn.V(base64.StdEncoding.EncodeToString(contents)))
 		})
 	})
 

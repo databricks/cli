@@ -1,0 +1,23 @@
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+null
+
+=== BUG: migrate records the thumbnail in state without uploading it
+
+>>> jq .state["resources.apps.foo"].state.thumbnail .databricks/bundle/default/resources.json
+"sha256:[HASH]"
+
+=== BUG: so the plan has nothing to do and the deploy never uploads it
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //apps ^//api/2.0/bundle
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+null

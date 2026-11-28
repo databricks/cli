@@ -1,0 +1,55 @@
+
+=== An app created outside the bundle has no thumbnail
+
+>>> [CLI] apps create app-[UNIQUE_NAME] --no-compute --no-wait
+false
+
+=== Bind it to a bundle app that sets thumbnail_path
+
+>>> [CLI] bundle deployment bind mykey app-[UNIQUE_NAME] --auto-approve
+Successfully bound app with an id 'app-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== BUG: bind records the thumbnail in state without uploading it
+
+>>> jq .state["resources.apps.mykey"].state.thumbnail .databricks/bundle/default/resources.json
+"sha256:[HASH]"
+
+=== BUG: so the plan has nothing to do and the deploy never uploads it
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //apps ^//api/2.0/bundle
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+false
+
+=== Removing thumbnail_path then deletes a thumbnail the app never had
+
+>>> [CLI] bundle plan
+update apps.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps ^//api/2.0/bundle
+{"method":"DELETE","path":"/api/2.0/apps/app-[UNIQUE_NAME]/thumbnail"}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -230,8 +230,7 @@ resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatal
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.logs_table	string	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.metrics_table	string	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.traces_table	string	ALL
-resources.apps.*.thumbnail	string	STATE
-resources.apps.*.thumbnail_content	string	INPUT
+resources.apps.*.thumbnail	string	INPUT	STATE
 resources.apps.*.thumbnail_path	string	INPUT
 resources.apps.*.thumbnail_url	string	ALL
 resources.apps.*.update_time	string	ALL

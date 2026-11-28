@@ -1,0 +1,22 @@
+# The terraform deployment predates thumbnail_path, so the app has no thumbnail.
+unset DATABRICKS_BUNDLE_ENGINE
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve > /dev/null 2>&1
+}
+trap cleanup EXIT
+
+FIXTURES="$TESTDIR/../../../invariant/fixtures/app.yml.tmpl"
+replay_tfstate.py "$FIXTURES.requests.json" "$FIXTURES.tfstate" > /dev/null
+trace $CLI apps get app-$UNIQUE_NAME | jq .thumbnail_url
+
+title "BUG: migrate records the thumbnail in state without uploading it"
+trace $CLI bundle deployment migrate > /dev/null 2>&1
+trace jq '.state["resources.apps.foo"].state.thumbnail' .databricks/bundle/default/resources.json
+
+title "BUG: so the plan has nothing to do and the deploy never uploads it"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //apps '^//api/2.0/bundle' | jq -c 'select(.path | test("thumbnail"))'
+trace $CLI apps get app-$UNIQUE_NAME | jq .thumbnail_url
