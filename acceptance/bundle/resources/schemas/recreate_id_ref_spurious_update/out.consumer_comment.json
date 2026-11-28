@@ -1,0 +1,6 @@
+{
+  "action": "update",
+  "old": "refers to main.referent",
+  "new": "refers to ${resources.schemas.referent.id}",
+  "remote": "refers to main.referent"
+}
