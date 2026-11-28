@@ -58,7 +58,8 @@ type Experimental struct {
 	//
 	// Resource state remains in resources.json. History uploads are best effort:
 	// DMS errors do not fail file-backed deployments.
-	// An explicit value takes priority over the environment setting.
+	// An explicit value takes priority over the environment setting. With neither
+	// set, history is recorded if the workspace is enrolled.
 	DeploymentHistory *bool `json:"deployment_history,omitempty"`
 }
 

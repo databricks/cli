@@ -1,0 +1,16 @@
+# A bundle that sets nothing leaves recording to the workspace's enrollment. The CLI only asks
+# when the variable is unset or empty: any other value is an explicit choice.
+EnvMatrix.DMS = [""]
+
+# See bundle/dms/test.toml.
+Env.DATABRICKS_BUNDLE_DMS_HEARTBEAT_INTERVAL_MS = "3600000"
+
+RecordRequests = true
+
+# Enrollment is stubbed per test, which a real workspace cannot do.
+Cloud = false
+
+Ignore = [
+    '.databricks',
+    'databricks.yml',
+]

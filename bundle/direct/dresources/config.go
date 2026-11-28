@@ -13,7 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // FieldRule represents a field path with its reason for inclusion.
@@ -169,7 +169,9 @@ type ResourceLifecycleConfig struct {
 	// from the remote cache during a keeps-ID update instead of being delayed
 	// until after apply. Without this, a dependent that treats the reference as
 	// part of its own immutable identity (a hierarchical parent/branch name)
-	// recreates spuriously on every in-place update of the target. See
+	// recreates spuriously on every in-place update of the target. The same
+	// applies to a backend-assigned ID that permissions use as their object_id
+	// (permissionIDFields): delaying it plans a no-op permissions update. See
 	// LookupReferencePreDeploy.
 	//
 	// This category only gates reference resolution; it never classifies a change,

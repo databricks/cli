@@ -1,0 +1,14 @@
+title "number property set to null in the config file"
+trace musterr $CLI bundle init . --config-file ratio-null.json --output-dir rendered
+
+title "integer property set to null in the config file"
+trace musterr $CLI bundle init . --config-file count-null.json --output-dir rendered
+
+title "null in the enum of a number property"
+trace musterr $CLI bundle init ./enum-null --output-dir rendered
+
+title "integer property declared only in anyOf set to null in the config file"
+trace musterr $CLI bundle init ./any-of --config-file extra-null.json --output-dir rendered
+
+title "integer property declared only in anyOf set to a valid integer in the config file"
+trace musterr $CLI bundle init ./any-of --config-file extra-3.json --output-dir rendered

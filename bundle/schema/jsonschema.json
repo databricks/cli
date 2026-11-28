@@ -4189,7 +4189,7 @@
                   "type": "object",
                   "properties": {
                     "deployment_history": {
-                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
+                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments. When not set, history is recorded if Databricks has enrolled the workspace.",
                       "$ref": "#/$defs/bool"
                     },
                     "immutable_folder": {

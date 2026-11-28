@@ -1,0 +1,7 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The bundle sets nothing and the workspace is not enrolled, so the deploy only asks"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get
+
+rm -f "$OUT_REQUESTS"

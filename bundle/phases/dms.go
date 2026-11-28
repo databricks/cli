@@ -266,19 +266,32 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, deploymentID, version))
 }
 
-// deploymentMetadata describes the bundle this deploy came from and where it
-// landed, mirroring what bundle/deploy/metadata computes for the metadata file.
-func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
+// deploymentMetadataForBind describes the bundle and workspace without deployed file metadata.
+// Bind uses it only to create a deployment: updating an existing one with it would clear file_path.
+func deploymentMetadataForBind(b *bundle.Bundle) dms.Metadata {
 	p := dms.Metadata{
 		DisplayName: b.Config.Bundle.Name,
 		TargetName:  b.Config.Bundle.Target,
 		Mode:        deploymentModeToSDK(b.Config.Bundle.Mode),
+		Workspace: &bundledeployments.WorkspaceInfo{
+			RootPath: b.Config.Workspace.RootPath,
+		},
 	}
+	// Only a deploy from a Databricks Git folder has one; a local worktree does not.
+	// bundle_root_path is relative to it, so the service requires both or neither.
+	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
+		p.Workspace.GitFolderPath = b.WorktreeRoot.Native()
+		p.Workspace.BundleRootPath = b.Config.Bundle.Git.BundleRootPath
+	}
+	return p
+}
 
-	ws := &bundledeployments.WorkspaceInfo{
-		RootPath: b.Config.Workspace.RootPath,
-		FilePath: b.Config.Workspace.FilePath,
-	}
+// deploymentMetadata describes the bundle this deploy came from and where it
+// landed, mirroring what bundle/deploy/metadata computes for the metadata file.
+func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
+	p := deploymentMetadataForBind(b)
+	ws := p.Workspace
+	ws.FilePath = b.Config.Workspace.FilePath
 	// With an immutable folder, file_path is a reference to the snapshot, which only
 	// resolves once the snapshot is uploaded. Its path is already known from the staged zip.
 	if b.IsImmutableFolder() {
@@ -294,13 +307,6 @@ func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
 		ws.FilePath = b.SyncRootPath
 		ws.SourceLinked = true
 	}
-	// Only a deploy from a Databricks Git folder has one; a local worktree does not.
-	// bundle_root_path is relative to it, so the service requires both or neither.
-	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
-		ws.GitFolderPath = b.WorktreeRoot.Native()
-		ws.BundleRootPath = b.Config.Bundle.Git.BundleRootPath
-	}
-	p.Workspace = ws
 	return p, nil
 }
 

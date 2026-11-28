@@ -1,0 +1,64 @@
+size=[SCHEMA_SIZE] context=0
+P   variables
+P   variables.*
+P   variables.*.type
+P   variables.*.default
+P   variables.*.description
+P   bundle
+P   bundle.name
+P   artifacts
+P   artifacts.*
+P   artifacts.*.type
+P   artifacts.*.files
+P   artifacts.*.files[*]
+P   artifacts.*.files[*].source
+P   artifacts.*.build
+P   resources
+P   resources.jobs
+P   resources.jobs.*
+P   resources.jobs.*.description
+P   resources.jobs.*.email_notifications
+P F resources.jobs.*.email_notifications.no_alert_for_skipped_runs
+P   resources.jobs.*.job_clusters
+P   resources.jobs.*.job_clusters[*]
+P   resources.jobs.*.job_clusters[*].job_cluster_key
+P   resources.jobs.*.job_clusters[*].new_cluster
+P   resources.jobs.*.job_clusters[*].new_cluster.num_workers
+P   resources.jobs.*.job_clusters[*].new_cluster.spark_version
+P   resources.jobs.*.max_concurrent_runs
+P   resources.jobs.*.name
+P   resources.jobs.*.notification_settings
+PT  resources.jobs.*.notification_settings.no_alert_for_skipped_runs
+P   resources.jobs.*.parameters
+P   resources.jobs.*.queue
+PTF resources.jobs.*.queue.enabled
+P   resources.jobs.*.tags
+P   resources.jobs.*.tags.*
+P   resources.jobs.*.tasks
+P   resources.jobs.*.tasks[*]
+P   resources.jobs.*.tasks[*].depends_on
+P   resources.jobs.*.tasks[*].depends_on[*]
+P   resources.jobs.*.tasks[*].depends_on[*].task_key
+P F resources.jobs.*.tasks[*].disable_auto_optimization
+P   resources.jobs.*.tasks[*].notebook_task
+P   resources.jobs.*.tasks[*].notebook_task.notebook_path
+P   resources.jobs.*.tasks[*].task_key
+P   resources.jobs.*.timeout_seconds
+P   resources.clusters
+P   resources.clusters.*
+P   resources.clusters.*.lifecycle
+P   resources.clusters.*.cluster_name
+PTF resources.clusters.*.lifecycle.started
+P   run_as
+P   run_as.service_principal_name
+P   presets
+P   presets.name_prefix
+P F presets.pipelines_development
+P   experimental
+P F experimental.use_legacy_run_as
+PTF telemetry.artifact_build_command_is_set
+PTF telemetry.artifact_files_is_set
+PT  telemetry.presets_name_prefix_is_set
+P   telemetry.config_has_double_dollar_brace
+P F telemetry.experimental.use_legacy_run_as
+PT  telemetry.run_as_set

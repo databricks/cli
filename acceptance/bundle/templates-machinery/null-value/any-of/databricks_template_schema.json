@@ -1,0 +1,18 @@
+{
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name",
+            "default": "x"
+        }
+    },
+    "anyOf": [
+        {
+            "properties": {
+                "extra": {
+                    "type": "integer"
+                }
+            }
+        }
+    ]
+}

@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -129,6 +130,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 
 	cmd.SetFlagErrorFunc(flagErrorFunc)
 	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
+	setHelpFunc(cmd)
 	return cmd
 }
 
@@ -206,6 +208,8 @@ Stack Trace:
 	ctx = context.WithValue(ctx, caughtSignalKey{}, &caught)
 	var deferredHint func()
 	ctx = context.WithValue(ctx, deferredHintKey{}, &deferredHint)
+	// One skills hints value per run; see skills.WithHintsMemo.
+	ctx = skills.WithHintsMemo(ctx)
 	// slog.SetDefault also redirects the standard log package, so both are restored.
 	prevLogger := slog.Default()
 	prevLogWriter, prevLogFlags := stdlog.Writer(), stdlog.Flags()

@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+title "Rename the secret scope (a provided id field) and plan: the plan migrates in memory only"
+update_file.py databricks.yml "test-scope-$UNIQUE_NAME" "test-scope-$UNIQUE_NAME-renamed"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+
+title "Deploy on direct without --auto-approve"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Secret scopes in the workspace after the deploy"
+trace $CLI secrets list-scopes -o json | jq -r '.[].name' | sort
+
+title "Plan again on direct: the scope now matches config, so the plan is a clean no-op"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+
+title "The state after the deploy records the scope's name and id"
+trace read_state.py secret_scopes foo id scope

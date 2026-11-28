@@ -1,0 +1,5 @@
+# What the service answers for a workspace it does not serve.
+[[Server]]
+Pattern = "GET /api/2.0/bundle/enrollments:check"
+Response.StatusCode = 403
+Response.Body = '{"error_code": "PERMISSION_DENIED", "message": "This workspace is not opted in to the Deployment history private preview."}'

@@ -4,6 +4,10 @@ cd output/my_default_python
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t prod
 
+# Record which fields of this realistic template the bitmap reports as set. tail skips the
+# size=N header: N grows with every field appended to the schema.
+$CLI bundle bitmap bitmap -o text -t dev | tail -n +2 > ../../out.bitmap.txt
+
 trace $CLI bundle plan -t dev
 trace $CLI bundle plan -t prod
 
@@ -13,6 +17,15 @@ $CLI bundle plan -o json -t prod | nostamp > ../../out.plan_prod.json
 rm "$OUT_REQUESTS"
 # With --plan variant we don't build artifacts, so we can filter out relevant log lines
 $CLI bundle deploy -t dev $(readplanarg ../../out.plan_dev.json) 2>&1 | grep -vE '^Building python_artifact|^Uploading .databricks'
+
+# The deploy sends the bundle bitmap in its telemetry event (logged, with the encoded bitmap, to
+# LOG.telemetry.dev.json). Decoded, its config fields are the ones bundle bitmap reports above. Its
+# telemetry flags also include those only a deploy measures, and those differ with READPLAN, so only
+# the config fields are compared.
+print_requests.py --keep //telemetry-ext | jq '.body.protoLogs[] | fromjson' > ../../LOG.telemetry.dev.json
+jq -r '.entry.databricks_cli_log.bundle_deploy_event.bundle_bitmap' ../../LOG.telemetry.dev.json | $CLI bundle bitmap decode | tail -n +2 | grep -v ' telemetry\.' > ../../LOG.bitmap.deploy.dev.txt
+grep -v ' telemetry\.' ../../out.bitmap.txt > ../../LOG.bitmap.dev.txt
+trace diff.py ../../LOG.bitmap.dev.txt ../../LOG.bitmap.deploy.dev.txt
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.txt
 read_id.py -t dev sample_job > /dev/null
 trace $CLI bundle plan -t dev  # check if if there is drift

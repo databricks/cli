@@ -1,4 +1,7 @@
 
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
 === a failed attempt is silent, and the commands right after it do not retry
 
 >>> print_telemetry
@@ -14,6 +17,7 @@
   "last_version": "1.30.0",
   "attempts": 1,
   "last_attempt": "[LAST_ATTEMPT]",
+  "consented": true,
   "installing": true,
   "id": "treatment-machine"
 }
@@ -42,7 +46,7 @@
 === a new version starts over
 
 >>> DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 [CLI] jobs list
-Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+Installed Databricks AI tools for Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
 
 >>> print_telemetry
 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
@@ -51,5 +55,6 @@ Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-insta
 >>> auto_install_state
 {
   "last_version": "1.31.0",
+  "consented": true,
   "id": "treatment-machine"
 }

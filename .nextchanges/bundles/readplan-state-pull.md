@@ -1,0 +1,1 @@
+* `bundle deploy --plan` now pulls the deployment state, so applying a saved plan from a fresh checkout deletes files removed from the bundle. Because `--plan` skips the build, synced build outputs missing from the apply checkout (for example files a `prebuild` script writes) are deleted from the workspace too. ([#7988](https://github.com/databricks/cli/pull/7988))

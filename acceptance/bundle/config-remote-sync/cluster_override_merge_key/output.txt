@@ -1,0 +1,57 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Move the tasks back to job clusters remotely
+
+=== Sync adds job_cluster_key to the tasks that inherit it
+
+>>> [CLI] bundle config-remote-sync -t dev --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='defines_inside'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='defines_inside'].job_cluster_key: add
+  tasks[task_key='from_inside'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='from_inside'].job_cluster_key: add
+  tasks[task_key='from_outside'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='from_outside'].job_cluster_key: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -22,17 +22,20 @@
+             num_workers: 2
+       tasks:
+-        - <<: *outside
++        - !!merge <<: *outside
+           task_key: from_outside
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
+-        - <<: &inside
++          job_cluster_key: other
++        - !!merge <<: &inside
+             job_cluster_key: shared
+           task_key: defines_inside
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
+-        - <<: *inside
++          job_cluster_key: other
++        - !!merge <<: *inside
+           task_key: from_inside
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
++          job_cluster_key: other
+
+ targets:
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

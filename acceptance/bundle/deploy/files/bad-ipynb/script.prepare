@@ -1,0 +1,5 @@
+# Lists the bundle's notebook n (or file n.ipynb) with the fields this test asserts.
+# MSYS_NO_PATHCONV keeps Git Bash on Windows from rewriting the workspace path.
+list_notebook() {
+  MSYS_NO_PATHCONV=1 $CLI workspace list "$R/files" -o json | jq -c '[.[] | select(.path | test("/n[^/]*$")) | {path, object_type, language}]'
+}

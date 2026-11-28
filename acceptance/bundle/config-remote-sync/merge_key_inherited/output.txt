@@ -1,0 +1,153 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created jobs.other_job
+Created jobs.rename_job
+Created pipelines.my_pipeline
+Files: 4 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Edit fields inherited through YAML merge keys
+
+=== Detect and save changes
+Detected changes in 3 resource(s):
+
+Resource: resources.jobs.my_job
+  job_clusters[job_cluster_key='derived'].new_cluster.autoscale: add
+  job_clusters[job_cluster_key='derived'].new_cluster.num_workers: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].depends_on[task_key='a_task']: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].depends_on[task_key='prep']: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].max_retries: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].min_retry_interval_millis: add
+  tasks[task_key='b_task'].notebook_task.base_parameters['input_file_name']: add
+  tasks[task_key='c_task'].depends_on[task_key='a_task']: skip (the file does not write it where it is defined)
+  tasks[task_key='c_task'].depends_on[task_key='setup']: skip (the file does not write it where it is defined)
+  tasks[task_key='prep']: skip (the file does not write it where it is defined)
+  tasks[task_key='setup']: remove
+  timeout_seconds: add
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='main']: skip (the file does not write it where it is defined)
+  tasks[task_key='main2']: skip (the file does not write it where it is defined)
+
+Resource: resources.pipelines.my_pipeline
+  clusters: skip (the file does not write it where it is defined)
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -28,5 +28,6 @@
+               max_retries: 3
+         my_job:
+-          <<: [*job_overrides, *other_job]
++          !!merge <<: [*job_overrides, *other_job]
++          timeout_seconds: 1200
+         rename_job:
+           tasks:
+@@ -38,7 +39,7 @@
+   jobs:
+     rename_job:
+-      <<: *job_overrides
++      !!merge <<: *job_overrides
+       tasks:
+-        - <<: *renamed_task
++        - !!merge <<: *renamed_task
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+@@ -53,7 +54,10 @@
+         - job_cluster_key: derived
+           new_cluster:
+-            <<: *base_cluster
++            !!merge <<: *base_cluster
+             spark_conf:
+               spark.speculation: "true"
++            autoscale:
++              max_workers: 2
++              min_workers: 1
+       tasks:
+         - task_key: prep
+@@ -61,8 +65,4 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/prep
+-        - task_key: setup
+-          job_cluster_key: base
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/setup
+         - &base_task
+           task_key: a_task
+@@ -77,11 +77,13 @@
+             base_parameters: &base_params
+               input_file_name: ${var.input_a}
+-        - <<: *base_task
++        - !!merge <<: *base_task
+           task_key: b_task
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+             base_parameters:
+-              <<: *base_params
++              !!merge <<: *base_params
+               extra: b
+-        - <<: *base_task
++              input_file_name: ${var.input_b}
++          min_retry_interval_millis: 5000
++        - !!merge <<: *base_task
+           task_key: c_task
+
+>>> diff.py pipeline.yml.backup pipeline.yml
+
+=== Effective configuration after the sync
+{
+  "timeout_seconds": 1200,
+  "b_task": {
+    "max_retries": 2,
+    "min_retry_interval_millis": 5000,
+    "depends_on": [
+      {
+        "task_key": "prep"
+      },
+      {
+        "task_key": "setup"
+      }
+    ],
+    "input_file_name": "other"
+  }
+}
+
+=== Edit inherited fields with and without a target override supplying them
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='main'].max_retries: skip (the file does not write it where it is defined)
+  timeout_seconds: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -44,4 +44,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
++      timeout_seconds: 900
+     my_job:
+       timeout_seconds: 300
+json.resources.jobs.rename_job.tasks[0].max_retries = 1;
+json.resources.jobs.rename_job.timeout_seconds = 900;
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.other_job
+  delete resources.jobs.rename_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 4 deleted

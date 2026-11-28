@@ -137,13 +137,14 @@ func (r *JobRun) GetName() string {
 	return ""
 }
 
-// InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
-// when resolved (deploy) or ResolvedJobID from state (read-only commands); if
-// either id is missing we skip rather than emit a broken jobs/0 URL.
+// InitializeURL sets the run's workspace URL. The job id comes from ResolvedJobID,
+// the job the run was launched against (from state, read-only commands), or else
+// RunNow.JobId when resolved (deploy); if both are missing we skip rather than emit
+// a broken jobs/0 URL.
 func (r *JobRun) InitializeURL(baseURL url.URL) {
-	jobID := r.JobId
+	jobID := r.ResolvedJobID
 	if jobID == 0 {
-		jobID = r.ResolvedJobID
+		jobID = r.JobId
 	}
 	if r.ID == "" || jobID == 0 {
 		return

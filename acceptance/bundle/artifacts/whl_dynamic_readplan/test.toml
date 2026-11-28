@@ -1,0 +1,12 @@
+Badness = "deploy --plan patches only the first wheel each artifact glob matches, without keeping only the latest version: it uploads the patched old 0.0.1 wheel and the unpatched 0.0.2, 0.0.3 and other_test_code wheels, while the job references patched 0.0.3 and other_test_code wheels and, for the pinned task, the unpatched 0.0.1 wheel, none of which are uploaded. It should upload exactly the wheels the job references, like plain deploy."
+
+RecordRequests = true
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+# The synced file count depends on build leftovers.
+[[Repls]]
+Old = 'Files: \d+ uploaded, \d+ deleted'
+New = 'Files: [N] uploaded, [N] deleted'

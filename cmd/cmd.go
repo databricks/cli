@@ -26,10 +26,12 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/sandbox"
 	"github.com/databricks/cli/cmd/selftest"
+	skillscmd "github.com/databricks/cli/cmd/skills"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
 	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +84,9 @@ func workspaceSpec(spec root.CommandSpec) root.CommandSpec {
 func New(ctx context.Context) *root.Tree {
 	cli := root.NewTree(ctx)
 	cli.Add(topLevelSpecs()...)
+	if skills.Enabled(ctx) {
+		cli.Add(skillscmd.Spec)
+	}
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
 	cli.AddGroups(append(workspace.Groups(), cobra.Group{

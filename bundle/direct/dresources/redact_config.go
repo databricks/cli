@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -76,4 +77,22 @@ func getSensitiveFields() map[string][]FieldRule {
 		fields[resourceType] = rc.SensitiveFields
 	}
 	return fields
+}
+
+// IsSensitiveResourceField reports whether p is a field under resources.<type>.<key>
+// that the resource type declares as sensitive.
+func IsSensitiveResourceField(p dyn.Path) bool {
+	if len(p) < 4 || p[0].Key() != "resources" {
+		return false
+	}
+	field, err := structpath.ParsePath(p[3:].String())
+	if err != nil {
+		return false
+	}
+	for _, rule := range GetResourceConfig(p[1].Key()).SensitiveFields {
+		if field.HasPatternPrefix(rule.Field) {
+			return true
+		}
+	}
+	return false
 }

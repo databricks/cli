@@ -1,0 +1,1 @@
+* Apply a secret scope rename that was pending when a bundle migrates from terraform state to the direct engine: the scope is recreated under the new name, which deletes the secrets stored in the old scope, as a direct deploy of the same rename does. ([#7980](https://github.com/databricks/cli/pull/7980))

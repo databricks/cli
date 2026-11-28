@@ -1,0 +1,138 @@
+package skills
+
+import (
+	"context"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/clicompat"
+	"github.com/databricks/cli/libs/env"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestEnabled(t *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+		set   bool
+		want  bool
+	}{
+		{name: "unset", want: false},
+		{name: "true", set: true, value: "true", want: true},
+		{name: "one", set: true, value: "1", want: true},
+		{name: "false", set: true, value: "false", want: false},
+		{name: "zero", set: true, value: "0", want: false},
+		{name: "empty", set: true, value: "", want: false},
+		{name: "invalid", set: true, value: "maybe", want: false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			ctx := t.Context()
+			if c.set {
+				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
+			}
+			assert.Equal(t, c.want, Enabled(ctx))
+		})
+	}
+}
+
+// One entry applies to every CLI version, so the tests do not depend on which
+// version the test binary reports.
+const (
+	entryOn  = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`
+	entryOff = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`
+)
+
+// A cache refresh in the middle of a run, such as the auto-install after the
+// command, must not change HintsEnabled for that run. A run without the memo
+// still reads the refreshed cache.
+func TestHintsEnabledOncePerRun(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", "true")
+	writeCachedManifest(t, ctx, entryOn, time.Now())
+
+	run := WithHintsMemo(ctx)
+	require.True(t, HintsEnabled(run))
+
+	writeCachedManifest(t, ctx, entryOff, time.Now())
+	assert.True(t, HintsEnabled(run), "a cache refresh changed HintsEnabled within one run")
+	assert.False(t, HintsEnabled(ctx), "without the memo, HintsEnabled reads the refreshed cache")
+
+	nextRun := WithHintsMemo(ctx)
+	assert.False(t, HintsEnabled(nextRun), "a new run reads the refreshed cache")
+}
+
+// The memo does not reach past the feature gate: with the preview off, hints
+// stay off whatever the cache says, memo or not.
+func TestHintsEnabledOncePerRunPreviewOff(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := t.Context()
+	writeCachedManifest(t, ctx, entryOn, time.Now())
+
+	assert.False(t, HintsEnabled(WithHintsMemo(ctx)))
+}
+
+func TestHintsEnabled(t *testing.T) {
+	cases := []struct {
+		name     string
+		preview  string
+		hints    string
+		hintsSet bool
+		manifest string // written to the local cache; empty means no cache file
+		stale    bool
+		want     bool
+	}{
+		{name: "both unset", want: false},
+		{name: "preview off, hints on", preview: "false", hints: "true", hintsSet: true, want: false},
+		{name: "preview unset, hints on", hints: "true", hintsSet: true, want: false},
+		{name: "preview off, entry on", manifest: entryOn, want: false},
+		{name: "preview off, hints on, entry on", hints: "true", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, hints unset", preview: "true", want: false},
+		{name: "preview on, hints false", preview: "true", hints: "false", hintsSet: true, want: false},
+		{name: "preview on, hints invalid", preview: "true", hints: "maybe", hintsSet: true, want: false},
+		{name: "preview on, hints empty, entry on", preview: "true", hints: "", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, hints true", preview: "true", hints: "true", hintsSet: true, want: true},
+		{name: "preview on, hints one", preview: "1", hints: "1", hintsSet: true, want: true},
+		{name: "preview on, no cache", preview: "true", want: false},
+		{name: "preview on, entry on", preview: "true", manifest: entryOn, want: true},
+		{name: "preview on, entry on, stale cache ignored", preview: "true", manifest: entryOn, stale: true, want: false},
+		{name: "preview on, entry without the field", preview: "true", manifest: entryOff, want: false},
+		{name: "preview on, env false over entry on", preview: "true", hints: "false", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, env invalid over entry on", preview: "true", hints: "maybe", hintsSet: true, manifest: entryOn, want: false},
+		{name: "preview on, env true over entry without the field", preview: "true", hints: "true", hintsSet: true, manifest: entryOff, want: true},
+		{name: "preview on, env true, no cache", preview: "true", hints: "true", hintsSet: true, want: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			ctx := t.Context()
+			if c.preview != "" {
+				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
+			}
+			if c.hintsSet {
+				ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
+			}
+			if c.manifest != "" {
+				modTime := time.Now()
+				if c.stale {
+					modTime = modTime.Add(-2 * time.Hour)
+				}
+				writeCachedManifest(t, ctx, c.manifest, modTime)
+			}
+			assert.Equal(t, c.want, HintsEnabled(ctx))
+		})
+	}
+}
+
+// writeCachedManifest writes manifest to the local manifest cache that
+// libs/clicompat reads, with the given mod time.
+func writeCachedManifest(t *testing.T, ctx context.Context, manifest string, modTime time.Time) {
+	t.Helper()
+	path := clicompat.LocalManifestPath(ctx)
+	testutil.WriteFile(t, path, manifest)
+	require.NoError(t, os.Chtimes(path, modTime, modTime))
+}

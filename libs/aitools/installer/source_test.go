@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestNormalizeManifestStampsSourceNameAndRepoDir(t *testing.T) {
 		},
 	}
 
-	normalizeManifest(m)
+	skills.NormalizeManifest(m)
 
 	stable := m.Skills["databricks-apps"]
 	assert.False(t, stable.IsExperimental())
@@ -41,7 +42,7 @@ func TestManifestHasExperimental(t *testing.T) {
 	stableOnly := &Manifest{Skills: map[string]SkillMeta{
 		"databricks-apps": {Version: "0.1.0"},
 	}}
-	normalizeManifest(stableOnly)
+	skills.NormalizeManifest(stableOnly)
 	assert.False(t, manifestHasExperimental(stableOnly))
 
 	withExperimental := &Manifest{
@@ -50,7 +51,7 @@ func TestManifestHasExperimental(t *testing.T) {
 			"databricks-iceberg": {Version: "0.0.1", RepoDir: experimentalRepoPath},
 		},
 	}
-	normalizeManifest(withExperimental)
+	skills.NormalizeManifest(withExperimental)
 	assert.True(t, manifestHasExperimental(withExperimental))
 }
 
@@ -61,7 +62,7 @@ func TestNormalizeManifestOnlyExperimentalSkills(t *testing.T) {
 		},
 	}
 
-	normalizeManifest(m)
+	skills.NormalizeManifest(m)
 
 	got, ok := m.Skills["x"]
 	assert.True(t, ok)
@@ -77,8 +78,8 @@ func TestFetchManifestSizeCap(t *testing.T) {
 		wantErr bool
 	}{
 		// Whitespace pads a valid manifest to exactly the cap: it still parses.
-		{name: "at the cap", body: strings.Repeat(" ", maxFetchBodySize-2) + "{}"},
-		{name: "one byte over the cap", body: strings.Repeat(" ", maxFetchBodySize-1) + "{}", wantErr: true},
+		{name: "at the cap", body: strings.Repeat(" ", skills.MaxFetchBodySize-2) + "{}"},
+		{name: "one byte over the cap", body: strings.Repeat(" ", skills.MaxFetchBodySize-1) + "{}", wantErr: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -177,7 +178,7 @@ func TestCheckManifestPaths(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &Manifest{Skills: map[string]SkillMeta{tc.skill: {Files: []string{tc.file}}}}
-			err := checkManifestPaths(m)
+			err := skills.CheckManifestPaths(m)
 			if tc.wantErr != "" {
 				require.ErrorIs(t, err, ErrUnsafeManifestPath)
 				assert.EqualError(t, err, ErrUnsafeManifestPath.Error()+": "+tc.wantErr)
@@ -218,7 +219,7 @@ func TestCheckManifestPathsReportsTheFirstSkillInOrder(t *testing.T) {
 		"../c":    {Files: []string{"SKILL.md"}},
 	}}
 	for range 10 {
-		assert.EqualError(t, checkManifestPaths(m), ErrUnsafeManifestPath.Error()+`: skill name "../c"`)
+		assert.EqualError(t, skills.CheckManifestPaths(m), ErrUnsafeManifestPath.Error()+`: skill name "../c"`)
 	}
 }
 

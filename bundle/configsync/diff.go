@@ -27,6 +27,8 @@ const (
 type ConfigChangeDesc struct {
 	Operation OperationType `json:"operation"`
 	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+	// Reason says why a skipped change was left unapplied.
+	Reason string `json:"reason,omitempty"`
 
 	// LocalEdit reports that the local config value for this field differs from
 	// the last-deployed state, so applying this change overwrites a not-yet-

@@ -1,0 +1,29 @@
+
+=== Generic API access remains available for explicit legacy key revocation
+
+>>> [CLI] api get /api/2.0/lakebox/ssh-keys
+{
+  "sshKeys": [
+    {
+      "keyHash": "11111111111111111111111111111111",
+      "name": "retired-laptop"
+    }
+  ]
+}
+
+>>> [CLI] api delete /api/2.0/lakebox/ssh-keys/11111111111111111111111111111111
+{}
+
+>>> print_requests.py --get
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/lakebox/ssh-keys"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/lakebox/ssh-keys/11111111111111111111111111111111"
+}

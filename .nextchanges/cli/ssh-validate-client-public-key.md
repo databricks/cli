@@ -1,0 +1,1 @@
+* `databricks ssh connect`: the SSH server now writes the client public key from the session's secret scope to `authorized_keys` in canonical form, and fails with an actionable error if the stored key is not a single SSH public key without options. ([#7994](https://github.com/databricks/cli/pull/7994))

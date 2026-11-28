@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -208,7 +209,7 @@ func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 
 	cluster, ok := s.Clusters[clusterId]
 	if !ok {
-		return Response{StatusCode: 404}
+		return clusterDoesNotExist(clusterId)
 	}
 
 	// Simulate cluster startup: transition PENDING → RUNNING so that WaitGetClusterRunning
@@ -276,6 +277,21 @@ func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
 	}
 
 	defer s.LockUnlock()()
+	if _, ok := s.Clusters[request.ClusterId]; !ok {
+		return clusterDoesNotExist(request.ClusterId)
+	}
 	delete(s.Clusters, request.ClusterId)
 	return Response{}
+}
+
+// clusterDoesNotExist is how the cloud answers clusters/get, clusters/permanent-delete and
+// libraries/cluster-status for a missing cluster: 400 INVALID_PARAMETER_VALUE rather than 404.
+func clusterDoesNotExist(clusterId string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Cluster " + clusterId + " does not exist",
+		},
+	}
 }

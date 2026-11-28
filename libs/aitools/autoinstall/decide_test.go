@@ -8,8 +8,10 @@ import (
 )
 
 func TestDecide(t *testing.T) {
-	// eligible is a run of a released version never seen before, with the gate on, in the treatment arm.
+	// eligible is a run of a released version never seen before on a machine
+	// whose user agreed, with the gate on, in the treatment arm.
 	eligible := Inputs{
+		State:   State{Consented: true},
 		Version: "1.30.0",
 		Now:     time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
 		GateOn:  true,
@@ -31,47 +33,59 @@ func TestDecide(t *testing.T) {
 		{name: "root in a user's home", modify: func(in *Inputs) { in.RootInUserHome = true }, want: ReasonRootInUserHome},
 		{name: "root in a user's home before the state", modify: func(in *Inputs) {
 			in.RootInUserHome = true
-			in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts}
 			in.CI = true
 		}, want: ReasonRootInUserHome},
 
 		{name: "same version, settled", modify: func(in *Inputs) { in.State.LastVersion = "1.30.0" }, want: ReasonAlreadyRan},
-		{name: "same version, failed before", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: 3} }, want: ReasonRun},
-		{name: "same version, last attempt left", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts - 1} }, want: ReasonRun},
-		{name: "same version, retries exhausted", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts} }, want: ReasonRetriesExhausted},
+		{name: "same version, failed before", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 3} }, want: ReasonRun},
+		{name: "same version, last attempt left", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts - 1} }, want: ReasonRun},
+		{name: "same version, retries exhausted", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts} }, want: ReasonRetriesExhausted},
 		{name: "same version, failed just now", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
 		}, want: ReasonRetryNotDue},
 		{name: "same version, retry due", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now.Add(-firstRetryDelay)}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now.Add(-firstRetryDelay)}
 		}, want: ReasonRun},
 		{name: "same version, retries exhausted while waiting", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now}
 		}, want: ReasonRetriesExhausted},
 		{name: "CI before the retry wait", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
 			in.CI = true
 		}, want: ReasonSkippedCI},
 		{name: "opt-out before the retry wait", modify: func(in *Inputs) {
 			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now, OptedOut: true}
 		}, want: ReasonSkippedOptOut},
 		{name: "retry wait before the gate", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
 			in.GateOn = false
 		}, want: ReasonRetryNotDue},
 		{name: "new version while the old one waits", modify: func(in *Inputs) {
-			in.State = State{LastVersion: "1.29.0", Attempts: 1, LastAttempt: in.Now}
+			in.State = State{Consented: true, LastVersion: "1.29.0", Attempts: 1, LastAttempt: in.Now}
 		}, want: ReasonRun},
-		{name: "new version after retries exhausted", modify: func(in *Inputs) { in.State = State{LastVersion: "1.29.0", Attempts: MaxAttempts} }, want: ReasonRun},
+		{name: "new version after retries exhausted", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.29.0", Attempts: MaxAttempts} }, want: ReasonRun},
 		{name: "older CLI after a newer one ran", modify: func(in *Inputs) { in.State.LastVersion = "1.31.0" }, want: ReasonAlreadyRan},
-		{name: "older CLI while a newer one retries", modify: func(in *Inputs) { in.State = State{LastVersion: "1.31.0", Attempts: 2} }, want: ReasonAlreadyRan},
+		{name: "older CLI while a newer one retries", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.31.0", Attempts: 2} }, want: ReasonAlreadyRan},
 		{name: "newer CLI after an older one ran", modify: func(in *Inputs) { in.State.LastVersion = "1.29.5" }, want: ReasonRun},
 
 		{name: "CI", modify: func(in *Inputs) { in.CI = true }, want: ReasonSkippedCI},
 		{name: "CI before the opt-out", modify: func(in *Inputs) { in.CI = true; in.EnvOptOut = true }, want: ReasonSkippedCI},
 		{name: "env opt-out", modify: func(in *Inputs) { in.EnvOptOut = true }, want: ReasonSkippedOptOut},
-		{name: "persisted opt-out", modify: func(in *Inputs) { in.State.OptedOut = true }, want: ReasonSkippedOptOut},
-		{name: "opt-out before the gate", modify: func(in *Inputs) { in.State.OptedOut = true; in.GateOn = false }, want: ReasonSkippedOptOut},
+		{name: "persisted opt-out", modify: func(in *Inputs) { in.State = State{OptedOut: true} }, want: ReasonSkippedOptOut},
+		{name: "env opt-out over a stored consent", modify: func(in *Inputs) { in.EnvOptOut = true }, want: ReasonSkippedOptOut},
+		{name: "opt-out before the gate", modify: func(in *Inputs) { in.State = State{OptedOut: true}; in.GateOn = false }, want: ReasonSkippedOptOut},
+
+		{name: "unknown consent", modify: func(in *Inputs) { in.State = State{} }, want: ReasonNoConsent},
+		{name: "unknown consent on a retry", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: 3} }, want: ReasonNoConsent},
+		{name: "CI before the consent", modify: func(in *Inputs) { in.State = State{}; in.CI = true }, want: ReasonSkippedCI},
+		{name: "env opt-out before the consent", modify: func(in *Inputs) { in.State = State{}; in.EnvOptOut = true }, want: ReasonSkippedOptOut},
+		{name: "consent before the retry wait", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+		}, want: ReasonNoConsent},
+		{name: "consent before the gate", modify: func(in *Inputs) { in.State = State{}; in.GateOn = false }, want: ReasonNoConsent},
+		{name: "consent before the holdout", modify: func(in *Inputs) { in.State = State{}; in.Bucket = 0 }, want: ReasonNoConsent},
+		{name: "settled version before the consent", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0"} }, want: ReasonAlreadyRan},
 		{name: "gate off", modify: func(in *Inputs) { in.GateOn = false }, want: ReasonGateOff},
 		{name: "gate off hides the holdout", modify: func(in *Inputs) { in.GateOn = false; in.Bucket = 0 }, want: ReasonGateOff},
 		{name: "holdout", modify: func(in *Inputs) { in.Bucket = HoldoutPercent - 1 }, want: ReasonSkippedHoldout},
@@ -124,7 +138,7 @@ func TestRetryDue(t *testing.T) {
 }
 
 func TestReasonDue(t *testing.T) {
-	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue}
+	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue, ReasonNoConsent}
 	due := []Reason{ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun}
 	for _, r := range notDue {
 		assert.False(t, r.Due(), r)

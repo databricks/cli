@@ -1,10 +1,3 @@
-Badness = "Without deployment-history recording, destroy swallows a delete error it cannot classify (DeploymentUnit.Delete in bundle/direct/apply.go logs nothing and drops the state): it prints 'Destroy: 3 deleted' while the materialization set is still in the workspace. Destroy should fail with the delete error, as it does with recording on."
-
-# Pinned to the leg without deployment-history recording, where the engine's destroy step forgives
-# a delete error it cannot classify. With recording on it takes the branch that records the failure
-# and returns it, so the destroy fails instead and the two legs cannot share one golden.
-EnvMatrix.DMS = [""]
-
 # Local only, and not because the claims are redundant: the failure is produced by a marker the
 # fake looks for in a feature name, since a real teardown fails on infrastructure no request can
 # ask for. Against a workspace this case would simply succeed.

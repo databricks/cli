@@ -1,0 +1,9 @@
+Cloud = false
+RecordRequests = true
+Ignore = [".databricks/"]
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Delay = "300ms"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Cluster 1126-000000-deleted0 does not exist"}'''

@@ -28,6 +28,45 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 	assert.EqualError(t, err, "no skills or plugins installed. Run 'databricks aitools install' to install")
 }
 
+// With no agents to update, there is no global-only agent to name, so the
+// error points at the install that gives agents project skills instead.
+func TestUpdateProjectNoAgentsReturnsInstallHint(t *testing.T) {
+	setupTestHome(t)
+	t.Chdir(t.TempDir())
+	ctx := cmdio.MockDiscard(t.Context())
+
+	src := &mockManifestSource{manifest: testManifest()}
+	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{Scope: ScopeProject})
+	assert.EqualError(t, err, "no agents have project-scoped skills to update. Run 'databricks aitools install --scope project' to install them; Codex CLI gets project skill files only with --skills-only --agents=codex")
+}
+
+// HasOwnSkillsIn counts a symlink into the canonical dir and an unmodified
+// copy, not a databricks skill dir another tool wrote.
+func TestHasOwnSkillsIn(t *testing.T) {
+	root := t.TempDir()
+	baseDir := filepath.Join(root, "canonical")
+	canonical := filepath.Join(baseDir, "databricks-core")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(canonical, "SKILL.md"), []byte("core"), 0o644))
+	state := &InstallState{Files: map[string]FileRecord{"databricks-core/SKILL.md": {SHA256: sha("core")}}}
+
+	foreign := filepath.Join(root, "foreign")
+	require.NoError(t, os.MkdirAll(filepath.Join(foreign, "databricks-core"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(foreign, "databricks-core", "SKILL.md"), []byte("other"), 0o644))
+	assert.False(t, HasOwnSkillsIn(foreign, baseDir, state))
+	assert.False(t, HasOwnSkillsIn(filepath.Join(root, "missing"), baseDir, state))
+
+	linked := filepath.Join(root, "linked")
+	require.NoError(t, os.MkdirAll(linked, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(linked, "databricks-core")))
+	assert.True(t, HasOwnSkillsIn(linked, baseDir, state))
+
+	copied := filepath.Join(root, "copied")
+	require.NoError(t, os.MkdirAll(filepath.Join(copied, "databricks-core"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(copied, "databricks-core", "SKILL.md"), []byte("core"), 0o644))
+	assert.True(t, HasOwnSkillsIn(copied, baseDir, state))
+}
+
 func TestUpdateLegacyInstallDetected(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

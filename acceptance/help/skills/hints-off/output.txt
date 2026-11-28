@@ -1,0 +1,6 @@
+
+>>> [CLI] --help
+
+>>> [CLI] fs --help
+
+>>> [CLI] air --help

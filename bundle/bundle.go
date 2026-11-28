@@ -15,6 +15,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
@@ -34,7 +35,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const internalFolder = ".internal"
+// InternalDirName is the name of the directory InternalDir returns, under the target's cache directory.
+const InternalDirName = ".internal"
 
 // QuietLevel is how much of the informational output to suppress, controlled by
 // repeating -q. Warnings and errors are never suppressed.
@@ -67,9 +69,11 @@ const terraformStateFilename = "terraform.tfstate"
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
-	ConfigurationFileCount   int64
-	TargetCount              int64
-	DeploymentId             uuid.UUID
+	ConfigurationFileCount int64
+	TargetCount            int64
+	DeploymentId           uuid.UUID
+	// BoolValues holds bool keys that are not fields of Telemetry: the dynamic
+	// has_<task_type> keys and the local.cache.* keys written by libs/cache.
 	BoolValues               []protos.BoolMapEntry
 	ExecutionTimes           []protos.IntMapEntry
 	LocalCacheMeasurementsMs []protos.IntMapEntry // Local cache measurements stored as milliseconds
@@ -106,10 +110,6 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 			return
 		}
 	}
-	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
-}
-
-func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
@@ -156,6 +156,14 @@ type Bundle struct {
 	// expanded list of loaded files, so this preserves the original patterns for
 	// IsFileIncluded. Set via SetIncludePatterns.
 	includePatterns []string
+
+	// ComputeIdWrittenIn lists where the deprecated bundle.compute_id was written
+	// before ComputeIdToClusterId renamed it to cluster_id: "" for the root
+	// configuration, otherwise the target's name. ClusterIdWrittenIn lists where
+	// cluster_id was written next to it. The bundle bitmap counts what the user
+	// wrote, not what the rename produced.
+	ComputeIdWrittenIn []string
+	ClusterIdWrittenIn []string
 
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
@@ -230,6 +238,17 @@ type Bundle struct {
 	Cache *cache.Cache
 
 	Metrics Metrics
+
+	// Telemetry holds the boolean deploy telemetry flags; they feed both the
+	// deploy event's bool_values and the bundle bitmap.
+	Telemetry Telemetry
+
+	// Bitmap holds the config bits of the bundle bitmap: what users configure,
+	// not what the CLI derives. Loading with a target creates it from the files
+	// with the target merged in, before flags or Initialize set any field; the
+	// Python mutator adds the resources Python defines, and the end of Initialize
+	// adds the values of fields set through ${var.*} references.
+	Bitmap *bitmap.Builder
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -388,7 +407,7 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	dir := filepath.Join(cacheDir, internalFolder)
+	dir := filepath.Join(cacheDir, InternalDirName)
 	err = os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return dir, err

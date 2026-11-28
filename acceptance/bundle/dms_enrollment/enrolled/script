@@ -1,0 +1,10 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The bundle sets nothing and the workspace is enrolled, so the deploy records history"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get
+
+title "The plan carries the recording feature"
+trace $CLI bundle plan -o json | gron.py | grep features
+
+rm -f "$OUT_REQUESTS"

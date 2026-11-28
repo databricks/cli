@@ -13,13 +13,13 @@ Ignore = ["databricks.yml"]
 Env.UV_PYTHON = "3.10"
 
 # Recording history is best effort: with recording on, the CLI only warns when a call to the
-# service fails. The plain run makes no such calls, and the goldens are shared, so such a warning
-# would fail the DMS=true run. Suppressed (moved to the test log) only when the cause is a
+# service fails. The plain run makes only the enrollment check, and the goldens are shared, so such
+# a warning would fail the other run. Suppressed (moved to the test log) only when the cause is a
 # dropped connection (HTTP/2 stream reset, unexpected EOF) or the history drain budget running
 # out ("context deadline exceeded" from OperationBuffer.Drain, which a slow service also hits).
 # An error the service returns is still compared, so a request it rejects still fails the test.
 # Pinned by bundle/dms/suppress-transport-warnings.
-SuppressLines.warn_dms_transport = '^Warn: (Failed to (record|complete) deployment history|Could not (enable|record|read|delete) deployment history)\b.*(stream error: stream ID \S+; INTERNAL_ERROR; received from peer|unexpected EOF|context deadline exceeded)$'
+SuppressLines.warn_dms_transport = '^Warn: (Failed to (record|complete) deployment history|Could not (enable|record|read|delete) deployment history|Skipping deployment history)\b.*(stream error: stream ID \S+; INTERNAL_ERROR; received from peer|unexpected EOF|context deadline exceeded)$'
 
 # The link a recorded deploy prints, dropped so a test asserts the same output whether or
 # not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and

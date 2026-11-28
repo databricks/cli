@@ -15,12 +15,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -180,7 +182,8 @@ func testPluginAgent(name, display, binary string) *agents.Agent {
 	spec := &agents.PluginSpec{Marketplace: "databricks-agent-skills", ID: "databricks", Source: "databricks/databricks-agent-skills"}
 	a := &agents.Agent{Name: name, DisplayName: display, Binary: binary, Plugin: spec}
 	if name == agents.NameClaudeCode {
-		a.SupportsProjectScope = true
+		a.SupportsProjectPlugin = true
+		a.SupportsProjectSkills = true
 	}
 	return a
 }
@@ -191,7 +194,7 @@ func TestBuildPlanDeliveries(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	// Cursor is a skills-only agent (no headless plugin install).
-	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectSkills: true}
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 	targets := []*agents.Agent{claude, cursor, opencode}
 
@@ -256,12 +259,12 @@ func TestAgentChoicesSkillsOnlyLabelsPluginAgentsSkills(t *testing.T) {
 
 func TestAgentChoicesSkillsOnlyLabelsSkippedPluginAgentSkills(t *testing.T) {
 	setupTestAgents(t)
-	fakeBinsOnPath(t, "codex")
+	fakeBinsOnPath(t, "copilot")
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 
-	// Codex has no project-scoped skills, so it is skipped and only listed.
+	// Copilot has no project-scoped skills, so it is skipped and only listed.
 	agentChoices(ctx, installer.ScopeProject, true)
-	assert.Regexp(t, `Codex CLI +skills · does not support project-scoped skills`, stderr.String())
+	assert.Regexp(t, `GitHub Copilot +skills · does not support project-scoped skills`, stderr.String())
 	assert.NotContains(t, stderr.String(), "plugin")
 }
 
@@ -300,11 +303,25 @@ func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
 	assert.Contains(t, plan[1].reason, "user-only")
 }
 
+func TestBuildPlanSkillsOnlyProjectScopeCodex(t *testing.T) {
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+
+	// Codex reads project skills from .agents/skills, so --skills-only installs them.
+	plan := buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, true, true)
+	assert.Equal(t, deliverySkills, plan[0].delivery)
+
+	// The Codex plugin stays user-only.
+	plan = buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, false, true)
+	assert.Equal(t, deliverySkip, plan[0].delivery)
+	assert.Equal(t, "the plugin is user-only; project-scoped plugins are not supported", plan[0].reason)
+}
+
 func TestBuildPlanProjectScopeSkipsFilesOnlyAgent(t *testing.T) {
 	// A files-only agent that does not support project scope is skipped up front,
 	// so the picker never offers an option that fails at install time.
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
-	projectSkills := &agents.Agent{Name: "proj-skills", DisplayName: "Proj", Binary: "proj", SupportsProjectScope: true}
+	projectSkills := &agents.Agent{Name: "proj-skills", DisplayName: "Proj", Binary: "proj", SupportsProjectSkills: true}
 
 	plan := buildPlan(t.Context(), []*agents.Agent{opencode, projectSkills}, installer.ScopeProject, false, false)
 	assert.Equal(t, deliverySkip, plan[0].delivery)
@@ -329,7 +346,7 @@ func TestBuildPlanSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	stubPluginAlreadyInstalled(t, true)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
-	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectSkills: true}
 
 	for _, scope := range []string{installer.ScopeGlobal, installer.ScopeProject} {
 		plan := buildPlan(t.Context(), []*agents.Agent{claude, cursor}, scope, true, false)
@@ -590,8 +607,10 @@ func TestBuildPlanSkillsOnlyProjectScopeIgnoresAgentConfigPlugin(t *testing.T) {
 	assert.Equal(t, "remove the plugin first with 'codex plugin remove databricks@databricks-agent-skills' (this CLI did not install it)", global.pluginRemoval)
 
 	project := planItemFor(t.Context(), codex, installer.ScopeProject, true, true)
-	assert.Equal(t, deliverySkip, project.delivery)
-	assert.Equal(t, "does not support project-scoped skills", project.reason)
+	// Codex reads project skills from .agents/skills and its plugin is user-only,
+	// so the user-scope plugin does not block the project skills.
+	assert.Equal(t, deliverySkills, project.delivery)
+	assert.Empty(t, project.reason)
 	assert.Empty(t, project.pluginRemoval)
 }
 
@@ -651,6 +670,23 @@ func TestInstallSkillsOnlyDropsStalePluginRecord(t *testing.T) {
 			assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameClaudeCode))
 		})
 	}
+}
+
+// An agent that did not get every skill has no plugin either, so its stale
+// record is dropped too, and update refreshes the skill files it got.
+func TestInstallSkillsOnlyDropsStalePluginRecordOfAFailedAgent(t *testing.T) {
+	isolateAgents(t)
+	home := setupTestAgents(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "plugins"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), []byte(`{"plugins":{}}`), 0o600))
+	rec := installer.PluginRecord{Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: agentScopeUser, Version: "0.2.9"}
+	require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{agents.NameClaudeCode: rec}, ""))
+	fakeBinsOnPath(t)
+	_ = stubSkillsAgentFailures(t, 1, agents.NameClaudeCode)
+
+	_, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--skills-only", "--scope", "global", "--agents", "claude-code")
+	require.ErrorContains(t, err, "Claude Code: could not install 33 of 34 skills")
+	assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameClaudeCode))
 }
 
 // A detected agent that keeps its plugin under --skills-only is set up, so a
@@ -800,6 +836,144 @@ func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
 	assert.Equal(t, "Run 'claude plugin marketplace add databricks/databricks-agent-skills', then 'claude plugin marketplace update databricks-agent-skills', then 'claude plugin install databricks@databricks-agent-skills --scope user' to see the full error. Once they succeed, re-run 'databricks aitools install --scope=global --agents=claude-code' so the CLI records the plugin. Or install skill files instead: databricks aitools install --scope=global --agents=claude-code --skills-only", outcomes[0].recovery)
 	assert.Contains(t, stderr.String(), "Skipped Claude Code: 'claude plugin' failed: fatal: could not read from remote repository")
 	assert.Contains(t, stderr.String(), "  Run 'claude plugin marketplace add")
+}
+
+// stubSkillsAgentFailures makes the install of 34 skills succeed, except that
+// each named agent is reported as getting only `got` of the 34 skills.
+func stubSkillsAgentFailures(t *testing.T, got int, failing ...string) error {
+	t.Helper()
+	cause := &fs.PathError{Op: "mkdir", Path: "/home/user/.cursor/skills/databricks-core", Err: fs.ErrPermission}
+	orig := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = orig })
+	installSkillsForAgentsFn = func(_ context.Context, _ installer.ManifestSource, targets []*agents.Agent, _ installer.InstallOptions) error {
+		agentsErr := &installer.AgentSkillsError{}
+		for _, a := range targets {
+			if slices.Contains(failing, a.Name) {
+				agentsErr.Failures = append(agentsErr.Failures, installer.AgentSkillsFailure{Agent: a, Skills: 34 - got, Total: 34, Err: cause})
+			}
+		}
+		if len(agentsErr.Failures) == 0 {
+			return nil
+		}
+		return agentsErr
+	}
+	return cause
+}
+
+// An agent that did not get every skill is a failed outcome, like a failed
+// plugin agent: an error when named or when no other agent was set up,
+// otherwise a warning.
+func TestExecutePlanReportsSkillsAgentThatGotNoSkills(t *testing.T) {
+	cursor := agents.ByName(agents.NameCursor)
+	opencode := agents.ByName(agents.NameOpenCode)
+	tests := []struct {
+		name         string
+		targets      []*agents.Agent
+		explicit     bool
+		got          int
+		wantErr      bool
+		wantNothing  bool
+		wantPartly   bool
+		wantOutcomes []string
+	}{
+		{
+			name:         "only agent, named",
+			targets:      []*agents.Agent{cursor},
+			explicit:     true,
+			wantErr:      true,
+			wantOutcomes: []string{"cursor skills failed PERMISSION_DENIED"},
+		},
+		{
+			name:         "only agent, detected",
+			targets:      []*agents.Agent{cursor},
+			wantErr:      true,
+			wantNothing:  true,
+			wantOutcomes: []string{"cursor skills failed PERMISSION_DENIED"},
+		},
+		{
+			name:         "only agent, detected, got some skills",
+			targets:      []*agents.Agent{cursor},
+			got:          1,
+			wantErr:      true,
+			wantPartly:   true,
+			wantOutcomes: []string{"cursor skills failed PERMISSION_DENIED"},
+		},
+		{
+			name:         "another agent set up, detected",
+			targets:      []*agents.Agent{cursor, opencode},
+			wantOutcomes: []string{"cursor skills failed PERMISSION_DENIED", "opencode skills installed "},
+		},
+		{
+			name:         "another agent set up, named",
+			targets:      []*agents.Agent{cursor, opencode},
+			explicit:     true,
+			wantErr:      true,
+			wantOutcomes: []string{"cursor skills failed PERMISSION_DENIED", "opencode skills installed "},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cause := stubSkillsAgentFailures(t, tc.got, agents.NameCursor)
+			reason := "could not install 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
+			notice := "Skipped Cursor: " + reason
+			if tc.got > 0 {
+				reason = "could not install 33 of 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
+				notice = "Cursor is missing 33 of 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
+			}
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			rerun := installInvocation{scope: installer.ScopeGlobal, skillsOnly: true}
+			plan := buildPlan(t.Context(), tc.targets, installer.ScopeGlobal, true, tc.explicit)
+
+			outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, rerun, false)
+
+			var got []string
+			for _, o := range outcomes {
+				got = append(got, fmt.Sprintf("%s %s %s %s", o.agent.Name, o.delivery, o.status, o.errorCategory))
+			}
+			assert.Equal(t, tc.wantOutcomes, got)
+			require.NotEmpty(t, outcomes)
+			assert.Equal(t, reason, outcomes[0].message)
+			assert.Equal(t, "Check that you own /home/user/.cursor/skills/databricks-core and can write to it (an earlier run with sudo can leave it owned by root), then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'.", outcomes[0].recovery)
+			assert.Contains(t, stderr.String(), notice+"\n  Check that you own")
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			// The failure is reported per agent, not as a top-level one.
+			require.Error(t, err)
+			assert.NoError(t, topLevelFailure(err))
+			assert.Equal(t, tc.wantNothing, errors.Is(err, errNoAgentSetUp))
+			assert.Equal(t, tc.wantPartly, errors.Is(err, errAgentsPartlySetUp))
+			if tc.explicit {
+				assert.ErrorIs(t, err, cause)
+				assert.Equal(t, "Cursor: "+reason, err.Error())
+			}
+		})
+	}
+}
+
+// The recovery step for an agent that got skill files because its CLI is
+// missing names it with --skills-only: named alone, it would get the plugin.
+func TestExecutePlanSkillsFailureOfAFallbackAgentSuggestsSkillsOnly(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t) // ~/.claude without `claude`: a desktop install
+	fakeBinsOnPath(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	t.Chdir(t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
+	_ = stubSkillsAgentFailures(t, 0, agents.NameClaudeCode)
+
+	plan := buildPlan(t.Context(), []*agents.Agent{agents.ByName(agents.NameClaudeCode)}, installer.ScopeGlobal, false, false)
+	require.True(t, plan[0].cliMissing)
+	outcomes, err := executePlan(cmdio.MockDiscard(t.Context()), nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, false)
+
+	require.ErrorIs(t, err, errNoAgentSetUp)
+	require.Len(t, outcomes, 2)
+	assert.Equal(t, deliveryPlugin, outcomes[0].delivery)
+	assert.Equal(t, outcomeFailed, outcomes[0].status)
+	assert.Equal(t, deliverySkills, outcomes[1].delivery)
+	assert.Equal(t, outcomeFailed, outcomes[1].status)
+	assert.Contains(t, outcomes[1].recovery, "re-run 'databricks aitools install --scope=global --agents=claude-code --skills-only'")
 }
 
 func TestExecutePlanPluginWithUnresolvedSkillsRelease(t *testing.T) {
@@ -1152,7 +1326,7 @@ func TestPlanItemForAgentWithoutCLI(t *testing.T) {
 		{name: "CLI missing", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, wantDelivery: deliverySkills, wantCLIMissing: true, wantLabel: "skills · CLI not found"},
 		{name: "CLI missing, plugin installed", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, pluginInstalled: true, wantDelivery: deliveryPlugin, wantCLIMissing: true, wantLabel: "plugin installed · CLI not found"},
 		{name: "CLI missing, named via --agents", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, explicit: true, wantDelivery: deliveryPlugin, wantLabel: "plugin · CLI not found"},
-		{name: "CLI missing, scope unsupported", agent: agents.NameCodex, scope: installer.ScopeProject, wantDelivery: deliverySkip, wantLabel: "plugin · CLI not found · Codex CLI is user-only; project scope is not supported"},
+		{name: "CLI missing, scope unsupported", agent: agents.NameCodex, scope: installer.ScopeProject, wantDelivery: deliverySkip, wantLabel: "plugin · CLI not found · the plugin is user-only; project-scoped plugins are not supported"},
 		// Neither its config dir nor its CLI exists: the picker still lists it,
 		// but picking it must not write skill files for an agent that is not
 		// installed.
@@ -2331,4 +2505,46 @@ func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
 	top := topLevelFailure(errors.Join(agentErr, signInErr))
 	require.ErrorIs(t, top, signInErr)
 	assert.Equal(t, signInErr.Error(), top.Error())
+}
+
+// A global install that set an agent up is the user's consent to keeping the
+// tools up to date, unless the user answered before.
+func TestInstallStoresTheConsent(t *testing.T) {
+	tests := []struct {
+		name    string
+		consent autoinstall.Consent
+		args    []string
+		// failSkills makes the skills install fail, so no agent is set up.
+		failSkills bool
+		want       autoinstall.Consent
+	}{
+		{name: "global install", args: []string{"--scope=global"}, want: autoinstall.ConsentGiven},
+		{name: "an opt-out stays", consent: autoinstall.ConsentOptedOut, args: []string{"--scope=global"}, want: autoinstall.ConsentOptedOut},
+		{name: "project install", args: []string{"--scope=project"}, want: autoinstall.ConsentUnknown},
+		{name: "a global install that set no agent up", args: []string{"--scope=global"}, failSkills: true, want: autoinstall.ConsentUnknown},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateAgents(t, "CURSOR_AGENT", "1")
+			setupTestAgents(t)
+			t.Chdir(t.TempDir())
+			setupInstallMock(t)
+			if tc.failSkills {
+				installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+					return errors.New("download failed")
+				}
+			}
+			ctx := cmdio.MockDiscard(t.Context())
+			if tc.consent != autoinstall.ConsentUnknown {
+				_, err := autoinstall.SetConsent(ctx, tc.consent)
+				require.NoError(t, err)
+			}
+
+			ctx, err := runInstall(t, ctx, append(tc.args, "--skills-only")...)
+			assert.Equal(t, tc.failSkills, err != nil, "install fails: %v", err)
+			state, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, state.Consent())
+		})
+	}
 }

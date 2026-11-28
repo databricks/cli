@@ -11,6 +11,12 @@ func TestNormalizeHost(t *testing.T) {
 
 	// With port.
 	assert.Equal(t, "http://foo:123", normalizeHost("http://foo:123"))
+	assert.Equal(t, "https://foo:80", normalizeHost("https://foo:80"))
+
+	// With the scheme's default port.
+	assert.Equal(t, "https://foo", normalizeHost("https://foo:443"))
+	assert.Equal(t, "http://foo", normalizeHost("http://foo:80/"))
+	assert.Equal(t, "https://[::1]", normalizeHost("https://[::1]:443"))
 
 	// With trailing slash.
 	assert.Equal(t, "http://foo", normalizeHost("http://foo/"))

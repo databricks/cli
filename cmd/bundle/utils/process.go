@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -34,6 +35,8 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -63,7 +66,8 @@ type ProcessOptions struct {
 	// Implies ReadState
 	AlwaysPull bool
 
-	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
+	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also resolves
+	// ${resources.*} references for display (ResolveResourceReferencesForDisplay) and calls InitializeURLs()
 	// Implies ReadState
 	InitIDs bool
 
@@ -82,10 +86,10 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, and loads the plan from
-	// the file instead of calculating it. Artifact uploads are handled directly
-	// inside Deploy by reading the remote paths from the plan's new_state and
-	// finding the matching local files.
+	// When set, skips Build and PreDeployChecks phases (except the deployment state
+	// pull), and loads the plan from the file instead of calculating it. Artifact
+	// uploads are handled directly inside Deploy by reading the remote paths from
+	// the plan's new_state and finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -248,7 +252,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
+	// Whether a deploy or plan records history. Decided before the state pull, so an enrollment
+	// check with the service runs alongside it.
+	var recordsHistory <-chan bool
+
 	if shouldReadState {
+		if opts.Deploy || opts.PreDeployChecks {
+			recordsHistory = recordsDeploymentHistory(ctx, b)
+		}
+
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
@@ -265,8 +277,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 	}
 
-	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
-	// deploy builds and runs the predeploy checks. These only flip opts (no state access),
+	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks (it still
+	// pulls the deployment state, see below); a plain deploy builds and runs the
+	// predeploy checks. These only flip opts (no state access),
 	// so they run before phases.Build; the plan file itself is loaded during state
 	// resolution after the build, once the engine is known and the state is open.
 	if opts.ReadPlanPath != "" {
@@ -363,7 +376,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
-			if configuresDeploymentHistory(ctx, b) {
+			if <-recordsHistory {
 				stateMode = dstate.WritingDeploymentHistoryShadow
 				if b.DeploymentBundle.StateDB.Data.Features == nil {
 					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
@@ -451,7 +464,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
-				mutators = append(mutators, mutator.InitializeURLs())
+				mutators = append(mutators, mutator.ResolveResourceReferencesForDisplay(), mutator.InitializeURLs())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
@@ -505,6 +518,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError)
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	} else if opts.ReadPlanPath != "" {
+		// A saved plan is often applied from a fresh checkout (a separate CI job). The
+		// deployment state's file list is what lets the file sync delete files removed
+		// from the bundle, and its seq must keep increasing, so pull it here as well.
+		bundle.ApplyContext(ctx, b, deploy.StatePullForSavedPlan())
 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
@@ -685,12 +707,44 @@ func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bun
 	return deployment, nil
 }
 
-func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+// recordsDeploymentHistory delivers whether this deploy or plan records history: the bundle's own
+// setting when it has one, otherwise the workspace's enrollment, asked in the background.
+func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) <-chan bool {
 	var configured *bool
 	if b.Config.Experimental != nil {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
-	return bundleenv.RecordsDeploymentHistory(ctx, configured)
+	if enabled, explicit := bundleenv.DeploymentHistoryChoice(ctx, configured); explicit {
+		result := make(chan bool, 1)
+		result <- enabled
+		return result
+	}
+	return checkAutoEnrollment(ctx, b.WorkspaceClient(ctx), enrollmentCheckTimeout)
+}
+
+// enrollmentCheckTimeout caps the wait for the enrollment answer, so a slow service cannot
+// hold up a deploy.
+const enrollmentCheckTimeout = 5 * time.Second
+
+// checkAutoEnrollment asks, in the background, whether the workspace records deployment history
+// by default. Any failure reads as not enrolled; only an unexpected one warns.
+func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient, timeout time.Duration) <-chan bool {
+	result := make(chan bool, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		enrollments, err := dms.CheckEnrollments(ctx, w, dms.FeatureRecordHistoryAuto)
+		switch {
+		case err == nil:
+		case errors.Is(err, apierr.ErrPermissionDenied), errors.Is(err, apierr.ErrNotFound):
+			// The service does not serve this workspace, or predates the API.
+			log.Debugf(ctx, "Deployment history enrollment: %s", err)
+		default:
+			log.Warnf(ctx, "Skipping deployment history: could not check whether this workspace is enrolled: %s", err)
+		}
+		result <- enrollments[dms.FeatureRecordHistoryAuto]
+	}()
+	return result
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

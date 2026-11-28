@@ -1,0 +1,8 @@
+{
+  "version": "1.2.0",
+  "catalog_rules": "RULES.md",
+  "skills": {
+    "beta": {"version": "0.1.0", "description": "An experimental skill.", "files": ["SKILL.md"], "repo_dir": "experimental"},
+    "alpha": {"version": "1.0.0", "description": "A stable skill with a nested file.", "files": ["SKILL.md", "references/guide.md"], "min_cli_version": "0.300.0", "commands": ["jobs", "pipelines"], "repo_dir": "skills"}
+  }
+}

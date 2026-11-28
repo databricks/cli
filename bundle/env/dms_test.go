@@ -9,47 +9,56 @@ import (
 
 func TestDeploymentHistoryEnv(t *testing.T) {
 	for _, tc := range []struct {
-		value string
-		want  bool
+		value        string
+		wantEnabled  bool
+		wantExplicit bool
 	}{
-		{"true", true},
-		{"", false},
-		{"0", false},
-		{"false", false},
-		// Only "true" counts, so a near miss leaves recording off.
-		{"1", false},
-		{"TRUE", false},
-		{"yes", false},
+		{"true", true, true},
+		{"false", false, true},
+		// Only "true" turns recording on, so a near miss turns it off.
+		{"0", false, true},
+		{"1", false, true},
+		{"TRUE", false, true},
+		{"yes", false, true},
+		// Empty is no choice, like unset.
+		{"", false, false},
 	} {
 		ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
-		assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, nil), "value %q", tc.value)
+		enabled, explicit := DeploymentHistoryChoice(ctx, nil)
+		assert.Equal(t, tc.wantEnabled, enabled, "value %q", tc.value)
+		assert.Equal(t, tc.wantExplicit, explicit, "value %q", tc.value)
 	}
 }
 
 func TestDeploymentHistoryEnvUnset(t *testing.T) {
-	assert.False(t, RecordsDeploymentHistory(t.Context(), nil))
+	enabled, explicit := DeploymentHistoryChoice(t.Context(), nil)
+	assert.False(t, enabled)
+	assert.False(t, explicit)
 }
 
-func TestRecordsDeploymentHistory(t *testing.T) {
+func TestDeploymentHistoryChoice(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		configured *bool
-		value      string
-		want       bool
+		name         string
+		configured   *bool
+		value        string
+		wantEnabled  bool
+		wantExplicit bool
 	}{
-		{"config true env true", new(true), "true", true},
-		{"config true env false", new(true), "false", true},
-		{"config true env unset", new(true), "", true},
-		{"config false env true", new(false), "true", false},
-		{"config false env false", new(false), "false", false},
-		{"config false env unset", new(false), "", false},
-		{"config unset env true", nil, "true", true},
-		{"config unset env false", nil, "false", false},
-		{"config unset env unset", nil, "", false},
+		{"config true env true", new(true), "true", true, true},
+		{"config true env false", new(true), "false", true, true},
+		{"config true env unset", new(true), "", true, true},
+		{"config false env true", new(false), "true", false, true},
+		{"config false env false", new(false), "false", false, true},
+		{"config false env unset", new(false), "", false, true},
+		{"config unset env true", nil, "true", true, true},
+		{"config unset env false", nil, "false", false, true},
+		{"config unset env unset", nil, "", false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
-			assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, tc.configured))
+			enabled, explicit := DeploymentHistoryChoice(ctx, tc.configured)
+			assert.Equal(t, tc.wantEnabled, enabled)
+			assert.Equal(t, tc.wantExplicit, explicit)
 		})
 	}
 }
