@@ -44,11 +44,11 @@ If a resource has fields that must not be sent in updates (deploy-only, lifecycl
 A create request can fail with a timeout or a 5xx after the backend applied it. Repeating it then fails with "already exists", or creates a second resource when the backend assigns the ID. Each DoCreate handles this in one of two ways:
 
  - If the create is idempotent (a PUT, or setting the desired value), return the error wrapped with `retrySafe(err)`; the framework repeats the request on transient errors.
- - If the bundle chooses the name and the API keeps it unique, call `recoverCreate` (create_recovery.go) on the error. It looks the resource up by name, uses it if it was created after the first request (the read response must carry a create time), and repeats the request while the resource is missing.
+ - If the bundle chooses the name and the API keeps it unique, call `recoverCreate` (create_recovery.go) on the error. It looks the resource up by name, uses it if it was created after the first request, by the server's clock when the failed response has a Date header (the read response must carry a create time), and repeats the request while the resource is missing.
 
 `TestCreateRecoveryCoverage` (create_recovery_coverage_test.go) fails a create request of every resource, with and without the backend applying it. A resource that can do neither, e.g. because the backend assigns its ID, is listed in `createRecoveryOptOut` with the reason.
 
-The create time alone does not tell a resource our request created from one that someone else created under the same name in the same minute. If the read response names the creator, or an owner that starts out as the creator, set `createdByCaller` so that only a resource the deploying principal created is used. `TestCreateRecoveryRejectsResourceOfAnotherPrincipal` creates each resource as another principal first; a resource that cannot check the creator is listed in `createRecoveryNoCreatorCheck` with the reason.
+The create time alone does not tell a resource our request created from one that someone else created under the same name while the request was being handled or a few seconds before. If the read response names the creator, or an owner that starts out as the creator, set `createdByCaller` so that only a resource the deploying principal created is used. `TestCreateRecoveryRejectsResourceOfAnotherPrincipal` creates each resource as another principal first; a resource that cannot check the creator is listed in `createRecoveryNoCreatorCheck` with the reason.
 
 ## Async APIs: WaitAfterCreate / WaitAfterUpdate
 

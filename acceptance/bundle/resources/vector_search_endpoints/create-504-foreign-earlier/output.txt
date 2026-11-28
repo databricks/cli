@@ -1,11 +1,20 @@
 
-=== The bundle's create request fails with a 504 that the backend did not apply. An endpoint with the name the bundle uses was created outside the bundle 30 seconds before the request: deploy takes it
+=== The bundle's create request fails with a 504 that the backend did not apply. An endpoint with the name the bundle uses was created outside the bundle 30 seconds before the request: deploy does not take it
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-earlier-[UNIQUE_NAME]/default/files...
-Created vector_search_endpoints.my_endpoint
+Error: cannot create resources.vector_search_endpoints.my_endpoint: vector search endpoint vs-endpoint-[UNIQUE_NAME] exists but was not created by this deployment: Fault injected by test. (504 TEMPORARILY_UNAVAILABLE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
+HTTP Status: 504 Gateway Timeout
+API error_code: TEMPORARILY_UNAVAILABLE
+API message: Fault injected by test.
+
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+Exit code: 1
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+create vector_search_endpoints.my_endpoint
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
