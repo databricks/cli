@@ -19,5 +19,7 @@ resources:
           # This is a resource reference that is not resolved during validation.
           # It should not trigger an enum warning.
           notebook_task:
-            source: ${resources.jobs.my_job.id}
+            source: ${resources.jobs.other_job.id}
             notebook_path: "/path/to/notebook"
+    other_job:
+      name: other_job

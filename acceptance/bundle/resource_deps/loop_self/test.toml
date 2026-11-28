@@ -1,2 +1,1 @@
-Badness = "validate accepts a job whose name references its own id ('Validation OK!'), and deploy uploads the bundle files before failing with 'cycle detected'. validate should report the cycle, and deploy should fail before uploading."
 RecordRequests = false

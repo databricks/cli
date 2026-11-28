@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create jobs.whl
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

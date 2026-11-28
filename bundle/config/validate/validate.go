@@ -9,6 +9,7 @@ import (
 func Validate(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplyParallel(ctx, b,
 		FastValidate(),
+		DependencyCycle(),
 
 		// Slow mutators that require network or file i/o. These are only
 		// run in the `bundle validate` command.

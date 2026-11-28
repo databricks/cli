@@ -1,0 +1,7 @@
+# The cycle check for plan and deploy runs after the file triggers are fingerprinted, so it
+# sees the config the plan sees.
+printf 'seed\n' > seed.txt
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py my_job > /dev/null
+read_id.py my_run > /dev/null

@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_file_change: seed.txt
+        # Deploy replaces triggers_state with the file hashes before planning, so this
+        # reference to the run's own id never reaches the plan and is not a cycle.
+        triggers_state:
+          on_file_change:
+            seed.txt: ${resources.job_runs.my_run.id}

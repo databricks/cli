@@ -1,0 +1,4 @@
+# A cycle through lifecycle.depends_on and a reference is reported by validate,
+# and deploy fails before uploading any files.
+trace musterr $CLI bundle validate
+trace musterr $CLI bundle deploy

@@ -1,9 +1,11 @@
+Error: cycle detected: resources.jobs.foo refers to itself via ${resources.jobs.foo.id}
+  at resources.jobs.foo
+  in databricks.yml:7:7
 
-=== Badness: validate could detect this and fail as well
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Validation OK!
+Found 1 error

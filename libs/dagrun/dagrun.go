@@ -119,12 +119,11 @@ func (g *Graph) DetectCycle() error {
 					var edges []string
 					for i := st.len() - 1; i >= 0; i-- {
 						nodes = append(nodes, st.data[i].node)
-						if lbl := st.data[i].inLbl; lbl != "" {
-							edges = append(edges, lbl)
-						}
+						// The edge into the cycle's first node comes from outside the cycle.
 						if st.data[i].node == edge.To {
 							break
 						}
+						edges = append(edges, st.data[i].inLbl)
 					}
 					slices.Reverse(nodes)
 					slices.Reverse(edges)

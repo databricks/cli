@@ -1,1 +1,4 @@
-$CLI bundle validate -o json | jq '.variables, .resources'
+# bar refers to its own name, a cycle that validate reports; the resolved config is printed anyway.
+errcode $CLI bundle validate -o json > validate.json
+jq '.variables, .resources' validate.json
+rm validate.json

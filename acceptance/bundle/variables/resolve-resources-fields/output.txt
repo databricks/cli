@@ -1,3 +1,9 @@
+Error: cycle detected: resources.schemas.bar refers to itself via ${resources.schemas.bar.name}
+  at resources.schemas.bar
+  in databricks.yml:18:7
+
+
+Exit code: 1
 {
   "a": {
     "default": "${resources.schemas.foo.name}",

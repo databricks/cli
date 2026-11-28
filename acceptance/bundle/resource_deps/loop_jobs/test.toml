@@ -1,4 +1,3 @@
-Badness = "Files are uploaded then deployment fails with loop error; should not upload the files in this case; validate should fail as well"
 RecordRequests = false
 
 [[Repls]]

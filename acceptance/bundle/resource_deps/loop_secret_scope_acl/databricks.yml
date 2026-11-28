@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    s:
+      name: my-scope
+      lifecycle:
+        depends_on:
+          - resource: secret_scopes.s.permissions
