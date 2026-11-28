@@ -252,15 +252,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
-	// Whether a deploy or plan records history. Decided before the state pull, so an enrollment
-	// check with the service runs alongside it.
+	// Whether a deploy or plan records history. An enrollment check with the service runs in the
+	// background until the state mode is chosen below.
 	var recordsHistory <-chan bool
 
 	if shouldReadState {
-		if opts.Deploy || opts.PreDeployChecks {
-			recordsHistory = recordsDeploymentHistory(ctx, b)
-		}
-
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull))
 		if logdiag.HasError(ctx) {
@@ -271,6 +267,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		ctx = WithLineage(ctx, stateDesc)
 		cmd.SetContext(ctx)
+
+		// Start the check only once ctx carries the lineage: the SDK's user agent appends into a
+		// slice shared by contexts derived from the same parent, so a request made in the
+		// background on the earlier ctx can overwrite the lineage entry and drop it from every
+		// later request of this command. A DMS-only state always records history, so it needs
+		// no check.
+		if (opts.Deploy || opts.PreDeployChecks) && !stateDesc.IsDMS() {
+			recordsHistory = recordsDeploymentHistory(ctx, b)
+		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
