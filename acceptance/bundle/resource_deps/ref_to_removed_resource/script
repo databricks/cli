@@ -1,0 +1,29 @@
+title "A reference to a resource that was never defined"
+cp no_bar.yml databricks.yml
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+
+title "Deploy all jobs"
+cp "$TESTDIR/databricks.yml" databricks.yml
+trace $CLI bundle deploy
+print_requests.py --nostamp //jobs > LOG.deploy_requests
+
+title "Remove bar while foo and baz still reference it"
+cp no_bar.yml databricks.yml
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+
+title "Remove bar and baz: foo references only the id of bar"
+cp only_foo.yml databricks.yml
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle deploy --select jobs.foo
+
+title "Selecting an unrelated resource still works"
+trace $CLI bundle plan --select jobs.keep
+
+title "Nothing was deleted or updated"
+trace print_requests.py --nostamp //jobs
+cp "$TESTDIR/databricks.yml" databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle destroy --auto-approve

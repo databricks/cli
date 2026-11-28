@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    bar:
+      name: job bar
+  experiments:
+    exp:
+      name: /Users/${workspace.current_user.userName}/exp
+      # Local changes to tags are ignored, so exp is planned as unchanged.
+      tags:
+        - key: job
+          value: ${resources.jobs.bar.id}

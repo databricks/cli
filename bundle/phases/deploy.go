@@ -349,6 +349,10 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 			return nil
 		}
 	}
+	if err := plan.CheckReferencesToDeleted(); err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
 	return plan
 }
 

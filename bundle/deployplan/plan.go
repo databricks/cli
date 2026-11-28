@@ -373,9 +373,10 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // FilterToSelected reduces the plan to the resources named in selected (resolved via
 // ResolveSelectors) plus the others that must change with them. The closure follows
 // edges by action, like the apply graph (makeGraph): a deployed resource pulls in its
-// dependencies (forward), a deleted one its dependents (reverse) so they are removed
-// together. A delete selection errors if a live resource (not itself being deleted)
-// still references the resource to be deleted; removing it would break the live resource.
+// dependencies (forward), a deleted one its dependents (reverse). A dependent that is
+// itself deleted is removed together with it; a live one (still in config) is kept, not
+// expanded, so that [Plan.CheckReferencesToDeleted], which runs on the filtered plan,
+// reports its reference.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -407,33 +408,24 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
-	// BFS: deleted nodes pull in their dependents (also being deleted); deployed
-	// nodes pull in their dependencies. Collect errors for live dependents of a
-	// delete selection before returning, so the user sees all conflicts at once.
-	var errs []string
+	// BFS: deleted nodes pull in their dependents, including the grants/permissions
+	// sub-nodes of key itself; deployed nodes pull in their dependencies.
+	//
+	// A live dependent of a deleted node is kept only so that CheckReferencesToDeleted
+	// reports its reference. It is not expanded through that edge: its other dependencies
+	// are not part of this deletion, and the plan fails on it anyway. It is kept in a
+	// separate set so that a selection that does reach it is still expanded, whatever
+	// the order of the selectors.
+	keptForReport := map[string]struct{}{}
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
 			for _, dependent := range dependents[key] {
-				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
-				// and never trigger the live-dependent error. If they are themselves being
-				// deleted, they must be pulled in alongside their parent.
-				if strings.Count(dependent, ".") >= 3 {
-					if p.Plan[dependent].Action == Delete {
-						p.enqueueReachable(reachable, &queue, dependent)
-					}
-					continue
-				}
 				if p.Plan[dependent].Action == Delete {
-					// Dependent is also being deleted: pull it in.
 					p.enqueueReachable(reachable, &queue, dependent)
 				} else {
-					// Dependent is live (still in config): deleting key would leave
-					// it broken. Report a user-facing error with both names.
-					deleted := strings.TrimPrefix(key, "resources.")
-					live := strings.TrimPrefix(dependent, "resources.")
-					errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
+					keptForReport[dependent] = struct{}{}
 				}
 			}
 		} else {
@@ -442,10 +434,7 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 			}
 		}
 	}
-	if len(errs) > 0 {
-		slices.Sort(errs)
-		return errors.New(strings.Join(errs, "\n"))
-	}
+	maps.Copy(reachable, keptForReport)
 
 	for key := range p.Plan {
 		if _, ok := reachable[key]; !ok {
@@ -455,6 +444,41 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 
 	p.NotSelected = before - len(p.Plan)
 	return nil
+}
+
+// ReferenceToDeletedError reports that node, which stays deployed, references dep.Node,
+// which was removed from the config and is planned for deletion.
+func ReferenceToDeletedError(node string, dep DependsOnEntry) error {
+	return fmt.Errorf("cannot plan %s: %s refers to %s, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove %s too, or add %s back to the configuration", node, dep.Label, dep.Node, node, dep.Node)
+}
+
+// CheckReferencesToDeleted reports every reference from a resource that is not being
+// deleted to one that is, in one error. Applying such a plan would delete the target and
+// then fail to resolve the reference. Run it after FilterToSelected, so that a reference
+// outside the selection does not block it.
+func (p *Plan) CheckReferencesToDeleted() error {
+	var errs []string
+	for node, entry := range p.Plan {
+		if entry.Action == Delete {
+			continue
+		}
+		for _, dep := range entry.DependsOn {
+			if target := p.Plan[dep.Node]; target != nil && target.Action == Delete {
+				errs = append(errs, ReferenceToDeletedError(node, dep).Error())
+			}
+		}
+	}
+	return joinErrorMessages(errs)
+}
+
+// joinErrorMessages returns one error with the sorted, distinct messages on separate
+// lines, or nil if there are none.
+func joinErrorMessages(msgs []string) error {
+	if len(msgs) == 0 {
+		return nil
+	}
+	slices.Sort(msgs)
+	return errors.New(strings.Join(slices.Compact(msgs), "\n"))
 }
 
 // reverseEdges returns the reverse of the plan's DependsOn edges: for each node, the

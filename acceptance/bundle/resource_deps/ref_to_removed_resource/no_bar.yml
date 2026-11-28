@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: job foo
+      tasks:
+        - task_key: job_task
+          run_job_task:
+            job_id: ${resources.jobs.bar.id}
+    baz:
+      name: job baz
+      description: runs ${resources.jobs.bar.name}
+    keep:
+      name: job keep

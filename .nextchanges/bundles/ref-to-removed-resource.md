@@ -1,0 +1,1 @@
+* Report a clear error when a `${resources...}` reference points to a resource that is not in the bundle configuration, instead of an internal error or deleting the referenced resource during deploy. ([#7999](https://github.com/databricks/cli/pull/7999))

@@ -10,22 +10,20 @@ Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan --select jobs.producer
-Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.consumer too, or add resources.jobs.producer back to the configuration
 
 
 >>> [CLI] bundle deploy --select jobs.producer
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
-Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.consumer too, or add resources.jobs.producer back to the configuration
 
 Files: 1 uploaded, 0 deleted
 
 >>> print_requests.py --sort //jobs/delete --keep
 
 >>> [CLI] bundle plan
-update jobs.consumer
-delete jobs.producer
+Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.consumer too, or add resources.jobs.producer back to the configuration
 
-Plan: 0 to add, 1 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle plan --select jobs.producer
 delete jobs.consumer

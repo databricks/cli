@@ -43,9 +43,7 @@ test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/test-catalog-[UNIQUE_NAME]/test-sch
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.bar.name}": internal error: resources.catalogs.bar: action is "delete" missing new_state
-
-Error: planning failed
+Error: cannot plan resources.schemas.foo: ${resources.catalogs.bar.name} refers to resources.catalogs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.schemas.foo too, or add resources.catalogs.bar back to the configuration
 
 Files: 1 uploaded, 1 deleted
 

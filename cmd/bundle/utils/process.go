@@ -497,7 +497,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// (and well before deploy uploads anything). Deletion targets live only in state,
 		// so this is the earliest point a selector can be checked. Note: for a valid
 		// deletion target whose live dependent makes it unsafe to delete, the predeploy
-		// script still runs before FilterToSelected (in RunPlan) catches the conflict;
+		// script still runs before RunPlan (CheckReferencesToDeleted) catches the conflict;
 		// that case requires the plan to detect it. Skipped for a saved plan (plan != nil);
 		// for a fresh plan, FilterToSelected re-validates and filters it.
 		if (opts.Deploy || opts.PreDeployChecks) && plan == nil && len(b.Select) > 0 {

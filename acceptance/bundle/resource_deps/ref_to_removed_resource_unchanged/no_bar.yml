@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  experiments:
+    exp:
+      name: /Users/${workspace.current_user.userName}/exp
+      tags:
+        - key: job
+          value: ${resources.jobs.bar.id}

@@ -1,0 +1,14 @@
+trace $CLI bundle deploy
+print_requests.py --nostamp //jobs > LOG.deploy_requests
+
+title "Remove bar while the tags of exp, whose local changes are ignored, still reference it"
+cp no_bar.yml databricks.yml
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+
+title "bar was not deleted"
+trace print_requests.py --nostamp //jobs/delete
+
+cp "$TESTDIR/databricks.yml" databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle destroy --auto-approve
