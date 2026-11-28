@@ -85,11 +85,6 @@
             "timezone_id": "America/New_York"
           }
         },
-        "schedule.timezone_id": {
-          "action": "update",
-          "old": "UTC",
-          "new": "America/New_York"
-        },
         "tasks[task_key='main'].email_notifications": {
           "action": "skip",
           "reason": "empty",
