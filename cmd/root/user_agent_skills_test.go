@@ -2,8 +2,10 @@ package root_test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/env"
@@ -40,6 +42,8 @@ func TestParseSkills(t *testing.T) {
 	// 64-, 64-, 64- and 22-byte pairs make 214 bytes, so " skill/abcd" (11)
 	// lands exactly on 225 and nothing more fits.
 	exact := []string{strings.Repeat("a", 57), strings.Repeat("b", 57), strings.Repeat("c", 57), "databricks-core", "abcd"}
+	root.AllowSkillsForTest(t, slices.Concat(sixTooMany, exact,
+		[]string{"a", "b", "c", "d", "jobs", "ok", "a_b.c-d", "core", strings.Repeat("a", 64)})...)
 
 	tests := []struct {
 		name string
@@ -71,6 +75,54 @@ func TestParseSkills(t *testing.T) {
 	}
 }
 
+func TestParseSkillsDropsUnknownSkills(t *testing.T) {
+	// Agents pass every skill they loaded. Only Databricks skills are reported,
+	// even when a customer's own skill uses the databricks- prefix.
+	got := root.ParseSkills(t.Context(), "my-team-skill,databricks-core,databricks-my-team-tool,acme-databricks,databricks-jobs")
+	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, got)
+}
+
+func TestParseSkillsAllowsReleasedSkills(t *testing.T) {
+	// A skill added to the release after this CLI's static list is still reported.
+	root.SetReleasedSkillsForTest(t, time.Second, func() ([]string, error) {
+		return []string{"databricks-brand-new"}, nil
+	})
+	got := root.ParseSkills(t.Context(), "databricks-brand-new,databricks-my-team-tool,databricks-core")
+	assert.Equal(t, []string{"databricks-brand-new", "databricks-core"}, got)
+}
+
+func TestParseSkillsDropsReleasedSkillsAfterTimeout(t *testing.T) {
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	root.SetReleasedSkillsForTest(t, 5*time.Millisecond, func() ([]string, error) {
+		<-release
+		return []string{"databricks-brand-new", "databricks-other-new"}, nil
+	})
+
+	start := time.Now()
+	got := root.ParseSkills(t.Context(), "databricks-brand-new,databricks-core,databricks-other-new")
+	elapsed := time.Since(start)
+
+	// Static matches still go through; the slow lookup only drops the rest.
+	assert.Equal(t, []string{"databricks-core"}, got)
+	// Both unmatched names share one deadline, so the wait is not doubled.
+	assert.Less(t, elapsed, 500*time.Millisecond)
+}
+
+func TestParseSkillsSkipsLookupForStaticMatches(t *testing.T) {
+	root.SetReleasedSkillsForTest(t, time.Second, func() ([]string, error) {
+		t.Error("released skills were looked up for names in the static list")
+		return nil, nil
+	})
+	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, root.ParseSkills(t.Context(), "databricks-core,databricks-jobs"))
+}
+
+func TestKnownSkillsAreValid(t *testing.T) {
+	for _, name := range root.KnownSkills() {
+		assert.Equal(t, []string{name}, root.ParseSkills(t.Context(), name), "known skill %q is dropped", name)
+	}
+}
+
 func TestWithSkillsInUserAgent(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -82,8 +134,9 @@ func TestWithSkillsInUserAgent(t *testing.T) {
 		{"unset", "", nil, "", ""},
 		{"env var", "databricks-core,databricks-jobs", nil, "", "skill/databricks-core skill/databricks-jobs"},
 		{"flag", "", []string{"--skills-invoked", "databricks-core,databricks-jobs"}, "", "skill/databricks-core skill/databricks-jobs"},
-		{"flag wins over env var", "from-env", []string{"--skills-invoked", "from-flag"}, "", "skill/from-flag"},
-		{"empty flag still wins over env var", "from-env", []string{"--skills-invoked="}, "", ""},
+		{"flag wins over env var", "databricks-dabs", []string{"--skills-invoked", "databricks-jobs"}, "", "skill/databricks-jobs"},
+		{"unknown skills are dropped", "", []string{"--skills-invoked", "my-skill,databricks-core"}, "", "skill/databricks-core"},
+		{"empty flag still wins over env var", "databricks-core", []string{"--skills-invoked="}, "", ""},
 		{"telemetry disabled with env var", "databricks-core", nil, "1", ""},
 		{"telemetry disabled with flag", "", []string{"--skills-invoked", "databricks-core"}, "1", ""},
 	}
