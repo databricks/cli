@@ -364,6 +364,193 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 	assert.NotContains(t, buf.String(), `"line":"first"`)
 }
 
+// summaryRecords is a log page whose last lines are the entry script's
+// execution summary.
+const summaryRecords = `{"log_records":[
+	{"record_id":"user","time_unix_nano":20000000000,"body":"training done"},
+	{"record_id":"time","time_unix_nano":21000000000,"body":"Time in container: 9.0s"},
+	{"record_id":"result","time_unix_nano":21000000001,"body":"Completed at Thu Nov 19 06:43:15 UTC 2026"},
+	{"record_id":"rule","time_unix_nano":21000000002,"body":"================================"}
+]}`
+
+// summaryStreamServer serves runs/get from runJSON(n) for the n-th call
+// (1-based) and the n-th log request from logPages, repeating the last page;
+// *logRequests counts log requests.
+func summaryStreamServer(t *testing.T, runJSON func(call int) string, logPages []string, logRequests *int) *httptest.Server {
+	t.Helper()
+	runCalls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			*logRequests++
+			_, _ = w.Write([]byte(logPages[min(*logRequests, len(logPages))-1]))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runCalls++
+			_, _ = w.Write([]byte(runJSON(runCalls)))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// terminalAfter returns runs/get bodies that stay RUNNING for the first
+// runningCalls calls and are TERMINATED with SUCCESS afterwards.
+func terminalAfter(runningCalls int) func(int) string {
+	return func(call int) string {
+		if call <= runningCalls {
+			return `{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0}]}`
+		}
+		return `{"run_id":1,"start_time":10000,"end_time":30000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`
+	}
+}
+
+func streamSummaryTest(t *testing.T, srv *httptest.Server) (bool, string) {
+	t.Helper()
+	return streamSummaryTestWithFloor(t, srv, 0)
+}
+
+// streamSummaryTestWithFloor runs the stream with a 1 ms poll interval and
+// the given summary settle floor.
+func streamSummaryTestWithFloor(t *testing.T, srv *httptest.Server, floor time.Duration) (bool, string) {
+	t.Helper()
+	originalInterval, originalFloor := bricklensPollInterval, bricklensSummarySettleFloor
+	bricklensPollInterval, bricklensSummarySettleFloor = time.Millisecond, floor
+	t.Cleanup(func() { bricklensPollInterval, bricklensSummarySettleFloor = originalInterval, originalFloor })
+
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+		logRequest{runID: 1, node: 0, attempt: -1, tailLines: -1},
+		logRunStatus{lifeCycleState: "RUNNING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	return ok, stdout.String()
+}
+
+func TestStreamBricklensExitsOnFirstTerminalPollAfterSettledSummary(t *testing.T) {
+	var logRequests int
+	// The summary arrives on the first poll and bricklensTerminalEmptyPolls
+	// RUNNING polls return nothing new before the run turns terminal.
+	srv := summaryStreamServer(t, terminalAfter(bricklensTerminalEmptyPolls), []string{summaryRecords}, &logRequests)
+
+	ok, out := streamSummaryTest(t, srv)
+
+	assert.True(t, ok)
+	assert.Equal(t, "training done\nTime in container: 9.0s\nCompleted at Thu Nov 19 06:43:15 UTC 2026\n================================\n", out)
+	assert.Equal(t, 1+bricklensTerminalEmptyPolls+1, logRequests)
+}
+
+func TestStreamBricklensReturnsFailureOnFirstTerminalPollAfterSettledFailureSummary(t *testing.T) {
+	var logRequests int
+	failureSummary := `{"log_records":[
+		{"record_id":"user","time_unix_nano":20000000000,"body":"training crashed"},
+		{"record_id":"time","time_unix_nano":21000000000,"body":"Time in container: 9.0s"},
+		{"record_id":"result","time_unix_nano":21000000001,"body":"ERROR: Script failed with exit code 3 after 9s"},
+		{"record_id":"rule","time_unix_nano":21000000002,"body":"================================"}
+	]}`
+	// Same timing as the settled-summary case, but the run fails: the early
+	// exit must still report the Jobs result, not success.
+	runJSON := func(call int) string {
+		if call <= bricklensTerminalEmptyPolls {
+			return `{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0}]}`
+		}
+		return `{"run_id":1,"start_time":10000,"end_time":30000,"state":{"life_cycle_state":"TERMINATED","result_state":"FAILED"},"tasks":[{"run_id":2,"attempt_number":0}]}`
+	}
+	srv := summaryStreamServer(t, runJSON, []string{failureSummary}, &logRequests)
+
+	ok, out := streamSummaryTest(t, srv)
+
+	assert.False(t, ok)
+	assert.Contains(t, out, "ERROR: Script failed with exit code 3 after 9s")
+	assert.Equal(t, 1+bricklensTerminalEmptyPolls+1, logRequests)
+}
+
+func TestStreamBricklensKeepsTerminalPollsWhenSummaryIsYoungerThanTheFloor(t *testing.T) {
+	var logRequests int
+	// Same stream as the settled-summary case, but the terminal poll comes
+	// sooner after the summary than the floor allows.
+	srv := summaryStreamServer(t, terminalAfter(bricklensTerminalEmptyPolls), []string{summaryRecords}, &logRequests)
+
+	ok, _ := streamSummaryTestWithFloor(t, srv, time.Hour)
+
+	assert.True(t, ok)
+	assert.Equal(t, 1+bricklensTerminalEmptyPolls+bricklensTerminalEmptyPolls, logRequests)
+}
+
+func TestStreamBricklensKeepsTerminalPollsWhenRunEndsRightAfterSummary(t *testing.T) {
+	var logRequests int
+	srv := summaryStreamServer(t, terminalAfter(0), []string{summaryRecords}, &logRequests)
+
+	ok, _ := streamSummaryTest(t, srv)
+
+	assert.True(t, ok)
+	assert.Equal(t, 1+bricklensTerminalEmptyPolls, logRequests)
+}
+
+func TestStreamBricklensKeepsTerminalPollsWhenOutputFollowsSummary(t *testing.T) {
+	var logRequests int
+	afterSummary := `{"log_records":[{"record_id":"bg","time_unix_nano":22000000000,"body":"background process line"}]}`
+	runningPolls := bricklensTerminalEmptyPolls + 1
+	srv := summaryStreamServer(t, terminalAfter(runningPolls), []string{summaryRecords, afterSummary}, &logRequests)
+
+	ok, out := streamSummaryTest(t, srv)
+
+	assert.True(t, ok)
+	assert.Contains(t, out, "background process line")
+	assert.Equal(t, 1+runningPolls+bricklensTerminalEmptyPolls, logRequests)
+}
+
+func TestStreamBricklensKeepsTerminalPollsWhenSummaryIsFromEarlierAttempt(t *testing.T) {
+	var logRequests int
+	// Attempt 0 prints its summary; attempt 1 starts and the run turns terminal
+	// without attempt 1 having printed anything.
+	runJSON := func(call int) string {
+		if call <= bricklensTerminalEmptyPolls {
+			return `{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0},{"run_id":3,"attempt_number":1}]}`
+		}
+		return `{"run_id":1,"start_time":10000,"end_time":30000,"state":{"life_cycle_state":"TERMINATED","result_state":"FAILED"},"tasks":[{"run_id":2,"attempt_number":0},{"run_id":3,"attempt_number":1}]}`
+	}
+	srv := summaryStreamServer(t, runJSON, []string{summaryRecords, `{"log_records":[]}`}, &logRequests)
+
+	ok, _ := streamSummaryTest(t, srv)
+
+	assert.False(t, ok)
+	assert.Equal(t, 1+bricklensTerminalEmptyPolls+bricklensTerminalEmptyPolls, logRequests)
+}
+
+func TestSummaryTrackerEndsOnSuccessSummary(t *testing.T) {
+	var s summaryTracker
+	for _, line := range []string{"Execution Summary", "Time in container: 1.2s", "Completed at Thu Nov 19 06:43:15 UTC 2026", "================================"} {
+		s.observe(line)
+	}
+	assert.True(t, s.ended)
+}
+
+func TestSummaryTrackerEndsOnFailureSummary(t *testing.T) {
+	var s summaryTracker
+	for _, line := range []string{"Time in container: 1.2s", "ERROR: Script failed with exit code 3 after 1s", "================================"} {
+		s.observe(line)
+	}
+	assert.True(t, s.ended)
+}
+
+func TestSummaryTrackerResetsWhenALineFollowsTheSummary(t *testing.T) {
+	var s summaryTracker
+	for _, line := range []string{"Time in container: 1.2s", "Completed at Thu Nov 19 06:43:15 UTC 2026", "================================", "more output"} {
+		s.observe(line)
+	}
+	assert.False(t, s.ended)
+}
+
+func TestSummaryTrackerIgnoresRuleWithoutResultLine(t *testing.T) {
+	var s summaryTracker
+	for _, line := range []string{"Execution Summary", "================================", "Environment setup: 0.4s", "================================"} {
+		s.observe(line)
+	}
+	assert.False(t, s.ended)
+}
+
 func TestDisplayState(t *testing.T) {
 	assert.Equal(t, "SUCCESS", logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"}.displayState())
 	assert.Equal(t, "RUNNING", logRunStatus{lifeCycleState: "RUNNING"}.displayState())

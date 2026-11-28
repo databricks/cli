@@ -82,6 +82,13 @@ var retryCheckInterval = 3 * time.Second
 // bricklensPollInterval is independent of slower retry and discovery backoffs.
 var bricklensPollInterval = time.Second
 
+// bricklensSummarySettleFloor is the least time between the execution summary
+// ending the stream and the terminal poll for the summary to end the stream
+// early. It keeps a margin above the longest indexing delay measured for a
+// record (a few seconds) even when the run turns terminal right after the
+// summary.
+var bricklensSummarySettleFloor = 5 * time.Second
+
 // errBricklensFeatureDisabled signals the caller to fall back to MLflow: Bricklens
 // is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404),
 // persistently failing, or served every request successfully but never returned a
@@ -394,6 +401,47 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
+	// summary tracks whether the stream ends with the entry script's execution
+	// summary; summaryAttempt is the latest attempt and summarySeenAt the time
+	// when that summary ended it.
+	summary        summaryTracker
+	summaryAttempt int
+	summarySeenAt  time.Time
+	// quietPollsAfterSummary counts consecutive polls that emitted nothing
+	// since the summary ended the stream.
+	quietPollsAfterSummary int
+}
+
+// tailEvidence names what showed a terminal run's log stream is complete.
+type tailEvidence int
+
+const (
+	tailIncomplete tailEvidence = iota
+	// The latest attempt's execution summary ended the stream at least
+	// bricklensSummarySettleFloor before the terminal poll, and at least
+	// bricklensTerminalEmptyPolls polls since then returned nothing. The
+	// summary is the entry script's last output, so those polls already gave
+	// late records the time the terminal empty polls would.
+	tailSettledSummary
+	// bricklensTerminalEmptyPolls consecutive terminal polls returned nothing.
+	tailTerminalEmptyPolls
+)
+
+// tailComplete decides whether a terminal run's stream can stop, given the
+// consecutive empty terminal polls so far and when the current terminal poll
+// started. Evidence is checked strongest first; without any, keep polling.
+func (st *bricklensStreamer) tailComplete(terminalEmptyPolls int, terminalPollStarted time.Time) tailEvidence {
+	switch {
+	case st.summary.ended &&
+		st.summaryAttempt == st.status.latestAttempt &&
+		st.quietPollsAfterSummary >= bricklensTerminalEmptyPolls &&
+		terminalPollStarted.Sub(st.summarySeenAt) >= bricklensSummarySettleFloor:
+		return tailSettledSummary
+	case terminalEmptyPolls >= bricklensTerminalEmptyPolls:
+		return tailTerminalEmptyPolls
+	default:
+		return tailIncomplete
+	}
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -538,6 +586,14 @@ func (st *bricklensStreamer) run() (bool, error) {
 			return false, err
 		}
 
+		if !firstIteration {
+			if emitted == 0 {
+				st.quietPollsAfterSummary++
+			} else {
+				st.quietPollsAfterSummary = 0
+			}
+		}
+
 		if terminal {
 			if !firstIteration {
 				if emitted == 0 {
@@ -545,7 +601,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 				} else {
 					terminalEmptyPolls = 0
 				}
-				if terminalEmptyPolls < bricklensTerminalEmptyPolls {
+				if st.tailComplete(terminalEmptyPolls, pollStarted) == tailIncomplete {
 					if err := waitForNextBricklensPoll(st.ctx, pollStarted); err != nil {
 						return false, err
 					}
@@ -802,6 +858,11 @@ func (st *bricklensStreamer) emit(body string) {
 		st.onFirstLog()
 	}
 	st.firstLogSeen = true
+	st.summary.observe(body)
+	if st.summary.ended {
+		st.summaryAttempt = st.status.latestAttempt
+		st.summarySeenAt = time.Now()
+	}
 	emitLogLine(st.out, st.req, body)
 }
 
