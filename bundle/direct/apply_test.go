@@ -1,15 +1,20 @@
 package direct
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
+	"net/http"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,4 +90,57 @@ func TestUpdateWithIDFailsOnEmptyID(t *testing.T) {
 	require.EqualError(t, err, "update returned an empty resource id")
 
 	assert.Equal(t, "old-id", db.GetResourceID(d.ResourceKey))
+}
+
+// goneAfterDeleteResource is a fake resource whose delete fails with a 400 and whose read reports
+// the resource as gone. On UC secrets, a retry of an applied delete failed with a 400 "Path
+// resolution failed" instead of a NotFound.
+type goneAfterDeleteResource struct {
+	deleteCalls int
+}
+
+// New returns the receiver so the test can read deleteCalls.
+func (r *goneAfterDeleteResource) New(client *databricks.WorkspaceClient) any {
+	return r
+}
+
+func (*goneAfterDeleteResource) PrepareState(input *emptyIDState) *emptyIDState {
+	return input
+}
+
+func (*goneAfterDeleteResource) DoRead(ctx context.Context, id string) (*emptyIDState, error) {
+	return nil, &apierr.APIError{StatusCode: http.StatusNotFound, ErrorCode: "NOT_FOUND", Message: "does not exist"}
+}
+
+func (*goneAfterDeleteResource) DoCreate(ctx context.Context, newState *emptyIDState) (string, *emptyIDState, error) {
+	return "new-id", nil, nil
+}
+
+func (r *goneAfterDeleteResource) DoDelete(ctx context.Context, id string, _ *emptyIDState) error {
+	r.deleteCalls++
+	return &apierr.APIError{StatusCode: http.StatusBadRequest, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "Path resolution failed"}
+}
+
+func (*goneAfterDeleteResource) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *dresources.ChangeDesc, remoteState any) error {
+	return nil
+}
+
+// A single DoDelete call that fails although the resource is gone: the SDK's own retry of an applied
+// delete looks like this. Retries in libs/retry are covered by acceptance/bundle/resources/secrets/delete_transient_500.
+func TestDeleteGoneDespiteErrorIsNotAWarning(t *testing.T) {
+	var logs bytes.Buffer
+	ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: log.LevelDebug})))
+
+	resource := &goneAfterDeleteResource{}
+	adapter, err := dresources.NewAdapter(resource, "fake", nil)
+	require.NoError(t, err)
+	db := newEmptyIDDeploymentState(t)
+	defer finalizeEmptyIDState(t, db)
+	d := &DeploymentUnit{ResourceKey: "resources.fakes.foo", Adapter: adapter}
+	require.NoError(t, db.SaveState(ctx, d.ResourceKey, "old-id", &emptyIDState{Name: "foo"}, nil))
+
+	require.NoError(t, d.Delete(ctx, db, "old-id"))
+	assert.Equal(t, 1, resource.deleteCalls)
+	assert.Contains(t, logs.String(), "level=DEBUG msg=\"Treating resources.fakes.foo id=old-id as already deleted despite delete error: Path resolution failed\"")
+	assert.NotContains(t, logs.String(), "level=WARN msg=\"Treating")
 }

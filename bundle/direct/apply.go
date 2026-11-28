@@ -137,7 +137,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		if !d.deleteConfirmedGone(ctx, oldID) {
 			return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 		}
-		log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
+		logDeletedDespiteError(ctx, d.ResourceKey, oldID, err)
 	}
 
 	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
@@ -360,7 +360,8 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	// Delete is idempotent: if a failed attempt did delete the resource, the retry gets a NotFound.
+	// A failed attempt may have deleted the resource. The retry then usually gets a NotFound,
+	// otherwise the read in deleteConfirmedGone settles it.
 	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		return struct{}{}, d.Adapter.DoDelete(ctx, oldID, oldState)
 	})
@@ -372,7 +373,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		if errors.Is(err, apierr.ErrPermissionDenied) {
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
-			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
+			logDeletedDespiteError(ctx, d.ResourceKey, oldID, err)
 		} else {
 			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
 			db.RecordFailure(d.ResourceKey, oldID, err)
@@ -399,6 +400,16 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	return nil
+}
+
+// logDeletedDespiteError records a delete error on a resource that a read found missing or in
+// terminal teardown (see deleteConfirmedGone). The user has nothing to act on, so it is a debug
+// message. The usual cause is a retried delete whose
+// earlier attempt was applied: the retry then fails on the missing resource, and not always with a
+// NotFound (UC secrets have answered with a "Path resolution failed" error). The retry may also
+// come from the SDK, inside a single DoDelete call.
+func logDeletedDespiteError(ctx context.Context, resourceKey, id string, err error) {
+	log.Debugf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", resourceKey, id, err)
 }
 
 // deleteConfirmedGone reports whether a failed DoDelete can be treated as
