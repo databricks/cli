@@ -1,1 +1,4 @@
-$CLI bundle validate -o json | jq '.variables, .resources'
+# foo refers to a field schemas do not have, which validate reports; the resolved config is printed anyway.
+musterr $CLI bundle validate -o json > validate.json
+jq '.variables, .resources' validate.json
+rm validate.json

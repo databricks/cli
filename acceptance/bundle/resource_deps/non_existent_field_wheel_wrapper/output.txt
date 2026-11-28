@@ -1,0 +1,62 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create jobs.whl
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.whl
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The wrapper does not wrap a wheel task without a workspace library
+
+>>> musterr [CLI] bundle validate
+Error: cannot resolve "${resources.jobs.whl.non_existent}": resource type "jobs" has no field "non_existent"
+  at resources.jobs.whl.tasks[0].python_wheel_task.parameters[0]
+  in databricks.yml:18:26
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> musterr [CLI] bundle plan
+Error: cannot resolve "${resources.jobs.whl.non_existent}": resource type "jobs" has no field "non_existent"
+  at resources.jobs.whl.tasks[0].python_wheel_task.parameters[0]
+  in databricks.yml:18:26
+
+
+=== The wrapper does not move a reference outside the wheel task
+
+>>> musterr [CLI] bundle validate
+Error: cannot resolve "${resources.jobs.whl.non_existent}": resource type "jobs" has no field "non_existent"
+  at resources.jobs.whl.name
+  in databricks.yml:10:13
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> musterr [CLI] bundle deploy
+Error: cannot resolve "${resources.jobs.whl.non_existent}": resource type "jobs" has no field "non_existent"
+  at resources.jobs.whl.name
+  in databricks.yml:10:13
+

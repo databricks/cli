@@ -1,3 +1,7 @@
+Error: cannot resolve "${resources.schemas.bar.non_existing}": resource type "schemas" has no field "non_existing"
+  at resources.schemas.foo.comment
+  in databricks.yml:16:16
+
 {
   "a": {
     "default": "${resources.schemas.foo.name}",

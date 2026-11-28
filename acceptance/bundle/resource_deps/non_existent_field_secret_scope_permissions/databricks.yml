@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    # No permissions here: plan and deploy add a MANAGE permission for the deploying user.
+    s:
+      name: my-scope
+  jobs:
+    j:
+      name: ${resources.secret_scopes.s.permissions[0].nope}

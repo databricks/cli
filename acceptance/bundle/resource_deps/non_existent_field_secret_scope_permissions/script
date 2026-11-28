@@ -1,0 +1,6 @@
+# validate runs before the permissions are added, so it does not see this reference.
+trace $CLI bundle validate
+trace musterr $CLI bundle plan
+
+# Deploy fails before uploading the bundle files.
+trace musterr $CLI bundle deploy

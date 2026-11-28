@@ -1,20 +1,25 @@
 
->>> [CLI] bundle validate -o json
-{
-  "volumes": {
-    "bar": {
-      "catalog_name": "mycatalog",
-      "name": "barname",
-      "schema_name": "myschema",
-      "volume_path": "/Volumes/mycatalog/myschema/barname",
-      "volume_type": "MANAGED"
-    },
-    "foo": {
-      "catalog_name": "${resources.volumes.bar.non_existent}",
-      "name": "myname",
-      "schema_name": "${resources.volumes.bar.schema_name}",
-      "volume_path": "/Volumes/${resources.volumes.bar.non_existent}/myschema/myname",
-      "volume_type": "MANAGED"
-    }
-  }
-}
+>>> musterr [CLI] bundle validate
+Error: cannot resolve "${resources.volumes.bar.non_existent}": resource type "volumes" has no field "non_existent"
+  at resources.volumes.foo.catalog_name
+  in databricks.yml:11:21
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> musterr [CLI] bundle plan
+Error: cannot resolve "${resources.volumes.bar.non_existent}": resource type "volumes" has no field "non_existent"
+  at resources.volumes.foo.catalog_name
+  in databricks.yml:11:21
+
+
+>>> musterr [CLI] bundle deploy
+Error: cannot resolve "${resources.volumes.bar.non_existent}": resource type "volumes" has no field "non_existent"
+  at resources.volumes.foo.catalog_name
+  in databricks.yml:11:21
+

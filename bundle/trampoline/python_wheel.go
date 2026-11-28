@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -93,6 +94,27 @@ func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 type pythonTrampoline struct{}
 
+// WrapsTask reports whether the python wheel wrapper wraps the job task: a Python wheel task with a
+// workspace library. It decides after the build, when local libraries have been uploaded.
+func WrapsTask(task jobs.Task) bool {
+	return task.PythonWheelTask != nil && needsTrampoline(task)
+}
+
+// IsMovedTaskField reports whether field, a path within a job task, is one that the python wheel
+// wrapper moves out of a task it wraps: the python_wheel_task and the wheel libraries (see CleanUp).
+func IsMovedTaskField(field dyn.Path) bool {
+	if len(field) == 0 {
+		return false
+	}
+	switch field[0].Key() {
+	case "python_wheel_task":
+		return true
+	case "libraries":
+		return len(field) >= 3 && field[2].Key() == "whl"
+	}
+	return false
+}
+
 func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
 
@@ -119,7 +141,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 			// At this point of moment we don't have local paths in Libraries sections anymore
 			// Local paths have been replaced with the remote when the artifacts where uploaded
 			// in artifacts.UploadAll mutator.
-			if task.PythonWheelTask == nil || !needsTrampoline(*task) {
+			if !WrapsTask(*task) {
 				continue
 			}
 

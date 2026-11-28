@@ -33,6 +33,13 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
+// planNodePatterns match the config paths of the nodes in the plan: resources and their permissions and grants.
+var planNodePatterns = []dyn.Pattern{
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+}
+
 func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
@@ -1351,14 +1358,36 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 	return path.Prefix(3).String(), path.SkipPrefix(3)
 }
 
-func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+// referenceTarget splits a reference path into the target resource key, its resource type and the
+// field path, translated from Terraform-style naming to DABs naming (e.g. "task" → "tasks",
+// "git_source.branch" → "git_source.git_branch"; a no-op for DABs paths). It returns an error for
+// a Terraform-only field with no DABs equivalent.
+func referenceTarget(path *structpath.PathNode) (string, string, *structpath.PathNode, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
-
-	// Translate Terraform-style field paths to DABs naming (e.g. "task" → "tasks",
-	// "git_source.branch" → "git_source.git_branch"). No-op for already-DABs paths.
-	// Returns an error for paths that are Terraform-only with no DABs equivalent.
 	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	return targetResourceKey, targetGroup, fieldPath, err
+}
+
+// checkReferenceFieldExists returns the error for a reference to a field that the target resource
+// type has neither in its state nor in its remote type, so no deploy can resolve it. The id is
+// always available. fieldPath is the field in DABs naming (see referenceTarget), relative to the
+// node; the error names the field as the reference path writes it, relative to the resource, so a
+// reference into permissions or grants reads "resource type "jobs" has no field
+// "permissions[0].nope"".
+func checkReferenceFieldExists(adapter *dresources.Adapter, fieldPath, path *structpath.PathNode) error {
+	if fieldPath.String() == "id" {
+		return nil
+	}
+	if structaccess.ValidatePath(adapter.StateType(), fieldPath) == nil || structaccess.ValidatePath(adapter.RemoteType(), fieldPath) == nil {
+		return nil
+	}
+	resourceType, _ := path.SkipPrefix(1).Prefix(1).StringKey()
+	return fmt.Errorf("resource type %q has no field %q", resourceType, path.SkipPrefix(3).String())
+}
+
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, _, fieldPath, err := referenceTarget(path)
 	if err != nil {
 		return nil, err
 	}
@@ -1414,13 +1443,13 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
+	if err := checkReferenceFieldExists(adapter, fieldPath, path); err != nil {
+		return nil, err
+	}
+
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
 	remoteValidErr := structaccess.ValidatePath(adapter.RemoteType(), fieldPath)
 	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
-
-	if configValidErr != nil && remoteValidErr != nil {
-		return nil, fmt.Errorf("schema mismatch: %w; %w", configValidErr, remoteValidErr)
-	}
 
 	if configValidErr == nil && remoteValidErr != nil {
 		// The field is only present in local schema; it must be resolved here.
@@ -1561,15 +1590,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-	}
-
 	// Walk?
 	if configRoot != nil {
-		for _, pat := range patterns {
+		for _, pat := range planNodePatterns {
 			_, err := dyn.MapByPattern(
 				configRoot.Value(),
 				pat,
@@ -1609,12 +1632,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
-		}
-
-		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
+		inputStructVar, newStateConfig, err := prepareNodeState(adapter, inputConfig, node)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
@@ -1763,6 +1781,19 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	return p, nil
 }
 
+// prepareNodeState returns the input and the new state the plan builds for node from its config.
+func prepareNodeState(adapter *dresources.Adapter, inputConfig any, node string) (*structvar.StructVar, any, error) {
+	inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
+	if err != nil {
+		return nil, nil, err
+	}
+	newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
+	if err != nil {
+		return nil, nil, err
+	}
+	return inputStructVar, newStateConfig, nil
+}
+
 // ExtractReferences extracts variable references from the config subtree rooted at node,
 // keeping only those whose field path exists in stateType (references in input-only or
 // bundle:"readonly" fields, such as volumes' computed volume_path, are skipped).
@@ -1772,17 +1803,30 @@ func ExtractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 }
 
 func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
-	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
+	err := walkReferences(root, node, stateType, func(_ dyn.Path, fieldPath *structpath.PathNode, _ dyn.Value, ref dynvar.Ref) {
+		// Store the original string that contains references, not individual references.
+		refs[fieldPath.String()] = ref.Str
+	})
+	if err != nil {
+		return nil, err
+	}
+	return refs, nil
+}
+
+// walkReferences calls fn for every value with references in the config subtree rooted at node
+// that extractReferences keeps, with its path in the config and its field path within the resource.
+func walkReferences(root dyn.Value, node string, stateType reflect.Type, fn func(path dyn.Path, fieldPath *structpath.PathNode, v dyn.Value, ref dynvar.Ref)) error {
+	nodeType := config.GetResourceTypeFromKey(node)
 
 	path, err := dyn.NewPathFromString(node)
 	if err != nil {
-		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
+		return fmt.Errorf("internal error: bad node key: %q: %w", node, err)
 	}
 
 	val, err := dyn.GetByPath(root, path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = dyn.WalkReadOnly(val, func(p dyn.Path, v dyn.Value) error {
@@ -1811,15 +1855,14 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// reference it carries cannot resolve into state and is not a dependency here. Such
 		// references are still resolved earlier during initialize.
 		if structaccess.ValidatePath(stateType, fieldPath) == nil {
-			// Store the original string that contains references, not individual references.
-			refs[fieldPath.String()] = ref.Str
+			fn(slices.Clone(fullPath), fieldPath, v, ref)
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("parsing refs: %w", err)
+		return fmt.Errorf("parsing refs: %w", err)
 	}
-	return refs, nil
+	return nil
 }
 
 // dynPathToStructPath converts a dyn.Path to a structpath.PathNode.

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -22,6 +23,9 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
 		resourcemutator.SecretScopeFixups(),
+		// Rejects references to fields the target resource type does not have, before deploy uploads
+		// anything. After SecretScopeFixups, which adds the permissions that the plan also sees.
+		validate.ReferenceFieldsAfterBuild(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		statemgmt.CheckRunningResource(),

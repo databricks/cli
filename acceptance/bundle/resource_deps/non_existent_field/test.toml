@@ -1,2 +1,1 @@
-Badness = "validate accepts ${resources.volumes.bar.non_existent}, and deploy uploads the files before planning fails. The error names internal types ('field \"non_existent\" not found in dresources.VolumeState; ... catalog.VolumeInfo'); validate should reject it with a user-facing message that volumes have no such field."
 RecordRequests = false
