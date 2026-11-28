@@ -35,7 +35,7 @@ func createTestDatabaseCatalog(t *testing.T, ucCreatedAt int64) (string, int, er
 		if ucCreatedAt < 0 {
 			return featureError(404, "CATALOG_DOES_NOT_EXIST", "Catalog 'my_catalog' does not exist.")
 		}
-		return catalog.CatalogInfo{Name: testDatabaseCatalogName, CreatedAt: ucCreatedAt}
+		return catalog.CatalogInfo{Name: testDatabaseCatalogName, CreatedAt: ucCreatedAt, CreatedBy: testserver.TestUser.UserName}
 	})
 	testserver.AddDefaultHandlers(server)
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})

@@ -88,6 +88,13 @@ func userForToken(token string) iam.User {
 	return TestUser
 }
 
+// creatorOf returns the user name a create handler records as the creator of the resource: the
+// identity behind the request's token, as the backend does. A resource the as-test-sp guest
+// creates is then not attributed to the test's primary identity.
+func creatorOf(req Request) string {
+	return userForToken(req.Token).UserName
+}
+
 // MeUser returns the /Me identity for a token. Only the guest SP carries a
 // display name, so single-identity SP tests are unaffected.
 func (s *FakeWorkspace) MeUser(token string) iam.User {

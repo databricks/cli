@@ -45,7 +45,7 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	}
 
 	ms.Name = "mcp-services/" + key
-	ms.CreatedBy = s.CurrentUser().UserName
+	ms.CreatedBy = creatorOf(req)
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
 	ms.MetastoreId = nextUUID()

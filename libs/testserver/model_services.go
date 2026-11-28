@@ -46,7 +46,7 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 	}
 
 	ms.Name = "model-services/" + key
-	ms.CreatedBy = s.CurrentUser().UserName
+	ms.CreatedBy = creatorOf(req)
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
 	ms.MetastoreId = nextUUID()

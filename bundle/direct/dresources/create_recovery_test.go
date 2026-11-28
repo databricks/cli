@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -76,8 +77,9 @@ func requireStatus(t *testing.T, err error, status int) {
 	assert.Equal(t, status, apiErr.StatusCode)
 }
 
+// testFeature returns a feature that the deploying user created.
 func testFeature(created time.Time) ml.Feature {
-	return ml.Feature{FullName: testFeatureName, Description: "d", CreatedAt: sdktime.New(created)}
+	return ml.Feature{FullName: testFeatureName, Description: "d", CreatedAt: sdktime.New(created), CreatedBy: testserver.TestUser.UserName}
 }
 
 // createTestFeature runs DoCreate with fast retries.
@@ -86,6 +88,32 @@ func createTestFeature(t *testing.T, s *featureCreateScript, ctx context.Context
 	ctx = env.Set(ctx, retry.IntervalMsVariable, "1")
 	r := (&ResourceFeature{}).New(s.client())
 	return r.DoCreate(ctx, &ml.Feature{FullName: testFeatureName, Description: "d"})
+}
+
+func TestCreateRecoveryRejectsResourceOfAnotherUser(t *testing.T) {
+	feature := testFeature(time.Now())
+	feature.CreatedBy = "someone-else@example.com"
+	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{feature}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was created by another user")
+	requireStatus(t, err, 504)
+	assert.Equal(t, 1, s.createCount)
+}
+
+func TestCreateRecoveryIgnoresCaseOfCreator(t *testing.T) {
+	feature := testFeature(time.Now())
+	feature.CreatedBy = strings.ToUpper(feature.CreatedBy)
+	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{feature}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.NoError(t, err)
+}
+
+func TestCreateRecoveryRejectsResourceWithoutCreator(t *testing.T) {
+	feature := testFeature(time.Now())
+	feature.CreatedBy = ""
+	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{feature}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was created by another user")
 }
 
 func TestCreateRecoveryUsesResourceCreatedDespiteTimeout(t *testing.T) {

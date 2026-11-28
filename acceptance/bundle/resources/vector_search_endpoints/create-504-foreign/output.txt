@@ -1,5 +1,5 @@
 
-=== Outside the bundle, create an endpoint with the name the bundle uses
+=== Outside the bundle, the deploying user creates an endpoint with the name the bundle uses
 
 >>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD --no-wait
 {

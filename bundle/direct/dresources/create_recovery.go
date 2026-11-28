@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // createTimeSkew is how much earlier than our first create request a found resource's create time
@@ -216,13 +216,16 @@ func isAlreadyExists(err error) bool {
 
 // createdByCurrentUser is createRecovery.createdByCaller for resources whose read response names
 // the principal that created them, as Unity Catalog's created_by does: a user name, or the
-// application id of a service principal.
+// application id of a service principal. The names are compared without regard to case: user names
+// are unique regardless of case, and a service may report one in another case than /Me does.
 func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClient, createdBy string) (bool, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{Attributes: "", ExcludedAttributes: "", ForceSendFields: nil})
+	// The backend stall behind the failed create request can also fail /Me with a 500, which
+	// GetCurrentUser retries.
+	me, err := iamutil.GetCurrentUser(ctx, client)
 	if err != nil {
 		return false, err
 	}
-	return createdBy == me.UserName, nil
+	return createdBy != "" && strings.EqualFold(createdBy, me.UserName), nil
 }
 
 // isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,

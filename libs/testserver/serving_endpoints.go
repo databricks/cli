@@ -255,7 +255,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		BudgetPolicyId:       createReq.BudgetPolicyId,
 		Config:               config,
 		CreationTimestamp:    now,
-		Creator:              s.CurrentUser().UserName,
+		Creator:              creatorOf(req),
 		Description:          createReq.Description,
 		EmailNotifications:   createReq.EmailNotifications,
 		Id:                   nextUUID(),

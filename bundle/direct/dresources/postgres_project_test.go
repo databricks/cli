@@ -75,7 +75,7 @@ const testDefaultBranchName = testProjectName + "/branches/production"
 // testProjectWithDefaultBranch is a project whose status names its default branch.
 func testProjectWithDefaultBranch(created time.Time) postgres.Project {
 	project := testProject(created)
-	project.Status = &postgres.ProjectStatus{DefaultBranch: testDefaultBranchName}
+	project.Status.DefaultBranch = testDefaultBranchName
 	return project
 }
 
@@ -89,8 +89,14 @@ var (
 	projectAlreadyExists = branchError(400, "BAD_REQUEST", "A project with this resource name already exists in the workspace.")
 )
 
+// testProject returns a project that the deploying user owns.
 func testProject(created time.Time) postgres.Project {
-	return postgres.Project{Name: testProjectName, ProjectId: "p", CreateTime: sdktime.New(created)}
+	return postgres.Project{
+		Name:       testProjectName,
+		ProjectId:  "p",
+		CreateTime: sdktime.New(created),
+		Status:     &postgres.ProjectStatus{Owner: testserver.TestUser.UserName},
+	}
 }
 
 // createTestProject runs DoCreate with fast retries.
