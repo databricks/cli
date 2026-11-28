@@ -37,6 +37,12 @@ func Write(w io.Writer, entries []Entry) error {
 	return tw.Close()
 }
 
+// Archives reports whether [Write] stores an entry of this file mode: regular
+// files and symlinks are archived, every other type is skipped.
+func Archives(mode fs.FileMode) bool {
+	return mode.IsRegular() || mode&fs.ModeSymlink != 0
+}
+
 func writeEntry(tw *tar.Writer, e Entry) error {
 	// Lstat, not Stat, so a symlink is archived as a link rather than followed.
 	info, err := os.Lstat(e.Path)
@@ -44,7 +50,7 @@ func writeEntry(tw *tar.Writer, e Entry) error {
 		return fmt.Errorf("stat %s: %w", e.Path, err)
 	}
 	mode := info.Mode()
-	if !mode.IsRegular() && mode&fs.ModeSymlink == 0 {
+	if !Archives(mode) {
 		return nil
 	}
 

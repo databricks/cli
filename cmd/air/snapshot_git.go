@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 // Local, no-network git introspection and the git-state provenance sidecar, ported
@@ -68,6 +70,7 @@ func (g gitRepo) runTo(ctx context.Context, w io.Writer, args ...string) error {
 func (g gitRepo) isRepository(ctx context.Context) bool {
 	out, err := g.run(ctx, "rev-parse", "--is-inside-work-tree")
 	if err != nil {
+		log.Debugf(ctx, "git repository probe for %s failed: %v", g.path, err)
 		return false
 	}
 	return strings.TrimSpace(out) == "true"
