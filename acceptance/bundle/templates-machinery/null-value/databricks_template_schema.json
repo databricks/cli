@@ -1,0 +1,16 @@
+{
+    "properties": {
+        "ratio": {
+            "type": "number",
+            "description": "Ratio",
+            "default": 0.5,
+            "order": 1
+        },
+        "count": {
+            "type": "integer",
+            "description": "Count",
+            "default": 2,
+            "order": 2
+        }
+    }
+}
