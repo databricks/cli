@@ -20,9 +20,11 @@ func (e parseStringError) Error() string {
 	return fmt.Sprintf("%q is not a %s", e.Value, e.ExpectedType)
 }
 
-// function to check whether a float value represents an integer
+// function to check whether a float value represents an integer that fits in
+// an int64. The range check comes first: an out-of-range float64 to int64
+// conversion is platform dependent in Go.
 func isIntegerValue(v float64) bool {
-	return v == float64(int64(v))
+	return v >= -0x1p63 && v < 0x1p63 && v == float64(int64(v))
 }
 
 func toInteger(v any) (int64, error) {

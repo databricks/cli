@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,6 +49,9 @@ func TestValidatorNumber(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = validateNumber(float64(1))
+	assert.NoError(t, err)
+
+	err = validateNumber(math.NaN())
 	assert.NoError(t, err)
 
 	err = validateNumber("abc")
@@ -147,10 +151,14 @@ func TestValuesEqual(t *testing.T) {
 	assert.True(t, valuesEqual("abc", "abc"))
 	assert.True(t, valuesEqual(nil, nil))
 
+	assert.True(t, valuesEqual(uint64(1<<63), 0x1p63))
 	assert.True(t, valuesEqual([]any{"a"}, []any{"a"}))
 
 	assert.False(t, valuesEqual(int64(1<<62+1), int64(1<<62)))
 	assert.False(t, valuesEqual(float64(1<<53), int64(1<<53+1)))
+	assert.False(t, valuesEqual(0x1p63, int64(math.MaxInt64)))
+	assert.False(t, valuesEqual(int64(1<<62+1), uint64(1<<62)))
+	assert.False(t, valuesEqual(math.NaN(), math.NaN()))
 	assert.False(t, valuesEqual([]any{"a"}, []any{"b"}))
 	assert.False(t, valuesEqual(float64(3.5), int64(3)))
 	assert.False(t, valuesEqual("3", int64(3)))
