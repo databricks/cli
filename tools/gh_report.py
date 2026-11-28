@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import pprint
+import re
 import subprocess
 import sys
 import threading
@@ -259,7 +260,48 @@ def download_known_failures():
     temp_path.replace(known_failures_path)
 
 
-def download_run_id(run_id, repo, rm):
+def can_access(repo, token=None):
+    """Return True if gh can read repo, optionally with a specific GH_TOKEN."""
+    env = os.environ.copy()
+    if token:
+        env["GH_TOKEN"] = token
+    result = subprocess.run(
+        ["gh", "api", f"repos/{repo}", "--jq", ".full_name"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
+    )
+    return result.returncode == 0
+
+
+def gh_accounts():
+    """Return the github.com account names known to `gh auth status`."""
+    result = subprocess.run(
+        ["gh", "auth", "status"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8"
+    )
+    return re.findall(r"Logged in to \S+ account (\S+)", result.stdout)
+
+
+def ensure_repo_access(repo):
+    """Point GH_TOKEN at a logged-in account that can read repo if the active one cannot.
+
+    Locally the active gh account (used for databricks/cli) often lacks access to the
+    eng-dev-ecosystem org, which surfaces as a confusing "HTTP 404" when downloading
+    artifacts. Probe the other accounts and switch so the script runs without a manual
+    GH_TOKEN prefix.
+    """
+    if can_access(repo):
+        return
+    for account in gh_accounts():
+        token = run_text(["gh", "auth", "token", "-u", account])
+        if can_access(repo, token):
+            sys.stderr.write(f"Using gh account {account!r} to access {repo}\n")
+            os.environ["GH_TOKEN"] = token
+            return
+    sys.exit(f"No logged-in gh account can access {repo}; run `gh auth login` for an account with access")
+
+
+def download_run_id(run_id, repo, rm, unit):
     target_dir = f".gh-logs/{run_id}"
     if os.path.exists(target_dir):
         if rm:
@@ -271,6 +313,11 @@ def download_run_id(run_id, repo, rm):
             )
             return target_dir
     cmd = ["gh", "run", "-R", repo, "download", str(run_id), "-D", target_dir]
+    if not unit:
+        # The gh-report-action/update-check-action byproducts expire ~1 day after the run,
+        # and gh fails the whole download on any expired artifact. The report only reads the
+        # test-output-* artifacts (90-day retention), so download just those.
+        cmd += ["-p", "test-output-*"]
     run(cmd)
     return target_dir
 
@@ -305,6 +352,8 @@ def main():
     repo = CLI_REPO if args.unit else DECO_REPO
     assert repo
 
+    ensure_repo_access(repo)
+
     if not args.run and not args.commit:
         if current_branch() == "main":
             args.commit = run_text("git rev-parse --short HEAD".split())
@@ -323,7 +372,7 @@ def main():
 
     threading.Thread(target=download_known_failures, daemon=True).start()
 
-    target_dir = download_run_id(args.run, repo, rm=args.rm)
+    target_dir = download_run_id(args.run, repo, rm=args.rm, unit=args.unit)
     print(flush=True)
     cmd = [sys.executable, str(PARSE_SCRIPT)]
     if args.filter:
