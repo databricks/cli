@@ -1131,7 +1131,6 @@ func runTest(t *testing.T,
 
 	printedRepls := false
 
-	pathFilter := preparePathFilter(config, customEnv)
 	sortLines := compileSortLines(t, config)
 	suppressLines := compileSuppressLines(t, config)
 
@@ -1148,10 +1147,6 @@ func runTest(t *testing.T,
 			// Handled above: it is produced in outputDir, not tmpDir.
 			continue
 		}
-		if shouldSkip(pathFilter, relPath) {
-			continue
-		}
-
 		doComparison(t, repls, sortLines, suppressLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
@@ -2146,54 +2141,4 @@ func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, r
 		}
 		repls.SetWithOrder(entry.Literal, entry.New, entry.Order)
 	}
-}
-
-type pathFilter struct {
-	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is MODE = ["a", "b"] and current test running MODE="a" then
-	// notSelected contains ".b." meaning if filename contains that (e.g. out.deploy.b.txt) then we ignore it here.
-	notSelected []string
-}
-
-// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
-func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
-	if config.EnvVaryOutput == nil {
-		return pathFilter{}
-	}
-	key := *config.EnvVaryOutput
-	vals := config.EnvMatrix[key]
-	if len(vals) <= 1 {
-		return pathFilter{}
-	}
-	selected := ""
-	for _, kv := range customEnv {
-		items := strings.SplitN(kv, "=", 2)
-		if len(items) == 2 && items[0] == key {
-			selected = items[1]
-			break
-		}
-	}
-	if selected == "" {
-		return pathFilter{}
-	}
-	var others []string
-	for _, v := range vals {
-		if v == selected {
-			continue
-		}
-		others = append(others, "."+v+".")
-	}
-	return pathFilter{
-		notSelected: others,
-	}
-}
-
-// shouldSkip returns true if the given file belongs to a non-selected variant.
-func shouldSkip(filter pathFilter, relPath string) bool {
-	for _, infix := range filter.notSelected {
-		if strings.Contains(relPath, infix) {
-			return true
-		}
-	}
-	return false
 }
