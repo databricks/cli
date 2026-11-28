@@ -111,7 +111,7 @@ the reference ID.`
 		if err != nil {
 			return err
 		}
-		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && agent.Provider(cmd.Context()) != "" {
+		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && useragent.AgentProvider() != "" {
 			return errors.New("feedback was not sent because --yes=false")
 		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))

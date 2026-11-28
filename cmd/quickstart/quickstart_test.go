@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -123,7 +124,8 @@ func TestQuickstartVariantSelectedByEnv(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(t.Context())
+			// An exported DATABRICKS_NOT_AN_AGENT would print the human guide, so pin it off.
+			ctx := env.Set(cmdio.MockDiscard(t.Context()), agent.NotAnAgentEnv, "")
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
 			}
