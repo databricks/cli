@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -171,7 +170,6 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 // pointer (config.Config must not be copied by value), without any profile
 // prompting.
 func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*iam.User, error) {
-	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return nil, err

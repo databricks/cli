@@ -226,6 +226,8 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("login config: %w", err)
 	}
+	// Guard before EnsureResolved, which fetches the host's well-known config through the same transport.
+	agent.ApplyNotAnAgentHeader(cmd.Context(), cfg)
 	err = cfg.EnsureResolved()
 	if err != nil {
 		return nil, err
@@ -263,6 +265,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("account: %w", err)
 		}
+		agent.ApplyNotAnAgentHeader(ctx, replaceCfg)
 		err = replaceCfg.EnsureResolved()
 		if err != nil {
 			return nil, fmt.Errorf("resolve: %w", err)

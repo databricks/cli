@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
@@ -39,7 +40,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -2011,9 +2011,7 @@ func TestServeSignInPageIsNotCancelledWithTheRequest(t *testing.T) {
 // TestGuardedClientNotAnAgentDropsAgentHeader checks that the serve's client leaves the agent token out of User-Agent
 // under DATABRICKS_NOT_AN_AGENT, and keeps it without the variable.
 func TestGuardedClientNotAnAgentDropsAgentHeader(t *testing.T) {
-	t.Setenv("CLAUDECODE", "1")
-	useragent.ClearCache()
-	t.Cleanup(useragent.ClearCache)
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
 
 	cases := []struct {
 		name    string

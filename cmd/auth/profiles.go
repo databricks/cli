@@ -70,6 +70,8 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 			return nil, nil
 		}
 	}
+	// Guard before EnsureResolved, which fetches the host's well-known config through the same transport.
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"
@@ -93,7 +95,6 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	callCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
