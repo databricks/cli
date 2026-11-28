@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
@@ -122,7 +123,9 @@ The command exits with code 1 when every removal it attempts fails.`,
 				// A coding agent on a terminal: say what is removed and why
 				// nobody was asked to confirm it.
 				cmdio.LogString(ctx, msg)
-				cmdio.LogString(ctx, noPromptsNote(ctx))
+				if !agent.NotAnAgent(ctx) {
+					cmdio.LogString(ctx, noPromptsNote(ctx))
+				}
 			}
 
 			// With something installed the run removes files and runs agent CLIs,

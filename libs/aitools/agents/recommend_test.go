@@ -136,6 +136,33 @@ func TestRecommendSkillsInstallNotAnAgent(t *testing.T) {
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
+// Under DATABRICKS_NOT_AN_AGENT a terminal still gets no install prompt. Without the guard the call would wait for
+// an answer that never comes.
+func TestRecommendSkillsInstallNotAnAgentNeverPrompts(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	origRegistry := Registry
+	Registry = []*Agent{agentWithConfigDir(tmpDir)}
+	defer func() { Registry = origRegistry }()
+
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer testIO.Done()
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+
+	stderr := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(testIO.Stderr)
+		stderr <- string(b)
+	}()
+	require.NoError(t, RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall))
+	testIO.Done()
+	assert.Empty(t, <-stderr)
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
 // PrintSkillsTip prints the tip unless DATABRICKS_NOT_AN_AGENT is set.
 func TestPrintSkillsTipNotAnAgent(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())

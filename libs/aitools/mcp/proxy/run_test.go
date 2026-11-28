@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,6 +62,23 @@ func TestRunSendsProxyUserAgentAndRoutingHeader(t *testing.T) {
 	assert.Contains(t, ua, "aitools-mcp-client/claude-code")
 	assert.Equal(t, "1965859176160743", reqs[0].Header.Get("X-Databricks-Workspace-Id"))
 	assert.Equal(t, testToken, reqs[0].Header.Get("Authorization"))
+}
+
+// Under DATABRICKS_NOT_AN_AGENT the proxy keeps the client name it was given but adds no detected agent to its User-Agent.
+func TestRunOmitsDetectedAgentUnderNotAnAgent(t *testing.T) {
+	srv, fake := newFakeEndpoint(t, answerInitialize)
+	testutil.SetAgent(t, "claude-code")
+	cfg := &config.Config{Host: "https://workspace.test", WorkspaceID: "1965859176160743"}
+	opts, _, _ := runOptions(t, srv.URL, cfg, `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`+"\n")
+	ctx := env.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
+
+	require.NoError(t, Run(ctx, opts))
+
+	reqs := fake.requests()
+	require.Len(t, reqs, 1)
+	ua := reqs[0].Header.Get("User-Agent")
+	assert.Contains(t, ua, "aitools-mcp-client/claude-code")
+	assert.NotContains(t, ua, "agent/claude-code")
 }
 
 func TestRunOmitsRoutingHeaderWithoutWorkspaceID(t *testing.T) {

@@ -2129,6 +2129,19 @@ func TestInstallAgentCallerInPTYNeverPrompts(t *testing.T) {
 	assert.Equal(t, installer.ScopeGlobal, (*skills)[0].opts.Scope)
 }
 
+// DATABRICKS_NOT_AN_AGENT drops the note but not the skipped prompts: the agent in the pseudo-terminal still
+// never gets a picker or a scope prompt.
+func TestInstallAgentCallerInPTYNotAnAgentStillNeverPrompts(t *testing.T) {
+	_, _, scopePrompted := setupAgentCallerInstall(t, "CURSOR_AGENT", "1", "DATABRICKS_NOT_AN_AGENT", "1")
+
+	ctx, stderr := runInstallWithStderr(t, true)
+	assert.NotContains(t, stderr, "No prompts shown")
+	events := funnelEvents(ctx)
+	require.NotEmpty(t, events)
+	assert.False(t, events[0].Interactive)
+	assert.False(t, *scopePrompted)
+}
+
 func TestInstallAgentCallerNoteNamesOnlyMissingFlags(t *testing.T) {
 	setupAgentCallerInstall(t, "CURSOR_AGENT", "1")
 

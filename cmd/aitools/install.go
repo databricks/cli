@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -53,9 +54,11 @@ var errNoAgentsSelected = errors.New("at least one agent must be selected")
 // variables:
 // https://github.com/databricks/databricks-sdk-go/blob/main/useragent/agent.go
 // An agent caller always gets the documented non-interactive behavior, as a
-// run without a terminal does.
+// run without a terminal does. DATABRICKS_NOT_AN_AGENT does not change this
+// gate: a prompt that no one answers would block the agent, so it is a safety
+// check, not a nudge.
 func promptsSupported(ctx context.Context) bool {
-	return cmdio.IsPromptSupported(ctx) && agent.Provider(ctx) == ""
+	return cmdio.IsPromptSupported(ctx) && useragent.AgentProvider() == ""
 }
 
 // noPromptsNote says that prompts were skipped because the caller is a coding
@@ -75,9 +78,10 @@ func noPromptsNote(ctx context.Context) string {
 // have run on a terminal: a person may be at it with an agent env var
 // inherited from an agent session, and the note says why the prompt they
 // expect is gone. Without a terminal nothing is printed: no caller is shown
-// prompts there.
+// prompts there. Under DATABRICKS_NOT_AN_AGENT the note is a nudge, so it is
+// left out; the prompt is still skipped.
 func logSkippedPromptNote(ctx context.Context) {
-	if cmdio.IsPromptSupported(ctx) && !promptsSupported(ctx) {
+	if cmdio.IsPromptSupported(ctx) && !promptsSupported(ctx) && !agent.NotAnAgent(ctx) {
 		cmdio.LogString(ctx, noPromptsNote(ctx))
 	}
 }
@@ -322,7 +326,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			// A person may be at this terminal with an agent env var inherited
 			// from an agent session, so say why the prompts they would expect
 			// were skipped.
-			if !interactive && cmdio.IsPromptSupported(ctx) {
+			if !interactive && cmdio.IsPromptSupported(ctx) && !agent.NotAnAgent(ctx) {
 				var missing []string
 				if scope == "" {
 					missing = append(missing, "--scope")
