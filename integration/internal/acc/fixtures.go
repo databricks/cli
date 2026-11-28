@@ -70,36 +70,6 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 	return path
 }
 
-func TemporaryRepo(t *WorkspaceT, url string) string {
-	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
-	require.NoError(t, err)
-
-	// Prefix the path with "integration-test-" to make it easier to identify.
-	path := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("integration-test-"))
-
-	t.Logf("Creating repo: %s", path)
-	resp, err := t.W.Repos.Create(ctx, workspace.CreateRepoRequest{
-		Url:      url,
-		Path:     path,
-		Provider: "gitHub",
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		t.Logf("Removing repo: %s", path)
-		err := t.W.Repos.Delete(context.WithoutCancel(ctx), workspace.DeleteRepoRequest{
-			RepoId: resp.Id,
-		})
-		if err == nil || apierr.IsMissing(err) {
-			return
-		}
-		t.Logf("Unable to remove repo %s: %#v", path, err)
-	})
-
-	return path
-}
-
 // Create a new Unity Catalog volume in a catalog called "main" in the workspace.
 func TemporaryVolume(t *WorkspaceT) string {
 	ctx := t.ctx

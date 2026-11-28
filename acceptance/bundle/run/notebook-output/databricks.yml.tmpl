@@ -1,0 +1,14 @@
+bundle:
+  name: notebook-output-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    notebook_job:
+      name: notebook-output-$UNIQUE_NAME
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ./notebook.py

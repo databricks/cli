@@ -519,6 +519,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 			tasks = append(tasks, taskRun)
 
 			var logs string
+			var notebookResult *string
 			var err error
 
 			if t.PythonWheelTask != nil {
@@ -529,7 +530,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				}
 				logs, err = s.executePythonWheelTask(job.Settings, taskToExecute)
 			} else if t.NotebookTask != nil {
-				logs, err = s.executeNotebookTask(t, request.NotebookParams)
+				logs, notebookResult, err = s.executeNotebookTask(t, request.NotebookParams)
 			} else if t.SparkPythonTask != nil {
 				logs, err = s.executeSparkPythonTask(t)
 			}
@@ -547,6 +548,11 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 					runOutput.ErrorTrace = failure.trace
 				}
 				s.JobRunOutputs[taskRunId] = runOutput
+			case notebookResult != nil:
+				// A notebook that called dbutils.notebook.exit reports that value, not its prints.
+				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+					NotebookOutput: &jobs.NotebookOutput{Result: *notebookResult},
+				}
 			case logs != "":
 				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
 					Logs: logs,
@@ -834,9 +840,11 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 
 // executeNotebookTask executes a notebook task by running the notebook as a Python script.
 // The wrapper feature transforms python_wheel_task into notebook_task that calls the wheel.
-func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[string]string) (string, error) {
+// It returns the notebook's prints, or, if the notebook called dbutils.notebook.exit, the exit
+// value (possibly empty) and no prints.
+func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[string]string) (string, *string, error) {
 	if task.NotebookTask == nil {
-		return "", errors.New("task has no notebook_task")
+		return "", nil, errors.New("task has no notebook_task")
 	}
 
 	// Read notebook file from workspace (lock already held by caller)
@@ -851,13 +859,13 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 		notebookData = s.files[notebookPath+".py"].Data
 	}
 	if len(notebookData) == 0 {
-		return "", fmt.Errorf("%w: notebook not found in workspace: %s (also tried .py)", errNoCodeInWorkspace, notebookPath)
+		return "", nil, fmt.Errorf("%w: notebook not found in workspace: %s (also tried .py)", errNoCodeInWorkspace, notebookPath)
 	}
 
 	// Create a temporary Python environment for notebook execution
 	tmpDir, err := os.MkdirTemp("", "notebook-task-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
+		return "", nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -867,7 +875,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	// Write processed notebook to temp file
 	notebookFile := filepath.Join(tmpDir, "notebook.py")
 	if err := os.WriteFile(notebookFile, []byte(processedNotebook), 0o644); err != nil {
-		return "", fmt.Errorf("failed to write notebook file: %w", err)
+		return "", nil, fmt.Errorf("failed to write notebook file: %w", err)
 	}
 
 	// Determine Python version from cluster config
@@ -877,7 +885,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	venvDir := filepath.Join(tmpDir, ".venv")
 	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
 	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
-		return "", fmt.Errorf("uv venv failed: %w\n%s", err, out)
+		return "", nil, fmt.Errorf("uv venv failed: %w\n%s", err, out)
 	}
 
 	// Install wheels from %pip commands
@@ -887,11 +895,11 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 			// Read wheel from workspace
 			data := s.files[whlPath].Data
 			if len(data) == 0 {
-				return "", fmt.Errorf("wheel file not found in workspace: %s", whlPath)
+				return "", nil, fmt.Errorf("wheel file not found in workspace: %s", whlPath)
 			}
 			localPath := filepath.Join(tmpDir, filepath.Base(whlPath))
 			if err := os.WriteFile(localPath, data, 0o644); err != nil {
-				return "", fmt.Errorf("failed to write wheel file: %w", err)
+				return "", nil, fmt.Errorf("failed to write wheel file: %w", err)
 			}
 			localWhlPaths = append(localWhlPaths, localPath)
 		}
@@ -899,7 +907,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 		installArgs := []string{"pip", "install", "-q", "--python", venvPython(venvDir)}
 		installArgs = append(installArgs, localWhlPaths...)
 		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
-			return "", fmt.Errorf("uv pip install failed: %w\n%s", err, out)
+			return "", nil, fmt.Errorf("uv pip install failed: %w\n%s", err, out)
 		}
 	}
 
@@ -909,15 +917,26 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	// Add testserver directory to PYTHONPATH so dbutils.py can be imported
 	_, filename, _, _ := runtime.Caller(0)
 	testserverDir := filepath.Dir(filename)
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+testserverDir)
+	exitFile := filepath.Join(tmpDir, "notebook-exit-value")
+	cmd.Env = append(os.Environ(), "PYTHONPATH="+testserverDir, "TESTSERVER_NOTEBOOK_EXIT_FILE="+exitFile)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), newTaskFailure(err, string(output))
+		return string(output), nil, newTaskFailure(err, string(output))
+	}
+
+	// dbutils.notebook.exit wrote its value verbatim: the Jobs API returns it as is.
+	exitValue, err := os.ReadFile(exitFile)
+	if err == nil {
+		result := string(exitValue)
+		return "", &result, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return "", nil, fmt.Errorf("failed to read notebook exit value: %w", err)
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
-	return strings.TrimRight(string(output), "\r\n") + "\n", nil
+	return strings.TrimRight(string(output), "\r\n") + "\n", nil, nil
 }
 
 // executeSparkPythonTask runs a spark_python_task locally by reading the
@@ -1200,7 +1219,6 @@ func setSourceIfNotSet(job jobs.Job) jobs.Job {
 // - Extracting wheel paths from %pip install commands
 // - Removing %pip commands (wheels will be installed via uv)
 // - Mocking dbutils functions
-// - Converting dbutils.notebook.exit() to print()
 func (s *FakeWorkspace) preprocessNotebook(notebook string, params map[string]string) (string, []string) {
 	var whlPaths []string
 	var result []string

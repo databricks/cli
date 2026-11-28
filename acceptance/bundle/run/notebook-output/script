@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+replace_ids.py
+
+# The job runs on serverless (no cluster in the task). The notebook's dbutils.notebook.exit value
+# comes back as notebook_output.result; bundle run prints it to stdout as is, without a newline.
+trace $CLI bundle run notebook_job > out.run.txt

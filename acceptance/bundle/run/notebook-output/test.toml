@@ -1,0 +1,9 @@
+Cloud = true
+CloudSlow = true
+
+# DMS records deployment history; it doesn't touch what bundle run prints, so one cloud run is enough.
+EnvMatrix.DMS = [""]
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

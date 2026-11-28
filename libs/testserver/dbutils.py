@@ -1,5 +1,8 @@
 """Mock dbutils module for local Databricks notebook execution."""
 
+import os
+import sys
+
 
 class Widgets:
     """Mock for dbutils.widgets."""
@@ -23,8 +26,10 @@ class Notebook:
     """Mock for dbutils.notebook."""
 
     def exit(self, value):
-        """Exit notebook and return value - converted to print for local execution."""
-        print(value)
+        """Stop the notebook with value as its result, which jobs/runs/get-output returns as notebook_output.result."""
+        with open(os.environ["TESTSERVER_NOTEBOOK_EXIT_FILE"], "w", encoding="utf-8", newline="") as f:
+            f.write(str(value))
+        sys.exit(0)
 
 
 class DBUtils:
