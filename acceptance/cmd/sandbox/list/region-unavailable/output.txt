@@ -1,3 +1,24 @@
 Error: failed to list sandboxes: the Databricks Sandbox feature is not available in your region. See https://docs.databricks.com/compute/serverless/sandbox
 
 Exit code: 1
+{
+  "method": "GET",
+  "path": "/api/2.0/sandboxes",
+  "q": {
+    "page_size": "100"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/sandboxes",
+  "q": {
+    "page_size": "100"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/sandboxes",
+  "q": {
+    "page_size": "100"
+  }
+}

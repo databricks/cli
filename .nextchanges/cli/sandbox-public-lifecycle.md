@@ -1,0 +1,1 @@
+* Use the public Sandbox SDK for `databricks sandbox` lifecycle commands while preserving human-friendly IDs and waiting for readiness. Lifecycle output omits unavailable gateway fields; SSH continues to use port forwarding. ([#8040](https://github.com/databricks/cli/pull/8040))

@@ -1,3 +1,7 @@
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/sandboxes?sandbox_id=test --json @sandbox.json > LOG.seed-0
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/sandboxes/test > LOG.ready-test
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/sandboxes/test/stop > LOG.stop-0
+
 export DATABRICKS_CONFIG_FILE="$TEST_TMP_DIR/databrickscfg"
 printf '[sandbox-test]\nhost = %s\ntoken = %s\n' "$DATABRICKS_HOST" "$DATABRICKS_TOKEN" > "$DATABRICKS_CONFIG_FILE"
 cd "$TEST_TMP_DIR"

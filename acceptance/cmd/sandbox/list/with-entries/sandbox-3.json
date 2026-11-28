@@ -1,0 +1,7 @@
+{
+  "spec": {
+    "compute": {
+      "inactivity_timeout": "0s"
+    }
+  }
+}

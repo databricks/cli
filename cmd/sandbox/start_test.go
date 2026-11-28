@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,9 +34,10 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			name:          "stopping waits for stopped before starting",
 			initialStatus: "Stopping",
 			steps: []requestStep{
-				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Stopped"},
-				{method: http.MethodPost, path: sandboxPath("test-id") + "/start", status: "Pending"},
-				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Running"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Stopped"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Stopped"},
+				{method: http.MethodPost, path: "/api/2.0/sandboxes/test-id" + "/start", status: "Pending"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Running"},
 			},
 			wantStatus: "Running",
 			wantStarts: 1,
@@ -43,8 +46,9 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			name:          "stopped starts normally",
 			initialStatus: "Stopped",
 			steps: []requestStep{
-				{method: http.MethodPost, path: sandboxPath("test-id") + "/start", status: "Pending"},
-				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Running"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Stopped"},
+				{method: http.MethodPost, path: "/api/2.0/sandboxes/test-id" + "/start", status: "Pending"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Running"},
 			},
 			wantStatus: "Running",
 			wantStarts: 1,
@@ -58,8 +62,9 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			name:          "stopped after start remains an error",
 			initialStatus: "Stopped",
 			steps: []requestStep{
-				{method: http.MethodPost, path: sandboxPath("test-id") + "/start", status: "Pending"},
-				{method: http.MethodGet, path: sandboxPath("test-id"), status: "Stopped"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Stopped"},
+				{method: http.MethodPost, path: "/api/2.0/sandboxes/test-id" + "/start", status: "Pending"},
+				{method: http.MethodGet, path: "/api/2.0/sandboxes/test-id", status: "Stopped"},
 			},
 			wantErr:    `sandbox test-id reached unexpected state "Stopped" while starting`,
 			wantStarts: 1,
@@ -86,13 +91,10 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 				step := tc.steps[index]
 				assert.Equal(t, step.method, r.Method)
 				assert.Equal(t, step.path, r.URL.Path)
-				if r.Method == http.MethodPost && r.URL.Path == sandboxPath("test-id")+"/start" {
+				if r.Method == http.MethodPost && r.URL.Path == "/api/2.0/sandboxes/test-id"+"/start" {
 					startCount.Add(1)
 				}
-				assert.NoError(t, json.NewEncoder(w).Encode(sandboxEntry{
-					SandboxID: "test-id",
-					Status:    step.status,
-				}))
+				assert.NoError(t, json.NewEncoder(w).Encode(sdk.Sandbox{Name: "sandboxes/test-id", Status: &sdk.SandboxStatus{State: sdk.SandboxState("SANDBOX_STATE_" + strings.ToUpper(step.status))}}))
 			}))
 			t.Cleanup(server.Close)
 
@@ -112,7 +114,7 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, tc.wantStatus, got.Status)
+				assert.Equal(t, tc.wantStatus, sandboxStatus(got))
 			}
 			assert.Equal(t, int32(len(tc.steps)), requestCount.Load())
 			assert.Equal(t, tc.wantStarts, startCount.Load())

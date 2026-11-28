@@ -1,6 +1,7 @@
 package sandbox
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/spf13/cobra"
 )
 
@@ -46,29 +48,27 @@ Examples:
 			// In JSON mode, suppress the spinner+ok lines so the only thing
 			// on stdout/stderr that a scripted caller has to parse is the
 			// JSON body itself.
-			var result *createResponse
+			var result *sdk.Sandbox
 			if wantJSON {
-				result, err = api.create(ctx, name)
+				result, err = createAndWait(ctx, api, name, nil)
 				if err != nil {
 					return fmt.Errorf("failed to create sandbox: %w", err)
 				}
 			} else {
 				s := spin(ctx, "Provisioning your sandbox…")
 				defer s.Close()
-				result, err = api.create(ctx, name)
+				result, err = createAndWait(ctx, api, name, s)
 				if err != nil {
 					s.fail("Failed to create sandbox")
 					return fmt.Errorf("failed to create sandbox: %w", err)
 				}
-				s.ok("Sandbox " + cmdio.Bold(ctx, result.SandboxID) + " is " + status(ctx, result.Status))
+				s.ok("Sandbox " + cmdio.Bold(ctx, sandboxResourceID(result)) + " is " + status(ctx, sandboxStatus(result)))
 			}
 
 			profile := w.Config.Profile
 			if profile == "" {
 				profile = w.Config.Host
 			}
-			_ = setGatewayHost(ctx, profile, result.GatewayHost)
-			_ = upsertSandbox(ctx, profile, result.SandboxID, name)
 
 			// Only clobber an existing default if it's actually gone
 			// (404). Transient errors (5xx, network blip, rate limit)
@@ -81,21 +81,21 @@ Examples:
 				}
 			}
 			if shouldSetDefault {
-				if err := setDefault(ctx, profile, result.SandboxID); err != nil {
+				if err := setDefault(ctx, profile, sandboxResourceID(result)); err != nil {
 					warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 				} else if !wantJSON {
-					field(ctx, cmd.ErrOrStderr(), "default", result.SandboxID)
+					field(ctx, cmd.ErrOrStderr(), "default", sandboxResourceID(result))
 				}
 			}
 
 			if wantJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(result)
+				return enc.Encode(createJSONOutput{SandboxID: sandboxResourceID(result), Status: sandboxStatus(result)})
 			}
 
 			blank(cmd.ErrOrStderr())
-			fmt.Fprintln(cmd.OutOrStdout(), result.SandboxID)
+			fmt.Fprintln(cmd.OutOrStdout(), sandboxResourceID(result))
 			return nil
 		},
 	}
@@ -104,4 +104,27 @@ Examples:
 	cmd.Flags().BoolVar(&outputJSON, "json", false, "Output as JSON")
 
 	return cmd
+}
+
+func createAndWait(ctx context.Context, api *sandboxAPI, name string, s *spinner) (*sdk.Sandbox, error) {
+	result, err := api.create(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	// Provisioning may fail or be cancelled after creation was accepted. Keep the
+	// ID discoverable locally without making an unready sandbox the default.
+	profile := api.c.Config.Profile
+	if profile == "" {
+		profile = api.c.Config.Host
+	}
+	_ = upsertSandbox(ctx, profile, sandboxResourceID(result), name)
+
+	if sandboxStatus(result) != "Running" {
+		final, err := waitForState(ctx, api, s, sandboxResourceID(result), "Running", "Provisioning", "Stopped", "Terminated", "Failed")
+		if err != nil {
+			return nil, fmt.Errorf("sandbox %s was created but is not ready: %w", sandboxResourceID(result), err)
+		}
+		result = final
+	}
+	return result, nil
 }

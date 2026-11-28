@@ -167,10 +167,10 @@ func newLookupAPI(t *testing.T, status int) *sandboxAPI {
 			}))
 			return
 		}
-		assert.Equal(t, sandboxPath(testSandboxID), r.URL.Path)
+		assert.Equal(t, "/api/2.0/sandboxes/"+testSandboxID, r.URL.Path)
 		w.WriteHeader(status)
 		if status == http.StatusOK {
-			assert.NoError(t, json.NewEncoder(w).Encode(sandboxEntry{SandboxID: testSandboxID, Status: "Running"}))
+			assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{"name": "sandboxes/" + testSandboxID, "status": map[string]string{"state": "SANDBOX_STATE_RUNNING"}}))
 			return
 		}
 		_, _ = io.WriteString(w, `{"error_code": "ERROR", "message": "lookup failed"}`)
@@ -192,7 +192,7 @@ func TestResolveSandboxUsesDefault(t *testing.T) {
 	got, sb, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", "")
 	require.NoError(t, err)
 	assert.Equal(t, testSandboxID, got)
-	assert.Equal(t, "Running", sb.Status)
+	assert.Equal(t, "Running", sandboxStatus(sb))
 }
 
 func TestResolveSandboxClearsMissingDefault(t *testing.T) {

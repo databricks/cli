@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/spf13/cobra"
 )
 
@@ -68,24 +69,23 @@ Example:
 				return fmt.Errorf("failed to start sandbox %s: %w", sandboxID, err)
 			}
 
-			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
-			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(updated), sandboxLabel(updated))
 
 			// Already up — short-circuit so we don't pretend to wait
 			// when there's nothing to wait for.
-			if strings.EqualFold(updated.Status, "running") {
-				s.ok("Already running " + cmdio.Bold(ctx, updated.SandboxID))
+			if strings.EqualFold(sandboxStatus(updated), "running") {
+				s.ok("Already running " + cmdio.Bold(ctx, sandboxResourceID(updated)))
 				return nil
 			}
 
-			final, err := waitForRunning(ctx, api, s, updated.SandboxID)
+			final, err := waitForRunning(ctx, api, s, sandboxResourceID(updated))
 			if err != nil {
 				s.fail("Failed to start " + sandboxID)
 				return err
 			}
-			_ = upsertSandbox(ctx, profile, final.SandboxID, final.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(final), sandboxLabel(final))
 
-			s.ok("Started " + cmdio.Bold(ctx, final.SandboxID))
+			s.ok("Started " + cmdio.Bold(ctx, sandboxResourceID(final)))
 			return nil
 		},
 	}
@@ -93,19 +93,19 @@ Example:
 	return cmd
 }
 
-func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
+func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sdk.Sandbox, error) {
 	return waitForState(ctx, api, s, id, "Running", "Starting", "Stopped", "Terminated", "Failed")
 }
 
 // The API rejects start requests until teardown finishes, so STOPPING needs
 // its own polling phase.
-func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
+func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sdk.Sandbox, error) {
 	return waitForState(ctx, api, s, id, "Stopped", "Stopping", "Terminated", "Failed")
 }
 
 // Centralizing lifecycle polling keeps timeout, cancellation, and terminal
 // state handling consistent across start and port forwarding.
-func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
+func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sdk.Sandbox, error) {
 	start := time.Now()
 	deadline := start.Add(startWaitTimeout)
 	for {
@@ -113,18 +113,20 @@ func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetSt
 		if err != nil {
 			return nil, fmt.Errorf("polling status of %s: %w", id, err)
 		}
-		if strings.EqualFold(sb.Status, targetStatus) {
+		if strings.EqualFold(sandboxStatus(sb), targetStatus) {
 			return sb, nil
 		}
 		for _, unexpectedStatus := range unexpectedStatuses {
-			if strings.EqualFold(sb.Status, unexpectedStatus) {
-				return nil, fmt.Errorf("sandbox %s reached unexpected state %q while %s", id, sb.Status, strings.ToLower(operation))
+			if strings.EqualFold(sandboxStatus(sb), unexpectedStatus) {
+				return nil, fmt.Errorf("sandbox %s reached unexpected state %q while %s", id, sandboxStatus(sb), strings.ToLower(operation))
 			}
 		}
 		elapsed := time.Since(start).Round(time.Second)
-		s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
+		if s != nil {
+			s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
+		}
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("sandbox %s did not reach %s within %s (last seen %s)", id, targetStatus, startWaitTimeout, sb.Status)
+			return nil, fmt.Errorf("sandbox %s did not reach %s within %s (last seen %s)", id, targetStatus, startWaitTimeout, sandboxStatus(sb))
 		}
 		select {
 		case <-ctx.Done():
@@ -136,22 +138,22 @@ func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetSt
 
 // ensureRunning starts the sandbox before port forwarding opens a connection.
 // The caller must not have a spinner open.
-func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sandboxEntry, error) {
+func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sdk.Sandbox, error) {
 	if strings.EqualFold(currentStatus, "running") {
-		return &sandboxEntry{SandboxID: id, Status: currentStatus}, nil
+		return &sdk.Sandbox{Name: "sandboxes/" + id, Status: &sdk.SandboxStatus{State: sdk.SandboxStateSandboxStateRunning}}, nil
 	}
 
 	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
 	defer s.Close()
 
-	var sb *sandboxEntry
+	var sb *sdk.Sandbox
 	if strings.EqualFold(currentStatus, "stopping") {
 		stopped, err := waitForStopped(ctx, api, s, id)
 		if err != nil {
 			s.fail("Failed to start " + id)
 			return nil, err
 		}
-		currentStatus = stopped.Status
+		currentStatus = sandboxStatus(stopped)
 		s.Update("Starting " + id + "…")
 	}
 
@@ -164,7 +166,7 @@ func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus strin
 		sb = updated
 	}
 
-	if sb == nil || !strings.EqualFold(sb.Status, "running") {
+	if sb == nil || !strings.EqualFold(sandboxStatus(sb), "running") {
 		final, err := waitForRunning(ctx, api, s, id)
 		if err != nil {
 			s.fail("Failed to start " + id)

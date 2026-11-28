@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
 // cacheProfile returns the key the local sandbox cache is stored under: the
@@ -82,7 +84,7 @@ const defaultSandboxHint = "run `databricks sandbox create` to provision one, or
 // reports it. The entry is nil when the lookup failed with an error other than
 // not-found or a rejected request: those only warn, so a transient API hiccup
 // doesn't block a connection the gateway can still route.
-func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (string, *sandboxEntry, error) {
+func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (string, *sdk.Sandbox, error) {
 	var sandboxID string
 	if arg == "" {
 		if sandboxID = getDefault(ctx, profile); sandboxID == "" {
@@ -124,7 +126,7 @@ func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (
 // so a separator or dot segment would move a request onto another API with the
 // caller's credentials.
 func validateSandboxID(id string) error {
-	if id == "." || id == ".." || strings.ContainsAny(id, `/\`) {
+	if id == "" || id == "." || id == ".." || strings.ContainsAny(id, `/\?#%`) || strings.ContainsFunc(id, unicode.IsSpace) {
 		return fmt.Errorf("invalid sandbox ID %q", id)
 	}
 	return nil

@@ -29,21 +29,23 @@ func newConfigCommand() *cobra.Command {
 		Short: "Configure a Sandbox's name and auto-stop policy",
 		Long: `Configure a Sandbox's name and auto-stop policy.
 
-Three knobs are independent — pass any combination:
+Pass any combination:
 
   --name <label>              Display label for the sandbox (max 256 bytes).
                               Pass an empty string to clear.
 
   --idle-timeout <duration>   Per-sandbox idle timeout. The watchdog reaps
                               the sandbox after this much idle time. Pass
-                              0 (or 0s) to clear and revert to the manager's
-                              global default (10m). Valid range when set:
+                              0 (or 0s) to disable idle auto-stop.
+                              Valid range when set:
                               1m to 24h.
 
   --no-autostop[=true|false]  When true, the sandbox is exempt from
-                              idle-driven auto-stop entirely. The
-                              --idle-timeout setting is ignored while
-                              this is on. Setting --idle-timeout to a
+                              idle-driven auto-stop entirely. This
+                              replaces the configured idle timeout with
+                              zero. Pass --no-autostop=false to re-enable
+                              at 10m, or supply an explicit idle timeout.
+                              Setting --idle-timeout to a
                               non-zero value in a later call clears
                               --no-autostop automatically. Sandbox still
                               stops on explicit 'databricks sandbox delete'.
@@ -52,7 +54,7 @@ Examples:
   databricks sandbox config happy-panda-1234 --name my-project
   databricks sandbox config happy-panda-1234 --idle-timeout 15m
   databricks sandbox config happy-panda-1234 --idle-timeout 1h30m
-  databricks sandbox config happy-panda-1234 --idle-timeout 0           # clear, use default
+  databricks sandbox config happy-panda-1234 --idle-timeout 0           # disable idle auto-stop
   databricks sandbox config happy-panda-1234 --no-autostop                  # never auto-stop
   databricks sandbox config happy-panda-1234 --no-autostop=false            # back to timeout path
   databricks sandbox config happy-panda-1234 --idle-timeout 30m --no-autostop=false`,
@@ -110,15 +112,14 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to update sandbox %s: %w", id, err)
 			}
-			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
-			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(updated), sandboxLabel(updated))
 
 			blank(out)
-			field(ctx, out, "id", cmdio.Bold(ctx, updated.SandboxID))
-			if updated.Name != "" {
-				field(ctx, out, "name", updated.Name)
+			field(ctx, out, "id", cmdio.Bold(ctx, sandboxResourceID(updated)))
+			if sandboxLabel(updated) != "" {
+				field(ctx, out, "name", sandboxLabel(updated))
 			}
-			field(ctx, out, "autostop", cmdio.Faint(ctx, updated.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.Faint(ctx, autoStopLabel(updated)))
 			blank(out)
 			return nil
 		},
@@ -127,7 +128,7 @@ Examples:
 	cmd.Flags().StringVar(&nameFlag, "name", "",
 		"Display label for the sandbox (max 256 bytes). Pass --name= to clear.")
 	cmd.Flags().StringVar(&idleTimeoutFlag, "idle-timeout", "",
-		"Idle timeout (e.g. 15m, 1h30m, 90s). Pass 0 to clear and revert to the manager's default.")
+		"Idle timeout (e.g. 15m, 1h30m, 90s). Pass 0 to disable idle auto-stop.")
 	cmd.Flags().BoolVar(&noAutostopFlag, "no-autostop", false,
 		"When true, this sandbox never auto-stops on idle. Pass --no-autostop=false to revert.")
 
@@ -135,7 +136,7 @@ Examples:
 }
 
 // parseIdleTimeoutFlag accepts the same syntax as time.ParseDuration plus
-// the special-case "0" / "0s" → clear. Anything else outside the
+// the special-case "0" / "0s" → disable idle auto-stop. Anything else outside the
 // [60s, 86400s] window is rejected client-side.
 func parseIdleTimeoutFlag(raw string) (int64, error) {
 	d, err := time.ParseDuration(raw)
@@ -152,7 +153,7 @@ func parseIdleTimeoutFlag(raw string) (int64, error) {
 
 func checkIdleSecs(secs int64) (int64, error) {
 	if secs == 0 {
-		return 0, nil // clear / revert to global default
+		return 0, nil // disable idle auto-stop
 	}
 	if secs < minIdleTimeoutSecs || secs > maxIdleTimeoutSecs {
 		// Echo bounds in Go duration form so they match the input the

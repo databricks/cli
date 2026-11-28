@@ -53,10 +53,9 @@ Example:
 				return fmt.Errorf("failed to stop sandbox %s: %w", sandboxID, err)
 			}
 
-			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
-			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(updated), sandboxLabel(updated))
 
-			s.ok("Stopped " + cmdio.Bold(ctx, updated.SandboxID))
+			s.ok("Stopped " + cmdio.Bold(ctx, sandboxResourceID(updated)))
 			return nil
 		},
 	}

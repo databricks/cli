@@ -64,11 +64,11 @@ Examples:
 				if !cmdio.IsPromptSupported(ctx) {
 					return errors.New("`databricks sandbox delete` permanently destroys the sandbox; pass --auto-approve to confirm in non-interactive contexts")
 				}
-				question := "Delete sandbox " + cmdio.Bold(ctx, entry.SandboxID)
-				if entry.Name != "" && entry.Name != entry.SandboxID {
-					question += " (name: " + entry.Name + ", status: " + entry.Status + ")"
+				question := "Delete sandbox " + cmdio.Bold(ctx, sandboxResourceID(entry))
+				if sandboxLabel(entry) != "" && sandboxLabel(entry) != sandboxResourceID(entry) {
+					question += " (name: " + sandboxLabel(entry) + ", status: " + sandboxStatus(entry) + ")"
 				} else {
-					question += " (status: " + entry.Status + ")"
+					question += " (status: " + sandboxStatus(entry) + ")"
 				}
 				question += "?"
 				confirmed, err := cmdio.AskYesOrNo(ctx, question)
