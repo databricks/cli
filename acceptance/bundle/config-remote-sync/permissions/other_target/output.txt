@@ -1,0 +1,74 @@
+
+=== Deploy a job that declares no permissions to two targets
+
+>>> [CLI] bundle deploy -t staging
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/staging/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Each target's job gets its own grant, outside the bundle
+
+staging:
+CAN_VIEW users
+IS_OWNER [USERNAME]
+prod:
+CAN_MANAGE_RUN users
+IS_OWNER [USERNAME]
+
+=== Sync the staging target
+
+>>> [CLI] bundle config-remote-sync --save -t staging
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  permissions: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -6,4 +6,7 @@
+     my_job:
+       name: test-job-[UNIQUE_NAME]-${bundle.target}
++      permissions:
++        - group_name: users
++          level: CAN_VIEW
+
+ targets:
+
+=== Deploy the synced config to prod
+
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod/files...
+Created jobs.my_job.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+=== The prod job's ACL after the deploy
+
+CAN_VIEW users
+IS_OWNER [USERNAME]
+
+>>> errcode [CLI] bundle destroy --auto-approve -t staging
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/staging
+
+Destroy: 1 deleted
+
+>>> errcode [CLI] bundle destroy --auto-approve -t prod
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod
+
+Destroy: 1 deleted

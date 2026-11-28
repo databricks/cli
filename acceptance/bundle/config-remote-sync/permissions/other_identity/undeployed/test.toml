@@ -1,0 +1,1 @@
+Badness = "A permissions block is added to the config by an identity other than the deployer and synced before it is deployed. config-remote-sync adds the deployer's IS_OWNER to the block and removes the new entry, but leaves out the syncing identity's own CAN_MANAGE, so the deployer's next deploy revokes it."

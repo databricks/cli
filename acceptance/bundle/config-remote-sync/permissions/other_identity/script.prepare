@@ -1,0 +1,5 @@
+# In these tests the test service principal deploys the bundle, as a CI pipeline would, and the
+# current identity is someone else working with the same deployment.
+TEST_SP_APPLICATION_ID=$(as-test-sp $CLI current-user me | jq -r .userName)
+export TEST_SP_APPLICATION_ID
+add_repl "$TEST_SP_APPLICATION_ID" TEST_SP_APPLICATION_ID

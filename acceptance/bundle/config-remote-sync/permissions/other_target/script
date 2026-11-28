@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve -t staging
+    trace errcode $CLI bundle destroy --auto-approve -t prod
+}
+trap cleanup EXIT
+
+title "Deploy a job that declares no permissions to two targets"
+trace $CLI bundle deploy -t staging
+trace $CLI bundle deploy -t prod
+staging_job_id=$($CLI bundle summary -t staging -o json | jq -r '.resources.jobs.my_job.id')
+prod_job_id=$($CLI bundle summary -t prod -o json | jq -r '.resources.jobs.my_job.id')
+
+title "Each target's job gets its own grant, outside the bundle\n"
+$CLI permissions set jobs $staging_job_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_VIEW","group_name":"users"}
+]}' > /dev/null
+$CLI permissions set jobs $prod_job_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_MANAGE_RUN","group_name":"users"}
+]}' > /dev/null
+echo "staging:"
+print_acl jobs $staging_job_id
+echo "prod:"
+print_acl jobs $prod_job_id
+
+title "Sync the staging target"
+sync_and_show_diff -t staging
+
+# Undefined: whether an ACL imported from one target's deployment should replace the ACL of the
+# same resource in other targets. The job declared no permissions, so until the sync a deploy to
+# prod left the prod job's ACL alone.
+title "Deploy the synced config to prod"
+trace $CLI bundle deploy -t prod
+
+title "The prod job's ACL after the deploy\n"
+print_acl jobs $prod_job_id

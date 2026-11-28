@@ -1,0 +1,1 @@
+Badness = "Same as ../can_manage for a resource type without IS_OWNER: the syncing identity's own CAN_MANAGE is left out of the imported permissions, so the deployer's next deploy revokes it."

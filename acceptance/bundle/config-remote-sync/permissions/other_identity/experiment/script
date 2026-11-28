@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace as-test-sp $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "The service principal deploys an experiment that declares no permissions"
+trace as-test-sp $CLI bundle deploy
+experiment_id=$(as-test-sp $CLI bundle summary -o json | jq -r '.resources.experiments.my_experiment.id')
+
+title "The current identity is granted CAN_MANAGE on the experiment, outside the bundle\n"
+$CLI permissions set experiments $experiment_id --json '{"access_control_list":[
+  {"permission_level":"CAN_MANAGE","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"},
+  {"permission_level":"CAN_MANAGE","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"}
+]}' > /dev/null
+print_acl experiments $experiment_id
+
+title "The current identity runs config-remote-sync"
+sync_and_show_diff
+
+title "The service principal deploys the synced config"
+trace as-test-sp $CLI bundle deploy
+
+title "The experiment's ACL after the deploy\n"
+print_acl experiments $experiment_id
