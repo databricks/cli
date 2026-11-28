@@ -681,7 +681,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 // asks per resource that can be accessed on behalf of the user.
 // Resources that cannot are listed as info and resolve to sp.
 // Returns a map of resource key to auth mode, or nil if nothing needs to be asked.
-func promptForAuthModes(ctx context.Context, resources []manifest.Resource, theme *huh.Theme) (map[string]string, error) {
+func promptForAuthModes(ctx context.Context, resources []manifest.Resource, theme prompt.Theme) (map[string]string, error) {
 	var capable []manifest.Resource
 	for _, r := range resources {
 		if r.Scope != "" && !r.AppOnly {
@@ -753,7 +753,7 @@ func authModeLabel(mode string) string {
 // promptForResource prompts the user for a resource value.
 // Returns a map of value keys to values. For single-field resources the key is "resource_key.field".
 // For multi-field resources, keys use "resource_key.field_name".
-func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Theme, required bool) (map[string]string, error) {
+func promptForResource(ctx context.Context, r manifest.Resource, theme prompt.Theme, required bool) (map[string]string, error) {
 	if fn, ok := prompt.GetPromptFunc(r.Type); ok {
 		if !required {
 			var configure bool
