@@ -1,0 +1,23 @@
+
+=== A pipeline that refers to a job waits for the job's permissions
+
+>>> [CLI] bundle plan -o json
+{
+  "resources.jobs.notify": null,
+  "resources.jobs.notify.permissions": [
+    {
+      "node": "resources.jobs.notify",
+      "label": "${resources.jobs.notify.id}"
+    }
+  ],
+  "resources.pipelines.load": [
+    {
+      "node": "resources.jobs.notify",
+      "label": "${resources.jobs.notify.name}"
+    },
+    {
+      "node": "resources.jobs.notify.permissions",
+      "label": "depends_on"
+    }
+  ]
+}

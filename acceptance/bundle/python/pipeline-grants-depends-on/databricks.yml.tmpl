@@ -1,0 +1,29 @@
+bundle:
+  name: python-pipeline-grants-$UNIQUE_NAME
+
+variables:
+  run_as_sp:
+    default: $RUN_AS_SP
+
+python:
+  resources:
+    - "resources:load_resources"
+
+resources:
+  catalogs:
+    pipeline_catalog:
+      name: catalog_grants_python_$UNIQUE_NAME
+      grants:
+        - principal: ${var.run_as_sp}
+          privileges:
+            - USE_CATALOG
+
+  schemas:
+    src:
+      catalog_name: ${resources.catalogs.pipeline_catalog.name}
+      name: src
+      grants:
+        - principal: ${var.run_as_sp}
+          privileges:
+            - USE_SCHEMA
+            - CREATE_TABLE

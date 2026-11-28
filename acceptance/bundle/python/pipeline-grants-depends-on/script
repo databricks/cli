@@ -1,0 +1,22 @@
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_SP_APPLICATION_ID="22222222-2222-2222-2222-222222222222"
+fi
+
+add_repl "$TEST_SP_APPLICATION_ID" TEST_SP_APPLICATION_ID
+
+export RUN_AS_SP="$TEST_SP_APPLICATION_ID"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -fr .databricks __pycache__
+}
+trap cleanup EXIT
+
+# The Python mutators run before CapturePipelineDependencies, so the pipeline defined in Python
+# gets the grants of the YAML schema and catalog it refers to.
+title "A pipeline defined in Python waits for the grants of the schema and catalog it refers to"
+trace uv run $UV_ARGS -q $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
+
+trace uv run $UV_ARGS -q $CLI bundle deploy

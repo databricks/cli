@@ -1,0 +1,53 @@
+
+=== A pipeline defined in Python waits for the grants of the schema and catalog it refers to
+
+>>> uv run [UV_ARGS] -q [CLI] bundle plan -o json
+{
+  "resources.catalogs.pipeline_catalog": null,
+  "resources.catalogs.pipeline_catalog.grants": [
+    {
+      "node": "resources.catalogs.pipeline_catalog",
+      "label": "${resources.catalogs.pipeline_catalog.id}"
+    }
+  ],
+  "resources.pipelines.load": [
+    {
+      "node": "resources.catalogs.pipeline_catalog.grants",
+      "label": "depends_on"
+    },
+    {
+      "node": "resources.schemas.src",
+      "label": "${resources.schemas.src.catalog_name}"
+    },
+    {
+      "node": "resources.schemas.src",
+      "label": "${resources.schemas.src.name}"
+    },
+    {
+      "node": "resources.schemas.src.grants",
+      "label": "depends_on"
+    }
+  ],
+  "resources.schemas.src": [
+    {
+      "node": "resources.catalogs.pipeline_catalog",
+      "label": "${resources.catalogs.pipeline_catalog.name}"
+    }
+  ],
+  "resources.schemas.src.grants": [
+    {
+      "node": "resources.schemas.src",
+      "label": "${resources.schemas.src.id}"
+    }
+  ]
+}
+
+>>> uv run [UV_ARGS] -q [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python-pipeline-grants-[UNIQUE_NAME]/default/files...
+Created catalogs.pipeline_catalog
+Created catalogs.pipeline_catalog.grants
+Created pipelines.load
+Created schemas.src
+Created schemas.src.grants
+Files: 5 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged

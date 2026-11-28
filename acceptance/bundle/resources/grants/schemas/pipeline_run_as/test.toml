@@ -1,0 +1,3 @@
+# Local only: on cloud the deploying identity lacks the servicePrincipal.user role on
+# TEST_SP_APPLICATION_ID, so it cannot set that service principal as the pipeline's run_as.
+Cloud = false

@@ -1,0 +1,15 @@
+bundle:
+  name: pipeline-depends-on-permissions
+
+resources:
+  jobs:
+    notify:
+      name: notify
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
+  pipelines:
+    load:
+      # The pipeline refers to the job by name, so it waits for the job's permissions.
+      name: ${resources.jobs.notify.name}-load
