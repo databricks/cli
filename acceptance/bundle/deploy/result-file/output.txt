@@ -1,0 +1,40 @@
+
+=== A deploy that succeeds writes an empty result
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/result-file/default/files...
+Created jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq -c . result.json
+{}
+
+=== A deploy that fails because the service does is SERVICE
+
+>>> musterr [CLI] bundle deploy -t outage
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/result-file/outage/files...
+Error: cannot create resources.jobs.foo: Fault injected by test. (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Fault injected by test.
+
+Files: 2 uploaded, 0 deleted
+
+>>> jq -c . result.json
+{"error_class":"SERVICE"}
+
+=== A deploy that fails because of the bundle is USER
+
+>>> musterr [CLI] bundle deploy -t broken
+Error: reference does not exist: ${var.missing}
+
+
+>>> jq -c . result.json
+{"error_class":"USER"}
+
+=== bundle validate does not write the file
+
+>>> assert_not_exists.py result.json

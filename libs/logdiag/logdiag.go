@@ -34,6 +34,9 @@ type LogDiagData struct {
 
 	// Summary of the first error diagnostic logged, if any.
 	FirstErrorSummary string
+
+	// Cause of the first error diagnostic logged, nil if it had none.
+	FirstErrorCause error
 }
 
 // IsSetup returns whether InitContext() was already called.
@@ -137,6 +140,16 @@ func GetFirstErrorSummary(ctx context.Context) string {
 	return val.FirstErrorSummary
 }
 
+// GetFirstErrorCause returns the error the first error diagnostic was made from, or nil if no error
+// was logged or the first one was made from a message.
+func GetFirstErrorCause(ctx context.Context) error {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	return val.FirstErrorCause
+}
+
 func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -147,6 +160,7 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		val.Errors += 1
 		if val.FirstErrorSummary == "" {
 			val.FirstErrorSummary = d.Summary
+			val.FirstErrorCause = d.Cause
 		}
 	case diag.Warning:
 		val.Warnings += 1

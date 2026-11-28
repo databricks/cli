@@ -73,6 +73,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 			Build:        true,
 			Deploy:       true,
 			ReadPlanPath: readPlanPath,
+			// The auto-deploy runner reads it; nothing else runs after ProcessBundle here.
+			WriteDeployResult: true,
 		})
 
 		return err

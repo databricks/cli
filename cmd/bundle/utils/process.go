@@ -85,6 +85,10 @@ type ProcessOptions struct {
 	PreDeployChecks bool
 	Deploy          bool
 
+	// If true, write the result file that DATABRICKS_AUTO_DEPLOY_RESULT_FILE names. Only for a command
+	// that does nothing after ProcessBundle returns, so the file describes the whole command.
+	WriteDeployResult bool
+
 	// Path to pre-computed plan JSON file (direct engine only).
 	// When set, skips Build and PreDeployChecks phases (except the deployment state
 	// pull), and loads the plan from the file instead of calculating it. Artifact
@@ -132,6 +136,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	} else {
 		ctx = logdiag.InitContext(ctx)
 		cmd.SetContext(ctx)
+	}
+
+	if opts.WriteDeployResult {
+		defer phases.WriteDeployResultOnExit(ctx, &retErr)
 	}
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""

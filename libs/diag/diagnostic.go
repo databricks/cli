@@ -28,6 +28,10 @@ type Diagnostic struct {
 
 	// A diagnostic ID. Only used for select diagnostic messages.
 	ID ID
+
+	// Cause is the error the diagnostic was made from, nil for one made from a message. It keeps the
+	// error chain, so a caller can still tell an API error's status after the error is rendered.
+	Cause error
 }
 
 // Errorf creates a new error diagnostic.
@@ -50,6 +54,7 @@ func FromErr(err error) Diagnostics {
 			Severity: Error,
 			Summary:  FormatAPIErrorSummary(err),
 			Detail:   FormatAPIErrorDetails(err),
+			Cause:    err,
 		},
 	}
 }
