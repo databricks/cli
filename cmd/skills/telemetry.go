@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/databricks/cli/cmd/aitools"
+	"github.com/databricks/cli/cmd/root"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -30,7 +30,7 @@ func recordRuns(group *cobra.Command) {
 			return err
 		}
 		// A run that logged its event waits up to the auth budget for the upload's auth, as install does.
-		aitools.WithTelemetryAuth(c).WaitAtExit = true
+		root.WithTelemetryAuth(c).WaitAtExit = true
 	}
 }
 
@@ -55,7 +55,7 @@ func logEvent(cmd *cobra.Command, command protos.SkillsCommand, rec *libskills.R
 	ctx := cmd.Context()
 	event := skillsEvent(command, rec, err)
 	telemetry.Log(ctx, protos.DatabricksCliLog{SkillsCommandEvent: &event})
-	if agent := aitools.CallingAgentType(); agent != protos.AitoolsAgentTypeUnspecified {
+	if agent := root.CallingAgentType(); agent != protos.AitoolsAgentTypeUnspecified {
 		telemetry.SetCallingAgent(ctx, agent)
 	}
 }

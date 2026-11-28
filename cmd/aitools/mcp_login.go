@@ -178,7 +178,7 @@ func signInEvent(operation protos.AitoolsMcpOperation, out *mcpSignInOutput, err
 		return signInEventOf(out.Service, out.State, out.alreadySignedIn, err)
 	}
 	return protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: root.CallingAgentType(),
 		Operation:    operation,
 		Servers:      []protos.AitoolsMcpServerResult{signOutServerResult(out.Service, out.State, err)},
 	}

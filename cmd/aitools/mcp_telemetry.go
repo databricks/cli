@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/log"
@@ -30,7 +30,7 @@ func setUploadConfig(ctx context.Context, profileName, configFile string, bound 
 			return
 		}
 	}
-	cfg, err := mcp.BoundUploadConfig(ctx, profileName, configFile, telemetryAuthBudget)
+	cfg, err := mcp.BoundUploadConfig(ctx, profileName, configFile, root.TelemetryAuthBudget)
 	if err != nil {
 		log.Debugf(ctx, "telemetry: cannot resolve profile %s to upload with: %s", profileName, err)
 		telemetry.SkipUpload(ctx)
@@ -109,28 +109,13 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 	return protos.AitoolsMcpServiceOtherSystem
 }
 
-// CallingAgentType returns the agent that drives the CLI, Unspecified when none is detected. The skills commands
-// report it as their calling agent too.
-func CallingAgentType() protos.AitoolsAgentType {
-	return callingAgentType()
-}
-
-// callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.
-func callingAgentType() protos.AitoolsAgentType {
-	a := agents.CallingAgent()
-	if a == nil {
-		return protos.AitoolsAgentTypeUnspecified
-	}
-	return agentType(a.Name)
-}
-
 // proxyAgentType returns the agent that started the proxy: the --agent flag when given, else the
 // detected agent.
 func proxyAgentType(flag string) protos.AitoolsAgentType {
 	if flag == "" {
-		return callingAgentType()
+		return root.CallingAgentType()
 	}
-	return agentType(flag)
+	return root.AgentType(flag)
 }
 
 // logMcpEvent buffers an MCP event for the next upload and reports whether it did. An event without server
@@ -184,7 +169,7 @@ func addServerResults(servers []addServerOutput) []protos.AitoolsMcpServerResult
 		for _, a := range s.Agents {
 			r := protos.AitoolsMcpServerResult{
 				Service:     mcpServiceType(s.Service),
-				Agent:       agentType(a.Name),
+				Agent:       root.AgentType(a.Name),
 				SignInState: addSignInState(s),
 			}
 			switch a.Status {
@@ -205,7 +190,7 @@ func addServerResults(servers []addServerOutput) []protos.AitoolsMcpServerResult
 // removeServerResult returns the result of removing one server from one agent config. An entry that was deleted, or
 // pruned (its record dropped), is CHANGED. An entry that was changed outside this CLI is SKIPPED: it is left in place.
 func removeServerResult(service, agent string, outcome removeOutcome, err error) protos.AitoolsMcpServerResult {
-	r := protos.AitoolsMcpServerResult{Service: mcpServiceType(service), Agent: agentType(agent)}
+	r := protos.AitoolsMcpServerResult{Service: mcpServiceType(service), Agent: root.AgentType(agent)}
 	switch {
 	case err != nil:
 		r.Outcome = protos.AitoolsTargetOutcomeFailed
@@ -252,7 +237,7 @@ func signInServerResult(service, state string, alreadySignedIn bool, err error) 
 // already signed in is UNCHANGED.
 func signInEventOf(service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
 	return protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: root.CallingAgentType(),
 		Operation:    protos.AitoolsMcpOperationSignIn,
 		Servers:      []protos.AitoolsMcpServerResult{signInServerResult(service, state, alreadySignedIn, err)},
 	}

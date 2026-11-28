@@ -13,6 +13,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/env"
@@ -335,7 +336,7 @@ func TestBoundProfileCount(t *testing.T) {
 func TestSignInEventOf(t *testing.T) {
 	// An ACTIVE credential that the add found signed in is UNCHANGED, as add --login reports it.
 	assert.Equal(t, protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: root.CallingAgentType(),
 		Operation:    protos.AitoolsMcpOperationSignIn,
 		Servers: []protos.AitoolsMcpServerResult{{
 			Service:     protos.AitoolsMcpServiceGitHub,
