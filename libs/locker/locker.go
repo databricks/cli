@@ -147,21 +147,6 @@ func (locker *Locker) checkHolder(activeLockState *LockState) error {
 	return nil
 }
 
-// idempotent function since overwrite is set to true
-func (locker *Locker) Write(ctx context.Context, pathToFile string, content []byte) error {
-	if !locker.Active {
-		return errors.New("failed to put file. deploy lock not held")
-	}
-	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
-}
-
-func (locker *Locker) Read(ctx context.Context, path string) (io.ReadCloser, error) {
-	if !locker.Active {
-		return nil, errors.New("failed to get file. deploy lock not held")
-	}
-	return locker.filer.Read(ctx, path)
-}
-
 func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	err := locker.lock(ctx, isForced)
 	if err != nil {

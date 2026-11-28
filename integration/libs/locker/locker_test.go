@@ -2,8 +2,6 @@ package locker_test
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"io/fs"
 	"math/rand/v2"
 	"sync"
@@ -78,43 +76,6 @@ func TestLock(t *testing.T) {
 		assert.NotEqual(t, remoteLocker.ID, lockers[i].State.ID)
 		err := lockers[i].Unlock(ctx)
 		assert.ErrorContains(t, err, "unlock called when lock is not held")
-	}
-
-	// test inactive locks fail to write a file
-	for i := range numConcurrentLocks {
-		if i == indexOfActiveLocker {
-			continue
-		}
-		err := lockers[i].Write(ctx, "foo.json", []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
-		assert.ErrorContains(t, err, "failed to put file. deploy lock not held")
-	}
-
-	// active locker file write succeeds
-	err = lockers[indexOfActiveLocker].Write(ctx, "foo.json", []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
-	assert.NoError(t, err)
-
-	// read active locker file
-	r, err := lockers[indexOfActiveLocker].Read(ctx, "foo.json")
-	require.NoError(t, err)
-	defer r.Close()
-	b, err := io.ReadAll(r)
-	require.NoError(t, err)
-
-	// assert on active locker content
-	var res map[string]string
-	err = json.Unmarshal(b, &res)
-	require.NoError(t, err)
-	assert.NoError(t, err)
-	assert.Equal(t, "Khan", res["surname"])
-	assert.Equal(t, "Shah Rukh", res["name"])
-
-	// inactive locker file reads fail
-	for i := range numConcurrentLocks {
-		if i == indexOfActiveLocker {
-			continue
-		}
-		_, err = lockers[i].Read(ctx, "foo.json")
-		assert.ErrorContains(t, err, "failed to get file. deploy lock not held")
 	}
 
 	// Unlock active lock and check it becomes inactive
