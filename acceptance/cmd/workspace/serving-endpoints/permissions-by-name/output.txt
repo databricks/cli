@@ -1,0 +1,76 @@
+
+=== Permissions commands accept the endpoint name
+
+>>> [CLI] serving-endpoints set-permissions my-endpoint --json {"access_control_list": [{"group_name": "users", "permission_level": "CAN_QUERY"}]}
+{"group_name":"users","permission_level":"CAN_QUERY"}
+
+>>> [CLI] serving-endpoints get-permissions my-endpoint
+{"object_id":"/serving-endpoints/[ENDPOINT_ID]"}
+
+=== A 32-character ID and root are passed through with no lookup
+
+>>> [CLI] serving-endpoints get-permissions 0123456789abcdef0123456789ABCDEF
+{"object_id":"/serving-endpoints/0123456789abcdef0123456789ABCDEF"}
+
+>>> [CLI] serving-endpoints get-permissions root
+{"object_id":"/serving-endpoints/root"}
+
+=== A name that doesn't resolve returns the lookup error
+
+>>> musterr [CLI] serving-endpoints get-permissions no-such-endpoint
+Error: "no-such-endpoint" is not a serving endpoint ID, and looking it up as an endpoint name failed: Resource serving.ServingEndpointDetailed not found: no-such-endpoint
+
+=== Help shows the name is accepted
+
+>>> [CLI] serving-endpoints get-permissions --help
+    NAME_OR_ID: The name or ID of the serving endpoint for which to get or manage
+  databricks serving-endpoints get-permissions NAME_OR_ID [flags]
+
+>>> print_requests.py //serving-endpoints //permissions --get
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "my-endpoint"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "users",
+        "permission_level": "CAN_QUERY"
+      }
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/my-endpoint"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/0123456789abcdef0123456789ABCDEF"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/serving-endpoints/root"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/serving-endpoints/no-such-endpoint"
+}

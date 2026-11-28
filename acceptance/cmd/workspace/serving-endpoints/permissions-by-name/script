@@ -1,0 +1,20 @@
+$CLI serving-endpoints create my-endpoint --no-wait > /dev/null
+endpoint_id=$($CLI serving-endpoints get my-endpoint | jq -r .id)
+add_repl "$endpoint_id" ENDPOINT_ID
+
+
+title "Permissions commands accept the endpoint name"
+trace $CLI serving-endpoints set-permissions my-endpoint --json '{"access_control_list": [{"group_name": "users", "permission_level": "CAN_QUERY"}]}' | jq -c '.access_control_list[] | {group_name, permission_level: .all_permissions[0].permission_level}'
+trace $CLI serving-endpoints get-permissions my-endpoint | jq -c '{object_id}'
+
+title "A 32-character ID and root are passed through with no lookup"
+trace $CLI serving-endpoints get-permissions 0123456789abcdef0123456789ABCDEF | jq -c '{object_id}'
+trace $CLI serving-endpoints get-permissions root | jq -c '{object_id}'
+
+title "A name that doesn't resolve returns the lookup error"
+trace musterr $CLI serving-endpoints get-permissions no-such-endpoint
+
+title "Help shows the name is accepted"
+trace $CLI serving-endpoints get-permissions --help | grep -E 'get-permissions NAME_OR_ID|NAME_OR_ID: '
+
+trace print_requests.py //serving-endpoints //permissions --get
