@@ -41,25 +41,28 @@ func newSearchCmd() *cobra.Command {
 		Short: "Search the skills for words",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, words []string) error {
-			return runSearch(cmd, words, experimental)
+			if err := checkWords(words); err != nil {
+				return err
+			}
+			src, err := skills.Resolve(cmd.Context())
+			if err != nil {
+				return err
+			}
+			return runSearch(cmd, src, words, experimental)
 		},
 	}
 	cmd.Flags().BoolVar(&experimental, "experimental", false, "Also search the experimental skills")
 	return cmd
 }
 
-func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
-	if err := checkWords(words); err != nil {
-		return err
-	}
+func runSearch(cmd *cobra.Command, src skills.Source, words []string, experimental bool) error {
 	ctx := cmd.Context()
-	src, err := skills.Resolve(ctx)
-	if err != nil {
-		return err
-	}
 	catalog, err := src.Catalog(ctx)
 	if err != nil {
 		return err
+	}
+	if catalog.Stale {
+		cmdio.LogString(ctx, provenanceLine(catalog))
 	}
 	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
 	out := searchJSON{

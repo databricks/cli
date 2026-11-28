@@ -1,10 +1,16 @@
 package skills
 
 import (
+	"bytes"
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/skills"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func skillNames(list []skills.Skill) []string {
@@ -99,4 +105,41 @@ func TestCheckWordsRejectsBlankWord(t *testing.T) {
 func TestMatchSkillsTrimsWords(t *testing.T) {
 	got := skillNames(matchSkills(searchCatalog, []string{" jobs "}))
 	assert.Equal(t, []string{"jobs-helper"}, got)
+}
+
+const searchStdout = "jobs-helper: Run and monitor jobs.\nTo read a skill, run: databricks skills read <name>\n"
+
+// searchTestCmd returns a command whose context captures stdout and stderr.
+func searchTestCmd(t *testing.T) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+	return cmd, &stdout, &stderr
+}
+
+func TestRunSearchStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
+	catalog := &skills.Catalog{
+		Label:     "cached",
+		Version:   "1.2.3",
+		FetchedAt: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC),
+		Stale:     true,
+		Skills:    searchCatalog,
+	}
+
+	cmd, stdout, stderr := searchTestCmd(t)
+	require.NoError(t, runSearch(cmd, listFakeSource{catalog}, []string{"jobs"}, false))
+	assert.Equal(t, "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z). "+
+		"The source could not be refreshed, so the list may be out of date.\n", stderr.String())
+	assert.Equal(t, searchStdout, stdout.String())
+}
+
+func TestRunSearchFreshCatalogPrintsNothingExtra(t *testing.T) {
+	catalog := &skills.Catalog{Label: "cached", Version: "1.2.3", Skills: searchCatalog}
+
+	cmd, stdout, stderr := searchTestCmd(t)
+	require.NoError(t, runSearch(cmd, listFakeSource{catalog}, []string{"jobs"}, false))
+	assert.Empty(t, stderr.String())
+	assert.Equal(t, searchStdout, stdout.String())
 }
