@@ -20,6 +20,7 @@ func newMkdirCommand(filerForPath PathResolver) *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
+		warnSchemelessUCPaths(ctx, args[0])
 		f, path, err := filerForPath(ctx, args[0])
 		if err != nil {
 			return err

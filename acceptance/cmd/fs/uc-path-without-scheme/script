@@ -1,0 +1,8 @@
+# A /Volumes/ or /Skills/ path without the dbfs: scheme is a local path.
+# Warn about it once per command, so a forgotten scheme never acts on the local filesystem silently.
+trace musterr $CLI fs ls /Volumes/main/default/vol
+trace musterr $CLI fs ls /Skills/foo/bar
+trace musterr $CLI fs cp /Volumes/main/default/vol/a.csv /Volumes/main/default/vol/b.csv
+
+# Completion does not warn. On macOS /Volumes/ is a real directory, so complete a path that exists nowhere.
+trace $CLI __complete fs ls /Volumes/main/default/vol/
