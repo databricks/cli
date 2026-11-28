@@ -527,6 +527,12 @@ func TestServerMalformedRequestsDoNotExtendConnectionDeadline(t *testing.T) {
 }
 
 func TestServerHandoverSurvivesWebSocketLifetimeLimit(t *testing.T) {
+	// The lifetime is many handover ticks long: on a loaded CI runner a handover can start
+	// several hundred milliseconds late, and the proxy must never close a connection that has
+	// not been handed over yet. The last message waits until the limit closed the first
+	// connection, so it proves the session outlived it.
+	const connectionLifetime = 2 * time.Second
+	const handoverInterval = 100 * time.Millisecond
 	endpoint, cancel, finished, _ := startServer(t, time.Minute)
 	defer cancel()
 	target, err := url.Parse(endpoint)
@@ -536,9 +542,17 @@ func TestServerHandoverSurvivesWebSocketLifetimeLimit(t *testing.T) {
 	target.Scheme = "http"
 	target.Path = ""
 	forwarding := httptest.NewUnstartedServer(httputil.NewSingleHostReverseProxy(target))
+	var hijacked atomic.Bool
+	firstClosed := make(chan struct{})
 	forwarding.Config.ConnState = func(conn net.Conn, state http.ConnState) {
 		if state == http.StateHijacked {
-			time.AfterFunc(500*time.Millisecond, func() { conn.Close() })
+			first := hijacked.CompareAndSwap(false, true)
+			time.AfterFunc(connectionLifetime, func() {
+				conn.Close()
+				if first {
+					close(firstClosed)
+				}
+			})
 		}
 	}
 	forwarding.Start()
@@ -549,7 +563,7 @@ func TestServerHandoverSurvivesWebSocketLifetimeLimit(t *testing.T) {
 	defer receive.Close()
 	ctx, stop := context.WithCancel(t.Context())
 	defer stop()
-	tick := time.NewTicker(100 * time.Millisecond)
+	tick := time.NewTicker(handoverInterval)
 	defer tick.Stop()
 	var dials atomic.Int32
 	result := make(chan error, 1)
@@ -569,6 +583,13 @@ func TestServerHandoverSurvivesWebSocketLifetimeLimit(t *testing.T) {
 			})
 	}()
 	for i := range 5 {
+		if i == 4 {
+			select {
+			case <-firstClosed:
+			case <-time.After(connectionLifetime + 5*time.Second):
+				t.Fatal("the lifetime limit did not close the first connection")
+			}
+		}
 		payload := []byte(fmt.Sprintf("message-%d", i))
 		written := make(chan error, 1)
 		go func() { _, err := send.Write(payload); written <- err }()
