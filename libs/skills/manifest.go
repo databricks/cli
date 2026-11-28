@@ -85,7 +85,7 @@ func NormalizeManifest(m *Manifest) {
 // the installer, which skips only that skill.
 func CheckManifestPaths(m *Manifest) error {
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
-		if name == "" || name == "." || name == ".." || name == StateFileName || strings.ContainsAny(name, `/\`) {
+		if !isName(name) || name == StateFileName {
 			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
 		}
 		for _, file := range m.Skills[name].Files {
@@ -95,6 +95,11 @@ func CheckManifestPaths(m *Manifest) error {
 		}
 	}
 	return nil
+}
+
+// isName reports whether s is a single path element.
+func isName(s string) bool {
+	return s != "" && s != "." && s != ".." && !strings.ContainsAny(s, `/\`)
 }
 
 // escapesDir reports whether file, joined onto a directory, names a path
