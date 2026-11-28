@@ -1,7 +1,6 @@
 package direct
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -281,7 +280,7 @@ func TestResolveReferencesAfterApplyKeepsRedactedEntry(t *testing.T) {
 		Refs:  map[string]string{"value": "${resources.catalogs.c.name}"},
 	})
 
-	require.True(t, b.resolveReferences(context.Background(), "resources.secrets.s", entry, "cannot create", false))
+	require.True(t, b.resolveReferences(t.Context(), "resources.secrets.s", entry, "cannot create", false))
 
 	sv, ok := b.StateCache.Load("resources.secrets.s")
 	require.True(t, ok)
