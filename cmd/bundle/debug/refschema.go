@@ -129,15 +129,19 @@ func dumpRemoteSchemas(out io.Writer) error {
 // dumpRootSchema dumps fields of the bundle config outside of resources.
 // Resource fields are dumped per resource type by dumpRemoteSchemas.
 func dumpRootSchema(out io.Writer) error {
+	resourcesType := reflect.TypeFor[config.Resources]()
 	var lines []string
 	err := structwalk.WalkType(reflect.TypeFor[config.Root](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}
-		p := path.String()
-		if p == "resources" || strings.HasSuffix(p, ".resources") {
+		// Match on type rather than field name: python.resources is a []string
+		// that belongs here, while root resources are dumped per type and target
+		// resources only override them.
+		if typ == resourcesType || typ == reflect.PointerTo(resourcesType) {
 			return false
 		}
+		p := path.String()
 		t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 		lines = append(lines, fmt.Sprintf("%s\t%s\tINPUT\n", p, t))
 		return true
