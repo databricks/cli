@@ -1,0 +1,19 @@
+Error: Missing condition for table update trigger with multiple tables
+  at resources.jobs.my_job.trigger.table_update
+  in databricks.yml:10:11
+
+A table update trigger that lists more than one table must set condition to ANY_UPDATED or ALL_UPDATED.
+
+Error: Missing condition for table update trigger with multiple tables
+  at resources.jobs.my_job.triggers[2].table_update
+  in databricks.yml:23:13
+
+A table update trigger that lists more than one table must set condition to ANY_UPDATED or ALL_UPDATED.
+
+Name: table_update_condition
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/table_update_condition/default
+
+Found 2 errors
