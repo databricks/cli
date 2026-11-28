@@ -1,0 +1,63 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE="$PWD/.databrickscfg"
+
+# The services of system.ai, created in the fake workspace. The fake keeps one workspace per token, so each profile
+# gets its own copy.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests"}' &> LOG.create-github-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile dogfood --json '{"comment": "Repositories, issues, pull requests"}' &> LOG.create-github-dogfood
+
+# bin/claude goes in front of the harness's claude stand-in. It runs the script that WHILE_CLAUDE_STARTS names after
+# databricks checked the config and started claude, and before claude reads the config. That orders a concurrent
+# change without timing. claude runs in an empty directory, so the scripts find this one through TEST_DIR.
+export PATH="$PWD/bin:$PATH"
+export TEST_DIR="$PWD"
+
+title "add: the user adds their own server of the same name while the claude CLI starts"
+export WHILE_CLAUDE_STARTS=user-adds-entry.sh
+trace $CLI aitools mcp add --profile logfood --names system.ai.github --agents claude-code
+unset WHILE_CLAUDE_STARTS
+trace cat concurrent.log
+rm concurrent.log
+# Badness: claude refused to replace the user's entry, and databricks then replaced it without --force and reported
+# the server as installed. The user's npx server is gone.
+trace jq -c '.mcpServers["github-logfood"] | {command, args}' home/.claude.json
+
+title "remove: the user replaces the Databricks entry with their own while the claude CLI starts"
+export WHILE_CLAUDE_STARTS=user-adds-entry.sh
+trace $CLI aitools mcp remove --names github-logfood
+unset WHILE_CLAUDE_STARTS
+trace cat concurrent.log
+rm concurrent.log
+# Badness: databricks checked that the entry was its own, then had claude remove the name. The user's entry, written
+# in between, is deleted, and the removal is reported as a success.
+trace jq -c '.mcpServers' home/.claude.json
+
+title "two adds of one server name, one after the other: the second is refused"
+trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
+trace musterr $CLI aitools mcp add --profile dogfood --names system.ai.github --name github --agents claude-code
+trace $CLI aitools mcp remove --all
+trace cat concurrent.log
+rm concurrent.log
+
+title "the same two adds at the same time: the second finishes while the first waits for the claude CLI"
+export WHILE_CLAUDE_STARTS=second-add.sh
+trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
+unset WHILE_CLAUDE_STARTS
+trace cat second-add.txt
+trace cat concurrent.log
+rm concurrent.log
+# Badness: both runs report github as installed. The agent has one github server, for logfood: the dogfood server
+# that the second run reported is gone. State holds the name twice, once per profile.
+trace jq -c '.mcpServers | map_values(.args)' home/.claude.json
+trace jq -c '.mcp | [.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json
+
+title "afterwards remove --all takes the logfood entry out of the agent config and drops the dogfood record"
+trace $CLI aitools mcp list
+trace $CLI aitools mcp remove --all
+# Badness: records are matched by name, so the record that goes is the dogfood one. The logfood record stays, for an
+# entry that is no longer in the agent config.
+trace jq -c '.mcpServers' home/.claude.json
+trace jq -c '.mcp | [.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/skills/.state.json
+trace cat concurrent.log

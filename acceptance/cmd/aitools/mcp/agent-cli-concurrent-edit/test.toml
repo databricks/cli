@@ -1,0 +1,5 @@
+Badness = "aitools mcp add replaces, and remove deletes, a same-name entry that another process wrote while the agent's CLI ran, and both report success; two concurrent adds of one server name both report installed while one server is lost and state holds the name twice"
+
+# bin/claude is a shell script, which a PATH lookup on Windows does not find.
+GOOS.windows = false
+Ignore = ["home", "concurrent.log", "second-add.txt"]
