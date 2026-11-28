@@ -1,0 +1,1 @@
+* Selection lists treat pasted text as typed search text, and ignore it outside search. Pasting `j` or `/` no longer moves the cursor or opens search. The table view's search no longer inserts `alt+f` for Alt+F or `[text]` for a paste. ([#7741](https://github.com/databricks/cli/pull/7741))

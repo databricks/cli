@@ -9,8 +9,6 @@
 package teainput
 
 import (
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -33,10 +31,8 @@ type Event struct {
 // Decode returns the [Event] for a key press or paste message, and false for
 // every other message.
 //
-// Alt is kept in the name only where the models have always treated it as a
-// different key (Alt+rune, Alt+space, Alt+backspace, Alt+Ctrl+H, Alt+tab).
-// Other Alt combinations act as the plain key, as they did before the decoder
-// existed.
+// Alt stays in the name, so Alt+Enter is "alt+enter" and no model matches it
+// unless it names it. Alt+rune and Alt+space carry no text.
 func Decode(msg tea.Msg) (Event, bool) {
 	k, ok := msg.(tea.KeyMsg)
 	if !ok {
@@ -46,7 +42,7 @@ func Decode(msg tea.Msg) (Event, bool) {
 		return Event{Text: string(k.Runes), Paste: true}, true
 	}
 
-	switch k.Type { //nolint:exhaustive // only runes, space, backspace and tab carry Alt or text
+	switch k.Type { //nolint:exhaustive // only runes and space carry Alt or text
 	case tea.KeyRunes:
 		if k.Alt {
 			if len(k.Runes) == 1 {
@@ -66,12 +62,8 @@ func Decode(msg tea.Msg) (Event, bool) {
 			return Event{Key: "alt+space"}, true
 		}
 		return printable(" "), true
-	case tea.KeyBackspace, tea.KeyCtrlH, tea.KeyTab:
-		if k.Alt {
-			return Event{Key: k.String()}, true // "alt+backspace", "alt+ctrl+h", "alt+tab"
-		}
 	}
-	return Event{Key: strings.TrimPrefix(k.String(), "alt+")}, true
+	return Event{Key: k.String()}, true
 }
 
 // printable is the event for one typed rune: its key name is the rune, or

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,4 +117,21 @@ func TestMoveCursorClampsAtZeroAndLast(t *testing.T) {
 	assert.Equal(t, 0, m.cursor, "cursor should clamp to first data row, not below")
 	m.moveCursor(100)
 	assert.Equal(t, 2, m.cursor, "cursor should clamp to last data row")
+}
+
+func TestSearchBackspaceRemovesWholeRune(t *testing.T) {
+	m := readyModel([]string{"name"}, [][]string{{"café"}}, 5)
+	m.searching = true
+	m.searchInput = "café"
+
+	next, _ := m.Update(teainput.Press("backspace"))
+	assert.Equal(t, "caf", next.(model).searchInput)
+}
+
+func TestSearchPasteStopsAtLineBreak(t *testing.T) {
+	m := readyModel([]string{"name"}, [][]string{{"item-1"}}, 5)
+	m.searching = true
+
+	next, _ := m.Update(teainput.Paste("item-1\n"))
+	assert.Equal(t, "item-1", next.(model).searchInput)
 }

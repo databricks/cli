@@ -214,9 +214,9 @@ func (m *pagerModel[T]) handleKey(key string) (tea.Model, tea.Cmd) {
 	switch key {
 	case "enter":
 		return m, m.startDrain()
-	case "esc", "ctrl+c", "q", "Q":
+	case "esc", "alt+esc", "ctrl+c", "q", "Q": // two quick Esc presses arrive as Alt+Esc
 		return m, m.quit()
-	case "space", "alt+space": // Alt+Space has always advanced the pager.
+	case "space":
 		return m, m.startAdvance()
 	}
 	return m, nil

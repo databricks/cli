@@ -1,0 +1,1 @@
+* Alt with a key that isn't a letter (Alt+Enter, Alt+arrows, Alt+Space) no longer acts as that key in prompts, selection lists and the pager. Alt+Enter used to submit and Alt+Left used to move the cursor. ([#7741](https://github.com/databricks/cli/pull/7741))
