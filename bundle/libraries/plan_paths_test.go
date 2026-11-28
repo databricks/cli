@@ -19,6 +19,7 @@ func TestPlanUploadReferences(t *testing.T) {
 			},
 			"resources.pipelines.updated":   {"environment.dependencies": {"p-1.0-py3-none-any.whl"}},
 			"resources.pipelines.unchanged": {"environment.dependencies": {"e-*.whl"}},
+			"resources.clusters.policy":     {"libraries.jar": {"*.jar"}},
 		},
 		artifacts: []string{"g-*.whl"},
 	}
@@ -59,11 +60,19 @@ func TestPlanUploadReferences(t *testing.T) {
 				Remote: []any{map[string]any{"whl": up + "/installed-by-run-1.0-py3-none-any.whl"}},
 			}},
 		},
-		// With a cluster policy, the plan skips remote additions without marking them
-		// unmanaged; the cluster has no local libraries of its own.
+		// With a cluster policy, a library a job run installed is a remote addition, even
+		// though the cluster declares a library of its own.
 		"resources.clusters.policy": {
-			Action:      deployplan.Skip,
-			RemoteState: map[string]any{"libraries": []any{map[string]any{"jar": up + "/old.jar"}}},
+			Action: deployplan.Skip,
+			RemoteState: map[string]any{"libraries": []any{
+				map[string]any{"jar": up + "/own.jar"},
+				map[string]any{"jar": up + "/old.jar"},
+			}},
+			Changes: deployplan.Changes{"libraries[jar='" + up + "/old.jar']": {
+				Action: deployplan.Skip,
+				Reason: deployplan.ReasonRemoteAddition,
+				Remote: map[string]any{"jar": up + "/old.jar"},
+			}},
 		},
 		"resources.jobs.deleted": {
 			Action:      deployplan.Delete,
@@ -83,7 +92,7 @@ func TestPlanUploadReferences(t *testing.T) {
 	assert.Equal(t, []string{
 		"e-1.0-py3-none-any.whl",
 		"h-1.0-py3-none-any.whl",
-		"old.jar",
+		"own.jar",
 		"pkg",
 		"result.jar",
 		"result.json",
@@ -93,8 +102,11 @@ func TestPlanUploadReferences(t *testing.T) {
 	// With artifact cleanup, unchanged resources need their own files as well.
 	required, optional = planUploadReferences(plan, up, true, owners)
 	assert.Contains(t, required, "e-1.0-py3-none-any.whl")
+	assert.Contains(t, required, "own.jar")
+	// A library only the remote has is not the bundle's, so it is neither required nor
+	// uploaded, as in plain deploy.
 	assert.NotContains(t, required, "old.jar")
-	assert.Contains(t, optional, "old.jar")
+	assert.NotContains(t, optional, "old.jar")
 }
 
 func TestMatchesUploadName(t *testing.T) {

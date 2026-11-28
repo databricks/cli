@@ -1,0 +1,27 @@
+# A cluster with a policy declares its own ./dist/*.whl library. A job run that installs
+# another wheel from the upload directory on the cluster adds it to the cluster's remote
+# libraries. That wheel is not the bundle's, so deploy --plan must not require it locally.
+trap "rm -fr dist" EXIT
+mkdir dist
+cp $TESTDIR/../../../artifacts/whl_prebuilt_multiple/dist/my_test_code-0.0.1-py3-none-any.whl dist/
+$CLI bundle deploy > LOG.deploy 2>&1
+
+title "A job run installs a wheel the bundle does not build"
+upload_path=$($CLI bundle validate -o json | jq -r .workspace.artifact_path)/.internal
+cluster_id=$($CLI bundle summary -o json | jq -r .resources.clusters.my_cluster.id)
+$CLI libraries install --json "{\"cluster_id\": \"$cluster_id\", \"libraries\": [{\"whl\": \"$upload_path/installed_by_run-0.9-py3-none-any.whl\"}]}"
+
+title "The plan leaves the cluster unchanged and marks the extra wheel a remote addition"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace jq -c '.plan["resources.clusters.my_cluster"] | [.action, ([.changes // {} | to_entries[] | select(.value.reason == "remote_addition") | .key])]' tmp.plan.json
+
+title "deploy --plan uploads the bundle's wheel and keeps the cluster"
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //.internal/ | jq -c '[.method, .path]'
+
+title "The cluster's own wheel is still required: without it, deploy --plan fails before cleanup"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+rm -r dist
+errcode trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //workspace/delete //workspace/mkdirs //.internal/ //clusters //libraries | jq -c '[.method, .path, .body.path]'

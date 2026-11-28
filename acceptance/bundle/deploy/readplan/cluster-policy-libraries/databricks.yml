@@ -1,0 +1,15 @@
+bundle:
+  name: cluster-policy-libraries
+
+resources:
+  clusters:
+    my_cluster:
+      cluster_name: cluster-policy-libraries
+      spark_version: 15.4.x-scala2.12
+      node_type_id: Standard_DS3_v2
+      num_workers: 1
+      # With a policy, the plan treats values the backend adds beyond the config as
+      # remote additions rather than drift.
+      policy_id: "0000000000000000"
+      libraries:
+        - whl: ./dist/*.whl

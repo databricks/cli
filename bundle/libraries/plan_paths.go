@@ -95,9 +95,10 @@ func PlanLocalLibraryPaths(ctx context.Context, b *bundle.Bundle, plan *deploypl
 //     artifact cleanup deletes them too.
 //
 // Optional are all other references, which can name files the bundle does not
-// produce: a path the configuration names directly, the output of a job, or a
-// library a job run installed on a cluster. Remote values the plan marks as unmanaged
-// are left out. Resources the plan deletes are skipped.
+// produce: a path the configuration names directly, or the output of a job. Files that
+// only the remote side of a change names, such as a library a job run installed on a
+// cluster, are left out: plain deploy does not upload them either. Resources the plan
+// deletes are skipped.
 func planUploadReferences(plan *deployplan.Plan, uploadPath string, requireUnchanged bool, owners uploadOwners) (required, optional []string) {
 	requiredNames := make(map[string]bool)
 	optionalNames := make(map[string]bool)
@@ -123,24 +124,15 @@ func planUploadReferences(plan *deployplan.Plan, uploadPath string, requireUncha
 		if json.Unmarshal(raw, &v) != nil {
 			continue
 		}
-		unmanaged := make(map[string]bool)
+		var undeclared map[string]bool
 		if fromRemote {
-			for _, change := range entry.Changes {
-				if change == nil || change.Reason != deployplan.ReasonUnmanaged {
-					continue
-				}
-				forEachField(jsonValue(change.Remote), "", func(_, s string) {
-					for _, name := range uploadNamesIn(s, uploadPath) {
-						unmanaged[name] = true
-					}
-				})
-			}
+			undeclared = remoteOnlyUploadNames(entry.Changes, uploadPath)
 		}
 		forEachField(v, "", func(key, s string) {
 			for _, name := range uploadNamesIn(s, uploadPath) {
 				ownLibrary := isUploadPathValue(s, uploadPath, name) && owners.isLibraryOf(resourceKey, key, name)
 				switch {
-				case unmanaged[name]:
+				case undeclared[name]:
 				case !fromRemote && (ownLibrary || owners.isArtifactOutput(name)):
 					requiredNames[name] = true
 				case fromRemote && requireUnchanged && ownLibrary:
@@ -155,6 +147,35 @@ func planUploadReferences(plan *deployplan.Plan, uploadPath string, requireUncha
 		delete(optionalNames, name)
 	}
 	return slices.Sorted(maps.Keys(requiredNames)), slices.Sorted(maps.Keys(optionalNames))
+}
+
+// remoteOnlyUploadNames returns the base names under uploadPath that the remote value of
+// a change names but its configured value does not. In the entry of a resource the plan
+// leaves unchanged, these are values the backend has and the configuration does not
+// declare, whatever the reason the plan records: "unmanaged" (cluster libraries a job
+// run installed when the cluster declares none), "remote_addition" (the same with a
+// cluster policy, when the cluster declares libraries of its own), or another reason.
+func remoteOnlyUploadNames(changes deployplan.Changes, uploadPath string) map[string]bool {
+	names := make(map[string]bool)
+	for _, change := range changes {
+		if change == nil || change.Remote == nil {
+			continue
+		}
+		declared := make(map[string]bool)
+		forEachField(jsonValue(change.New), "", func(_, s string) {
+			for _, name := range uploadNamesIn(s, uploadPath) {
+				declared[name] = true
+			}
+		})
+		forEachField(jsonValue(change.Remote), "", func(_, s string) {
+			for _, name := range uploadNamesIn(s, uploadPath) {
+				if !declared[name] {
+					names[name] = true
+				}
+			}
+		})
+	}
+	return names
 }
 
 // uploadOwners holds the base name patterns (paths or globs) of the local files the
