@@ -122,6 +122,10 @@ type WorkspaceFilesClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	// Tag every upload as written by a bundle deployment, so the workspace
+	// does not treat a deployed databricks.yml as a bundle's source.
+	deploymentCopy bool
 }
 
 // workspaceIDHeaders returns the workspace routing header map for outbound
@@ -137,6 +141,16 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	return newWorkspaceFilesClient(w, root, false)
+}
+
+// NewWorkspaceFilesClientForBundleDeploy returns a client that tags every
+// upload as a bundle deployment copy.
+func NewWorkspaceFilesClientForBundleDeploy(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	return newWorkspaceFilesClient(w, root, true)
+}
+
+func newWorkspaceFilesClient(w *databricks.WorkspaceClient, root string, deploymentCopy bool) (Filer, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
@@ -147,6 +161,8 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		apiClient:       apiClient,
 
 		root: NewWorkspaceRootPath(root),
+
+		deploymentCopy: deploymentCopy,
 	}, nil
 }
 
@@ -163,6 +179,10 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		url.PathEscape(strings.TrimLeft(absPath, "/")),
 		overwrite,
 	)
+	// Workspaces that do not know the parameter ignore it.
+	if w.deploymentCopy {
+		urlPath += "&bundleFileOrigin=DEPLOYMENT_COPY"
+	}
 
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
 	body, err := io.ReadAll(reader)

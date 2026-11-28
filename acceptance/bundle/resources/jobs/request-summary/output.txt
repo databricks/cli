@@ -28,7 +28,7 @@ GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/reque
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
 GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock return_export_info=true
-POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files/databricks.yml overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/files/databricks.yml bundleFileOrigin=DEPLOYMENT_COPY overwrite=true
 POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
 POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deploy.lock overwrite=false
 POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json overwrite=true

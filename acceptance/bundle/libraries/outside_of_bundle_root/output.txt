@@ -57,6 +57,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl",
   "q": {
+    "bundleFileOrigin": "DEPLOYMENT_COPY",
     "overwrite": "true"
   }
 }

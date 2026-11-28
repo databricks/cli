@@ -52,6 +52,9 @@ type SyncOptions struct {
 	DryRun bool
 
 	NoValidateRemotePath bool
+
+	// Tag uploads as bundle deployment copies.
+	DeploymentCopy bool
 }
 
 type Sync struct {
@@ -115,7 +118,11 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	workspaceFiler, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
+	newWorkspaceFiler := filer.NewWorkspaceFilesClient
+	if opts.DeploymentCopy {
+		newWorkspaceFiler = filer.NewWorkspaceFilesClientForBundleDeploy
+	}
+	workspaceFiler, err := newWorkspaceFiler(opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}

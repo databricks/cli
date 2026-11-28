@@ -1,0 +1,13 @@
+title "Deploy tags the bundle files it uploads, not its state files"
+trace $CLI bundle deploy
+# Deployment history (DMS=true) also uploads resources.json, so only metadata.json stands for the state files.
+trace print_requests.py --summary --sort //default/files/ //state/metadata.json
+
+title "Bundle sync writes to the same file_path, so it tags them too"
+trace $CLI bundle sync --full | sort
+trace print_requests.py --summary --sort //api/2.0/workspace-files/import-file
+
+title "A plain sync does not tag its uploads"
+# Prevent Git Bash on Windows from converting the /Users/... sync target into a Windows path.
+trace MSYS_NO_PATHCONV=1 $CLI sync . /Users/$CURRENT_USER_NAME/plain-sync | sort
+trace print_requests.py --summary --sort //api/2.0/workspace-files/import-file

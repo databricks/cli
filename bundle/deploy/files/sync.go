@@ -3,8 +3,11 @@ package files
 import (
 	"context"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/sync"
 )
 
@@ -55,6 +58,8 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(ctx),
+
+		DeploymentCopy: !writesOntoSource(ctx, b),
 	}
 
 	if b.Config.Workspace.CurrentUser != nil {
@@ -62,4 +67,20 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 	}
 
 	return opts, nil
+}
+
+// writesOntoSource reports whether file_path is the sync root itself, as in a
+// deploy from a workspace folder that points file_path at that folder. Those
+// files are the bundle's source, not a deployment copy.
+func writesOntoSource(ctx context.Context, b *bundle.Bundle) bool {
+	if !dbr.HasDetection(ctx) || !dbr.RunsOnRuntime(ctx) {
+		return false
+	}
+	// A file_path set from a variable can still lack the /Workspace prefix,
+	// because PrependWorkspacePrefix runs before variables are resolved.
+	filePath := b.Config.Workspace.FilePath
+	if !strings.HasPrefix(filePath, "/Workspace/") {
+		filePath = path.Join("/Workspace", filePath)
+	}
+	return path.Clean(filePath) == path.Clean(b.SyncRootPath)
 }
