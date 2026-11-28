@@ -1,0 +1,7 @@
+Badness = "After a create request fails with a 504, deploy looks the endpoint up by name, and repeats the request while the endpoint is missing. Here the endpoint is created outside the bundle between the failed request and the repeat. The repeat fails with 'already exists', the next lookup finds the endpoint, and deploy takes it: it was created after the first request, and by the deploying user. The bundle created nothing. Destroy then deletes the endpoint. From the API's answers deploy cannot tell this from its own first request being applied late, which is what the lookup after 'already exists' is for. Telling them apart needs something the create request carries and the read response returns, such as an idempotency token."
+
+# Faults are injected through the testserver.
+Cloud = false
+
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+SuppressLines.warn_retry = ""

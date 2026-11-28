@@ -68,6 +68,7 @@ type Server struct {
 
 	kills  *killRules
 	faults *FaultRules
+	hooks  *hookRules
 
 	sqlHandler *testsql.Handler
 
@@ -250,6 +251,7 @@ func New(t testutil.TestingT) *Server {
 		fakeOidc:       &FakeOidc{url: server.URL},
 		kills:          kills,
 		faults:         faults,
+		hooks:          newHookRules(),
 		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
@@ -307,9 +309,10 @@ Response.Body = '<response body here>'
 	})
 	router.NotFound = notFoundFunc
 
-	// Register test-only endpoints for setting up kill and fault rules from scripts.
+	// Register test-only endpoints for setting up kill, fault and hook rules from scripts.
 	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
 	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
+	s.Handle("POST", "/__testserver/hook", hookEndpointHandler(s.hooks))
 
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
@@ -396,6 +399,12 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 			Body:       []byte(fault.Body),
 			Headers:    getJsonHeaders(),
 		}
+	}
+
+	// The request is handled, or failed by a fault, and not answered yet: what a hook sends now
+	// lands between this request and the client's next one.
+	if hook := s.hooks.check(r.Method, r.URL.Path, token); hook != nil {
+		s.sendHookRequest(r.Context(), token, hook)
 	}
 
 	maps.Copy(w.Header(), resp.Headers)

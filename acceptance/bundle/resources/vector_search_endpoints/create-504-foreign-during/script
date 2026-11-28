@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+ENDPOINT="vs-endpoint-$UNIQUE_NAME"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI bundle destroy --auto-approve > LOG.cleanup 2>&1
+    errcode $CLI vector-search-endpoints delete-endpoint "$ENDPOINT" >> LOG.cleanup 2>&1
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# The testserver sends the outside create itself: when deploy's lookup arrives, after it finds no
+# endpoint and before the lookup is answered. So the endpoint appears between the failed request
+# and its repeat, whatever the speed of the machine.
+title "The bundle's create request fails with a 504 that the backend did not apply. Before deploy repeats it, an endpoint with the name the bundle uses is created outside the bundle: deploy takes it"
+fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
+hook.py "GET /api/2.0/vector-search/endpoints/$ENDPOINT" 0 1 "POST /api/2.0/vector-search/endpoints" "{\"name\": \"$ENDPOINT\", \"endpoint_type\": \"STANDARD\"}"
+trace $CLI bundle deploy
+
+# The bundle's failed create, its lookup that finds nothing, the outside create, the bundle's
+# repeat that is told the endpoint exists, and the lookups that find the endpoint.
+trace print_requests.py --get --summary //vector-search/endpoints
+trace $CLI bundle plan
+
+title "Destroy deletes the endpoint the bundle did not create"
+trace $CLI bundle destroy --auto-approve
+trace musterr $CLI vector-search-endpoints get-endpoint "$ENDPOINT"

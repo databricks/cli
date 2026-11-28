@@ -1,0 +1,7 @@
+Badness = "After a create request fails with a 504, deploy looks the project up by name and takes any project created less than a minute before the request. The read response has status.owner, which is not checked. Here the project was created outside the bundle, and the 504 was returned before the backend handled the request, so the bundle created nothing; without the 504 the same deploy fails with 'already exists'. Destroy then deletes the project and its data. Deploy should take a project only when it can tell that its own request created it, and otherwise fail as it does without the 504."
+
+Cloud = false
+EnvMatrix.READPLAN = []
+Env.DATABRICKS_BUNDLE_ENGINE = "direct"
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+SuppressLines.warn_retry = ""

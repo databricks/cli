@@ -1,0 +1,42 @@
+
+=== The create request is applied but answered with a 503: the SDK repeats it, and the repeat fails because the endpoint exists
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-503-replayed-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.vector_search_endpoints.my_endpoint: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name. (409 ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
+HTTP Status: 409 Conflict
+API error_code: ALREADY_EXISTS
+API message: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name.
+
+Files: 0 uploaded, 0 deleted
+
+>>> print_requests.py --get --summary //vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+
+=== The endpoint exists, but it is not in the bundle's state
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle plan
+create vector_search_endpoints.my_endpoint
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== The next deploy fails the same way
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-503-replayed-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.vector_search_endpoints.my_endpoint: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name. (409 ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
+HTTP Status: 409 Conflict
+API error_code: ALREADY_EXISTS
+API message: AI Search endpoint vs-endpoint-[UNIQUE_NAME] already exists. Please try again with a different endpoint name.
+
+Files: 0 uploaded, 0 deleted

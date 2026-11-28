@@ -51,7 +51,9 @@ func (fr *FaultRules) SetAfterHandler(token, pattern string, statusCode int, bod
 	fr.set(token, pattern, statusCode, body, offset, times, true, bodyContains)
 }
 
-func (fr *FaultRules) set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool, bodyContains string) {
+// compileRequestPattern turns a "METHOD /path" pattern, in which "*" matches within a path segment
+// and "**" across path segments, into a matcher for the whole request.
+func compileRequestPattern(pattern string) *regexp.Regexp {
 	// Escape regex characters so the pattern starts as literal text.
 	escapedPattern := regexp.QuoteMeta(pattern)
 
@@ -62,7 +64,11 @@ func (fr *FaultRules) set(token, pattern string, statusCode int, body string, of
 	)
 
 	// Anchor both ends to match the whole request.
-	matcher := regexp.MustCompile("^" + wildcards.Replace(escapedPattern) + "$")
+	return regexp.MustCompile("^" + wildcards.Replace(escapedPattern) + "$")
+}
+
+func (fr *FaultRules) set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool, bodyContains string) {
+	matcher := compileRequestPattern(pattern)
 
 	fr.mu.Lock()
 	defer fr.mu.Unlock()

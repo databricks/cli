@@ -1,0 +1,7 @@
+Badness = "After a create request fails with a 504, deploy looks the endpoint up by name and takes one created up to a minute before the request. Here the endpoint was created outside the bundle 30 seconds before the bundle's create request, so that request cannot have created it. Deploy should fail as it does without the 504."
+
+# Faults are injected through the testserver.
+Cloud = false
+
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+SuppressLines.warn_retry = ""

@@ -1,0 +1,4 @@
+Badness = "A create request that the backend applied but answered with a 503 is repeated by the SDK. The repeat fails with 'already exists', and deploy returns that error without looking the endpoint up: it only does that when the error it sees itself leaves the outcome unknown, as a 504 does (see create-504). The endpoint the bundle created is left outside its state, and every later deploy fails with 'already exists' until the endpoint is deleted or bound by hand. Deploy should end up with the endpoint in its state, as it does after a 504."
+
+# Faults are injected through the testserver.
+Cloud = false

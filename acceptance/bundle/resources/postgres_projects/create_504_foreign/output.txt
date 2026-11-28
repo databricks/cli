@@ -1,0 +1,56 @@
+
+=== Outside the bundle, create a project with the project_id the bundle uses
+
+>>> [CLI] postgres create-project test-pg-proj --json {"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}
+{
+  "name": "projects/test-pg-proj"
+}
+
+=== Deploy fails: the project_id is taken
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot create resources.postgres_projects.my_project: A project with this resource name already exists in the workspace. (400 BAD_REQUEST)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects?project_id=test-pg-proj
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: A project with this resource name already exists in the workspace.
+
+Files: 0 uploaded, 0 deleted
+
+=== The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the project
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get --summary //postgres/projects
+POST /api/2.0/postgres/projects project_id=test-pg-proj
+GET /api/2.0/postgres/projects/test-pg-proj
+GET /api/2.0/postgres/projects/test-pg-proj/branches/production
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy deletes the project the bundle did not create
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --summary //postgres/projects
+DELETE /api/2.0/postgres/projects/test-pg-proj
+
+>>> musterr [CLI] postgres get-project projects/test-pg-proj
+Error: project id not found [TraceId: [UUID]]

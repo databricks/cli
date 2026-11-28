@@ -1,0 +1,56 @@
+
+=== Outside the bundle, the deploying user creates a schema with the name the bundle uses
+
+>>> [CLI] schemas create test-schema-[UNIQUE_NAME] main
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "created_by": "[USERNAME]"
+}
+
+=== Deploy fails: the name is taken
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-504-foreign-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.schemas.my_schema: Schema 'test-schema-[UNIQUE_NAME]' already exists (400 SCHEMA_ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.1/unity-catalog/schemas
+HTTP Status: 400 Bad Request
+API error_code: SCHEMA_ALREADY_EXISTS
+API message: Schema 'test-schema-[UNIQUE_NAME]' already exists
+
+Files: 0 uploaded, 0 deleted
+
+=== The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the schema
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-504-foreign-[UNIQUE_NAME]/default/files...
+Created schemas.my_schema
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get --summary //unity-catalog/schemas //scim/v2/Me
+POST /api/2.1/unity-catalog/schemas
+GET /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
+GET /api/2.0/preview/scim/v2/Me
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy deletes the schema the bundle did not create
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.my_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.my_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-504-foreign-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --summary //unity-catalog/schemas
+DELETE /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME] force=true
+
+>>> musterr [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-[UNIQUE_NAME]' does not exist.

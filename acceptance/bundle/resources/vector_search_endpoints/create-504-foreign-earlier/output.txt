@@ -1,0 +1,11 @@
+
+=== The bundle's create request fails with a 504 that the backend did not apply. An endpoint with the name the bundle uses was created outside the bundle 30 seconds before the request: deploy takes it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-earlier-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
