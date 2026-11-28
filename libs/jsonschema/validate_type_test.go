@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,15 +40,18 @@ func TestValidatorNumber(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 
 	err = validateNumber(int32(1))
-	assert.ErrorContains(t, err, "expected type float, but value is 1")
+	assert.NoError(t, err)
 
 	err = validateNumber(int64(2))
-	assert.ErrorContains(t, err, "expected type float, but value is 2")
+	assert.NoError(t, err)
 
 	err = validateNumber(float32(1))
 	assert.NoError(t, err)
 
 	err = validateNumber(float64(1))
+	assert.NoError(t, err)
+
+	err = validateNumber(math.NaN())
 	assert.NoError(t, err)
 
 	err = validateNumber("abc")
@@ -68,10 +72,16 @@ func TestValidatorInt(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = validateInteger(float32(1))
-	assert.ErrorContains(t, err, "expected type integer, but value is 1")
+	assert.NoError(t, err)
 
 	err = validateInteger(float64(1))
-	assert.ErrorContains(t, err, "expected type integer, but value is 1")
+	assert.NoError(t, err)
+
+	err = validateInteger(float64(1e20))
+	assert.NoError(t, err)
+
+	err = validateInteger(float64(1.5))
+	assert.EqualError(t, err, "expected type integer, but value is 1.5")
 
 	err = validateInteger("abc")
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
@@ -114,7 +124,7 @@ func TestTemplateValidateType(t *testing.T) {
 	err = validateType("abc", NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
 	err = validateType(int(1), NumberType)
-	assert.ErrorContains(t, err, "expected type float, but value is 1")
+	assert.NoError(t, err)
 
 	// assert validation failing for boolean
 	err = validateType(int(1), BooleanType)
@@ -131,4 +141,27 @@ func TestTemplateValidateType(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
 	err = validateType(false, StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
+}
+
+func TestValuesEqual(t *testing.T) {
+	assert.True(t, valuesEqual(float64(3), int64(3)))
+	assert.True(t, valuesEqual(int(3), float32(3)))
+	assert.True(t, valuesEqual(int64(1<<62+1), int64(1<<62+1)))
+	assert.True(t, valuesEqual(float64(1.5), float64(1.5)))
+	assert.True(t, valuesEqual("abc", "abc"))
+	assert.True(t, valuesEqual(nil, nil))
+
+	assert.True(t, valuesEqual(uint64(1<<63), 0x1p63))
+	assert.True(t, valuesEqual([]any{"a"}, []any{"a"}))
+
+	assert.False(t, valuesEqual(int64(1<<62+1), int64(1<<62)))
+	assert.False(t, valuesEqual(float64(1<<53), int64(1<<53+1)))
+	assert.False(t, valuesEqual(0x1p63, int64(math.MaxInt64)))
+	assert.False(t, valuesEqual(int64(1<<62+1), uint64(1<<62)))
+	assert.False(t, valuesEqual(math.NaN(), math.NaN()))
+	assert.False(t, valuesEqual([]any{"a"}, []any{"b"}))
+	assert.False(t, valuesEqual(float64(3.5), int64(3)))
+	assert.False(t, valuesEqual("3", int64(3)))
+	assert.False(t, valuesEqual(true, int64(1)))
+	assert.False(t, valuesEqual(nil, int64(0)))
 }

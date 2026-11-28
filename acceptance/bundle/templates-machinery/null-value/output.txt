@@ -21,5 +21,8 @@ Error: failed to load config from file extra-null.json: instance does not match 
 
 === integer property declared only in anyOf set to a valid integer in the config file
 
->>> musterr [CLI] bundle init ./any-of --config-file extra-3.json --output-dir rendered
-Error: failed to load config from file extra-3.json: instance does not match any of the schemas in anyOf
+>>> [CLI] bundle init ./any-of --config-file extra-3.json --output-dir rendered
+✨ Successfully initialized template
+
+>>> cat rendered/values.txt
+name=x

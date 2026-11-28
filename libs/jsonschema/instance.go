@@ -106,7 +106,7 @@ func (s *Schema) validateEnum(instance map[string]any) error {
 		if !ok || fieldInfo.Enum == nil {
 			continue
 		}
-		if !slices.Contains(fieldInfo.Enum, v) {
+		if !slices.ContainsFunc(fieldInfo.Enum, func(e any) bool { return valuesEqual(e, v) }) {
 			return fmt.Errorf("expected value of property %s to be one of %v. Found: %v", k, fieldInfo.Enum, v)
 		}
 	}
@@ -133,7 +133,7 @@ func (s *Schema) validateConst(instance map[string]any) error {
 		if !ok || fieldInfo.Const == nil {
 			continue
 		}
-		if v != fieldInfo.Const {
+		if !valuesEqual(v, fieldInfo.Const) {
 			return fmt.Errorf("expected value of property %s to be %v. Found: %v", k, fieldInfo.Const, v)
 		}
 	}

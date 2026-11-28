@@ -11,4 +11,5 @@ title "integer property declared only in anyOf set to null in the config file"
 trace musterr $CLI bundle init ./any-of --config-file extra-null.json --output-dir rendered
 
 title "integer property declared only in anyOf set to a valid integer in the config file"
-trace musterr $CLI bundle init ./any-of --config-file extra-3.json --output-dir rendered
+trace $CLI bundle init ./any-of --config-file extra-3.json --output-dir rendered
+trace cat rendered/values.txt

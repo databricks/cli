@@ -1,2 +1,1 @@
-Badness = "An integer property that only a root anyOf schema declares is rejected for every value, including a valid one such as 3, because its JSON number stays a float64; it should be accepted."
 Ignore = ["rendered"]

@@ -1,6 +1,7 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -554,4 +555,31 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, skip)
 	assert.Equal(t, "hello-world", c.values["xyz"])
+}
+
+// A skip_prompt_if const read from the schema file is a float64, while an
+// integer entered at a prompt is an int64; the condition must still match.
+func TestPromptIsSkippedIntegerConstFromSchemaFile(t *testing.T) {
+	schema := &jsonschema.Schema{}
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"properties": {
+			"count": {"type": "integer"},
+			"name": {
+				"type": "string",
+				"default": "x",
+				"skip_prompt_if": {"properties": {"count": {"const": 3}}, "required": ["count"]}
+			}
+		}
+	}`), schema))
+	c := config{ctx: t.Context(), values: map[string]any{"count": int64(3)}, schema: schema}
+
+	skip, err := c.skipPrompt(jsonschema.Property{Name: "name", Schema: schema.Properties["name"]}, testRenderer())
+	require.NoError(t, err)
+	assert.True(t, skip)
+	assert.Equal(t, "x", c.values["name"])
+
+	c.values = map[string]any{"count": int64(4)}
+	skip, err = c.skipPrompt(jsonschema.Property{Name: "name", Schema: schema.Properties["name"]}, testRenderer())
+	require.NoError(t, err)
+	assert.False(t, skip)
 }

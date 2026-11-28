@@ -15,6 +15,14 @@ func TestTemplateIsInteger(t *testing.T) {
 	assert.True(t, isIntegerValue(-1.0))
 	assert.True(t, isIntegerValue(0.0))
 	assert.True(t, isIntegerValue(2.0))
+
+	// Bounds of int64; out-of-range float64 to int64 conversion is platform dependent.
+	assert.True(t, isIntegerValue(-0x1p63))
+	assert.True(t, isIntegerValue(math.Nextafter(0x1p63, 0)))
+	assert.False(t, isIntegerValue(0x1p63))
+	assert.False(t, isIntegerValue(math.Nextafter(-0x1p63, math.Inf(-1))))
+	assert.False(t, isIntegerValue(math.Inf(1)))
+	assert.False(t, isIntegerValue(math.NaN()))
 }
 
 func TestTemplateToInteger(t *testing.T) {
