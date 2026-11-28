@@ -2,13 +2,16 @@ package filer
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // Mocks client.DatabricksClient from the databricks-sdk-go package.
@@ -282,4 +285,76 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
 		})
 	}
+}
+
+func TestFilerWorkspaceFilesExtensionsNotebookExtensionIsCaseInsensitive(t *testing.T) {
+	objects := map[string]wsfsFileInfo{
+		"/dir/etl": {
+			Path:              "/dir/etl",
+			Language:          workspace.LanguageR,
+			ObjectType:        workspace.ObjectTypeNotebook,
+			ReposExportFormat: workspace.ExportFormatSource,
+		},
+		"/dir/job": {
+			Path:              "/dir/job",
+			Language:          workspace.LanguagePython,
+			ObjectType:        workspace.ObjectTypeNotebook,
+			ReposExportFormat: workspace.ExportFormatJupyter,
+		},
+	}
+
+	newClient := func(t *testing.T) (*WorkspaceFilesExtensionsClient, *mocks.MockWorkspaceClient) {
+		mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
+		mockedApiClient := mockApiClient{}
+		getStatus := func(path any) *mock.Call {
+			return mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil),
+				path, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil))
+		}
+		for p, info := range objects {
+			getStatus(map[string]string{"path": p, "return_export_info": "true"}).Return(nil, info)
+		}
+		// Expectations match in order, so any other path is not found.
+		getStatus(mock.Anything).Return(&apierr.APIError{StatusCode: http.StatusNotFound}, wsfsFileInfo{})
+
+		return &WorkspaceFilesExtensionsClient{
+			workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+			wsfs: &WorkspaceFilesClient{
+				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
+				apiClient:       &mockedApiClient,
+				root:            NewWorkspaceRootPath("/dir"),
+			},
+			root: "/dir",
+		}, mockedWorkspaceClient
+	}
+
+	// Local notebook detection accepts these extensions in any case, so a bundle
+	// referencing "etl.R" must resolve on DBR too.
+	for _, name := range []string{"etl.r", "etl.R", "job.ipynb", "job.IPYNB"} {
+		t.Run("stat "+name, func(t *testing.T) {
+			c, _ := newClient(t)
+			info, err := c.Stat(t.Context(), name)
+			require.NoError(t, err)
+			assert.Equal(t, name, info.Name())
+		})
+	}
+
+	// The language and export format checks still apply.
+	for _, name := range []string{"etl.PY", "etl.Sql", "job.PY"} {
+		t.Run("stat "+name, func(t *testing.T) {
+			c, _ := newClient(t)
+			_, err := c.Stat(t.Context(), name)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
+
+	t.Run("delete etl.R deletes notebook etl", func(t *testing.T) {
+		c, m := newClient(t)
+		workspaceApi := m.GetMockWorkspaceAPI()
+		workspaceApi.EXPECT().Delete(mock.Anything, workspace.Delete{Path: "/dir/etl.R"}).
+			Return(&apierr.APIError{StatusCode: http.StatusNotFound})
+		workspaceApi.EXPECT().Delete(mock.Anything, workspace.Delete{Path: "/dir/etl"}).Return(nil)
+
+		err := c.Delete(t.Context(), "etl.R")
+		require.NoError(t, err)
+	})
 }

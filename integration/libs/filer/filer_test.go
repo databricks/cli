@@ -722,6 +722,9 @@ func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 		"scala1.ipynb",
 		// SQL jupyter notebook
 		"sql1.ipynb",
+		// notebook extensions match case-insensitively, as in local notebook detection
+		"foo.PY",
+		"p1.IPYNB",
 	} {
 		info, err := wf.Stat(ctx, fileName)
 		require.NoError(t, err)
