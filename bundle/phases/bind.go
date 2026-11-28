@@ -37,7 +37,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	db := &b.DeploymentBundle.StateDB
 	defer func() {
+		if _, err := db.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -59,7 +63,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		}
 	}
 
-	// Direct engine: import into temp state, run plan, check for changes.
+	// Prepare the binding without writing state until the plan is approved.
 	resourceKey := fmt.Sprintf("resources.%s.%s", opts.Group, opts.ResourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
 
@@ -89,27 +93,31 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		}
 
 		if !cmdio.IsPromptSupported(ctx) {
-			result.Cancel()
 			logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
 			return
 		}
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
-			result.Cancel()
 			logdiag.LogError(ctx, err)
 			return
 		}
 		if !ans {
-			result.Cancel()
 			logdiag.LogError(ctx, errors.New("import aborted"))
 			return
 		}
 	}
 
-	// Finalize: rename temp state to final location
-	err = result.Finalize()
-	if err != nil {
+	if err := db.UpgradeToWrite(); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	resource := result.Resource
+	if err := db.SaveState(ctx, resourceKey, resource.ID, resource.State, resource.DependsOn); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if _, err := db.Finalize(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}

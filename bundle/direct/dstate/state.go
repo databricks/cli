@@ -165,6 +165,27 @@ type Database struct {
 	State map[string]ResourceEntry `json:"state"`
 }
 
+// Clone returns an independent copy with an initialized resource map.
+// New fields must be added here, with mutable data cloned rather than shared.
+func (d Database) Clone() Database {
+	clone := Database{
+		StateVersion: d.StateVersion,
+		CLIVersion:   d.CLIVersion,
+		Lineage:      d.Lineage,
+		Serial:       d.Serial,
+		Features:     maps.Clone(d.Features),
+		State:        make(map[string]ResourceEntry, len(d.State)),
+	}
+	for key, entry := range d.State {
+		clone.State[key] = ResourceEntry{
+			ID:        entry.ID,
+			State:     slices.Clone(entry.State),
+			DependsOn: slices.Clone(entry.DependsOn),
+		}
+	}
+	return clone
+}
+
 type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
 	State     json.RawMessage             `json:"state"`
