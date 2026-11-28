@@ -25,6 +25,7 @@ def main():
     REQUESTS = Path(os.environ["OUT_REQUESTS"])
     LOG = Path("LOG.commands").resolve()
     PATTERNS = {
+        "batch_update_operations": "POST /api/2.0/bundle/deployments/{id}/versions/*/operations:batchUpdate",
         "complete_version": "POST /api/2.0/bundle/deployments/{id}/versions/*/complete",
         "create_deployment": "POST /api/2.0/bundle/deployments",
         "create_version": "POST /api/2.0/bundle/deployments/{id}/versions",

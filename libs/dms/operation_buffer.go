@@ -4,18 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	databricksclient "github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
-// plan reads.
+// bufferedOperations caps queued resource keys in authoritative mode. The writer can also
+// hold a batch of up to maxBatchOperations updates and one carried update.
 const bufferedOperations = 10
 
 const historyDrainTimeoutPerOperation = 5 * time.Second
+
+// maxBatchOperations and maxBatchBytes cap one BatchUpdateOperations request: the service takes
+// 1-20 updates and asks callers to stay under 1 MiB in all.
+const (
+	maxBatchOperations = 20
+	maxBatchBytes      = 1 << 20
+)
 
 type recordingState uint8
 
@@ -78,13 +91,16 @@ type OperationBuffer struct {
 	drainTimeout time.Duration
 
 	// sequenceIDs holds the token the last update for a resource returned. A missing key reads as
-	// 0, which is what staging leaves. Unguarded: run is the only goroutine that writes, one update at a time.
+	// 0, which is what staging leaves. Unguarded: only run accesses it, and batches are sent serially.
 	//
 	// TODO: revisit and possibly deprecate. Sequence ids guard against an earlier update
-	// overwriting a later one, which cannot happen here - updates for a resource are sent one at a
-	// time from a single goroutine. UpdateOperation requires them today, so the client cannot
+	// overwriting a later one, which cannot happen here - updates for a resource are sent in order
+	// from a single goroutine. The service requires them today, so the client cannot
 	// simply stop sending them.
 	sequenceIDs map[string]int64
+
+	// apiClient sends the batches. Built by run on its first write, and only run uses it.
+	apiClient *databricksclient.DatabricksClient
 
 	// mu guards the fields below.
 	mu sync.Mutex
@@ -205,70 +221,208 @@ func (b *OperationBuffer) take(resourceKey string) (*bufferedUpdate, bool) {
 	return entry, ok
 }
 
+// queuedWrite is an update the writer took off the queue.
+type queuedWrite struct {
+	key   string
+	entry *bufferedUpdate
+}
+
+// batchEntry is a queued write with its request entry, encoded once so its size is known.
+type batchEntry struct {
+	queuedWrite
+	body json.RawMessage
+}
+
+// The BatchUpdateOperations wire shapes. Each entry names its operation in the body.
+type batchUpdateOperationsRequest struct {
+	Requests []json.RawMessage `json:"requests"`
+}
+
+type operationUpdateRequest struct {
+	Operation  bundledeployments.Operation `json:"operation"`
+	UpdateMask fieldmask.FieldMask         `json:"update_mask"`
+}
+
+type batchUpdateOperationsResponse struct {
+	Operations []bundledeployments.Operation `json:"operations"`
+}
+
+// batchRequestOverhead is the size of a request with no entries.
+const batchRequestOverhead = len(`{"requests":[]}`)
+
+// run sends the queued updates in batches, each holding what was already waiting when it was
+// built. One batch is in flight at a time.
 func (b *OperationBuffer) run(ctx context.Context) {
 	defer close(b.done)
 	defer b.cancel()
 
+	// carried was taken off the queue but could not join the previous batch.
+	var carried *queuedWrite
+	for {
+		if carried == nil {
+			w, ok := b.next(ctx, true)
+			if !ok {
+				return
+			}
+			carried = &w
+		}
+		var batch []batchEntry
+		batch, carried = b.collect(ctx, *carried)
+
+		// Keep going after a failure, so one bad write does not drop everything behind it.
+		if err := b.write(ctx, batch); err != nil {
+			b.setErr(fmt.Errorf("recording operation for %s: %w", batchKeys(batch), err))
+		}
+	}
+}
+
+// next takes the next queued update. With wait it blocks for one; without, it reports false when
+// none is queued. It also reports false once the queue is closed and drained, and, for best-effort
+// history, once ctx is done.
+func (b *OperationBuffer) next(ctx context.Context, wait bool) (queuedWrite, bool) {
 	for {
 		var resourceKey string
 		var ok bool
-		if b.bestEffort {
+		switch {
+		case !wait:
+			select {
+			case resourceKey, ok = <-b.queue:
+			default:
+				return queuedWrite{}, false
+			}
+		case b.bestEffort:
 			select {
 			case resourceKey, ok = <-b.queue:
 			case <-ctx.Done():
 				// Drain calls cancel on timeout. Parent cancellation can also stop history.
 				b.setErr(ctx.Err())
-				return
+				return queuedWrite{}, false
 			}
-		} else {
+		default:
 			resourceKey, ok = <-b.queue
 		}
 		if !ok {
-			return
+			return queuedWrite{}, false
 		}
-		entry, ok := b.take(resourceKey)
-		if !ok {
-			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
-			// a stray key could never write a zero-valued update.
-			continue
+		if entry, ok := b.take(resourceKey); ok {
+			return queuedWrite{key: resourceKey, entry: entry}, true
 		}
+		// Unreachable: a key is queued only when nothing was waiting for it. Guard so
+		// a stray key could never write a zero-valued update.
+	}
+}
 
-		// Keep going after a failure, so one bad write does not drop everything behind it.
-		if err := b.write(ctx, resourceKey, entry); err != nil {
-			b.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
+// collect builds a batch from first and the updates already queued behind it, up to what one
+// request may carry. It returns the update that ended the batch early: one past the size cap, or
+// a resource written again after the batch took it, whose write needs the sequence id this batch
+// earns.
+func (b *OperationBuffer) collect(ctx context.Context, first queuedWrite) ([]batchEntry, *queuedWrite) {
+	var batch []batchEntry
+	size := batchRequestOverhead
+	w := first
+	for {
+		if slices.ContainsFunc(batch, func(e batchEntry) bool { return e.key == w.key }) {
+			return batch, &w
+		}
+		body, err := b.encode(w)
+		switch {
+		case err != nil:
+			b.finish([]batchEntry{{queuedWrite: w}}, err)
+			b.setErr(fmt.Errorf("recording operation for %s: %w", w.key, err))
+		case len(batch) > 0 && size+len(body)+1 > maxBatchBytes:
+			return batch, &w
+		default:
+			batch = append(batch, batchEntry{queuedWrite: w, body: body})
+			size += len(body) + 1
+		}
+		if len(batch) == maxBatchOperations {
+			return batch, nil
+		}
+		var ok bool
+		if w, ok = b.next(ctx, false); !ok {
+			return batch, nil
 		}
 	}
 }
 
-// write sends one update, at the sequence id the resource is at.
-func (b *OperationBuffer) write(ctx context.Context, key string, entry *bufferedUpdate) error {
+// encode builds w's request entry, at the sequence id its resource is at.
+func (b *OperationBuffer) encode(w queuedWrite) (json.RawMessage, error) {
+	return json.Marshal(operationUpdateRequest{
+		Operation:  w.entry.update.operation(OperationName(b.deploymentID, b.versionNum, w.key), b.sequenceIDs[w.key]),
+		UpdateMask: w.entry.update.Fields.Mask(),
+	})
+}
+
+// write sends one batch. The service applies all of it or none of it, so every update in the
+// batch shares the outcome.
+func (b *OperationBuffer) write(ctx context.Context, batch []batchEntry) error {
+	if len(batch) == 0 {
+		return nil
+	}
 	// Renewed when the write starts, not when it succeeds, so a heartbeat only overlaps a write
 	// that has been in flight for a full interval. Both update the version row.
 	b.heartbeat.renew()
 
-	w := cmdctx.WorkspaceClient(ctx)
-	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
-		Name:       OperationName(b.deploymentID, b.versionNum, key),
-		Operation:  entry.update.operation(b.sequenceIDs[key]),
-		UpdateMask: entry.update.Fields.Mask(),
-	})
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	state := recordingSucceeded
-	if err != nil {
-		b.stats.RecordingAttemptFailureCount++
-		state = recordingFailed
-	} else {
-		b.stats.RecordingAttemptSuccessCount++
+	result, err := b.send(ctx, batch)
+	if err == nil && len(result.Operations) != len(batch) {
+		err = fmt.Errorf("the service returned %d operations for %d updates", len(result.Operations), len(batch))
 	}
-	entry.state = state
+	b.finish(batch, err)
 	if err != nil {
 		return err
 	}
 
-	// The next write for this resource echoes the sequence id this one earned.
-	b.sequenceIDs[key] = result.SequenceId
+	// The next write for each resource echoes the sequence id this one earned. Results come back
+	// in request order.
+	for i, e := range batch {
+		b.sequenceIDs[e.key] = result.Operations[i].SequenceId
+	}
 	return nil
+}
+
+// send posts batch through a raw client, since the SDK leaves BatchUpdateOperations out while
+// the service stages the method DEVELOPMENT.
+//
+// TODO: switch to the SDK's generated method once the SDK has it.
+func (b *OperationBuffer) send(ctx context.Context, batch []batchEntry) (batchUpdateOperationsResponse, error) {
+	var result batchUpdateOperationsResponse
+	if b.apiClient == nil {
+		client, err := databricksclient.New(cmdctx.WorkspaceClient(ctx).Config)
+		if err != nil {
+			return result, err
+		}
+		b.apiClient = client
+	}
+	request := batchUpdateOperationsRequest{Requests: make([]json.RawMessage, len(batch))}
+	for i, e := range batch {
+		request.Requests[i] = e.body
+	}
+	path := "/api/2.0/bundle/" + VersionName(b.deploymentID, b.versionNum) + "/operations:batchUpdate"
+	err := b.apiClient.Do(ctx, http.MethodPost, path, auth.WorkspaceIDHeaders(b.apiClient.Config), nil, request, &result)
+	return result, err
+}
+
+// finish records the outcome of the batch's upload for each update in it.
+func (b *OperationBuffer) finish(batch []batchEntry, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for _, e := range batch {
+		if err != nil {
+			b.stats.RecordingAttemptFailureCount++
+			e.entry.state = recordingFailed
+		} else {
+			b.stats.RecordingAttemptSuccessCount++
+			e.entry.state = recordingSucceeded
+		}
+	}
+}
+
+func batchKeys(batch []batchEntry) string {
+	keys := make([]string, len(batch))
+	for i, e := range batch {
+		keys[i] = e.key
+	}
+	return strings.Join(keys, ", ")
 }
 
 // Drain waits for buffered uploads before version completion.

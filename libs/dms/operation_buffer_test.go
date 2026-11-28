@@ -11,20 +11,24 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// What the service ends up holding - the version a deploy claims, the operations it stages, the
-// completion it reports - is asserted end to end by acceptance/bundle/dms. What is left here is
-// what a deploy cannot reach: the queue's coalescing and the size limit. No test here goes
-// through the API - the queue is driven directly, so nothing waits on a request.
+// acceptance/bundle/dms covers deployment history end to end. Unit tests control queue timing
+// and batch composition, which depend on scheduling during a deployment.
 
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
+	return queuedWithCapacity(bufferedOperations)
+}
+
+func queuedWithCapacity(capacity int) *OperationBuffer {
 	return &OperationBuffer{
-		queue:       make(chan string, bufferedOperations),
+		queue:       make(chan string, capacity),
 		pending:     make(map[string]*bufferedUpdate),
 		latestState: make(map[string]OperationUpdate),
 		operations:  make(map[string]*bufferedUpdate),
@@ -61,6 +65,104 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 	assert.JSONEq(t, `{"state":{"name":"v3"}}`, string(entry.update.State))
 	assert.NotSame(t, first, entry)
 	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(first.update.State))
+}
+
+func TestBatchTakesQueuedUpdatesUpToTheCap(t *testing.T) {
+	s := queuedWithCapacity(maxBatchOperations + 5)
+	for i := range maxBatchOperations + 5 {
+		s.record(fmt.Sprintf("resources.jobs.job_%d", i), stateUpdate(t, "v1"), false, nil)
+	}
+
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	batch, carried := s.collect(t.Context(), first)
+
+	assert.Len(t, batch, maxBatchOperations)
+	assert.Nil(t, carried)
+	assert.Equal(t, "resources.jobs.job_0", batch[0].key)
+	assert.Len(t, s.queue, 5, "the rest wait for the next batch")
+}
+
+func TestBatchLeavesARepeatedResourceForTheNextBatch(t *testing.T) {
+	// The second write must echo the sequence id the first one earns, so it cannot share its batch.
+	s := queued()
+	s.record("resources.jobs.foo", stateUpdate(t, "v1"), false, nil)
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	s.record("resources.jobs.foo", stateUpdate(t, "v2"), false, nil)
+	s.record("resources.jobs.bar", stateUpdate(t, "v1"), false, nil)
+
+	batch, carried := s.collect(t.Context(), first)
+
+	require.Len(t, batch, 1)
+	require.NotNil(t, carried)
+	assert.Equal(t, "resources.jobs.foo", carried.key)
+	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(carried.entry.update.State))
+	assert.Len(t, s.queue, 1, "bar waits behind it")
+}
+
+func TestBatchTracksSequenceIDsPerResource(t *testing.T) {
+	server := testserver.New(t)
+	workspace := testserver.NewFakeWorkspace(server.URL, "token")
+	deployment := &testserver.DmsDeployment{
+		Resources:  make(map[string]bundledeployments.Resource),
+		Operations: make(map[string]*bundledeployments.Operation),
+	}
+	const foo = "resources.jobs.foo"
+	const bar = "resources.jobs.bar"
+	for _, key := range []string{foo, bar} {
+		name := OperationName("dep-1", 1, key)
+		deployment.Operations[name] = &bundledeployments.Operation{
+			Name:        name,
+			ResourceKey: strings.TrimPrefix(key, StatePrefix),
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeCreate,
+			Status:      StatusPending,
+		}
+	}
+	workspace.DmsDeployments["dep-1"] = deployment
+	server.Handle("POST", "/api/2.0/bundle/deployments/dep-1/versions/1/operations:batchUpdate", func(req testserver.Request) any {
+		return workspace.BatchUpdateOperations(req, "dep-1", "1")
+	})
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), enrollmentsClient(t, server))
+	b := queued()
+	b.deploymentID = "dep-1"
+	b.versionNum = 1
+	b.sequenceIDs = make(map[string]int64)
+	b.heartbeat = startVersionHeartbeat(ctx, b.deploymentID, b.versionNum)
+	defer b.heartbeat.Stop()
+
+	for _, keys := range [][]string{{foo}, {foo, bar}, {bar, foo}} {
+		for _, key := range keys {
+			b.record(key, stateUpdate(t, "v1"), false, nil)
+		}
+		first, ok := b.next(ctx, false)
+		require.True(t, ok)
+		batch, carried := b.collect(ctx, first)
+		require.Len(t, batch, len(keys))
+		require.Nil(t, carried)
+		require.NoError(t, b.write(ctx, batch))
+	}
+	assert.Equal(t, map[string]int64{foo: 3, bar: 2}, b.sequenceIDs)
+}
+
+func TestBatchStaysUnderTheSizeCap(t *testing.T) {
+	s := queuedWithCapacity(maxBatchOperations)
+	state := json.RawMessage(`{"state":"` + strings.Repeat("x", maxStateSize-16) + `"}`)
+	for i := range maxBatchOperations {
+		s.RecordOperation(t.Context(), fmt.Sprintf("resources.jobs.job_%d", i), false, "id-1", state)
+	}
+
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	batch, carried := s.collect(t.Context(), first)
+
+	size := batchRequestOverhead
+	for _, e := range batch {
+		size += len(e.body) + 1
+	}
+	assert.LessOrEqual(t, size, maxBatchBytes)
+	assert.Less(t, len(batch), maxBatchOperations)
+	assert.NotNil(t, carried, "the update past the cap starts the next batch")
 }
 
 func TestBufferFailsOnOversizedState(t *testing.T) {

@@ -39,17 +39,18 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations:batchUpdate",
   "body": {
-    "error_message": "",
-    "resource_id": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
-    "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "operation": {
+      "error_message": "",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/1/operations/schemas.foo",
+      "resource_id": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
+      "sequence_id": 0,
+      "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
+      "status": "OPERATION_STATUS_SUCCEEDED"
+    },
+    "update_mask": "state,error_message,resource_id,status"
   }
 }
 {
@@ -144,16 +145,17 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations:batchUpdate",
   "body": {
-    "error_message": "",
-    "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
-    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][2]\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "operation": {
+      "error_message": "",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
+      "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
+      "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][2]\"}}",
+      "status": "OPERATION_STATUS_SUCCEEDED"
+    },
+    "update_mask": "state,error_message,resource_id,status"
   }
 }
 {
@@ -248,15 +250,16 @@ Destroy: 1 deleted
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations:batchUpdate",
   "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "operation": {
+      "error_message": "",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/3/operations/schemas.foo",
+      "sequence_id": 0,
+      "status": "OPERATION_STATUS_SUCCEEDED"
+    },
+    "update_mask": "state,error_message,status"
   }
 }
 {

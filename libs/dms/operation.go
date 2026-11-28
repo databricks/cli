@@ -145,10 +145,11 @@ func (u OperationUpdate) Merge(newer OperationUpdate) OperationUpdate {
 	return merged
 }
 
-// operation builds the request body from the masked fields, plus the sequence_id check.
+// operation builds the request body from the masked fields, plus the name and the sequence_id check.
 // Force-send them (empty = clear, and 0 is a real sequence_id); never force state, since a missing state means the resource is gone.
-func (u OperationUpdate) operation(sequenceID int64) bundledeployments.Operation {
+func (u OperationUpdate) operation(name string, sequenceID int64) bundledeployments.Operation {
 	operation := bundledeployments.Operation{
+		Name:            name,
 		SequenceId:      sequenceID,
 		ForceSendFields: []string{"SequenceId"},
 	}

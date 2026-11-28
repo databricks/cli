@@ -16,7 +16,6 @@
   Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=2
   Updated jobs.foo
   Updated pipelines.bar
-  Warn: Failed to record deployment history: recording operation for [RESOURCE_KEY]: Fault injected by test.
   Files: 3 uploaded, 0 deleted
   Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
@@ -85,7 +84,6 @@
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-update_operation-commands-[UNIQUE_NAME]/files...
   Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
   Updated pipelines.bar
-  Warn: Failed to record deployment history: recording operation for [RESOURCE_KEY]: Fault injected by test.
   Files: 6 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
@@ -105,7 +103,6 @@
   Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=11
   Updated jobs.foo
   Updated pipelines.bar
-  Warn: Failed to record deployment history: recording operation for [RESOURCE_KEY]: Fault injected by test.
   Files: 2 uploaded, 0 deleted
   Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
@@ -120,7 +117,6 @@
 
   All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-update_operation-commands-[UNIQUE_NAME]
 
-  Warn: Failed to record deployment history: recording operation for [RESOURCE_KEY]: Fault injected by test.
   Destroy: 2 deleted
 
 === deployment_history: false
@@ -145,4 +141,4 @@
 
   Destroy: 2 deleted
 
-DMS API called: yes
+DMS API called: no
