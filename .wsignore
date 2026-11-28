@@ -18,6 +18,10 @@ python/docs/images/databricks-logo.svg
 # In order to prevent that difference, hello.txt does not have a trailing newline.
 acceptance/selftest/record_cloud/volume-io/hello.txt
 
+# Exact contents and sizes are part of the expected output (cat prints abcd, ls reports size 3).
+acceptance/cmd/fs/basic/*/hello.txt
+acceptance/cmd/fs/basic/*/bye.txt
+
 # bundle commands leave empty lines at the end; too many to list individually:
 acceptance/**/out*.txt
 

@@ -1,0 +1,69 @@
+# fs ls -o json entries, one per line, projected to the fields the tests assert (last_modified varies).
+# Fails unless stdout is exactly one JSON array, which is what scripts parsing it rely on; stderr bypasses the pipe.
+ls_fields() {
+  jq -s -c 'if length != 1 or (.[0] | type) != "array" then error("not a single JSON array") elif (.[0] | length) == 0 then [] else .[0][] | {name, is_directory, size} end'
+}
+
+# Runs a command and prints its stdout and its stderr separately. Keeps the stdout in $STREAMS_STDOUT
+# for byte comparisons, and returns the command's exit code. LOG.* files stay out of the output diff.
+STREAMS_STDOUT=LOG.streams.stdout
+streams() {
+  local code=0
+  "$@" > "$STREAMS_STDOUT" 2> LOG.streams.stderr || code=$?
+  echo "stdout:"
+  cat "$STREAMS_STDOUT"
+  echo
+  echo "stderr:"
+  cat LOG.streams.stderr
+  return $code
+}
+
+# cat, ls, mkdir, rm and completion under $1: a DBFS path that does not exist yet, or the root of a new UC Volume.
+fs_basic() {
+  local root=$1
+
+  title "mkdir"
+  trace $CLI fs mkdir $root/a
+  trace $CLI fs ls $root -o json | ls_fields
+  trace $CLI fs mkdir $root/a
+  trace $CLI fs mkdir $root/x/y/z
+  trace $CLI fs ls $root/x -o json | ls_fields
+  trace $CLI fs ls $root/x/y -o json | ls_fields
+
+  title "ls and cat on empty directories"
+  trace streams $CLI fs ls $root/x/y/z -o json
+  musterr trace $CLI fs cat $root/a
+
+  title "cat"
+  $CLI fs cp hello.txt $root/a/hello.txt >> LOG.cp
+  $CLI fs cp bye.txt $root/bye.txt >> LOG.cp
+  trace streams $CLI fs cat $root/a/hello.txt
+  cmp "$STREAMS_STDOUT" hello.txt && echo "fs cat stdout is byte-identical to hello.txt"
+  musterr trace $CLI fs cat $root/non-existent-file
+
+  title "ls"
+  trace $CLI fs ls $root/a
+  trace $CLI fs ls $root -o json | ls_fields
+  trace $CLI fs ls $root -o json --absolute | ls_fields
+  musterr trace $CLI fs ls $root/a/hello.txt -o json
+  musterr trace $CLI fs ls $root/nonexistent -o json
+
+  title "mkdir over a file"
+  musterr trace $CLI fs mkdir $root/bye.txt
+
+  title "completion offers directories only"
+  trace streams $CLI __complete fs ls $root/
+
+  title "rm"
+  trace $CLI fs rm $root/bye.txt
+  musterr trace $CLI fs cat $root/bye.txt
+  trace $CLI fs mkdir $root/empty
+  trace $CLI fs rm $root/empty
+  trace $CLI fs ls $root -o json | ls_fields
+  musterr trace $CLI fs rm $root/a
+  trace $CLI fs ls $root/a
+  musterr trace $CLI fs rm $root/does-not-exist
+  trace $CLI fs rm $root/a --recursive
+  musterr trace $CLI fs ls $root/a
+  trace $CLI fs ls $root
+}

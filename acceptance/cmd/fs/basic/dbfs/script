@@ -1,0 +1,13 @@
+DBFS="dbfs:/tmp/fs-basic-${UNIQUE_NAME}"
+
+cleanup() {
+  errcode $CLI fs rm -r ${DBFS} >> LOG.cleanup 2>&1
+}
+trap cleanup EXIT
+
+fs_basic ${DBFS}
+
+title "cleanup"
+trace $CLI fs rm -r ${DBFS}
+musterr trace $CLI fs ls ${DBFS}
+trap - EXIT

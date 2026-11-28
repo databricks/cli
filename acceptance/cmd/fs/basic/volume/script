@@ -1,0 +1,14 @@
+VOLUME_NAME="fs-basic-${UNIQUE_NAME}"
+
+cleanup() {
+  errcode $CLI volumes delete "main.default.${VOLUME_NAME}" >> LOG.cleanup 2>&1
+}
+trap cleanup EXIT
+
+$CLI volumes create main default "${VOLUME_NAME}" MANAGED > LOG.volume
+
+fs_basic dbfs:/Volumes/main/default/${VOLUME_NAME}
+
+title "cleanup"
+trace $CLI volumes delete "main.default.${VOLUME_NAME}"
+trap - EXIT
