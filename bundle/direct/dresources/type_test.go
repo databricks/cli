@@ -19,6 +19,8 @@ var knownMissingInRemoteType = map[string][]string{
 	"apps": {
 		// The Apps API can't return the thumbnail image, only its thumbnail_url.
 		"thumbnail",
+		// Local-only digest of the app's source files.
+		"source_code_digest",
 	},
 	"external_locations": {
 		"skip_validation",

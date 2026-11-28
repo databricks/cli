@@ -1,0 +1,146 @@
+
+=== Deploy: the app is created and its source is deployed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Created apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_app_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "",
+    "name": "myapp",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files/app"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "command": [
+      "python",
+      "app.py"
+    ],
+    "env_vars": [
+      {
+        "name": "GREETING",
+        "value": "hello"
+      }
+    ],
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files/app"
+  }
+}
+
+=== State records the digest of the source files
+
+>>> print_state.py
+"sha256:[HASH][0]"
+
+=== Nothing changed: no new app deployment
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_app_requests
+
+=== Only a source file changed: the app is planned as changed
+
+>>> update_file.py app/app.py version one version two
+
+>>> [CLI] bundle plan
+update apps.myapp
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "source_code_digest": {
+    "action": "update",
+    "old": "sha256:[HASH][0]",
+    "new": "sha256:[HASH][1]"
+  }
+}
+
+=== Deploy creates a new app deployment and sends no app update
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Updated apps.myapp
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_app_requests
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "command": [
+      "python",
+      "app.py"
+    ],
+    "env_vars": [
+      {
+        "name": "GREETING",
+        "value": "hello"
+      }
+    ],
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files/app"
+  }
+}
+
+=== Nothing changed since: no new app deployment
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_app_requests
+
+=== A changed file outside source_code_path: no new app deployment
+
+>>> update_file.py other/notes.txt one two
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_app_requests
+
+=== Fresh checkout as in CI (no local state, no sync snapshot): every file is uploaded again, still no new app deployment
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_app_requests
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/source-code-change/default
+
+Destroy: 1 deleted

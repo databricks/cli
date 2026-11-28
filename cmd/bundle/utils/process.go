@@ -540,9 +540,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// a watched file: build and the predeploy script. Reads the sync root that
 	// phases.Initialize resolves, so it is skipped along with it; `bundle deploy
 	// --plan` recomputes fingerprints that the loaded plan then overrides with the
-	// ones it recorded.
+	// ones it recorded. The same holds for the source code digests of apps.
 	if !opts.SkipInitialize {
-		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
+		bundle.ApplySeqContext(ctx, b,
+			mutator.ResolveJobRunFileTriggers(),
+			mutator.ResolveAppSourceCodeDigests(),
+		)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}

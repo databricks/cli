@@ -1,0 +1,8 @@
+Cloud = false
+
+Ignore = [".databricks"]
+
+# App deployment progress messages vary per poll, so they are filtered out.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""

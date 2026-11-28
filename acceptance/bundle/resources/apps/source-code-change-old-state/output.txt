@@ -1,0 +1,81 @@
+
+=== Deploy a started app
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files...
+Created apps.myapp
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "",
+    "name": "myapp",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files"
+  }
+}
+
+=== Drop source_code_digest from the state, as a CLI from before it was recorded wrote it
+
+=== Whether the deployed source is current is unknown, so the app is deployed once and the digest recorded
+
+>>> [CLI] bundle plan
+update apps.myapp
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "new": "sha256:[HASH]"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files...
+Updated apps.myapp
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files"
+  }
+}
+
+>>> jq .state["resources.apps.myapp"].state.source_code_digest .databricks/bundle/default/resources.json
+"sha256:[HASH]"
+
+=== Redeploy is a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //apps
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/source-code-change-old-state/default
+
+Destroy: 1 deleted
