@@ -53,17 +53,9 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sensitive-variable
 Created catalogs.source_catalog
 Created secrets.escaped_secret
 Created secrets.ref_secret
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === create requests of the plain deploy and the saved plan match
 {"name":"escaped_secret","value":"escaped-${x}"}
 {"name":"ref_secret","value":"dummy-catalog-name"}
-1,2c1,2
-< {"name":"escaped_secret","value":"escaped-${x}"}
-< {"name":"ref_secret","value":"dummy-catalog-name"}
----
-> {"name":"escaped_secret","value":"escaped-$${x}"}
-> {"name":"ref_secret","value":"${resources.catalogs.source_catalog.name}"}
-
-Exit code: 1

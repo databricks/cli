@@ -69,61 +69,54 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// CheckSensitivePlanValues returns one error per problem that stops a saved plan from being applied:
-// a sensitive field the plan sets whose resolved config value is empty. The resolved config holds the
-// values from --var, BUNDLE_VAR_, defaults, targets and the variable-overrides file alike, so any of
-// them supplies a value. Sensitive variables the plan does not use need no value.
+// CheckSensitivePlanValues returns one error per resource that stops a saved plan from being applied:
+// a sensitive field the plan sets whose config value is empty, or a resource the config no longer has.
+// It runs the same restore as InitForApply, so the check and the apply cannot disagree. The config
+// holds the values from --var, BUNDLE_VAR_, defaults, targets and the variable-overrides file alike.
 func CheckSensitivePlanValues(root *config.Root, plan *deployplan.Plan) []error {
-	var problems []error
-	seen := make(map[string]bool)
-	addProblem := func(err error) {
-		if !seen[err.Error()] {
-			seen[err.Error()] = true
-			problems = append(problems, err)
-		}
-	}
+	_, errs := restoreSavedPlanStates(root, plan, newAdapterForKey)
+	return errs
+}
 
+// newAdapterForKey returns an adapter for a plan entry without a client, for the checks that run
+// before the bundle is initialized for apply.
+func newAdapterForKey(resourceKey string) (*dresources.Adapter, error) {
+	resourceType := config.GetResourceTypeFromKey(resourceKey)
+	typedNil, ok := dresources.SupportedResources[resourceType]
+	if !ok {
+		return nil, fmt.Errorf("unknown resource type %q", resourceType)
+	}
+	return dresources.NewAdapter(typedNil, resourceType, nil)
+}
+
+// restoreSavedPlanStates returns the typed state that apply deploys for each plan entry with a new
+// state, with the sensitive fields the plan redacted restored from root. Every problem is returned, one
+// per resource.
+func restoreSavedPlanStates(root *config.Root, plan *deployplan.Plan, adapterFor func(string) (*dresources.Adapter, error)) (map[string]*structvar.StructVar, []error) {
+	states := make(map[string]*structvar.StructVar)
+	var errs []error
 	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
 		entry := plan.Plan[resourceKey]
-		if entry.NewState == nil {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
 			continue
 		}
-		resourceType := config.GetResourceTypeFromKey(resourceKey)
-		typedNil, ok := dresources.SupportedResources[resourceType]
-		if !ok {
-			addProblem(fmt.Errorf("resource %s: unknown resource type", resourceKey))
-			continue
-		}
-		rules := dresources.SensitiveFieldRules(resourceType)
-		if len(rules) == 0 {
-			continue
-		}
-		adapter, err := dresources.NewAdapter(typedNil, resourceType, nil)
+		adapter, err := adapterFor(resourceKey)
 		if err != nil {
-			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			errs = append(errs, fmt.Errorf("converting plan entry %s: %w", resourceKey, err))
 			continue
 		}
 		sv, err := entry.NewState.ToStructVar(adapter.StateType())
 		if err != nil {
-			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			errs = append(errs, fmt.Errorf("loading plan entry %s: %w", resourceKey, err))
 			continue
 		}
-		paths, err := sensitivePaths(rules)
-		if err != nil {
-			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+		if err := restoreSensitiveFields(adapter, resourceKey, sv, root); err != nil {
+			errs = append(errs, err)
 			continue
 		}
-		for _, path := range paths {
-			planned, err := structaccess.Get(sv.Value, path)
-			if err != nil {
-				continue
-			}
-			if _, err := sensitiveConfigValue(root, resourceKey, path, planned); err != nil {
-				addProblem(err)
-			}
-		}
+		states[resourceKey] = sv
 	}
-	return problems
+	return states, errs
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan. The sensitive
@@ -137,36 +130,26 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		return err
 	}
 
-	// Eagerly parse plan entries loaded from JSON:
-	// - NewState.Value contains raw JSON bytes; parse into typed structs and cache.
+	states, errs := restoreSavedPlanStates(root, plan, b.getAdapterForKey)
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	for resourceKey, sv := range states {
+		b.StateCache.Store(resourceKey, sv)
+	}
+
+	// Eagerly parse remote state loaded from JSON:
 	// - RemoteState is decoded as map[string]interface{}; round-trip through the
 	//   adapter's StateType to recover the correct typed struct so that type
 	//   assertions in resource adapters (e.g. entry.RemoteState.(*GrantsState))
 	//   work identically whether the plan came from a file or from memory.
 	for resourceKey, entry := range plan.Plan {
-		hasNewState := entry.NewState != nil && len(entry.NewState.Value) > 0
-		hasRemoteState := entry.RemoteState != nil
-		if !hasNewState && !hasRemoteState {
-			continue
-		}
-
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
-		}
-
-		if hasNewState {
-			sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if entry.RemoteState != nil {
+			adapter, err := b.getAdapterForKey(resourceKey)
 			if err != nil {
-				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+				return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
 			}
-			if err := restoreSensitiveFields(adapter, resourceKey, sv.Value, root); err != nil {
-				return err
-			}
-			b.StateCache.Store(resourceKey, sv)
-		}
 
-		if hasRemoteState {
 			data, err := json.Marshal(entry.RemoteState)
 			if err != nil {
 				return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
@@ -1599,8 +1582,9 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 		}
 	}
 
-	// Sync resolved values back to StructVarJSON for serialization
-	if resolved {
+	// Sync resolved values back to StructVarJSON for serialization. Only planning serializes: after
+	// apply the plan entries stay redacted, so the plaintext of the cache is not written back into them.
+	if resolved && isPreDeploy {
 		if err := sv.SyncToJSON(entry.NewState); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
 			return false

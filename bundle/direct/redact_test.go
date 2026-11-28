@@ -1,6 +1,7 @@
 package direct
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -10,10 +11,8 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,88 +95,96 @@ const (
 	msgNotInConfig  = "resource resources.secrets.gone is not in the config; run 'bundle plan' again"
 )
 
+// TestRestoreSensitiveFields checks the value a saved plan's sensitive field is restored to: what a
+// plain deploy sends from the same config. A reference is kept for apply to resolve, and an escaped
+// reference is sent as the literal it escapes.
 func TestRestoreSensitiveFields(t *testing.T) {
 	adapter := secretAdapter(t)
 
 	tests := []struct {
 		name        string
 		resourceKey string
-		state       *catalog.Secret
+		planned     string
 		configValue string
 		wantValue   string
+		wantRefs    map[string]string
 		wantErr     string
 	}{
 		{
 			name:        "redaction marker is replaced by the config value",
 			resourceKey: "resources.secrets.s",
-			state:       &catalog.Secret{Name: "s", Value: sensitiveRedactedValue},
+			planned:     sensitiveRedactedValue,
 			configValue: secretLiteral,
 			wantValue:   secretLiteral,
 		},
 		{
 			name:        "plaintext from a plan saved by an older CLI is replaced by the config value",
 			resourceKey: "resources.secrets.s",
-			state:       &catalog.Secret{Name: "s", Value: "stale-plaintext"},
+			planned:     "stale-plaintext",
 			configValue: secretLiteral,
 			wantValue:   secretLiteral,
 		},
 		{
 			name:        "zero in the plan but set in the config is restored",
 			resourceKey: "resources.secrets.s",
-			state:       &catalog.Secret{Name: "s"},
+			planned:     "",
 			configValue: secretLiteral,
 			wantValue:   secretLiteral,
 		},
 		{
 			name:        "zero in both is skipped",
 			resourceKey: "resources.secrets.s",
-			state:       &catalog.Secret{Name: "s"},
+			planned:     "",
 			configValue: "",
 			wantValue:   "",
 		},
 		{
 			name:        "non-zero in the plan with an empty config value is an error",
 			resourceKey: "resources.secrets.s",
-			state:       &catalog.Secret{Name: "s", Value: sensitiveRedactedValue},
+			planned:     sensitiveRedactedValue,
 			configValue: "",
 			wantErr:     msgValueMissing,
 		},
 		{
 			name:        "non-zero in the plan with the resource missing from config is an error",
 			resourceKey: "resources.secrets.gone",
-			state:       &catalog.Secret{Name: "s", Value: sensitiveRedactedValue},
+			planned:     sensitiveRedactedValue,
 			configValue: secretLiteral,
 			wantErr:     msgNotInConfig,
+		},
+		{
+			name:        "a reference in the config is kept for apply to resolve",
+			resourceKey: "resources.secrets.s",
+			planned:     sensitiveRedactedValue,
+			configValue: "${resources.catalogs.c.name}",
+			wantValue:   "${resources.catalogs.c.name}",
+			wantRefs:    map[string]string{"value": "${resources.catalogs.c.name}"},
+		},
+		{
+			name:        "an escaped reference is sent as the literal it escapes",
+			resourceKey: "resources.secrets.s",
+			planned:     sensitiveRedactedValue,
+			configValue: "pre-$${x}",
+			wantValue:   "pre-${x}",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			root := secretRoot(t, tc.configValue, nil)
-			err := restoreSensitiveFields(adapter, tc.resourceKey, tc.state, root)
+			planned := &structvar.StructVar{Value: &catalog.Secret{Name: "s", Value: tc.planned}}
+			err := restoreSensitiveFields(adapter, tc.resourceKey, planned, root)
 			if tc.wantErr != "" {
 				assert.EqualError(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tc.wantValue, tc.state.Value)
-			assert.Empty(t, tc.state.EffectiveValue)
+			secret := planned.Value.(*catalog.Secret)
+			assert.Equal(t, tc.wantValue, secret.Value)
+			assert.Empty(t, secret.EffectiveValue)
+			assert.Equal(t, tc.wantRefs, planned.Refs)
 		})
 	}
-}
-
-// TestSensitiveConfigValueNestedField checks that a dotted sensitive field path is read from the
-// resource config, not only a top-level field.
-func TestSensitiveConfigValueNestedField(t *testing.T) {
-	root := syncedRoot(t, &config.Root{Resources: config.Resources{Jobs: map[string]*resources.Job{
-		"j": {JobSettings: jobs.JobSettings{Schedule: &jobs.CronSchedule{QuartzCronExpression: "0 0 * * *"}}},
-	}}})
-	path, err := structpath.ParsePath("schedule.quartz_cron_expression")
-	require.NoError(t, err)
-
-	value, err := sensitiveConfigValue(root, "resources.jobs.j", path, "planned")
-	require.NoError(t, err)
-	assert.Equal(t, "0 0 * * *", value)
 }
 
 func TestCheckSensitivePlanValues(t *testing.T) {
@@ -238,9 +245,9 @@ func TestCheckSensitivePlanValues(t *testing.T) {
 	}
 }
 
-// TestCheckSensitivePlanValuesOneErrorPerProblem checks that each resource with a missing value gets its
-// own error, and that a resource missing from the config is reported once, not once per sensitive field.
-func TestCheckSensitivePlanValuesOneErrorPerProblem(t *testing.T) {
+// TestCheckSensitivePlanValuesOneErrorPerResource checks that each resource with a missing value gets its
+// own error, and that a resource missing from the config is reported once.
+func TestCheckSensitivePlanValuesOneErrorPerResource(t *testing.T) {
 	root := syncedRoot(t, &config.Root{Resources: config.Resources{
 		Secrets: map[string]*resources.Secret{
 			"a": {Secret: catalog.Secret{Name: "a"}},
@@ -258,4 +265,26 @@ func TestCheckSensitivePlanValuesOneErrorPerProblem(t *testing.T) {
 	assert.EqualError(t, errs[0], "resource resources.secrets.a: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>")
 	assert.EqualError(t, errs[1], "resource resources.secrets.b: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>")
 	assert.EqualError(t, errs[2], msgNotInConfig)
+}
+
+// TestResolveReferencesAfterApplyKeepsRedactedEntry checks that apply resolving a reference does not write
+// the resolved value back into the plan entry, which would put the secret back into memory after redaction.
+func TestResolveReferencesAfterApplyKeepsRedactedEntry(t *testing.T) {
+	b := &DeploymentBundle{Plan: deployplan.NewPlanDirect()}
+	b.Plan.Plan["resources.catalogs.c"] = &deployplan.PlanEntry{Action: deployplan.Skip}
+	b.RemoteStateCache.Store("resources.catalogs.c", &catalog.CatalogInfo{Name: "resolved-name"})
+
+	redactedJSON := []byte(`{"name":"s","value":"[redacted]"}`)
+	entry := &deployplan.PlanEntry{Action: deployplan.Create, NewState: &structvar.StructVarJSON{Value: redactedJSON}}
+	b.StateCache.Store("resources.secrets.s", &structvar.StructVar{
+		Value: &catalog.Secret{Name: "s"},
+		Refs:  map[string]string{"value": "${resources.catalogs.c.name}"},
+	})
+
+	require.True(t, b.resolveReferences(context.Background(), "resources.secrets.s", entry, "cannot create", false))
+
+	sv, ok := b.StateCache.Load("resources.secrets.s")
+	require.True(t, ok)
+	assert.Equal(t, "resolved-name", sv.Value.(*catalog.Secret).Value)
+	assert.JSONEq(t, string(redactedJSON), string(entry.NewState.Value))
 }
