@@ -402,9 +402,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Below, we're setting fields on the bundle key, so make sure it exists.
-	if root.Get("bundle").Kind() == dyn.KindInvalid {
-		root, err = dyn.Set(root, "bundle", dyn.V(map[string]dyn.Value{}))
+	// Below, we're setting fields on the bundle key, so make sure it is a map.
+	// It is null when the key is present but empty, e.g. all its fields are commented out.
+	if b := root.Get("bundle"); b.Kind() == dyn.KindInvalid || b.Kind() == dyn.KindNil {
+		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, b.Locations()))
 		if err != nil {
 			return err
 		}
