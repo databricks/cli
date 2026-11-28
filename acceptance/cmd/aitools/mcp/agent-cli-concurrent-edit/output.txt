@@ -11,6 +11,7 @@ github-logfood  system.ai.github
 
 >>> cat concurrent.log
 user wrote their own github-logfood entry
+claude refused to add github-logfood: the name is taken
 
 >>> jq -c .mcpServers["github-logfood"] | {command, args} home/.claude.json
 {"command":"[CLI]","args":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}
@@ -22,6 +23,7 @@ Removed github-logfood  system.ai.github  profile logfood  (Claude Code)
 
 >>> cat concurrent.log
 user wrote their own github-logfood entry
+claude removed github-logfood
 
 >>> jq -c .mcpServers home/.claude.json
 {}
@@ -42,6 +44,10 @@ Error: --name github is used by another installed server; pick a different name
 >>> [CLI] aitools mcp remove --all
 Removed github  system.ai.github  profile logfood  (Claude Code)
 
+>>> cat concurrent.log
+claude added github
+claude removed github
+
 === the same two adds at the same time: the second finishes while the first waits for the claude CLI
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
@@ -59,6 +65,10 @@ Agents (named with --agents): claude-code
 github  system.ai.github
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
   Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector (on AWS GovCloud, https://github.com/apps/databricks-gh-connector-gov-cloud).
+
+>>> cat concurrent.log
+claude added github
+claude refused to add github: the name is taken
 
 >>> jq -c .mcpServers | map_values(.args) home/.claude.json
 {"github":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}
@@ -85,3 +95,6 @@ Skipped github: Claude Code has an entry named github that was changed outside t
 
 >>> jq -c .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
 [{"name":"github","profile":"logfood","agents":["claude-code"]}]
+
+>>> cat concurrent.log
+claude removed github
