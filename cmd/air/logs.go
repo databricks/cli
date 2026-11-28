@@ -169,7 +169,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 		return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 			fmt.Errorf("failed to get status for run %d: %w", req.runID, err))
 	}
-	status := projectRunStatus(run)
+	status := req.projectRunStatus(run)
 
 	if req.nodeSet {
 		if numNodes, err := nodeCountForRetry(run, req.attempt); err == nil {

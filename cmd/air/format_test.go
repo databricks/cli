@@ -252,10 +252,70 @@ func TestDisplayRunStatus(t *testing.T) {
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
 	}))
+	assert.Equal(t, "PENDING", displayRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{
+			{TaskKey: "lead", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
+			{TaskKey: "other", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}},
+		},
+	}))
 	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}))
 	assert.Equal(t, "FAILED", displayRunStatus(&jobs.Run{
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
 		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}},
+	}))
+
+	retried := &jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{
+			{TaskKey: "train", AttemptNumber: 0, AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}},
+			{TaskKey: "train", AttemptNumber: 1, AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
+		},
+	}
+	assert.Equal(t, "RUNNING", displayRunStatus(retried), "the generic Jobs projection remains unchanged")
+	assert.Equal(t, "PENDING", displayAirRunStatus(retried))
+	retried.Tasks[1].State.LifeCycleState = jobs.RunLifeCycleStateRunning
+	assert.Equal(t, "RUNNING", displayAirRunStatus(retried))
+}
+
+func TestDisplayAirRunStatus(t *testing.T) {
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+	}))
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{}}},
+	}))
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "train", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}), "a task without AIR metadata has not established that the accelerator workload started")
+	assert.Equal(t, "RUNNING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "notebook", NotebookTask: &jobs.NotebookTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}), "a conclusively non-AIR task keeps its Jobs status")
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "legacy", GenAiComputeTask: &jobs.GenAiComputeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}), "an incomplete legacy AIR task remains uncertain")
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "sweep", ForEachTask: &jobs.RunForEachTask{Task: jobs.Task{TaskKey: "train"}}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}), "an incomplete foreach task remains uncertain")
+	assert.Equal(t, "PENDING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError}}},
+	}), "an internal Jobs error does not establish that the accelerator workload started")
+	assert.Equal(t, "RUNNING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}))
+	assert.Equal(t, "RUNNING", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}}},
+	}), "a completed task remains started while the parent terminal result catches up")
+	assert.Equal(t, "FAILED", displayAirRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
 	}))
 }
 
@@ -269,9 +329,12 @@ func TestDetailedDisplayRunStatus(t *testing.T) {
 
 	started := &jobs.Run{
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+		Tasks: []jobs.RunTask{{AiRuntimeTask: &jobs.AiRuntimeTask{}, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
 	}
 	assert.Equal(t, "RUNNING", detailedDisplayRunStatus(started, ""))
+	assert.Equal(t, waitingForWorkloadStatus, detailedDisplayRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+	}, ""))
 
 	failed := &jobs.Run{
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},

@@ -1,0 +1,8 @@
+
+>>> [CLI] air run -f run.yaml --watch -o json
+{"type":"SUBMITTED","ts":"[TIMESTAMP]","run_id":"[RUN_ID]","dashboard_url":"[DATABRICKS_URL]/jobs/runs/[RUN_ID]?o=[WORKSPACE_ID]"}
+{"type":"STATUS","ts":"[TIMESTAMP]","status":"PENDING"}
+{"type":"LOG","ts":"[TIMESTAMP]","node":0,"line":"hello"}
+{"type":"STATUS","ts":"[TIMESTAMP]","status":"RUNNING","previous_status":"PENDING"}
+{"type":"STATUS","ts":"[TIMESTAMP]","status":"SUCCESS","previous_status":"RUNNING"}
+{"v":1,"ts":"[TIMESTAMP]","data":{"status":"SUCCESS","run_id":"[RUN_ID]","dashboard_url":"[DATABRICKS_URL]/jobs/runs/[RUN_ID]?o=[WORKSPACE_ID]"}}

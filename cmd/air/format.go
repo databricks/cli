@@ -111,6 +111,37 @@ func displayRunStatus(run *jobs.Run) string {
 	return status
 }
 
+// displayAirRunStatus reports RUNNING only after an AIR task has appeared with
+// a state that shows it started. The Jobs parent can start before that task is
+// present in runs/get.
+func displayAirRunStatus(run *jobs.Run) string {
+	run = defaultTaskRun(run)
+	status := displayRunStatus(run)
+	if status != "RUNNING" {
+		return status
+	}
+	task := latestTaskAttempt(run)
+	if task == nil {
+		return "PENDING"
+	}
+	if !isAirTask(task) {
+		if isKnownNonAirTask(task) {
+			return status
+		}
+		return "PENDING"
+	}
+	if task.State == nil {
+		return "PENDING"
+	}
+	switch task.State.LifeCycleState {
+	case jobs.RunLifeCycleStateRunning, jobs.RunLifeCycleStateTerminating,
+		jobs.RunLifeCycleStateTerminated:
+		return status
+	default:
+		return "PENDING"
+	}
+}
+
 // runAppearsPending reports whether a run is pending itself, or running while
 // its lead task waits to start. It does not identify why the task is waiting.
 // A run that is queued, blocked on an upstream task or waiting to retry at run
@@ -147,10 +178,11 @@ func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
 	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
 		return statusMessage
 	}
-	if runAppearsPending(run) {
+	status := displayAirRunStatus(run)
+	if status == "PENDING" {
 		return waitingForWorkloadStatus
 	}
-	return displayRunStatus(run)
+	return status
 }
 
 func terminationReason(run *jobs.Run) *string {

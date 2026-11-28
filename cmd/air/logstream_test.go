@@ -370,6 +370,31 @@ func TestDisplayState(t *testing.T) {
 	assert.Equal(t, "UNKNOWN", logRunStatus{}.displayState())
 }
 
+func TestProjectRunStatusUsesAirTaskDisplayStatus(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		taskState jobs.RunLifeCycleState
+		want      string
+	}{
+		{name: "pending", taskState: jobs.RunLifeCycleStatePending, want: "PENDING"},
+		{name: "queued", taskState: jobs.RunLifeCycleStateQueued, want: "PENDING"},
+		{name: "running", taskState: jobs.RunLifeCycleStateRunning, want: "RUNNING"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			run := &jobs.Run{
+				State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+				Tasks: []jobs.RunTask{
+					{TaskKey: "prep", State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated}, NotebookTask: &jobs.NotebookTask{}},
+					{TaskKey: "train", State: &jobs.RunState{LifeCycleState: tt.taskState}, AiRuntimeTask: &jobs.AiRuntimeTask{}},
+				},
+			}
+
+			assert.Equal(t, "RUNNING", projectRunStatus(run).displayState(), "general log status remains run-level")
+			assert.Equal(t, tt.want, (logRequest{useAirTaskStatus: true}).projectRunStatus(run).displayState())
+		})
+	}
+}
+
 func TestNormalizeStatusMessage(t *testing.T) {
 	tests := []struct {
 		raw  string

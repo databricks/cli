@@ -1,0 +1,1 @@
+trace $CLI air run -f run.yaml --watch -o json

@@ -391,10 +391,11 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 // are pre-rendered here with their "N/A" fallbacks; the styled renderer adds the
 // hyperlinks and colors once the dashboard and MLflow identifiers are known.
 func buildGetData(run *jobs.Run) getData {
+	status := displayAirRunStatus(run)
 	data := getData{
 		RunID:             strconv.FormatInt(run.RunId, 10),
-		Status:            displayRunStatus(run),
-		DisplayStatus:     displayRunStatus(run),
+		Status:            status,
+		DisplayStatus:     status,
 		TerminationReason: terminationReason(run),
 		StartedAt:         startedAt(run),
 		DurationSeconds:   durationSeconds(run),

@@ -122,7 +122,9 @@ type logRequest struct {
 	// following the run (current, previous display states). Used by
 	// `air run --watch -o json` to emit STATUS events.
 	onStatusChange func(current, previous string)
-	retryTracker   *retryTracker
+	// useAirTaskStatus gives air run --watch the same status projection as air get.
+	useAirTaskStatus bool
+	retryTracker     *retryTracker
 }
 
 // logRunStatus is the subset of a run's state the log path needs, resolved once
@@ -131,6 +133,7 @@ type logRunStatus struct {
 	lifeCycleState           string
 	latestTaskLifeCycleState string
 	resultState              string
+	displayStatus            string
 	stateMessage             string
 	startTimeMs              int64
 	endTimeMs                int64
@@ -255,12 +258,20 @@ func (s logRunStatus) downloadOutcome() bool {
 
 // resolveRunStatus fetches a run's state and projects it onto logRunStatus. An
 // unknown run id surfaces as apierr.ErrResourceDoesNotExist.
-func resolveRunStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) (logRunStatus, error) {
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+func (req logRequest) resolveRunStatus(ctx context.Context, w *databricks.WorkspaceClient) (logRunStatus, error) {
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
 	if err != nil {
 		return logRunStatus{}, err
 	}
-	return projectRunStatus(run), nil
+	return req.projectRunStatus(run), nil
+}
+
+func (req logRequest) projectRunStatus(run *jobs.Run) logRunStatus {
+	status := projectRunStatus(run)
+	if req.useAirTaskStatus {
+		status.displayStatus = displayAirRunStatus(run)
+	}
+	return status
 }
 
 // projectRunStatus extracts logRunStatus from a run. Split out so it can be
@@ -496,7 +507,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 	for {
 		pollStarted := time.Now()
 		if !firstIteration {
-			status, err := resolveRunStatus(st.ctx, st.w, st.req.runID)
+			status, err := st.req.resolveRunStatus(st.ctx, st.w)
 			if err != nil {
 				if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 					return false, err
@@ -805,8 +816,12 @@ func (st *bricklensStreamer) emit(body string) {
 	emitLogLine(st.out, st.req, body)
 }
 
-// displayState is the result state, else the lifecycle state, else "UNKNOWN".
+// displayState uses the task-aware status for air run --watch and the raw
+// result and lifecycle fields for other log routes.
 func (s logRunStatus) displayState() string {
+	if s.displayStatus != "" {
+		return s.displayStatus
+	}
 	if s.resultState != "" {
 		return s.resultState
 	}
