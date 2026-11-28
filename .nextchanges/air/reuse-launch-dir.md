@@ -1,0 +1,1 @@
+* `air run` relaunches whose launch files are unchanged now skip re-uploading them: the CLI remembers, per machine, the workspace directory that already holds those files and reuses it after checking they still exist. ([#7860](https://github.com/databricks/cli/pull/7860))

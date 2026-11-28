@@ -2,17 +2,22 @@ package aircmd
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"path"
 	"strings"
+	"time"
 	"uuid"
 
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 // userWorkspaceDirEnv overrides the per-user workspace directory; mirrors the
@@ -71,6 +76,56 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 	}
 	launchDir := cliLaunchDir(base, cfg.ExperimentName, runName)
 	return base, launchDir, path.Join(launchDir, commandScriptName), nil
+}
+
+// launchIndexComponent names the local cache that maps a staged file set to the
+// launch dir that holds it.
+const (
+	launchIndexComponent = "air-launch-dirs"
+	launchIndexTTL       = 30 * 24 * time.Hour
+)
+
+// launchIndexKey identifies a staged file set: the workspace, the user's home it
+// is staged under, and a hash of the files' names and bytes.
+type launchIndexKey struct {
+	Host    string
+	Base    string
+	Content string
+}
+
+func newLaunchIndex(ctx context.Context) *cache.Cache {
+	return cache.NewCache(ctx, launchIndexComponent, launchIndexTTL, nil)
+}
+
+// launchContentHash hashes each file's name and length before its bytes, so
+// different file splits cannot produce the same input.
+func launchContentHash(items []uploadItem) string {
+	h := sha256.New()
+	for _, item := range items {
+		fmt.Fprintf(h, "%s\x00%d\x00", item.name, len(item.data))
+		h.Write(item.data)
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// launchFilesStaged reports whether every launch file is already in dir with its
+// local size; a workspace edit that keeps the size is not detected. Any missing
+// file or failed check is a miss, so the caller uploads again.
+func launchFilesStaged(ctx context.Context, w *databricks.WorkspaceClient, dir string, items []uploadItem) bool {
+	group, groupCtx := errgroup.WithContext(ctx)
+	for _, item := range items {
+		group.Go(func() error {
+			info, err := w.Workspace.GetStatusByPath(groupCtx, path.Join(dir, item.name))
+			if err != nil {
+				return err
+			}
+			if info.Size != int64(len(item.data)) {
+				return fmt.Errorf("%s is %d bytes in the workspace, %d locally", item.name, info.Size, len(item.data))
+			}
+			return nil
+		})
+	}
+	return group.Wait() == nil
 }
 
 // ensureExperimentDirectory creates experimentDir if it is missing, matching the

@@ -1,7 +1,11 @@
 package aircmd
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -131,4 +135,50 @@ func TestEnsureExperimentDirectory(t *testing.T) {
 	require.NoError(t, fc.Write(ctx, "afile", strings.NewReader("x")))
 	err = ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/afile")
 	require.ErrorContains(t, err, "is not a directory")
+}
+
+// launchFilesServer answers get-status with the size of each path in files and
+// 404 for any other path.
+func launchFilesServer(t *testing.T, files map[string]int) *databricks.WorkspaceClient {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get("path")
+		size, ok := files[p]
+		if r.URL.Path != "/api/2.0/workspace/get-status" || !ok {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"not found"}`))
+			return
+		}
+		_, _ = fmt.Fprintf(w, `{"path":%q,"object_type":"FILE","size":%d}`, p, size)
+	}))
+	t.Cleanup(srv.Close)
+	return newTestWorkspaceClient(t, srv.URL)
+}
+
+func TestLaunchFilesStaged(t *testing.T) {
+	const dir = "/Workspace/Users/me@example.com/.air/cli_launch/exp/run_abc"
+	items := []uploadItem{{trainingConfigName, []byte("cfg")}, {commandScriptName, []byte("echo hi")}}
+	// staged probes a workspace that holds items as uploaded, after edit.
+	staged := func(edit func(files map[string]int)) bool {
+		files := map[string]int{}
+		for _, item := range items {
+			files[path.Join(dir, item.name)] = len(item.data)
+		}
+		edit(files)
+		return launchFilesStaged(t.Context(), launchFilesServer(t, files), dir, items)
+	}
+	assert.True(t, staged(func(map[string]int) {}))
+	// A partly written dir, or a file whose size changed in the workspace, is a miss.
+	for _, item := range items {
+		p := path.Join(dir, item.name)
+		assert.False(t, staged(func(files map[string]int) { delete(files, p) }), item.name+" missing")
+		assert.False(t, staged(func(files map[string]int) { files[p]++ }), item.name+" resized")
+	}
+}
+
+func TestLaunchContentHash(t *testing.T) {
+	files := []uploadItem{{commandScriptName, []byte("echo hi")}, {trainingConfigName, []byte("cfg")}}
+	assert.Equal(t, launchContentHash(files), launchContentHash([]uploadItem{{commandScriptName, []byte("echo hi")}, {trainingConfigName, []byte("cfg")}}))
+	assert.NotEqual(t, launchContentHash(files), launchContentHash([]uploadItem{{commandScriptName, []byte("echo bye")}, {trainingConfigName, []byte("cfg")}}))
+	assert.NotEqual(t, launchContentHash([]uploadItem{{"a", []byte("bc")}}), launchContentHash([]uploadItem{{"ab", []byte("c")}}))
 }

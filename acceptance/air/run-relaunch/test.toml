@@ -1,0 +1,24 @@
+# Relaunching identical launch files reuses the dir an earlier launch staged,
+# checking only that its files are still there with the same sizes; a deleted
+# dir is uploaded again.
+RecordRequests = true
+
+# The SDK probes host reachability with a HEAD request; stub it for determinism.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/runs/submit"
+Response.Body = '''
+{"run_id": 555}
+'''
+
+# The per-run launch directory ends in <run>_<16 hex>; the random suffix varies.
+[[Repls]]
+Old = 'relaunch-smoke_[0-9a-f]{16}'
+New = 'relaunch-smoke_[RUN_ID]'

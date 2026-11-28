@@ -1,0 +1,13 @@
+title "the first launch uploads the launch files"
+trace $CLI air run -f run.yaml
+trace print_requests.py --get //api/2.0/workspace --oneline --sort
+
+title "an identical relaunch only checks the staged files"
+trace $CLI air run -f run.yaml
+trace print_requests.py --get //api/2.0/workspace --oneline --sort
+
+title "a relaunch after the staged dir is deleted uploads again"
+MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive /Workspace/Users/$CURRENT_USER_NAME/.air/cli_launch/relaunch-smoke
+print_requests.py --get //api/2.0/workspace > /dev/null
+trace $CLI air run -f run.yaml
+trace print_requests.py --get //api/2.0/workspace --oneline --sort

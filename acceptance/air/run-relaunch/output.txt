@@ -1,0 +1,49 @@
+
+=== the first launch uploads the launch files
+
+>>> [CLI] air run -f run.yaml
+Submitting experiment: relaunch-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs 555 --follow
+
+>>> print_requests.py --get //api/2.0/workspace --oneline --sort
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: relaunch-smoke\ncommand: python train.py\ncompute:\n    accelerator_type: GPU_1xH100\n    num_accelerators: 1\nenvironment:\n    version: 5\n    dependencies: []\n"}
+{"method": "POST", "path": "/api/2.0/workspace/mkdirs", "body": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]"}}
+
+=== an identical relaunch only checks the staged files
+
+>>> [CLI] air run -f run.yaml
+Submitting experiment: relaunch-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs 555 --follow
+
+>>> print_requests.py --get //api/2.0/workspace --oneline --sort
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/command.sh"}}
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/training_config.yaml"}}
+
+=== a relaunch after the staged dir is deleted uploads again
+
+>>> [CLI] air run -f run.yaml
+Submitting experiment: relaunch-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks air logs 555 --follow
+
+>>> print_requests.py --get //api/2.0/workspace --oneline --sort
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/command.sh"}}
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/training_config.yaml"}}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: relaunch-smoke\ncommand: python train.py\ncompute:\n    accelerator_type: GPU_1xH100\n    num_accelerators: 1\nenvironment:\n    version: 5\n    dependencies: []\n"}
+{"method": "POST", "path": "/api/2.0/workspace/mkdirs", "body": {"path": "/Workspace/Users/[USERNAME]/.air/cli_launch/relaunch-smoke/relaunch-smoke_[RUN_ID]"}}

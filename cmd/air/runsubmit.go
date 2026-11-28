@@ -14,6 +14,7 @@ import (
 	"uuid"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
@@ -349,16 +350,31 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+	items, err := buildArtifacts(cfg)
+	if err != nil {
+		return 0, "", err
+	}
+	// Without a snapshot, a relaunch with identical files can reuse the launch dir
+	// an earlier launch from this machine uploaded. A first launch of any content
+	// takes the unchanged path below, with no extra server call.
+	var indexKey *launchIndexKey
+	launchIndex := newLaunchIndex(ctx)
+	recorded := false
+	if cfg.CodeSource == nil || cfg.CodeSource.Snapshot == nil {
+		key := launchIndexKey{Host: w.Config.Host, Base: base, Content: launchContentHash(items)}
+		indexKey = &key
+		if dir, ok := cache.Get[string](ctx, launchIndex, key); ok {
+			funcDir = dir
+			commandPath = path.Join(funcDir, commandScriptName)
+			recorded = true
+		}
+	}
 	containers := submittedContainers(cfg, funcDir)
 	token := effectiveIdempotencyToken(idempotencyKey, cfg)
 
 	deps, _ := cfg.inlineDependencies()
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
-	if err != nil {
-		return 0, "", err
-	}
-	items, err := buildArtifacts(cfg)
 	if err != nil {
 		return 0, "", err
 	}
@@ -382,13 +398,20 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// both, so an invalid config is never submitted. The first failure cancels
 	// the other side and is the one reported.
 	group, stagingCtx := errgroup.WithContext(ctx)
-	var validationUnavailable bool
+	var validationUnavailable, staged bool
 	group.Go(func() (err error) {
 		validationUnavailable, err = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
 		return err
 	})
 	group.Go(func() error {
 		return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
+			// A recorded dir whose files all exist with their local sizes is staged.
+			// Anything else, including a 404 for a dir that was deleted, uploads into
+			// funcDir.
+			staged = recorded && launchFilesStaged(stagingCtx, w, funcDir, items)
+			if staged {
+				return nil
+			}
 			var stageErr error
 			snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
 			return stageErr
@@ -401,6 +424,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	})
 	if err := group.Wait(); err != nil {
 		return 0, "", err
+	}
+	// Refresh the entry only after an upload: a probe hit changed nothing, so
+	// its TTL should keep counting from the upload that created the dir.
+	if indexKey != nil && !staged {
+		cache.Put(ctx, launchIndex, *indexKey, funcDir)
 	}
 	// Warn only after staging so the warning doesn't interleave with the spinner.
 	if validationUnavailable && cmdio.HasIO(ctx) {
