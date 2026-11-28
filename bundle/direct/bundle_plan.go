@@ -921,9 +921,9 @@ func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (strin
 	return found, nil
 }
 
-// otherObjectMessage says that what is at the recorded ID id is not the bundle's. It is told when
-// the bundle's own is not found elsewhere either; a resource deleted and created again out of band
-// looks the same, hence the advice the callers add.
+// otherObjectMessage describes the object at the recorded ID id, whose internal ID is otherID and
+// not the one savedState records. Callers add the advice, because a resource deleted and created
+// again out of band looks the same.
 func otherObjectMessage(adapter *dresources.Adapter, id string, savedState any, otherID string) string {
 	saved, _ := adapter.InternalID(savedState)
 	return fmt.Sprintf("id=%q holds another object: its %s is %q, not %q as recorded",

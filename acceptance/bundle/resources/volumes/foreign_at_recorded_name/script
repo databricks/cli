@@ -26,10 +26,20 @@ print_requests.py //unity-catalog &> LOG.oob_requests
 title "The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create"
 trace $CLI bundle plan
 
-title "Destroy does not delete the other volume: it only drops the bundle's from the state"
-trace $CLI bundle destroy --auto-approve
+title "Point the config at the bundle's renamed volume: the plan finds it there by its volume_id"
+envsubst < databricks-moved.yml.tmpl > databricks.yml
+trace $CLI bundle plan --output json | plan_filter.py resources.volumes.volume1
+
+title "Deploy takes the renamed volume for the bundle's, and sends nothing to the other one"
+trace $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI volumes read "$SCHEMA.myvolume-moved" | volume_fields
+trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields
+
+title "Destroy deletes the bundle's volume at its new name, not the other one"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace musterr $CLI volumes read "$SCHEMA.myvolume-moved"
 
 title "The other volume is left alone"
 trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields

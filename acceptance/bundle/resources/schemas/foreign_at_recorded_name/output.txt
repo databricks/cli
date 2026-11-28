@@ -4,7 +4,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
-Files: 2 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Out of band, rename the schema away, and create another one under its name
@@ -21,27 +21,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 {
-  "plan_version": [PLAN_VERSION],
-  "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
-  "serial": 1,
-  "plan": {
-    "resources.schemas.schema1": {
-      "action": "create",
-      "new_state": {
-        "value": {
-          "catalog_name": "main",
-          "comment": "c1",
-          "name": "test-schema-[UNIQUE_NAME]"
-        }
-      },
-      "changes": {
-        "schema_id": {
-          "action": "skip",
-          "reason": "internal_id",
-          "old": "[SCHEMA_ID]"
-        }
-      }
+  "action": "create",
+  "new_state": {
+    "value": {
+      "catalog_name": "main",
+      "comment": "c1",
+      "name": "test-schema-[UNIQUE_NAME]"
+    }
+  },
+  "changes": {
+    "schema_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "old": "[SCHEMA_ID]"
     }
   }
 }
@@ -72,14 +64,43 @@ Files: 2 uploaded, 0 deleted
   }
 }
 
-=== Destroy does not delete the other schema: it only drops the bundle's from the state
+=== Point the config at the bundle's renamed schema: the plan finds it there by its schema_id
 
->>> [CLI] bundle destroy --auto-approve
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so no delete is sent for it, and resources.schemas.schema1 is dropped from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle.
+>>> [CLI] bundle plan --output json
+{
+  "id": "main.test-schema-moved-[UNIQUE_NAME]",
+  "action": "update_id",
+  "state_only": true,
+  "new_state": {
+    "value": {
+      "catalog_name": "main",
+      "comment": "c1",
+      "name": "test-schema-moved-[UNIQUE_NAME]"
+    }
+  },
+  "changes": {
+    "name": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "old": "test-schema-[UNIQUE_NAME]",
+      "new": "test-schema-moved-[UNIQUE_NAME]",
+      "remote": "test-schema-moved-[UNIQUE_NAME]"
+    },
+    "schema_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "old": "[SCHEMA_ID]",
+      "remote": "[SCHEMA_ID]"
+    }
+  }
+}
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+=== Deploy takes the renamed schema for the bundle's, and sends nothing to the other one
 
-Destroy: 0 deleted
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog
 
@@ -88,6 +109,37 @@ Destroy: 0 deleted
   "full_name": "main.test-schema-moved-[UNIQUE_NAME]",
   "schema_id": "[SCHEMA_ID]"
 }
+
+>>> [CLI] schemas get main.test-schema-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "schema_id": "[FOREIGN_SCHEMA_ID]"
+}
+
+=== Destroy deletes the bundle's schema at its new name, not the other one
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-moved-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+
+>>> musterr [CLI] schemas get main.test-schema-moved-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-moved-[UNIQUE_NAME]' does not exist.
 
 === The other schema is left alone
 
