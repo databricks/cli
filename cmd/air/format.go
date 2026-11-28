@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -37,7 +36,7 @@ func hyperlink(ctx context.Context, out io.Writer, label, url string) string {
 	if url == "" || !cmdio.SupportsColor(ctx, out) {
 		return label
 	}
-	return termenv.Hyperlink(url, label)
+	return cmdio.Hyperlink(url, label)
 }
 
 // reformatYAMLForDisplay re-renders a training-config YAML so multi-line strings

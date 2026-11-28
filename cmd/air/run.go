@@ -459,6 +459,7 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 // degrades to plain text on non-rich terminals.
 func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	out = renderer.Writer(out)
 	p := newPalette(renderer)
 
 	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
@@ -473,6 +474,7 @@ const logsDividerWidth = 60
 // dropped on non-rich terminals; the rule characters are always printed.
 func printLogsDivider(ctx context.Context, out io.Writer) {
 	renderer, _ := cmdio.NewRenderer(ctx, out)
+	out = renderer.Writer(out)
 	p := newPalette(renderer)
 
 	const label = " Logs "

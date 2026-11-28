@@ -272,6 +272,7 @@ func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer
 // printJobRunLink leaves the run link below the streamed output, including on failure.
 func printJobRunLink(ctx context.Context, out io.Writer, runURL string) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	out = renderer.Writer(out)
 	p := newPalette(renderer)
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, runURL, runURL))
