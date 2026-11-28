@@ -1,0 +1,21 @@
+python3 make_wheels.py
+setmtime.py "2025-03-05 15:07:33.123456700" mypkg-1.0-py3-none-any.whl lib2-2-py3-none-any.whl readme-1.0-py3-none-any.whl samever-1.0-py3-none-any.whl
+
+title "Wheel with an executable file and a .data directory:"
+trace python3 list_wheel.py mypkg-1.0-py3-none-any.whl
+trace $CLI selftest patchwhl mypkg-1.0-py3-none-any.whl
+trace python3 list_wheel.py mypkg-1.0+*-py3-none-any.whl
+
+title "Wheel whose distribution name contains its version:"
+trace $CLI selftest patchwhl lib2-2-py3-none-any.whl
+trace python3 list_wheel.py lib2-2+*-py3-none-any.whl
+
+title "Wheel whose description contains a Version: line:"
+trace $CLI selftest patchwhl readme-1.0-py3-none-any.whl
+errcode trace unzip -p readme-1.0+*-py3-none-any.whl '*/METADATA'
+
+title "Wheel whose description contains a Version: line equal to the version:"
+trace $CLI selftest patchwhl samever-1.0-py3-none-any.whl
+trace unzip -p samever-1.0+*-py3-none-any.whl '*/METADATA'
+
+rm *.whl
