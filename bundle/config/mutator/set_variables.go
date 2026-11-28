@@ -14,7 +14,8 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-const bundleVarPrefix = "BUNDLE_VAR_"
+// VariableEnvPrefix prefixes the environment variable that sets a bundle variable.
+const VariableEnvPrefix = "BUNDLE_VAR_"
 
 type setVariables struct{}
 
@@ -26,7 +27,8 @@ func (m *setVariables) Name() string {
 	return "SetVariables"
 }
 
-func getDefaultVariableFilePath(target string) string {
+// VariableOverridesPath is the bundle-relative path of the file that sets a target's variables.
+func VariableOverridesPath(target string) string {
 	return ".databricks/bundle/" + target + "/variable-overrides.json"
 }
 
@@ -37,7 +39,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	}
 
 	// case: read and set variable value from process environment
-	envVarName := bundleVarPrefix + name
+	envVarName := VariableEnvPrefix + name
 	if val, ok := env.Lookup(ctx, envVarName); ok {
 		if variable.IsComplex() {
 			return dyn.InvalidValue, fmt.Errorf(`setting via environment variables (%s) is not supported for complex variable %s`, envVarName, name)
@@ -91,13 +93,13 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	}
 
 	// We should have had a value to set for the variable at this point.
-	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the %s environment variable, or %s`, name, bundleVarPrefix+name, getDefaultVariableFilePath("<target>"))
+	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the %s environment variable, or %s`, name, VariableEnvPrefix+name, VariableOverridesPath("<target>"))
 }
 
 func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	filePath := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
+	filePath := filepath.Join(b.BundleRootPath, VariableOverridesPath(b.Config.Bundle.Target))
 	if _, err := os.Stat(filePath); err != nil {
 		return dyn.InvalidValue, nil
 	}

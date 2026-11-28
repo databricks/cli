@@ -1,0 +1,43 @@
+git-repo-init
+git remote add origin https://github.com/acme/repo
+
+title "The current branch, as the caller"
+trace $CLI bundle auto-deploy create
+print_requests.py //git-webhooks
+
+title "Updating the trigger keeps its ID"
+trace $CLI bundle auto-deploy create --branch release --deploy-as 692bc6d0-ffa3-11ed-be56-0242ac120002
+print_requests.py //git-webhooks
+
+title "As yourself, in JSON"
+trace $CLI bundle auto-deploy create -t prod --deploy-as tester@databricks.com -o json
+print_requests.py //git-webhooks
+
+title "As another user"
+trace musterr $CLI bundle auto-deploy create -t prod --deploy-as someone@example.com
+print_requests.py //git-webhooks
+
+title "A branch other than the target's git.branch"
+trace musterr $CLI bundle auto-deploy create -t prod --branch release
+
+title "A git.branch from a variable"
+trace $CLI bundle auto-deploy create -t staging
+print_requests.py //git-webhooks
+
+title "A host whose provider is not inferred"
+git remote set-url origin https://git.example.test/acme/repo
+trace musterr $CLI bundle auto-deploy create
+trace $CLI bundle auto-deploy create --git-provider GITLAB_ENTERPRISE_EDITION
+print_requests.py //git-webhooks
+
+title "An SSH origin"
+git remote set-url origin git@github.com:acme/repo.git
+trace musterr $CLI bundle auto-deploy create
+
+title "Local variable values do not reach the deploys"
+trace musterr $CLI bundle auto-deploy create --var release_branch=hotfix
+musterr trace BUNDLE_VAR_release_branch=hotfix $CLI bundle auto-deploy create -t staging
+
+title "No origin remote"
+git remote remove origin
+trace musterr $CLI bundle auto-deploy create

@@ -573,6 +573,10 @@ func AddDefaultHandlers(server *Server) {
 		return dmsCheckEnrollments(req.URL.Query()["features"])
 	})
 
+	server.Handle("PUT", "/api/2.0/git-webhooks", func(req Request) any {
+		return req.Workspace.GitWebhooksUpsert(req)
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {

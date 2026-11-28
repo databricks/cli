@@ -1,0 +1,182 @@
+
+=== The current branch, as the caller
+
+>>> [CLI] bundle auto-deploy create
+Pushes to branch main now deploy target dev as you.
+Trigger ID: [UUID][0]
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "dev"
+      }
+    }
+  }
+}
+
+=== Updating the trigger keeps its ID
+
+>>> [CLI] bundle auto-deploy create --branch release --deploy-as [UUID][1]
+Pushes to branch release now deploy target dev as [UUID][1].
+Trigger ID: [UUID][0]
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "release"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "dev",
+        "deploy_as": {
+          "service_principal_client_id": "[UUID][1]"
+        }
+      }
+    }
+  }
+}
+
+=== As yourself, in JSON
+
+>>> [CLI] bundle auto-deploy create -t prod --deploy-as [USERNAME] -o json
+{
+  "webhook_id": "[UUID][2]",
+  "trigger_id": "[UUID][3]"
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "prod",
+        "deploy_as": {
+          "user_email": "[USERNAME]"
+        }
+      }
+    }
+  }
+}
+
+=== As another user
+
+>>> musterr [CLI] bundle auto-deploy create -t prod --deploy-as someone@example.com
+Error: deploy_as.user_email must be your own email. To deploy as another identity, use a service principal you have the Service Principal User role on.
+
+Host:      [DATABRICKS_URL]
+Auth type: Personal Access Token (pat)
+
+Next steps:
+  - Verify you have the required permissions for this operation
+  - Check your identity: databricks auth describe
+  - Consider setting up a profile: databricks auth login --profile <name>
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "prod",
+        "deploy_as": {
+          "user_email": "someone@example.com"
+        }
+      }
+    }
+  }
+}
+
+=== A branch other than the target's git.branch
+
+>>> musterr [CLI] bundle auto-deploy create -t prod --branch release
+Error: git.branch is main for target prod, so a deploy from release would fail. Omit --branch, or change git.branch
+
+=== A git.branch from a variable
+
+>>> [CLI] bundle auto-deploy create -t staging
+Pushes to branch release now deploy target staging as you.
+Trigger ID: [UUID][4]
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "release"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "staging"
+      }
+    }
+  }
+}
+
+=== A host whose provider is not inferred
+
+>>> musterr [CLI] bundle auto-deploy create
+Error: cannot infer the Git provider of https://git.example.test/acme/repo. Pass it with --git-provider
+
+>>> [CLI] bundle auto-deploy create --git-provider GITLAB_ENTERPRISE_EDITION
+Pushes to branch main now deploy target dev as you.
+Trigger ID: [UUID][5]
+{
+  "method": "PUT",
+  "path": "/api/2.0/git-webhooks",
+  "body": {
+    "repo_url": "https://git.example.test/acme/repo",
+    "git_provider": "GITLAB_ENTERPRISE_EDITION",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "dev"
+      }
+    }
+  }
+}
+
+=== An SSH origin
+
+>>> musterr [CLI] bundle auto-deploy create
+Error: auto-deploy needs the HTTPS URL of the repository, but the origin is git@github.com:acme/repo.git. Set bundle.git.origin_url to the HTTPS URL
+
+=== Local variable values do not reach the deploys
+
+>>> musterr [CLI] bundle auto-deploy create --var release_branch=hotfix
+Error: auto-deploy deploys with the variable values in the configuration only, but --var overrides them here. Set the values as variable defaults or target overrides instead
+
+>>> BUNDLE_VAR_release_branch=hotfix [CLI] bundle auto-deploy create -t staging
+Error: auto-deploy deploys with the variable values in the configuration only, but BUNDLE_VAR_release_branch overrides them here. Set the values as variable defaults or target overrides instead
+
+=== No origin remote
+
+>>> musterr [CLI] bundle auto-deploy create
+Error: auto-deploy needs the bundle in a Git repository with an origin remote. To add one, run: git remote add origin <url>

@@ -1,0 +1,11 @@
+# The git-webhooks API is not public yet, so no test workspace serves it.
+Cloud = false
+RecordRequests = true
+
+# The commands do not deploy, so deployment history does not apply.
+EnvMatrix.DMS = []
+
+# git-repo-init creates a repo in the test directory, which gives the bundle its Git details.
+Ignore = [
+    '.git',
+]

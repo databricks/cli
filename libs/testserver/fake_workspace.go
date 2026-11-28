@@ -325,6 +325,9 @@ type FakeWorkspace struct {
 	// creates, so the node is what makes the ID valid in between.
 	DmsDeploymentNodes map[string]string
 
+	// GitWebhookTriggers holds auto-deploy triggers, keyed by trigger ID.
+	GitWebhookTriggers map[string]*fakeWebhookTrigger
+
 	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
 	// serves, generated on first use. See sshTunnelHostKey.
 	sshTunnelHostKeyPEM []byte
@@ -596,6 +599,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		clusterVenvs:              map[string]*clusterEnv{},
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
+		GitWebhookTriggers:        map[string]*fakeWebhookTrigger{},
 		Alerts:                    map[string]sql.AlertV2{},
 		PurgedAlertIDs:            map[string]bool{},
 		Experiments:               map[string]ml.GetExperimentResponse{},

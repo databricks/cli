@@ -1,0 +1,16 @@
+bundle:
+  name: auto-deploy
+
+variables:
+  release_branch:
+    default: release
+
+targets:
+  dev:
+    default: true
+  prod:
+    git:
+      branch: main
+  staging:
+    git:
+      branch: ${var.release_branch}
