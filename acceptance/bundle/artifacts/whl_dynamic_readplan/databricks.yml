@@ -21,3 +21,11 @@ resources:
             entry_point: run
           libraries:
             - whl: ./my_test_code/dist/*.whl
+        # Pins the old build by its exact name, so the plan references it unpatched.
+        - task_key: pinned
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+          libraries:
+            - whl: ./my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl

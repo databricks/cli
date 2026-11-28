@@ -19,6 +19,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks[].libraries[].whl [OUTPUT_DIR]/out.requests.txt
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
+"/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
 
 === Wheels uploaded, these should match the job
 
