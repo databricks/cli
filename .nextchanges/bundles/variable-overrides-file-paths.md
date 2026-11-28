@@ -1,0 +1,1 @@
+* Resolve relative paths inside complex variable values from `.databricks/bundle/<target>/variable-overrides.json` against the bundle root instead of the overrides file's directory; a workaround such as `../../../src/main.py` should become `./src/main.py`, and a warning names the path to use. ([#7984](https://github.com/databricks/cli/pull/7984))

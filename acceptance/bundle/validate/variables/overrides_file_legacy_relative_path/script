@@ -1,0 +1,18 @@
+cd a/b/c
+mkdir -p .databricks/bundle/default
+mv legacy.json .databricks/bundle/default/variable-overrides.json
+
+title "Paths written relative to the overrides file's directory, the workaround for the old behavior: a warning says how to fix them"
+musterr trace $CLI bundle validate
+musterr trace $CLI bundle deploy
+
+title "Only the wheel path still uses the old form: validate passes with the warning, deploy fails on the missing file"
+update_file.py .databricks/bundle/default/variable-overrides.json '../../../src/main.py' './src/main.py'
+trace $CLI bundle validate
+musterr trace $CLI bundle deploy
+
+title "After rewriting both relative to the bundle root"
+update_file.py .databricks/bundle/default/variable-overrides.json '../../../src/lib.whl' './src/lib.whl'
+trace $CLI bundle validate -o json | jq '.resources.jobs.my_job.tasks'
+
+rm -r .databricks

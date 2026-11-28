@@ -1,0 +1,91 @@
+
+=== Paths written relative to the overrides file's directory, the workaround for the old behavior: a warning says how to fix them
+
+>>> [CLI] bundle validate
+Warning: path ../../../src/main.py in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].spark_python_task.python_file
+  in .databricks/bundle/default/variable-overrides.json:6:44
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/main.py instead.
+
+Warning: path ../../../src/lib.whl in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].libraries[0].whl
+  in .databricks/bundle/default/variable-overrides.json:10:38
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/lib.whl instead.
+
+Error: path [TEST_TMP_DIR]/src/main.py is not contained in sync root path
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error and 2 warnings
+
+>>> [CLI] bundle deploy
+Warning: path ../../../src/main.py in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].spark_python_task.python_file
+  in .databricks/bundle/default/variable-overrides.json:6:44
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/main.py instead.
+
+Warning: path ../../../src/lib.whl in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].libraries[0].whl
+  in .databricks/bundle/default/variable-overrides.json:10:38
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/lib.whl instead.
+
+Error: path [TEST_TMP_DIR]/src/main.py is not contained in sync root path
+
+
+=== Only the wheel path still uses the old form: validate passes with the warning, deploy fails on the missing file
+
+>>> [CLI] bundle validate
+Warning: path ../../../src/lib.whl in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].libraries[0].whl
+  in .databricks/bundle/default/variable-overrides.json:10:38
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/lib.whl instead.
+
+Warn: unable to get spark version for cluster 0123-456789-abcdefgh, err: Not Found
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+
+>>> [CLI] bundle deploy
+Warning: path ../../../src/lib.whl in .databricks/bundle/default/variable-overrides.json points outside the bundle root
+  at resources.jobs.my_job.tasks[0].libraries[0].whl
+  in .databricks/bundle/default/variable-overrides.json:10:38
+
+Relative paths in complex variable values in this file are relative to the bundle root, not to the file's directory. If it refers to a file in the bundle, write ./src/lib.whl instead.
+
+Warn: unable to get spark version for cluster 0123-456789-abcdefgh, err: Not Found
+Error: file doesn't exist ../../../src/lib.whl
+  at resources.jobs.my_job.tasks[0].libraries[0].whl
+  in .databricks/bundle/default/variable-overrides.json:9:7
+
+
+=== After rewriting both relative to the bundle root
+
+>>> [CLI] bundle validate -o json
+Warn: unable to get spark version for cluster 0123-456789-abcdefgh, err: Not Found
+[
+  {
+    "existing_cluster_id": "0123-456789-abcdefgh",
+    "libraries": [
+      {
+        "whl": "src/lib.whl"
+      }
+    ],
+    "spark_python_task": {
+      "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/main.py"
+    },
+    "task_key": "main"
+  }
+]

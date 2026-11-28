@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -94,13 +95,13 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {
-	value, err := normalizePath("/notebook.py", diag.Location{}, "/tmp")
+	value, err := normalizePath("/notebook.py", diag.Location{}, "", "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "/notebook.py", value)
 }
 
 func TestNormalizePath_url(t *testing.T) {
-	value, err := normalizePath("s3:///path/to/notebook.py", diag.Location{}, "/tmp")
+	value, err := normalizePath("s3:///path/to/notebook.py", diag.Location{}, "", "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
 }
@@ -108,11 +109,11 @@ func TestNormalizePath_url(t *testing.T) {
 func TestNormalizePath_requirementsFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
-	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
+	value, err := normalizePath("-r ../requirements.txt", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 
-	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	value, err = normalizePath("-r      ../requirements.txt", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 }
@@ -120,7 +121,7 @@ func TestNormalizePath_requirementsFile(t *testing.T) {
 func TestNormalizePath_environmentDependency(t *testing.T) {
 	tmpDir := t.TempDir()
 	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
-	value, err := normalizePath("-e ../file.py", location, tmpDir)
+	value, err := normalizePath("-e ../file.py", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-e file.py", value)
 }
@@ -136,4 +137,66 @@ func TestLocationDirectoryNoFile(t *testing.T) {
 	loc := diag.Location{}
 	_, err := locationDirectory(loc)
 	assert.Error(t, err)
+}
+
+func TestNormalizePath_noDirectory(t *testing.T) {
+	_, err := normalizePath("notebook.py", diag.Location{}, "/tmp/.databricks/bundle/dev/variable-overrides.json", "/tmp")
+	assert.EqualError(t, err, "unable to determine directory for a value at notebook.py: no file in location")
+}
+
+func TestBaseDirectory(t *testing.T) {
+	root := t.TempDir()
+	overridesFile := filepath.Join(root, ".databricks", "bundle", "dev", "variable-overrides.json")
+
+	dir, err := baseDirectory(diag.Location{File: overridesFile}, overridesFile, root)
+	require.NoError(t, err)
+	assert.Equal(t, root, dir)
+
+	dir, err = baseDirectory(diag.Location{File: filepath.Join(root, "resources", "job.yml")}, overridesFile, root)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(root, "resources"), dir)
+
+	_, err = baseDirectory(diag.Location{}, overridesFile, root)
+	assert.Error(t, err)
+}
+
+func TestLegacyOverridesPathSuggestion(t *testing.T) {
+	tmp := t.TempDir()
+	root := filepath.Join(tmp, "x", "y", "z")
+	overridesFile := filepath.Join(root, ".databricks", "bundle", "dev", "variable-overrides.json")
+
+	// A file outside the bundle that exists, as with a synced shared directory.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, "shared"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "shared", "main.py"), nil, 0o600))
+
+	for _, tc := range []struct {
+		value      string
+		suggestion string
+	}{
+		// Written relative to the overrides file's directory: the bundle-root form is suggested.
+		{"../../../src/main.py", "./src/main.py"},
+		{"../../../src/*.whl", "./src/*.whl"},
+		{"../../../dist/x.whl[train]", "./dist/x.whl[train]"},
+		{"-r ../../../requirements.txt", "-r ./requirements.txt"},
+		{"-e   ../../../project", "-e ./project"},
+
+		// Relative to the bundle root, absolute or remote: nothing to suggest.
+		{"./src/main.py", ""},
+		{"../shared/main.py", ""},
+		{"/Workspace/Users/me/main.py", ""},
+		{"dbfs:/libs/x.whl", ""},
+		{"-r ./requirements.txt", ""},
+
+		// Outside the bundle root either way, or into .databricks: not the old form.
+		{"../../../../shared/main.py", ""},
+		{"../../../shared/main.py", ""},
+		{"../../../shared/*.py", ""},
+		{"../main.py", ""},
+	} {
+		suggestion, ok := legacyOverridesPathSuggestion(tc.value, overridesFile, root)
+		assert.Equal(t, tc.suggestion != "", ok, tc.value)
+		if ok {
+			assert.Equal(t, tc.suggestion, suggestion, tc.value)
+		}
+	}
 }

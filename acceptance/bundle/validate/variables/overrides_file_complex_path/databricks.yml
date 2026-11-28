@@ -4,6 +4,8 @@ bundle:
 variables:
   task:
     type: complex
+  script_path:
+    description: a plain string variable holding a path
 
 resources:
   jobs:
@@ -11,6 +13,10 @@ resources:
       name: my job
       tasks:
         - ${var.task}
+        - task_key: second
+          existing_cluster_id: 0123-456789-abcdefgh
+          spark_python_task:
+            python_file: ${var.script_path}
 
 targets:
   default:
