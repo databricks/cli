@@ -316,16 +316,18 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.lockmap.RUnlock(resourceKey)
 }
 
-// ResolveSelectors maps each --select selector to its plan key ("resources.type.name")
-// against resourceKeys of that same form. A selector is a qualified "type.name" or an
-// unqualified "name"; it errors on no match or, when unqualified, more than one.
+// ResolveSelectors maps each --select selector to its plan keys ("resources.type.name")
+// against resourceKeys of that same form. A selector is a qualified "type.name", an
+// unqualified "name", or "type.*" for every resource of that type; it errors on no
+// match or, when unqualified, more than one.
 // Duplicate resourceKeys (a resource present in both config and state) collapse, so an
 // unqualified selector is never falsely ambiguous against itself.
 func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]string, error) {
-	// Index top-level resource keys by name and as qualified "type.name". Keys look like
-	// "resources.<type>.<name>" (names have no dots, see Action.IsChildResource), so
-	// sub-nodes (4 parts: grants/permissions) are skipped as not --select-addressable.
+	// Index top-level resource keys by name, by type and as qualified "type.name". Keys
+	// look like "resources.<type>.<name>" (names have no dots, see Action.IsChildResource),
+	// so sub-nodes (4 parts: grants/permissions) are skipped as not --select-addressable.
 	byName := map[string][]string{}
+	byType := map[string][]string{}
 	known := map[string]struct{}{}
 	for key := range resourceKeys {
 		parts := strings.Split(key, ".")
@@ -343,11 +345,24 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 		if _, alreadySeen := known[qualified]; !alreadySeen {
 			known[qualified] = struct{}{}
 			byName[name] = append(byName[name], qualified)
+			byType[typeName] = append(byType[typeName], key)
 		}
 	}
 
 	resolved := make([]string, 0, len(selectors))
 	for _, s := range selectors {
+		// Checked before the exact lookup: config rejects a resource keyed "*"
+		// (validate.ReservedResourceKey), but state deployed before that check can still
+		// hold one, and "type.*" must not narrow to it.
+		if typeName, ok := strings.CutSuffix(s, ".*"); ok {
+			keys := byType[typeName]
+			if len(keys) == 0 {
+				return nil, fmt.Errorf("no resources match %s", s)
+			}
+			slices.Sort(keys)
+			resolved = append(resolved, keys...)
+			continue
+		}
 		var qualified string
 		if strings.Contains(s, ".") {
 			if _, ok := known[s]; !ok {

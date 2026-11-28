@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle validate
+Error: resource key "*" is reserved for --select '<type>.*'; rename this resource
+  at resources.jobs.*
+  in databricks.yml:7:7
+
+Error: resource key "*" is reserved for --select '<type>.*'; rename this resource
+  at resources.pipelines.*
+  in databricks.yml:18:11
+
+Name: test-bundle
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+
+Found 2 errors
+
+Exit code: 1

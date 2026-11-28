@@ -1,0 +1,69 @@
+
+>>> [CLI] bundle plan --select jobs.*
+create jobs.alpha
+create jobs.alpha.permissions
+create jobs.beta
+create pipelines.etl
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged, 3 not selected
+
+>>> [CLI] bundle plan --select pipelines.*,schemas.*
+create pipelines.adhoc
+create pipelines.etl
+create schemas.bronze
+create schemas.bronze.grants
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged, 3 not selected
+
+>>> [CLI] bundle plan --select schemas.* --select beta
+create jobs.beta
+create schemas.bronze
+create schemas.bronze.grants
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged, 4 not selected
+
+=== bundle deploy --select 'jobs.*'
+
+>>> [CLI] bundle deploy --select jobs.*
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-type-[UNIQUE_NAME]/default/files...
+Created jobs.alpha
+Created jobs.alpha.permissions
+Created jobs.beta
+Created pipelines.etl
+Files: 3 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged, 3 not selected
+
+>>> [CLI] bundle plan --select jobs.*
+delete jobs.beta
+
+Plan: 0 to add, 0 to change, 1 to delete, 3 unchanged, 3 not selected
+
+=== bundle deploy --select 'jobs.*' deletes beta
+
+>>> [CLI] bundle deploy --select jobs.*
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-type-[UNIQUE_NAME]/default/files...
+Deleted jobs.beta
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 3 unchanged, 3 not selected
+
+>>> [CLI] bundle plan
+create pipelines.adhoc
+create schemas.bronze
+create schemas.bronze.grants
+
+Plan: 3 to add, 0 to change, 0 to delete, 3 unchanged
+
+=== Destroy
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.alpha
+  delete resources.pipelines.etl
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.etl
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-type-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

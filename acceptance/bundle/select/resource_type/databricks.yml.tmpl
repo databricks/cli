@@ -1,0 +1,33 @@
+bundle:
+  name: select-type-$UNIQUE_NAME
+
+resources:
+  jobs:
+    alpha:
+      name: alpha-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+      tasks:
+        - task_key: run_etl
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.etl.id}
+
+    beta:
+      name: beta-$UNIQUE_NAME
+
+  pipelines:
+    etl:
+      name: etl-$UNIQUE_NAME
+
+    adhoc:
+      name: adhoc-$UNIQUE_NAME
+
+  schemas:
+    bronze:
+      catalog_name: main
+      name: bronze_$UNIQUE_NAME
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - ALL_PRIVILEGES

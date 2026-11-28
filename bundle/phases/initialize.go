@@ -210,6 +210,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 
+		// Reads (dynamic): resources.*.*
+		// Rejects a resource keyed "*"; --select reserves "<type>.*" for every resource of a type.
+		// Runs after PythonMutator so resources defined in Python are checked too.
+		validate.ReservedResourceKey(),
+
 		// Reads (dynamic): resources.postgres_data_apis.*
 		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
 		validate.PostgresDataApiSettings(),

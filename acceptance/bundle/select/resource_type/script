@@ -1,0 +1,29 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# '<type>.*' selects every resource of the type, with its permissions. alpha pulls in
+# its dependency pipelines.etl; the unreferenced pipelines.adhoc stays out.
+trace $CLI bundle plan --select 'jobs.*'
+# Two types; grants travel with the schema.
+trace $CLI bundle plan --select 'pipelines.*,schemas.*'
+# A type selector combines with a name selector.
+trace $CLI bundle plan --select 'schemas.*' --select beta
+
+title "bundle deploy --select 'jobs.*'"
+trace $CLI bundle deploy --select 'jobs.*'
+
+# Remove beta from config. It now lives only in state and is planned for deletion; the
+# type selector still covers it, next to the unchanged alpha.
+envsubst '$UNIQUE_NAME' < databricks.yml.after.tmpl > databricks.yml
+trace $CLI bundle plan --select 'jobs.*'
+
+title "bundle deploy --select 'jobs.*' deletes beta"
+trace $CLI bundle deploy --select 'jobs.*'
+
+# The resources of the other types were never selected, so a full plan still creates them.
+trace $CLI bundle plan

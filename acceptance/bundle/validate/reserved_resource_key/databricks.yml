@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    "*":
+      name: star job
+    # Only the exact key "*" is reserved.
+    "my*job":
+      name: my job
+
+targets:
+  dev:
+    default: true
+    resources:
+      pipelines:
+        "*":
+          name: star pipeline
