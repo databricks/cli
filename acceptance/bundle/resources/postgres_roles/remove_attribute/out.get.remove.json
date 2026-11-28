@@ -1,0 +1,7 @@
+{
+  "attributes": {
+    "bypassrls": false,
+    "createdb": true,
+    "createrole": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.custom_tags"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Custom Tags Removal",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}

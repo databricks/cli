@@ -1,0 +1,72 @@
+
+=== project enable_pg_native_login (bool)
+update-project update_mask=spec.enable_pg_native_login body={"spec":{"enable_pg_native_login":true}}
+update-project update_mask=spec.enable_pg_native_login body={"spec":{}}
+Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
+
+Exit code: 1
+{"enable_pg_native_login":true}
+update-project update_mask=spec.enable_pg_native_login body={"spec":{"enable_pg_native_login":true}}
+update-project update_mask=spec body={"spec":{"display_name":"factcheck","pg_version":16}}
+{"enable_pg_native_login":true}
+update-project update_mask=spec.enable_pg_native_login body={"spec":{"enable_pg_native_login":true}}
+update-project update_mask=spec body={"spec":{"display_name":"factcheck","pg_version":16,"enable_pg_native_login":false}}
+{"enable_pg_native_login":false}
+
+=== project custom_tags (repeated)
+update-project update_mask=spec.custom_tags body={"spec":{"custom_tags":[{"key":"team","value":"data"}]}}
+update-project update_mask=spec.custom_tags body={"spec":{}}
+{"custom_tags":null}
+update-project update_mask=spec.custom_tags body={"spec":{"custom_tags":[{"key":"team","value":"data"}]}}
+update-project update_mask=spec body={"spec":{"display_name":"factcheck","pg_version":16}}
+{"custom_tags":[{"key":"team","value":"data"}]}
+
+=== branch is_protected (bool)
+update-branch update_mask=spec.is_protected body={"spec":{"is_protected":true}}
+update-branch update_mask=spec.is_protected body={"spec":{}}
+Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
+
+Exit code: 1
+{"is_protected":true}
+update-branch update_mask=spec.is_protected body={"spec":{"is_protected":true}}
+update-branch update_mask=spec body={"spec":{"no_expiry":true}}
+{"is_protected":true}
+update-branch update_mask=spec.is_protected body={"spec":{"is_protected":true}}
+update-branch update_mask=spec body={"spec":{"no_expiry":true,"is_protected":false}}
+{"is_protected":false}
+
+=== endpoint disabled (bool)
+update-endpoint update_mask=spec.disabled body={"spec":{"disabled":true}}
+update-endpoint update_mask=spec.disabled body={"spec":{}}
+Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
+
+Exit code: 1
+{"disabled":true}
+update-endpoint update_mask=spec.disabled body={"spec":{"disabled":true}}
+update-endpoint update_mask=spec body={"spec":{"endpoint_type":"ENDPOINT_TYPE_READ_WRITE"}}
+{"disabled":true}
+update-endpoint update_mask=spec.disabled body={"spec":{"disabled":true}}
+update-endpoint update_mask=spec body={"spec":{"endpoint_type":"ENDPOINT_TYPE_READ_WRITE","disabled":false}}
+{"disabled":false}
+
+=== role attributes.createdb (bool in a message)
+update-role update_mask=spec.attributes.createdb body={"spec":{"attributes":{"createdb":true}}}
+update-role update_mask=spec.attributes.createdb body={"spec":{"attributes":{}}}
+Error: Field '[SPEC_FIELD]' is in update_mask but not provided in request
+
+Exit code: 1
+{"createdb":true}
+update-role update_mask=spec.attributes.createdb body={"spec":{"attributes":{"createdb":true}}}
+update-role update_mask=spec body={"spec":{"postgres_role":"factcheck_role","attributes":{}}}
+{"createdb":true}
+update-role update_mask=spec.attributes.createdb body={"spec":{"attributes":{"createdb":true}}}
+update-role update_mask=spec body={"spec":{"postgres_role":"factcheck_role","attributes":{"createdb":false}}}
+{"createdb":false}
+
+=== role membership_roles (repeated)
+update-role update_mask=spec.membership_roles body={"spec":{"membership_roles":["DATABRICKS_SUPERUSER"]}}
+update-role update_mask=spec.membership_roles body={"spec":{}}
+{"membership_roles":null}
+update-role update_mask=spec.membership_roles body={"spec":{"membership_roles":["DATABRICKS_SUPERUSER"]}}
+update-role update_mask=spec body={"spec":{"postgres_role":"factcheck_role"}}
+{"membership_roles":null}

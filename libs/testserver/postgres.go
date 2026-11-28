@@ -128,7 +128,8 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    historyRetention,
-			EnablePgNativeLogin:         false,
+			EnablePgNativeLogin:         project.Spec.EnablePgNativeLogin,
+			CustomTags:                  project.Spec.CustomTags,
 			Owner:                       TestUser.UserName,
 			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
@@ -151,6 +152,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 			if project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
+			project.Status.DefaultEndpointSettings.PgSettings = project.Spec.DefaultEndpointSettings.PgSettings
 		}
 		project.Spec = echoedSpec[postgres.ProjectSpec](nil, req.Body, "", projectOneofGroups, projectInputOnlySpecFields...)
 	}
@@ -245,6 +247,21 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 			if updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
 				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
+		}
+
+		mask := req.URL.Query().Get("update_mask")
+		body := requestBodyMap(req)
+		if maskApplies(mask, body, "spec.custom_tags") {
+			project.Status.CustomTags = updateProject.Spec.CustomTags
+		}
+		if maskApplies(mask, body, "spec.enable_pg_native_login") {
+			project.Status.EnablePgNativeLogin = updateProject.Spec.EnablePgNativeLogin
+		}
+		if maskApplies(mask, body, "spec.default_endpoint_settings.pg_settings") {
+			if project.Status.DefaultEndpointSettings == nil {
+				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
+			}
+			project.Status.DefaultEndpointSettings.PgSettings = updateProject.Spec.DefaultEndpointSettings.PgSettings
 		}
 	}
 
@@ -462,7 +479,11 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 		if branch.Status == nil {
 			branch.Status = &postgres.BranchStatus{}
 		}
-		branch.Status.IsProtected = updateBranch.Spec.IsProtected
+		// A mask covering is_protected with the field omitted keeps it: probed against a
+		// real workspace on 2026-11-19 with update_mask=spec.
+		if maskApplies(req.URL.Query().Get("update_mask"), requestBodyMap(req), "spec.is_protected") {
+			branch.Status.IsProtected = updateBranch.Spec.IsProtected
+		}
 		if updateBranch.Spec.ExpireTime != nil {
 			branch.Status.ExpireTime = updateBranch.Spec.ExpireTime
 		}
@@ -676,6 +697,9 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 			endpoint.Status.SuspendTimeoutDuration = endpoint.Spec.SuspendTimeoutDuration
 		}
 		endpoint.Status.Disabled = endpoint.Spec.Disabled
+		if endpoint.Spec.Settings != nil {
+			endpoint.Status.Settings = endpoint.Spec.Settings
+		}
 	}
 
 	endpoint.Spec = echoedSpec[postgres.EndpointSpec](nil, req.Body, "", endpointOneofGroups)
@@ -878,6 +902,41 @@ func parentPath(path string) string {
 	return before
 }
 
+// Repeated fields under spec. Unlike a scalar, one named in update_mask but absent from
+// the body is accepted and cleared: probed against a real workspace on 2026-11-19,
+// update_mask=spec.custom_tags with no custom_tags removes every tag, and the same holds
+// for spec.membership_roles.
+var postgresRepeatedMaskPaths = []string{"spec.custom_tags", "spec.membership_roles"}
+
+// Map fields under spec. One named in update_mask but absent from the body is accepted
+// and keeps the stored map (probed against a real workspace on 2026-11-19).
+var postgresMapMaskPaths = []string{"spec.default_endpoint_settings.pg_settings", "spec.settings.pg_settings"}
+
+// maskApplies reports whether an update writes path: the mask covers it (names it, an
+// enclosing message, or the whole spec) and the body carries it, or the mask names a
+// repeated field the body omits, which clears it.
+func maskApplies(mask string, body map[string]any, path string) bool {
+	for entry := range strings.SplitSeq(mask, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry != path && !strings.HasPrefix(path, entry+".") {
+			continue
+		}
+		if bodyHasPath(body, strings.Split(path, ".")) {
+			return true
+		}
+		if entry == path && slices.Contains(postgresRepeatedMaskPaths, path) {
+			return true
+		}
+	}
+	return false
+}
+
+func requestBodyMap(req Request) map[string]any {
+	var body map[string]any
+	_ = json.Unmarshal(req.Body, &body)
+	return body
+}
+
 // missingMaskedField returns the first update_mask path the API would reject
 // because the mask names it but the request body carries no value for it, which is
 // how a removal from bundle config reaches the API. Verified against a real
@@ -897,6 +956,9 @@ func missingMaskedField(req Request, oneofGroups map[string][]string) string {
 		if _, ok := oneofGroups[path]; ok {
 			// A group is not a body field of its own; a member populates it instead, which
 			// unpopulatedOneofGroup checks.
+			continue
+		}
+		if slices.Contains(postgresRepeatedMaskPaths, path) || slices.Contains(postgresMapMaskPaths, path) {
 			continue
 		}
 		parts := strings.Split(path, ".")
@@ -1057,7 +1119,15 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		if updateEndpoint.Spec.SuspendTimeoutDuration != nil {
 			endpoint.Status.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 		}
-		endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
+		mask, body := req.URL.Query().Get("update_mask"), requestBodyMap(req)
+		// A mask covering disabled with the field omitted keeps it: probed against a real
+		// workspace on 2026-11-19 with update_mask=spec.
+		if maskApplies(mask, body, "spec.disabled") {
+			endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
+		}
+		if maskApplies(mask, body, "spec.settings.pg_settings") {
+			endpoint.Status.Settings = &postgres.EndpointSettings{PgSettings: updateEndpoint.Spec.Settings.PgSettings}
+		}
 	}
 
 	endpoint.Spec = echoedSpec(endpoint.Spec, req.Body, req.URL.Query().Get("update_mask"), endpointOneofGroups)
@@ -1834,6 +1904,10 @@ func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
 // desired spec. An empty update_mask updates all fields, matching the API
 // ("if unspecified, all fields will be updated when possible").
 func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
+	if path := missingMaskedField(req, nil); path != "" {
+		return missingMaskedFieldResponse(path)
+	}
+
 	defer s.LockUnlock()()
 
 	role, exists := s.PostgresRoles[name]
@@ -1861,7 +1935,7 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		if mask := req.URL.Query().Get("update_mask"); mask != "" {
 			paths = strings.Split(mask, ",")
 		}
-		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
+		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths, requestBodyMap(req))
 		role.Status.RoleId = roleID
 	}
 
@@ -1875,26 +1949,40 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 }
 
 // applyRoleSpecMask applies the fields named in paths (the update_mask) from
-// desired onto existing. Paths are relative to the Role and "spec."-prefixed; the
-// bare path "spec" replaces the whole subtree, and an empty paths slice replaces
-// everything.
+// desired onto existing. Paths are relative to the Role and "spec."-prefixed, and an
+// empty paths slice replaces everything.
 //
-// A nested path such as "spec.attributes.createdb" is collapsed to its top-level
-// field ("attributes"), and that whole field is taken from desired. This is a
-// simplification: the real backend masks at the individual leaf (verified on
-// dogfood 2026-06-16 — update_mask=spec.attributes.createdb leaves the sibling
-// attributes untouched), but the direct engine always sends the full spec in the
-// request body, so the collapsed result is identical for the requests it makes.
-func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
+// The bare path "spec" is a patch, as probed against a real workspace on 2026-11-19:
+// it applies the attributes the body carries, keeps an omitted one, and clears an
+// omitted membership_roles. A path under attributes applies that one attribute; the
+// real backend masks at the leaf (verified on dogfood 2026-06-16 —
+// update_mask=spec.attributes.createdb leaves the sibling attributes untouched).
+func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string, body map[string]any) *postgres.RoleRoleStatus {
 	if len(paths) == 0 || existing == nil {
 		return desired
 	}
-	result := *existing
+	var expanded []string
 	for _, p := range paths {
-		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
-		switch field {
-		case "spec":
-			result = *desired
+		if p != "spec" {
+			expanded = append(expanded, p)
+			continue
+		}
+		expanded = append(expanded, "spec.membership_roles")
+		// postgres_role, auth_method and identity_type are immutable, and the backend
+		// silently ignores them under the whole-spec mask.
+		for _, field := range []string{"attributes.bypassrls", "attributes.createdb", "attributes.createrole"} {
+			if bodyHasPath(body, strings.Split("spec."+field, ".")) {
+				expanded = append(expanded, "spec."+field)
+			}
+		}
+	}
+	result := *existing
+	attrs := postgres.RoleAttributes{ForceSendFields: []string{"Bypassrls", "Createdb", "Createrole"}}
+	if existing.Attributes != nil {
+		attrs.Bypassrls, attrs.Createdb, attrs.Createrole = existing.Attributes.Bypassrls, existing.Attributes.Createdb, existing.Attributes.Createrole
+	}
+	for _, p := range expanded {
+		switch strings.TrimPrefix(p, "spec.") {
 		case "postgres_role":
 			result.PostgresRole = desired.PostgresRole
 		case "auth_method":
@@ -1904,9 +1992,16 @@ func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []strin
 		case "membership_roles":
 			result.MembershipRoles = desired.MembershipRoles
 		case "attributes":
-			result.Attributes = desired.Attributes
+			attrs = *desired.Attributes
+		case "attributes.bypassrls":
+			attrs.Bypassrls = desired.Attributes.Bypassrls
+		case "attributes.createdb":
+			attrs.Createdb = desired.Attributes.Createdb
+		case "attributes.createrole":
+			attrs.Createrole = desired.Attributes.Createrole
 		}
 	}
+	result.Attributes = &attrs
 	return &result
 }
 

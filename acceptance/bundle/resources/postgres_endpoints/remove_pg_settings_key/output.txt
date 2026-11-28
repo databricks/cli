@@ -1,0 +1,40 @@
+
+=== Initial deployment
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/remove-pg-settings-key-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_endpoints.my_endpoint
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+{
+  "settings": {
+    "pg_settings": {
+      "lock_timeout": "5000",
+      "statement_timeout": "8000"
+    }
+  }
+}
+
+=== Remove one of two settings.pg_settings keys
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.my_endpoint
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/remove-pg-settings-key-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

@@ -1,0 +1,10 @@
+{
+  "action": "update",
+  "changes": {
+    "settings.pg_settings['lock_timeout']": {
+      "action": "update",
+      "old": "5000",
+      "remote": "5000"
+    }
+  }
+}

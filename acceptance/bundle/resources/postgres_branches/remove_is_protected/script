@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   $CLI postgres update-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/main" spec.is_protected --json '{"spec": {"is_protected": false}}' &> LOG.unprotect || true
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# is_protected is a bool that defaults to false: remove it after setting it to true.
+# Each step records whether the change reaches the backend: the planned changes, the
+# deploy outcome, the PATCH it sent, the resource read back, and the plan that follows.
+step() {
+    local name=$1
+    $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_branches.main" | {action, changes}' > out.plan.$name.json
+    errcode $CLI bundle deploy &> out.deploy.$name.txt
+    print_requests.py --del-body project_id,branch_id,endpoint_id,role_id //postgres --method PATCH > out.requests.$name.json
+    $CLI postgres get-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/main" | jq '.status | {is_protected}' > out.get.$name.json
+    $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_branches.main" | {action, changes}' > out.plan.after_$name.json
+}
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+trace $CLI postgres get-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/main" | jq '.status | {is_protected}'
+
+title "Remove is_protected: true"
+update_file.py databricks.yml "$(printf '      is_protected: true\n')" ""
+step remove

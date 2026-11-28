@@ -1,0 +1,20 @@
+{
+  "action": "update",
+  "changes": {
+    "membership_roles": {
+      "action": "update",
+      "old": [
+        "DATABRICKS_SUPERUSER"
+      ],
+      "remote": [
+        "DATABRICKS_SUPERUSER"
+      ]
+    },
+    "postgres_role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "app_role",
+      "new": "app_role"
+    }
+  }
+}

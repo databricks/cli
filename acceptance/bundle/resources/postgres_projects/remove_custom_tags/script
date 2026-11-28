@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+# custom_tags is a repeated field: shrink it, then remove it entirely.
+# Each step records whether the change reaches the backend: the planned changes, the
+# deploy outcome, the PATCH it sent, the resource read back, and the plan that follows.
+step() {
+    local name=$1
+    $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$name.json
+    errcode $CLI bundle deploy &> out.deploy.$name.txt
+    print_requests.py --del-body project_id,branch_id,endpoint_id,role_id //postgres --method PATCH > out.requests.$name.json
+    $CLI postgres get-project "projects/test-pg-proj-${UNIQUE_NAME}" | jq '.status | {custom_tags}' > out.get.$name.json
+    $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.after_$name.json
+}
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+trace $CLI postgres get-project "projects/test-pg-proj-${UNIQUE_NAME}" | jq '.status | {custom_tags}'
+
+title "Remove one of two custom_tags"
+update_file.py databricks.yml "$(printf '        - key: team\n          value: data\n')" ""
+step shrink
+
+title "Remove the last custom_tag, leaving no custom_tags in the config"
+update_file.py databricks.yml "$(printf '      custom_tags:\n        - key: env\n          value: test\n')" ""
+step remove
