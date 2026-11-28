@@ -8,6 +8,14 @@ pipelines.pipeline_three: {"user_name":"user_override"}
 pipelines.pipeline_two: {"service_principal_name":"sp_override"}
 
 >>> [CLI] bundle validate -o json -t with_user_run_as
+Warning: run_as identity "user_base" is not in bundle top-level permissions
+  in databricks.yml:39:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - user_name: user_base
+      level: CAN_VIEW
+
 jobs.job_one: {"user_name":"user_base"}
 jobs.job_three: {"user_name":"user_override"}
 jobs.job_two: {"service_principal_name":"sp_override"}
@@ -16,6 +24,14 @@ pipelines.pipeline_three: {"user_name":"user_override"}
 pipelines.pipeline_two: {"service_principal_name":"sp_override"}
 
 >>> [CLI] bundle validate -o json -t with_sp_run_as
+Warning: run_as identity "sp_base" is not in bundle top-level permissions
+  in databricks.yml:43:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: sp_base
+      level: CAN_VIEW
+
 jobs.job_one: {"service_principal_name":"sp_base"}
 jobs.job_three: {"user_name":"user_override"}
 jobs.job_two: {"service_principal_name":"sp_override"}
