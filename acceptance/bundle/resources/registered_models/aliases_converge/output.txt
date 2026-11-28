@@ -13,6 +13,7 @@ API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Model version 1 of registered model main.default.my-registered-model-aliases-[UNIQUE_NAME] does not exist.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 === The model is tracked: the next plan retries the alias as an update instead of creating the model again
 

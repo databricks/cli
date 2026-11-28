@@ -13,6 +13,7 @@ Created features.sawfeat
 Error: cannot create resources.materialization_sets.set1: materialization set [UUID][0]: operation failed: [BAD_REQUEST] Feature 'main.myschema.saw_[UNIQUE_NAME]' uses a sawtooth window, which requires an offline batch materialization, an online batch materialization and an online streaming materialization. Declare one materialize feature request for each.
 
 Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 === Declaring all three creates the set
 
@@ -62,6 +63,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Deleting materialized features '[UUID][2]' of feature 'main.myschema.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID][3]', '[UUID][4]', which the request does not delete. Delete the unrequested materialized features as well.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 === removing the online batch member names no member a delete can be applied to,
 
@@ -80,6 +82,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Materialized features '[UUID][3]' of feature 'main.myschema.saw_[UNIQUE_NAME]' are deleted only by deleting materialized features '[UUID][2]', '[UUID][4]', which the request does not supply. Remove those as well.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 === and removing the batch pair still leaves the streaming member behind
 
@@ -98,6 +101,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Deleting materialized features '[UUID][2]', '[UUID][3]' of feature 'main.myschema.saw_[UNIQUE_NAME]' also deletes materialized features '[UUID][4]', which the request does not delete. Delete the unrequested materialized features as well.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 === Removing all three satisfies the cascade but empties the set, which the update endpoint
 
@@ -120,6 +124,7 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Updating materialization set '[UUID][1]' with no materialized features is not supported. Delete the set instead.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged, 1 failed
 
 >>> [CLI] bundle plan -o json
 

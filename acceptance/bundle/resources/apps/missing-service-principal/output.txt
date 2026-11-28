@@ -21,6 +21,7 @@ API error_code: BAD_REQUEST
 API message: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
 
 Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 Exit code: 1
 
@@ -67,6 +68,7 @@ API error_code: BAD_REQUEST
 API message: App: myappname's service principal does not exist or is deleted. App cannot run without a valid service principal. Please delete your app.
 
 Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 Exit code: 1
 

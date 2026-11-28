@@ -13,8 +13,13 @@ type Action struct {
 	// resource no longer exists remotely (confirmed by a read, or an empty-ID state entry).
 	Gone bool
 	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
-	// (a delete of a resource without DoDelete, or a re-key).
+	// (a delete of a resource without DoDelete, or a re-key), or it is a recreate whose
+	// delete step has no backend effect.
 	StateOnly bool
+	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
+	// reached this resource, Applied means its operation completed.
+	Attempted bool
+	Applied   bool
 }
 
 func (a Action) String() string {
@@ -25,7 +30,7 @@ func (a Action) String() string {
 // state (see PlanEntry.IsStateOnly). Such actions are omitted from human output and need no
 // approval.
 func (a Action) IsStateOnly() bool {
-	return a.Gone || a.StateOnly
+	return a.ActionType != Recreate && (a.Gone || a.StateOnly)
 }
 
 func (a Action) IsChildResource() bool {

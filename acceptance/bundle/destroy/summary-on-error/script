@@ -1,0 +1,11 @@
+title "Deploy three chained jobs"
+trace $CLI bundle deploy
+# Mask the job IDs (the destroy error below prints job_01's) so the golden is stable.
+replace_ids.py
+
+title "Destroy: report two successful deletions and one failure"
+# Deletes run children-first (job_03, job_02, job_01); faulting the third makes only
+# job_01 fail while job_03 and job_02 are really deleted. The deferred summary must
+# report those completed deletions even though destroy returns an error.
+trace fault.py "POST /api/2.2/jobs/delete" 400 2 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle destroy --auto-approve

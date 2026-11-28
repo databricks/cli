@@ -23,6 +23,7 @@ API error_code: RESOURCE_ALREADY_EXISTS
 API message: Routine or Model 'model_b' already exists
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged, 1 failed
 
 >>> print_requests.py //unity-catalog
 {

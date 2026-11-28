@@ -184,6 +184,7 @@ Error: cannot update_id resources.schemas.schema1: dependency failed: resources.
 Error: cannot update_id resources.volumes.volume1: dependency failed: resources.catalogs.catalog1
 
 Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 3 failed
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default

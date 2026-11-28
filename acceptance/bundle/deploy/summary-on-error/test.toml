@@ -1,0 +1,4 @@
+# fault.py registers its rule on the fake server, which a real workspace does not have.
+Cloud = false
+
+Ignore = [".databricks"]
