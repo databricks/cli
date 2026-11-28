@@ -74,3 +74,5 @@ P F telemetry.artifact_files_is_set
 PT  telemetry.presets_name_prefix_is_set
 P F telemetry.experimental.use_legacy_run_as
 P F telemetry.run_as_set
+P F telemetry.current_user_from_scim_fallback
+P F telemetry.current_user_groups_from_scim_fallback

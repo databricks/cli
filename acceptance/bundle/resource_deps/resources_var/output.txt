@@ -38,6 +38,8 @@
 "[dev [USERNAME]] pipeline for mycatalog.myschema.myname"
 
 >>> print_telemetry_bool_values
+current_user_from_scim_fallback false
+current_user_groups_from_scim_fallback false
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false

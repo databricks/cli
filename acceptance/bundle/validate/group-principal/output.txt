@@ -1,0 +1,6 @@
+Error: the current identity is an assumed group, but this command needs a user or service principal
+
+Name: group-principal
+Target: default
+
+Found 1 error

@@ -330,3 +330,9 @@
 5270 telemetry.has_classic_interactive_compute
 5271 telemetry.has_classic_interactive_compute=true
 5272 telemetry.has_classic_interactive_compute=false
+5273 telemetry.current_user_from_scim_fallback
+5274 telemetry.current_user_from_scim_fallback=true
+5275 telemetry.current_user_from_scim_fallback=false
+5276 telemetry.current_user_groups_from_scim_fallback
+5277 telemetry.current_user_groups_from_scim_fallback=true
+5278 telemetry.current_user_groups_from_scim_fallback=false

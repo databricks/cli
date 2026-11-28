@@ -4,7 +4,20 @@
   "workspace": {
     "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
     "current_user": {
+      "active": true,
       "domain_friendly_name": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "value": "[USERNAME]"
+        }
+      ],
+      "groups": [
+        {
+          "display": "users",
+          "value": "1"
+        }
+      ],
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"

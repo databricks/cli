@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -38,7 +39,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -630,7 +630,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	}
 
 	// Get Databricks user name for the workspace path
-	currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+	currentUser, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}

@@ -8,7 +8,7 @@ trace print_requests.py --get //network-policies
 
 title "Bundle command"
 DATABRICKS_LITESWAP_TARGET=dms trace $CLI bundle validate
-trace print_requests.py --get //scim/v2/Me
+trace print_requests.py --get --sort //identity/me
 
 title "No header when unset"
 trace $CLI clusters list

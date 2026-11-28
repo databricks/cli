@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -288,18 +287,22 @@ func TestCancelAllConfirmReadError(t *testing.T) {
 }
 
 func TestCancelAllMeError(t *testing.T) {
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, iam.MeRequest{}).Return(nil, errors.New("nope"))
+	// identity/me fails with a non-retriable 403.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error_code":"PERMISSION_DENIED","message":"nope"}`))
+	}))
+	t.Cleanup(srv.Close)
 
 	var buf bytes.Buffer
-	err := runCancelAll(t, m.WorkspaceClient, flags.OutputText, nil, &buf)
+	err := runCancelAll(t, newTestWorkspaceClient(t, srv.URL), flags.OutputText, nil, &buf)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to resolve current user")
 }
 
 func TestCancelAllListError(t *testing.T) {
-	// Me succeeds (default empty user), but listing active runs fails.
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// The current user resolves, but listing active runs fails.
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/2.2/jobs/runs/list" {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"error_code":"INTERNAL","message":"boom"}`))
@@ -352,7 +355,7 @@ func TestCancelAllCancelsAMultiTaskRunOnce(t *testing.T) {
 	single := airBaseRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c")
 	list := runsListBody(t, "", multi, single)
 	var cancelled []int64
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/2.2/jobs/runs/list":
 			_, _ = w.Write([]byte(list))

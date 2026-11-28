@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,14 +45,9 @@ func TestUserWorkspaceDir(t *testing.T) {
 	assert.Equal(t, "/Workspace/custom", dir)
 }
 
-func TestUserWorkspaceDirRequestsOnlyUserName(t *testing.T) {
+func TestUserWorkspaceDirUsesCurrentUser(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
-	var attributes []string
-	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-		attributes = append(attributes, req.URL.Query().Get("attributes"))
-		return iam.User{UserName: "me@example.com"}
-	})
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -61,8 +55,7 @@ func TestUserWorkspaceDirRequestsOnlyUserName(t *testing.T) {
 
 	dir, err := userWorkspaceDir(t.Context(), w)
 	require.NoError(t, err)
-	assert.Equal(t, "/Workspace/Users/me@example.com", dir)
-	assert.Equal(t, []string{"userName"}, attributes)
+	assert.Equal(t, "/Workspace/Users/tester@databricks.com", dir)
 }
 
 func TestUserWorkspaceDirProfilePrecedence(t *testing.T) {

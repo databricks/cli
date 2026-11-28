@@ -1,6 +1,7 @@
-Badness = '''(minor) When fetching the current user fails, the error shows template internals and nothing says what failed: 'template: :1:14: executing "" at <user_name>: error calling user_name: '. user_name returns the API error unwrapped; it should add context such as "failed to look up the current user". (The cause is empty here only because the fake server returns a 500 with body '{}'.)'''
+Badness = '''(minor) When fetching the current user fails, the error shows template internals and nothing says what failed: 'template: :1:14: executing "" at <user_name>: error calling user_name: '. user_name returns the API error unwrapped; it should add context such as "failed to look up the current user". (The cause is empty here only because the fake server returns a 400 with body '{}'.)'''
 
+# The 400 keeps the golden error. The 500 retry path is not covered by this test.
 [[Server]]
-Pattern = "GET /api/2.0/preview/scim/v2/Me"
+Pattern = "GET /api/2.0/identity/me"
 Response.Body = '{}'
-Response.StatusCode = 500
+Response.StatusCode = 400

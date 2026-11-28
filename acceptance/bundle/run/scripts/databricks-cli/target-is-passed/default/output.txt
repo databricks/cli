@@ -2,10 +2,15 @@
 >>> [CLI] bundle run validate
 "pat"
 
->>> print_requests.py --get //
+>>> print_requests.py --get --sort //
 {
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
   "method": "GET",
-  "path": "/.well-known/databricks-config"
+  "path": "/api/2.0/identity/me"
 }
 {
   "headers": {
@@ -14,11 +19,7 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
+  "path": "/api/2.0/identity/me"
 }
 {
   "headers": {
@@ -27,7 +28,28 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/pat/files"
+  }
 }
 {
   "headers": {
@@ -54,14 +76,10 @@
   }
 }
 {
-  "headers": {
-    "Authorization": [
-      "Bearer [DATABRICKS_TOKEN]"
-    ]
-  },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/pat/files"
-  }
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }

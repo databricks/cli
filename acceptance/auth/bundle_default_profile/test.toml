@@ -9,3 +9,7 @@ Ignore = [
 [[Repls]]
 Old = 'Get "https://other.test/api/2.0/preview/scim/v2/Me\??": .*'
 New = 'Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)'
+
+[[Repls]]
+Old = 'Get "https://other.test/api/2.0/identity/me": .*'
+New = 'Get "https://other.test/api/2.0/identity/me": (redacted)'

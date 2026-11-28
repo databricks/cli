@@ -10,7 +10,7 @@ Response.Body = ''
 # `air list` reads Jobs runs/list directly (expand_tasks), filtering to AIR runs.
 # The current runs carry an ai_runtime_task (not modeled by the typed SDK), which
 # is why the CLI parses the response raw. Both runs belong to the default user
-# (tester@databricks.com, from the built-in scim/v2/Me handler). The second run
+# (tester@databricks.com, from the built-in identity/me handler). The second run
 # has the shape of the official multi-task DAB (a notebook prep task before the
 # ai_runtime_task) and must be listed from its AIR task. The third run has two
 # AI Runtime tasks that ended differently: it lists as two rows, each naming its

@@ -24,7 +24,6 @@ import (
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -324,12 +323,6 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 						SingleUserName:   "serge",
 					},
 				},
-			})
-			return
-		}
-		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
-			respondWithJSON(t, w, iam.User{
-				UserName: "serge",
 			})
 			return
 		}

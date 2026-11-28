@@ -62,3 +62,5 @@ PT  telemetry.presets_name_prefix_is_set
 P   telemetry.config_has_double_dollar_brace
 P F telemetry.experimental.use_legacy_run_as
 PT  telemetry.run_as_set
+P F telemetry.current_user_from_scim_fallback
+P F telemetry.current_user_groups_from_scim_fallback

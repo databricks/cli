@@ -16,11 +16,11 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -91,12 +91,23 @@ func TestGetRunNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "run 5 not found")
 }
 
+// identityMeConfig returns a config whose identity/me call answers with resp.
+func identityMeConfig(t *testing.T, resp testserver.Response) *config.Config {
+	t.Helper()
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return resp
+	})
+	return &config.Config{Host: server.URL, Token: "token"}
+}
+
 func TestGetRunAuthFailed(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	// GetRun's 403 is confirmed as a credential failure by the Me() probe, so
+	m.WorkspaceClient.Config = identityMeConfig(t, testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "denied"}})
+	// GetRun's 403 is confirmed as a credential failure by the current-user probe, so
 	// nothing is rendered.
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
@@ -106,12 +117,12 @@ func TestGetRunAuthFailed(t *testing.T) {
 	assert.Contains(t, err.Error(), "authentication was not successful")
 }
 
-func TestGetRunAuthTransient(t *testing.T) {
+func TestGetRunAuthProbeBadRequest(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	// A transient failure at the auth probe must not be misreported as an auth
+	// A probe failure that is not a 401/403 must not be misreported as an auth
 	// error; it surfaces as a retryable internal error instead.
+	m.WorkspaceClient.Config = identityMeConfig(t, testserver.Response{StatusCode: http.StatusBadRequest, Body: map[string]any{"error_code": "BAD_REQUEST", "message": "unavailable"}})
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrUnauthenticated)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, errors.New("connection reset"))
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
@@ -124,10 +135,10 @@ func TestGetRunAuthTransient(t *testing.T) {
 
 func TestGetRunDeniedWithValidCredentials(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	// A 403 on the run with credentials the Me() probe accepts is missing access
-	// to the run, not a failed login.
+	m.WorkspaceClient.Config = identityMeConfig(t, testserver.Response{StatusCode: http.StatusOK, Body: map[string]any{"user": map[string]any{"user_id": "1000012345", "username": "me@example.com"}}})
+	// A 403 on the run with credentials the current-user probe accepts is missing
+	// access to the run, not a failed login.
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, apierr.ErrPermissionDenied)
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u@example.com"}, nil)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
 	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
@@ -187,7 +198,7 @@ const succeededRun = `{"run_id": 5, "state": {"life_cycle_state": "TERMINATED", 
 // requests.
 func getRunServer(t *testing.T, meCalls *atomic.Int32, run string, outputs map[string]string) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
 			_, _ = w.Write([]byte(run))

@@ -76,6 +76,8 @@
       "artifact_build_command_is_set": true,
       "artifact_files_is_set": true,
       "config_has_double_dollar_brace": true,
+      "current_user_from_scim_fallback": true,
+      "current_user_groups_from_scim_fallback": true,
       "experimental": {
         "use_legacy_run_as": true
       },
@@ -149,6 +151,8 @@
     "telemetry": {
       "artifact_build_command_is_set": true,
       "artifact_files_is_set": true,
+      "current_user_from_scim_fallback": true,
+      "current_user_groups_from_scim_fallback": true,
       "experimental": {
         "use_legacy_run_as": true
       }

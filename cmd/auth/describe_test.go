@@ -7,15 +7,17 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -91,50 +93,45 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
-	showSensitive := false
-
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{
-		UserName: "test-user",
-	}, nil)
-
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
 	err := cmd.Flag("profile").Value.Set("my-profile")
 	require.NoError(t, err)
 	cmd.Flag("profile").Changed = true
 
+	// Only identity/me is served, so the username comes from this fixture rather than the default user.
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}}
+	})
+
 	cfg := &config.Config{
 		Profile: "my-profile",
 	}
 	m.WorkspaceClient.Config = cfg
-	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
 	err = config.ConfigAttributes.Configure(cfg)
 	require.NoError(t, err)
 
-	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.test",
+			"host":      server.URL,
 			"token":     "test-token",
-			"auth_type": "azure-cli",
+			"auth_type": "pat",
 		})
 		require.NoError(t, err)
 		return cfg, false, nil
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
+	require.NoError(t, status.Error)
 	require.Equal(t, "success", status.Status)
 	require.Equal(t, "test-user", status.Username)
-	require.Equal(t, "https://test.test", status.Details.Host)
-	require.Equal(t, "azure-cli", status.Details.AuthType)
+	require.Equal(t, server.URL, status.Details.Host)
+	require.Equal(t, "pat", status.Details.AuthType)
 
-	require.Equal(t, "azure-cli", status.Details.Configuration["auth_type"].Value)
-	require.Equal(t, "DATABRICKS_AUTH_TYPE environment variable", status.Details.Configuration["auth_type"].Source.String())
+	require.Equal(t, "pat", status.Details.Configuration["auth_type"].Value)
 	require.False(t, status.Details.Configuration["auth_type"].AuthTypeMismatch)
-
-	require.Equal(t, "********", status.Details.Configuration["token"].Value)
-	require.Equal(t, "dynamic configuration", status.Details.Configuration["token"].Source.String())
-	require.True(t, status.Details.Configuration["token"].AuthTypeMismatch)
 
 	require.Equal(t, "my-profile", status.Details.Configuration["profile"].Value)
 	require.Equal(t, "--profile flag", status.Details.Configuration["profile"].Source.String())
@@ -274,6 +271,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
+	require.NoError(t, status.Error)
 	require.Equal(t, "success", status.Status)
 
 	require.Equal(t, "test-user", status.Username)
@@ -372,8 +370,13 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
+	// A databricks-cli token cannot be minted in a unit test, so the check fails;
+	// token storage is reported for the status either way.
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusUnauthorized, Body: map[string]any{"error_code": "UNAUTHENTICATED", "message": "no token"}}
+	})
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -388,8 +391,9 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.test",
-			"auth_type": authTypeDatabricksCLI,
+			"host":                server.URL,
+			"auth_type":           authTypeDatabricksCLI,
+			"databricks_cli_path": "/nonexistent/databricks",
 		}))
 		return cfg, false, nil
 	})
@@ -401,10 +405,10 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", status.TokenStorage.Source)
 }
 
-// describeVerifyServer simulates the host that describe's secondary
-// verification calls hit: CurrentUser.Me and account Workspaces.List.
-// Statuses other than 200 return an error body with that status code; a zero
-// status marks an endpoint that must not be called at all.
+// describeVerifyServer simulates the host that describe's verification calls
+// hit: identity/me (the workspace check) and account Workspaces.List. Statuses
+// other than 200 return an error body with that status code; a zero status marks
+// an endpoint that must not be called at all.
 func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus int) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -416,13 +420,13 @@ func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus i
 			w.Header().Set("Content-Type", "application/json")
 			if status != http.StatusOK {
 				w.WriteHeader(status)
-				okBody = map[string]any{"error_code": "TEST_ERROR", "message": "secondary check failed"}
+				okBody = map[string]any{"error_code": "TEST_ERROR", "message": r.URL.Path + " failed"}
 			}
 			require.NoError(t, json.NewEncoder(w).Encode(okBody))
 		}
 		switch r.URL.Path {
-		case "/api/2.0/preview/scim/v2/Me":
-			respond(meStatus, map[string]any{"userName": "fallback-user"})
+		case "/api/2.0/identity/me":
+			respond(meStatus, map[string]any{"user": map[string]any{"user_id": "1", "username": "fallback-user"}})
 		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			respond(listStatus, []map[string]any{})
 		default:
@@ -433,15 +437,12 @@ func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus i
 	return server
 }
 
-// newDescribeWorkspaceCmd wires a mocked workspace client whose Me call fails
-// with meErr, with cfg as its resolved configuration.
-func newDescribeWorkspaceCmd(t *testing.T, cfg *config.Config, meErr error) *cobra.Command {
+// newDescribeWorkspaceCmd wires a workspace client over cfg, the resolved
+// configuration, so its identity/me call goes to the configured host.
+func newDescribeWorkspaceCmd(t *testing.T, cfg *config.Config) *cobra.Command {
 	t.Helper()
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = cfg
-	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, meErr)
 	cmd := newHostProfileCmd(t)
-	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), &databricks.WorkspaceClient{Config: cfg}))
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
 	return cmd
 }
@@ -469,16 +470,17 @@ func resolveCfg(t *testing.T, cfg *config.Config, attrs map[string]string, isAcc
 	}
 }
 
-// TestGetAuthStatusVerificationFallback covers the fallback when the primary
-// verification call (mocked client) fails: describe tries the other endpoint
-// over HTTP against describeVerifyServer, and only when both fail does it
-// report the primary error. Error rows leave wantUsername/wantAccountID empty
-// because errorAuthStatus never sets them.
+// TestGetAuthStatusVerificationFallback covers the fallback when the primary check
+// fails. The account branch tries identity/me after Workspaces.List fails, and the
+// workspace branch tries the account Workspaces list after identity/me fails. Only when
+// both fail is the primary error reported. describeVerifyServer answers the HTTP
+// fallback endpoint. Error rows leave wantUsername/wantAccountID empty because
+// errorAuthStatus never sets them.
 func TestGetAuthStatusVerificationFallback(t *testing.T) {
 	tests := []struct {
 		name          string
 		isAccount     bool
-		primaryErr    *apierr.APIError
+		primaryErr    *apierr.APIError // the primary check error that is reported when both checks fail
 		meStatus      int
 		listStatus    int
 		accountID     string
@@ -488,7 +490,6 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 	}{
 		{
 			name:          "workspace check fails, account check succeeds",
-			primaryErr:    &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
 			meStatus:      http.StatusNotFound,
 			listStatus:    http.StatusOK,
 			accountID:     "test-acct",
@@ -497,7 +498,8 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "no second call without an account id",
-			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "/api/2.0/identity/me failed"},
+			meStatus:   http.StatusBadRequest,
 			wantStatus: "error",
 		},
 		{
@@ -512,8 +514,8 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "workspace branch, both checks fail",
-			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
-			meStatus:   http.StatusNotFound,
+			primaryErr: &apierr.APIError{StatusCode: http.StatusUnauthorized, Message: "/api/2.0/identity/me failed"},
+			meStatus:   http.StatusUnauthorized,
 			listStatus: http.StatusUnauthorized,
 			accountID:  "test-acct",
 			wantStatus: "error",
@@ -538,7 +540,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 			if tc.isAccount {
 				cmd = newDescribeAccountCmd(t, cfg, tc.primaryErr)
 			} else {
-				cmd = newDescribeWorkspaceCmd(t, cfg, tc.primaryErr)
+				cmd = newDescribeWorkspaceCmd(t, cfg)
 			}
 			attrs := map[string]string{
 				"host":      server.URL,
@@ -554,8 +556,13 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 			require.Equal(t, tc.wantStatus, status.Status)
 			assert.Equal(t, tc.wantUsername, status.Username)
 			assert.Equal(t, tc.wantAccountID, status.AccountID)
-			if tc.wantStatus == "error" {
-				assert.ErrorIs(t, status.Error, tc.primaryErr)
+			if tc.wantStatus == "error" && tc.primaryErr != nil {
+				// The reported error is the primary one, found by status and message: an HTTP
+				// error from the server is a new value, so ErrorIs cannot match it by identity.
+				var apiErr *apierr.APIError
+				require.ErrorAs(t, status.Error, &apiErr)
+				assert.Equal(t, tc.primaryErr.StatusCode, apiErr.StatusCode)
+				assert.Equal(t, tc.primaryErr.Message, apiErr.Message)
 			}
 		})
 	}
@@ -569,8 +576,9 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	testserver.AddDefaultHandlers(server)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -581,7 +589,7 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.test",
+			"host":      server.URL,
 			"token":     "pat-token",
 			"auth_type": "pat",
 		}))
@@ -590,4 +598,33 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, status)
 	assert.Nil(t, status.TokenStorage)
+}
+
+// The account branch probes identity/me once. A 500 is not retried, so describe does not
+// wait out the workspace retry window before reporting the failure.
+func TestGetAuthStatusAccountProbeDoesNotRetryOn500(t *testing.T) {
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "")
+	var meCalls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/identity/me" {
+			meCalls.Add(1)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error_code":"INTERNAL_ERROR","message":"boom"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := &config.Config{}
+	cmd := newDescribeAccountCmd(t, cfg, &apierr.APIError{StatusCode: http.StatusForbidden, Message: "not an account admin"})
+	attrs := map[string]string{
+		"host":       server.URL,
+		"token":      "test-token",
+		"auth_type":  "pat",
+		"account_id": "test-acct",
+	}
+	status, err := getAuthStatus(cmd, []string{}, false, resolveCfg(t, cfg, attrs, true))
+	require.NoError(t, err)
+	assert.Equal(t, "error", status.Status)
+	assert.Equal(t, int32(1), meCalls.Load())
 }

@@ -159,6 +159,16 @@ type Telemetry struct {
 	HasServerlessCompute             *bool `metric:"has_serverless_compute"`
 	HasClassicJobCompute             *bool `metric:"has_classic_job_compute"`
 	HasClassicInteractiveCompute     *bool `metric:"has_classic_interactive_compute"`
+
+	// Which API served the current user on this deploy, recorded on every read of the
+	// current user. Both are set, so false means identity/me served it.
+	//   - current_user_from_scim_fallback: the user came from SCIM /Me, because identity/me is
+	//     not enabled in the workspace.
+	//   - current_user_groups_from_scim_fallback: the groups came from the SCIM /Me response,
+	//     because identity/me or its parent-groups endpoint is not enabled. False when the
+	//     parent-groups endpoint served them, or when they could not be read.
+	CurrentUserFromSCIMFallback       *bool `metric:"current_user_from_scim_fallback"`
+	CurrentUserGroupsFromSCIMFallback *bool `metric:"current_user_groups_from_scim_fallback"`
 }
 
 // BoolValues returns the flags that have a metric tag as deploy-event entries, in

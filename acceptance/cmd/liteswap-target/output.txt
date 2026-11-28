@@ -46,7 +46,7 @@ Workspace:
 
 Validation OK!
 
->>> print_requests.py --get //scim/v2/Me
+>>> print_requests.py --get --sort //identity/me
 {
   "headers": {
     "X-Databricks-Traffic-Id": [
@@ -54,7 +54,16 @@ Validation OK!
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me"
+}
+{
+  "headers": {
+    "X-Databricks-Traffic-Id": [
+      "testenv://liteswap/dms"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
 }
 
 === No header when unset

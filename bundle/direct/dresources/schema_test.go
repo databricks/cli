@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,7 +109,7 @@ func (s *schemaCreateScript) createSchema(t *testing.T) (*catalog.SchemaInfo, st
 	testserver.AddDefaultHandlers(server)
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
 	require.NoError(t, err)
-	me, err := client.CurrentUser.Me(t.Context(), iam.MeRequest{})
+	me, err := iamutil.GetCurrentUser(t.Context(), client)
 	require.NoError(t, err)
 
 	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")

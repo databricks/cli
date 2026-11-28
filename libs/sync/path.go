@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
@@ -41,7 +42,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	// TODO: we should cache CurrentUser.Me at the SDK level
 	//      for now we let clients pass in any existing user they might already have
 	if me == nil {
-		me, err = wsc.CurrentUser.Me(ctx, iam.MeRequest{})
+		me, err = iamutil.GetUserPrincipal(ctx, wsc)
 		if err != nil {
 			return err
 		}

@@ -124,6 +124,14 @@
               "value": false
             },
             {
+              "key": "current_user_from_scim_fallback",
+              "value": false
+            },
+            {
+              "key": "current_user_groups_from_scim_fallback",
+              "value": false
+            },
+            {
               "key": "local.cache.attempt",
               "value": true
             },

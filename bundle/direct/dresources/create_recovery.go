@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // createTimeSkew is how much earlier than our first create request a found resource's create time
@@ -218,7 +218,7 @@ func isAlreadyExists(err error) bool {
 // the principal that created them, as Unity Catalog's created_by does: a user name, or the
 // application id of a service principal.
 func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClient, createdBy string) (bool, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{Attributes: "", ExcludedAttributes: "", ForceSendFields: nil})
+	me, err := iamutil.GetCurrentUser(ctx, client)
 	if err != nil {
 		return false, err
 	}

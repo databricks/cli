@@ -19,6 +19,10 @@ artifact_build_command_is_set true
 artifact_dynamic_version_is_set true
 artifact_files_is_set false
 artifact_files_is_set true
+current_user_from_scim_fallback false
+current_user_from_scim_fallback false
+current_user_groups_from_scim_fallback false
+current_user_groups_from_scim_fallback false
 dms_compat_auto true
 dms_compat_auto true
 dms_undeclared_deploying_user false

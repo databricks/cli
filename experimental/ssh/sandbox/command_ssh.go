@@ -16,10 +16,10 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/execv"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -180,7 +180,7 @@ func sshProcessEnvironment(ctx context.Context, cfg *config.Config) []string {
 }
 
 func prepareSSHIdentity(ctx context.Context, w *databricks.WorkspaceClient, name string) (*Identity, error) {
-	caller, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	caller, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return nil, fmt.Errorf("resolve SSH caller: %w", err)
 	}

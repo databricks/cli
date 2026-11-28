@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 const metadataFileName = "metadata.json"
@@ -31,7 +31,7 @@ type WorkspaceMetadata struct {
 
 // GetWorkspaceHomeDir returns the current user's workspace home folder.
 func GetWorkspaceHomeDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}

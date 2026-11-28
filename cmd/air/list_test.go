@@ -52,12 +52,27 @@ func runsListBody(t *testing.T, nextToken string, runs ...jobs.BaseRun) string {
 	return string(b)
 }
 
+// airTestUserBody is the identity/me response for the user that runs are listed for.
+const airTestUserBody = `{"name": "accounts/acct-123/me", "user": {"user_id": "1000012345", "username": "me@example.com", "account_user_status": "ACTIVE"}}`
+
+// withAirIdentityMe answers identity/me with airTestUserBody, the user the air runs are
+// listed for, and passes every other request to next.
+func withAirIdentityMe(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/identity/me" {
+			_, _ = w.Write([]byte(airTestUserBody))
+			return
+		}
+		next(w, r)
+	}
+}
+
 // runsServer serves one runs/list response body per call, repeating the last
 // once exhausted, and a stub for any other request (the SDK config probe).
 func runsServer(t *testing.T, bodies ...string) *httptest.Server {
 	t.Helper()
 	call := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/2.2/jobs/runs/list" {
 			body := bodies[min(call, len(bodies)-1)]
 			call++

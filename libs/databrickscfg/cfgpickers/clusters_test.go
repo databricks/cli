@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,13 +115,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 				},
 			},
 		},
-		{
-			Method:   "GET",
-			Resource: "/api/2.0/preview/scim/v2/Me?",
-			Response: iam.User{
-				UserName: "serge",
-			},
-		},
+		identityMeFixture(),
 		{
 			Method:   "GET",
 			Resource: "/api/2.1/clusters/spark-versions",
@@ -163,13 +156,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 				},
 			},
 		},
-		{
-			Method:   "GET",
-			Resource: "/api/2.0/preview/scim/v2/Me?",
-			Response: iam.User{
-				UserName: "serge",
-			},
-		},
+		identityMeFixture(),
 		{
 			Method:   "GET",
 			Resource: "/api/2.1/clusters/spark-versions",
@@ -189,4 +176,13 @@ func TestNoCompatibleClusters(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	_, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.Equal(t, ErrNoCompatibleClusters, err)
+}
+
+// identityMeFixture answers the current-user probe as user serge.
+func identityMeFixture() qa.HTTPFixture {
+	return qa.HTTPFixture{
+		Method:   "GET",
+		Resource: "/api/2.0/identity/me",
+		Response: map[string]any{"user": map[string]string{"user_id": "1000012345", "username": "serge"}},
+	}
 }

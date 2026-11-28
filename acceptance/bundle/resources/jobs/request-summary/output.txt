@@ -6,7 +6,8 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests
 GET /.well-known/databricks-config
-GET /api/2.0/preview/scim/v2/Me
+GET /api/2.0/identity/me
+GET /api/2.0/identity/me/transitive-parent-groups
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/deployment.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/resources.json
 GET /api/2.0/workspace/export direct_download=true path=/Workspace/Users/[USERNAME]/.bundle/request-summary/default/state/terraform.tfstate

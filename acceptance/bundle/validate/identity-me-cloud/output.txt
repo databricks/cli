@@ -1,0 +1,6 @@
+[USERNAME]
+true
+
+>>> [CLI] current-user me -o json
+true
+true

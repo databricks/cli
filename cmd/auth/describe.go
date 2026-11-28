@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -138,6 +139,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		// Workspaces.List can fail for reasons other than bad credentials
 		// (e.g. it requires account admin), so verify against the workspace
 		// endpoint with the same resolved config before reporting failure.
+		// Account-only hosts reject this probe.
 		me, meErr := verifyWorkspaceAuth(ctx, a.Config)
 		if meErr == nil {
 			return successAuthStatus(ctx, cmd, a.Config, showSensitive, me.UserName, ""), nil
@@ -146,7 +148,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetCurrentUserOnce(ctx, w)
 	if err == nil {
 		return successAuthStatus(ctx, cmd, w.Config, showSensitive, me.UserName, ""), nil
 	}
@@ -174,7 +176,7 @@ func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*iam.User, er
 	if err != nil {
 		return nil, err
 	}
-	return w.CurrentUser.Me(ctx, iam.MeRequest{})
+	return iamutil.GetCurrentUserOnce(ctx, w)
 }
 
 // verifyAccountAuth checks whether cfg's credentials are accepted by the

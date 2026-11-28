@@ -36,7 +36,7 @@ func submitServer(t *testing.T) (*httptest.Server, *submitRequestCounts) {
 	t.Helper()
 	counts := &submitRequestCounts{}
 	runGet := `{"run_id": 555, "tasks": [{"run_id": 556, "attempt_number": 0}]}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
 			_, _ = w.Write([]byte(`{"run_id": 555}`))
@@ -198,7 +198,7 @@ func TestRunDryRunValidatesBackendWithoutMutation(t *testing.T) {
 		if request.path == validateConfigPath {
 			validations = append(validations, request)
 		}
-		assert.Contains(t, []string{"/.well-known/databricks-config", "/api/2.0/preview/scim/v2/Me", validateConfigPath}, request.path,
+		assert.Contains(t, []string{"/.well-known/databricks-config", "/api/2.0/identity/me", validateConfigPath}, request.path,
 			"dry-run must not make requests beyond authentication, user lookup, and validation")
 		assert.True(t, request.method == http.MethodGet || request.path == validateConfigPath,
 			"dry-run made unexpected %s request to %s", request.method, request.path)

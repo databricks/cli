@@ -36,7 +36,7 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 		"state": {"life_cycle_state": "TERMINATED", "result_state": "` + resultState + `"},
 		"tasks": [{"run_id": 778, "attempt_number": 0}]
 	}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
 			_, _ = w.Write([]byte(`{"run_id": 777}`))
@@ -54,7 +54,7 @@ func watchServer(t *testing.T, resultState string) *httptest.Server {
 			}
 			_, _ = fmt.Fprintf(w, `{"log_records":[%s,%s]}`, first, second)
 		default:
-			// Me() user lookup, workspace-id, SDK config discovery.
+			// Workspace-id and SDK config discovery.
 			_, _ = w.Write([]byte(`{"userName": "u@example.com", "workspace_id": 1}`))
 		}
 	}))
@@ -75,7 +75,7 @@ func watchServerMLflow(t *testing.T, resultState string) *httptest.Server {
 		"state": {"life_cycle_state": "TERMINATED", "result_state": "` + resultState + `"},
 		"tasks": [{"run_id": 778, "attempt_number": 0}]
 	}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/jobs/runs/submit"):
 			_, _ = w.Write([]byte(`{"run_id": 777}`))
@@ -231,6 +231,10 @@ func TestRunWatchDryRunSkipsSubmit(t *testing.T) {
 	var got []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got = append(got, r.URL.Path)
+		if r.URL.Path == "/api/2.0/identity/me" {
+			_, _ = w.Write([]byte(airTestUserBody))
+			return
+		}
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	t.Cleanup(srv.Close)

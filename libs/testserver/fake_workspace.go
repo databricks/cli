@@ -53,10 +53,16 @@ const (
 	// (not yet visible), and a deleted synced table stays in DELETING instead of
 	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
-	UserID                         = "1000012345"
-	TestDefaultClusterId           = "0123-456789-cluster0"
-	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId      = "0123-456789-pool0"
+	// AssumedGroupTokenPrefix marks a caller authorized by an assumed group: identity/me
+	// returns that group as the principal.
+	AssumedGroupTokenPrefix = "dbapi4"
+	// IdentityMeNotEnabledTokenPrefix marks a caller of a workspace that does not serve
+	// identity/me or its parent-groups endpoint yet: both answer 404, SCIM /Me still answers.
+	IdentityMeNotEnabledTokenPrefix = "dbapi5"
+	UserID                          = "1000012345"
+	TestDefaultClusterId            = "0123-456789-cluster0"
+	TestDefaultWarehouseId          = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId       = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -79,10 +85,16 @@ func isGuestToken(token string) bool {
 	return strings.HasPrefix(token, GuestServicePrincipalTokenPrefix)
 }
 
+// isServicePrincipalToken reports whether a token authenticates a service principal
+// (primary or guest).
+func isServicePrincipalToken(token string) bool {
+	return strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token)
+}
+
 // userForToken returns the identity behind a token: any service-principal token
 // (primary or guest) is the SP, otherwise the user.
 func userForToken(token string) iam.User {
-	if strings.HasPrefix(token, ServicePrincipalTokenPrefix) || isGuestToken(token) {
+	if isServicePrincipalToken(token) {
 		return TestUserSP
 	}
 	return TestUser
@@ -96,6 +108,34 @@ func (s *FakeWorkspace) MeUser(token string) iam.User {
 		user.DisplayName = guestServicePrincipalDisplayName
 	}
 	return user
+}
+
+// AssumedGroupId and AssumedGroupName identify the group an AssumedGroupTokenPrefix token acts as.
+const (
+	AssumedGroupId   = "42"
+	AssumedGroupName = "data-engineers"
+)
+
+// IdentityMe returns the GET /api/2.0/identity/me body for a token. It describes the
+// same identity as MeUser, as a user, a service principal or an assumed group.
+func (s *FakeWorkspace) IdentityMe(token string) any {
+	if strings.HasPrefix(token, AssumedGroupTokenPrefix) {
+		return map[string]any{"group": map[string]any{"group_id": AssumedGroupId, "group_name": AssumedGroupName}}
+	}
+	me := s.MeUser(token)
+	if isServicePrincipalToken(token) {
+		return map[string]any{"service_principal": map[string]any{
+			"service_principal_id": me.Id,
+			"application_id":       me.UserName,
+			"display_name":         me.DisplayName,
+			"account_sp_status":    "ACTIVE",
+		}}
+	}
+	return map[string]any{"user": map[string]any{
+		"user_id":             me.Id,
+		"username":            me.UserName,
+		"account_user_status": "ACTIVE",
+	}}
 }
 
 var (
@@ -287,6 +327,9 @@ type FakeWorkspace struct {
 	Permissions map[string]iam.ObjectPermissions
 
 	Groups map[string]iam.Group
+	// groupMembers holds the IDs of the groups the caller belongs to; the parent-groups
+	// endpoint lists exactly these.
+	groupMembers map[string]bool
 
 	Repos map[string]workspace.RepoInfo
 
@@ -578,6 +621,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		WorkspaceSettings:         map[string]settingsv2.Setting{},
 		Permissions:               map[string]iam.ObjectPermissions{},
 		Groups:                    map[string]iam.Group{},
+		groupMembers:              map[string]bool{},
 		DatabaseInstances:         map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},

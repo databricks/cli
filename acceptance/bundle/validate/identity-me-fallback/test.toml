@@ -1,0 +1,6 @@
+# The workspace does not serve identity/me or its parent-groups endpoint yet, so the current
+# user is read from SCIM /Me. The request log shows which API served each read.
+IdentityMeNotEnabled = true
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
+Ignore = [".databricks"]

@@ -1,0 +1,9 @@
+trace $CLI bundle validate -o json --log-level debug 2>LOG.validate | jq -r '.workspace.current_user | .userName, (.groups | map(.display) | contains(["users"]))'
+contains.py '!Could not read the groups' '!reading the current user from SCIM' < LOG.validate > /dev/null
+
+# The bundle reads the current user from identity/me, and current-user me still reads SCIM /Me. Both must
+# name the same principal, so the id and userName are compared, and only the booleans are printed.
+trace $CLI current-user me -o json > LOG.scim.json
+trace $CLI bundle validate -o json > LOG.bundle.json 2>LOG.bundle.stderr
+jq -n --slurpfile scim LOG.scim.json --slurpfile bundle LOG.bundle.json '$scim[0].id == $bundle[0].workspace.current_user.id'
+jq -n --slurpfile scim LOG.scim.json --slurpfile bundle LOG.bundle.json '$scim[0].userName == $bundle[0].workspace.current_user.userName'

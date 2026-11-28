@@ -15,6 +15,7 @@ import (
 	sandboxcmd "github.com/databricks/cli/cmd/sandbox"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -299,8 +300,8 @@ func TestSSHProxyCommandDispatchAndIdentityMismatch(t *testing.T) {
 				switch r.URL.Path {
 				case "/.well-known/databricks-config":
 					_, _ = io.WriteString(w, `{}`)
-				case "/api/2.0/preview/scim/v2/Me":
-					_, _ = io.WriteString(w, `{"id":"caller"}`)
+				case "/api/2.0/identity/me":
+					_, _ = io.WriteString(w, `{"user":{"user_id":"caller","username":"sandbox-user@example.test"}}`)
 				default:
 					_, _ = io.WriteString(w, `{"status":{"state":"SANDBOX_STATE_UNSPECIFIED"}}`)
 				}
@@ -324,7 +325,7 @@ func TestSSHProxyCommandDispatchAndIdentityMismatch(t *testing.T) {
 				require.ErrorContains(t, err, "unsupported state")
 			}
 			assert.Contains(t, paths, "/api/2.0/sandboxes/test")
-			assert.Contains(t, paths, "/api/2.0/preview/scim/v2/Me")
+			assert.Contains(t, paths, "/api/2.0/identity/me")
 		})
 	}
 }
@@ -349,12 +350,12 @@ func TestPrepareSSHIdentityUsesWorkspaceAndCaller(t *testing.T) {
 			_, _ = io.WriteString(w, `{}`)
 			return
 		}
-		assert.Equal(t, "/api/2.0/preview/scim/v2/Me", r.URL.Path)
+		assert.Equal(t, "/api/2.0/identity/me", r.URL.Path)
 		if failure {
 			http.Error(w, `{"error_code":"PERMISSION_DENIED","message":"denied"}`, http.StatusForbidden)
 			return
 		}
-		_, _ = io.WriteString(w, `{"id":"caller"}`)
+		_, _ = io.WriteString(w, `{"user":{"user_id":"caller","username":"sandbox-user@example.test"}}`)
 	}))
 	defer server.Close()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123"})
@@ -367,6 +368,25 @@ func TestPrepareSSHIdentityUsesWorkspaceAndCaller(t *testing.T) {
 	failure = true
 	_, err = prepareSSHIdentity(ctx, w, "sandboxes/test")
 	require.ErrorContains(t, err, "resolve SSH caller")
+}
+
+// TestPrepareSSHIdentityRejectsAssumedGroup checks that a caller acting as a group is refused before a local key is
+// keyed on the group's id, since the key belongs to a user.
+func TestPrepareSSHIdentityRejectsAssumedGroup(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			_, _ = io.WriteString(w, `{}`)
+			return
+		}
+		assert.Equal(t, "/api/2.0/identity/me", r.URL.Path)
+		_, _ = io.WriteString(w, `{"group":{"group_id":"group-1","group_name":"admins"}}`)
+	}))
+	defer server.Close()
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	_, err = prepareSSHIdentity(ctx, w, "sandboxes/test")
+	require.ErrorIs(t, err, iamutil.ErrGroupPrincipal)
 }
 
 func newSSHCommand() *cobra.Command {

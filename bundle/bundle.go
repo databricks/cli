@@ -237,6 +237,11 @@ type Bundle struct {
 	// By default, caching is enabled. Set DATABRICKS_CACHE_ENABLED=false to disable caching.
 	Cache *cache.Cache
 
+	// CurrentUserGroupsUnknown is set when PopulateCurrentUser could not read the groups of
+	// the current user, so a grant through a group cannot be ruled out. It lives here rather
+	// than on the config because config is converted to and from its dynamic form between mutators.
+	CurrentUserGroupsUnknown bool
+
 	Metrics Metrics
 
 	// Telemetry holds the boolean deploy telemetry flags; they feed both the

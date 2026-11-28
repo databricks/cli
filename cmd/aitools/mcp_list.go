@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -488,7 +489,7 @@ func checkProfileToken(ctx context.Context, p *mcpListProfile, login string) (*d
 		return nil, err
 	}
 	_, err = withRequestTimeout(ctx, func(ctx context.Context) (*iam.User, error) {
-		return w.CurrentUser.Me(ctx, iam.MeRequest{})
+		return iamutil.GetCurrentUserOnce(ctx, w)
 	})
 	if err != nil {
 		return nil, describeRequestError(p.Profile, login, err)

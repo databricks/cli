@@ -1,0 +1,6 @@
+# Runs on a real workspace too: auth describe must resolve the caller through
+# identity/me there, not only against the testserver.
+Cloud = true
+Ignore = [
+    "home"
+]

@@ -1,0 +1,8 @@
+
+=== auth describe resolves the current user through identity/me
+
+>>> [CLI] auth describe -o json
+{
+  "status": "success",
+  "username": "[USERNAME]"
+}

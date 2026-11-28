@@ -2,15 +2,7 @@
 >>> [CLI] bundle run -t oauth -- [CLI] bundle validate -o json
 "oauth"
 
->>> print_requests.py --get //
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
-  "path": "/oidc/.well-known/oauth-authorization-server"
-}
+>>> print_requests.py --get --sort //
 {
   "headers": {
     "Authorization": [
@@ -20,10 +12,6 @@
   "method": "POST",
   "path": "/oidc/v1/token",
   "raw_body": "grant_type=client_credentials&scope=all-apis"
-}
-{
-  "method": "GET",
-  "path": "/oidc/.well-known/oauth-authorization-server"
 }
 {
   "headers": {
@@ -42,7 +30,28 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/identity/me"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer oauth-token"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
+  }
 }
 {
   "headers": {
@@ -69,14 +78,14 @@
   }
 }
 {
-  "headers": {
-    "Authorization": [
-      "Bearer oauth-token"
-    ]
-  },
   "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
-  }
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/oidc/.well-known/oauth-authorization-server"
+}
+{
+  "method": "GET",
+  "path": "/oidc/.well-known/oauth-authorization-server"
 }

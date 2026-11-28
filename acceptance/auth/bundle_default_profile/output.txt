@@ -11,7 +11,7 @@
 
 >>> errcode [CLI] bundle validate -p other -o json
 Warn: [hostmetadata] failed to fetch host metadata for https://other.test, will skip for 1m0s
-Error: Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)
+Error: Get "https://other.test/api/2.0/identity/me": (redacted)
 
 
 Exit code: 1
@@ -31,7 +31,7 @@ Exit code: 1
 === Bundle with workspace.profile: pinned profile wins over default_profile
 
 >>> errcode [CLI] bundle validate -o json
-Error: Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)
+Error: Get "https://other.test/api/2.0/identity/me": (redacted)
 
 
 Exit code: 1

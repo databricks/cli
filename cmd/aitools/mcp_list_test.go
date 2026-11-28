@@ -991,8 +991,8 @@ func listCheckServer(t *testing.T, serviceStatus, credentialStatus int, credenti
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/api/2.0/preview/scim/v2/Me":
-			_, _ = w.Write([]byte(`{"userName":"user@example.test"}`))
+		case "/api/2.0/identity/me":
+			_, _ = w.Write([]byte(`{"user":{"user_id":1,"username":"user@example.test"}}`))
 		case servicePath:
 			if serviceStatus != http.StatusOK {
 				w.WriteHeader(serviceStatus)
@@ -1258,8 +1258,8 @@ func multiServiceServer(t *testing.T, beforeRead func(service string), credentia
 	const prefix = "/api/2.1/unity-catalog/mcp-services/"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
-			_, _ = w.Write([]byte(`{"userName":"user@example.test"}`))
+		if r.URL.Path == "/api/2.0/identity/me" {
+			_, _ = w.Write([]byte(`{"user":{"user_id":1,"username":"user@example.test"}}`))
 			return
 		}
 		rest, ok := strings.CutPrefix(r.URL.Path, prefix)
@@ -1505,8 +1505,8 @@ func TestAddChecksUsesTheRequirementTheServiceHasNow(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			switch r.URL.Path {
-			case "/api/2.0/preview/scim/v2/Me":
-				_, _ = w.Write([]byte(`{"userName":"user@example.test"}`))
+			case "/api/2.0/identity/me":
+				_, _ = w.Write([]byte(`{"user":{"user_id":1,"username":"user@example.test"}}`))
 			case "/api/2.1/unity-catalog/mcp-services/system.ai.github":
 				// The service has no source connection with an OAuth provider any more.
 				_, _ = w.Write([]byte(`{"name":"mcp-services/system.ai.github"}`))
@@ -1530,7 +1530,7 @@ func TestAddChecksUsesTheRequirementTheServiceHasNow(t *testing.T) {
 func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
 	home := withHome(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+		if r.URL.Path == "/api/2.0/identity/me" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))
@@ -1549,6 +1549,34 @@ func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
 	require.Len(t, out.Warnings, 1)
 	assert.True(t, strings.HasPrefix(out.Warnings[0], "profile logfood: "), out.Warnings[0])
 	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
+}
+
+// TestAddChecksReadsUserFromSCIMWhenIdentityMeNotEnabled checks that a workspace that does not serve identity/me yet
+// is still checked: the probe reads the user from SCIM /Me, as before identity/me, so the token is reported as ok.
+func TestAddChecksReadsUserFromSCIMWhenIdentityMeNotEnabled(t *testing.T) {
+	home := withHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/2.0/identity/me":
+			w.WriteHeader(http.StatusNotImplemented)
+			_, _ = w.Write([]byte(`{"error_code":"NOT_IMPLEMENTED","message":"identity/me is not available"}`))
+		case "/api/2.0/preview/scim/v2/Me":
+			_, _ = w.Write([]byte(`{"id":"1000012345","userName":"tester@databricks.com"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	saveState(t, listCheckGitHub(t, "github-logfood", "logfood", server.URL, ""))
+
+	s, out := checkedListServer(t)
+	require.NotNil(t, s.Check)
+	assert.Equal(t, statusOK, s.Check.Token)
+	// Other warnings, such as the MCP service this fake does not list, are not about the probe.
+	assert.NotContains(t, strings.Join(out.Warnings, "\n"), "auth login")
+	assert.NotContains(t, strings.Join(out.Warnings, "\n"), "identity/me")
 }
 
 // TestAddChecksAuthWarningNamesPinnedConfigFile checks that the login command in the warning for a rejected token sets
@@ -1580,7 +1608,7 @@ func TestAddChecksAuthWarningNamesPinnedConfigFile(t *testing.T) {
 func TestAddChecksAuthWarningNamesFileTheShellNames(t *testing.T) {
 	home := withHome(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+		if r.URL.Path == "/api/2.0/identity/me" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`))

@@ -1,0 +1,4 @@
+# Runs on a real workspace too. The check is that the caller's parent groups are read without
+# a warning and include the workspace users group, which every workspace identity belongs to.
+# The debug log must not name the SCIM /Me fallback, so the workspace is read through identity/me.
+Cloud = true

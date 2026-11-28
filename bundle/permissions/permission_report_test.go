@@ -9,7 +9,7 @@ import (
 )
 
 func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
-	b := mockBundle([]resources.Permission{
+	b := mockBundle(t, []resources.Permission{
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 	})
 
@@ -22,7 +22,7 @@ func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
 }
 
 func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
-	b := mockBundle([]resources.Permission{
+	b := mockBundle(t, []resources.Permission{
 		{Level: "CAN_MANAGE", GroupName: "othergroup"},
 	})
 
@@ -36,7 +36,7 @@ func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
 }
 
 func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
-	b := mockBundle([]resources.Permission{
+	b := mockBundle(t, []resources.Permission{
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
@@ -50,7 +50,7 @@ func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
 }
 
 func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
-	b := mockBundle(nil)
+	b := mockBundle(t, nil)
 
 	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	expected := "EPERM1: unable to deploy to testpath as testuser@databricks.com.\n" +
@@ -62,7 +62,7 @@ func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
 }
 
 func TestPermissionsReportFindOtherOwners(t *testing.T) {
-	b := mockBundle([]resources.Permission{
+	b := mockBundle(t, []resources.Permission{
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})

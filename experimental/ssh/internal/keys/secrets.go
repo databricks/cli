@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // CreateKeysSecretScope creates or retrieves the secret scope for SSH keys.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID string) (string, error) {
-	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}

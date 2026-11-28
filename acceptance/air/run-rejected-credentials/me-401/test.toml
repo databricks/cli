@@ -1,5 +1,5 @@
 [[Server]]
-Pattern = "GET /api/2.0/preview/scim/v2/Me"
+Pattern = "GET /api/2.0/identity/me"
 Response.Body = '''
 {
     "error_code": "UNAUTHENTICATED",
