@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle validate -o json
 Error: cycle detected in field resolution: variables.a.default -> var.b -> var.a -> var.b
 
 {
@@ -11,4 +13,13 @@ Error: cycle detected in field resolution: variables.a.default -> var.b -> var.a
   }
 }
 
-Exit code: 1
+>>> [CLI] bundle validate -t workspace
+Error: cycle detected in field resolution:  -> var.a -> var.b -> var.a
+
+Name: cycle
+Target: workspace
+Workspace:
+  User: [USERNAME]
+  Path: ${var.a}
+
+Found 1 error

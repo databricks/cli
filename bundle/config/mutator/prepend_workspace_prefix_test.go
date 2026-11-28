@@ -5,9 +5,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -105,4 +107,35 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/files", b.Config.Workspace.FilePath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/state", b.Config.Workspace.StatePath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/resources", b.Config.Workspace.ResourcePath)
+}
+
+func TestPrependWorkspacePrefixSourceLinkedAlias(t *testing.T) {
+	b := &bundle.Bundle{
+		SyncRootPath: "/Workspace/Users/jane/source",
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Users/jane/bundle",
+				FilePath: "${workspace.root_path}/files",
+				SyncMode: config.SyncModeInPlace,
+			},
+			Variables: map[string]*variable.Variable{
+				"config_file": {Value: "${workspace.file_path}/config.yaml"},
+			},
+		},
+	}
+
+	diags := bundle.ApplySeq(t.Context(), b,
+		PrependWorkspacePrefix(),
+		ResolveVariableReferencesInWorkspacePaths(),
+	)
+	require.NoError(t, diags.Error())
+	assert.Equal(t, "${workspace.file_path}/config.yaml", b.Config.Variables["config_file"].Value)
+
+	diags = bundle.ApplySeq(t.Context(), b,
+		PrependWorkspacePrefix(),
+		ResolveVariableReferencesWithoutResources(),
+	)
+	require.NoError(t, diags.Error())
+	assert.Equal(t, "/Workspace/Users/jane/bundle/files", b.Config.Workspace.FilePath)
+	assert.Equal(t, "/Workspace/Users/jane/source/config.yaml", b.Config.Variables["config_file"].Value)
 }
