@@ -1,0 +1,1 @@
+Badness = "config-remote-sync --save rewrites every merge key in each file it writes from '<<:' to '!!merge <<:', including on lines it does not otherwise change (e.g. '- <<: *dev_compute' becomes '- !!merge <<: *dev_compute'). It should keep '<<:' as written."

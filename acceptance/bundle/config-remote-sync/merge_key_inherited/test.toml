@@ -1,3 +1,4 @@
+Badness = "config-remote-sync --save rewrites every merge key in each file it writes from '<<:' to '!!merge <<:', including on lines it does not otherwise change (e.g. '<<: [*job_overrides, *other_job]' becomes '!!merge <<: [*job_overrides, *other_job]'). It should keep '<<:' as written."
 Cloud = false
 RecordRequests = false
 Ignore = [".databricks", "databricks.yml", "databricks.yml.backup", "pipeline.yml", "pipeline.yml.backup"]
