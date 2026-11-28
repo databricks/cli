@@ -30,7 +30,6 @@ PY
 edit_resource.py jobs "$(read_id.py run_as_to_owner)" <<PY
 r["run_as"] = {"user_name": "$CURRENT_USER_NAME"}
 PY
-# The sync also imports the new owner into the config as permissions, which the plan then creates.
 trace $CLI jobs set-permissions "$(read_id.py transferred_owner)" --json '{"access_control_list": [{"user_name": "new-owner@example.com", "permission_level": "IS_OWNER"}]}' > /dev/null
 edit_resource.py jobs "$(read_id.py transferred_owner)" <<'PY'
 r["run_as"] = {"user_name": "new-owner@example.com"}

@@ -1,5 +1,3 @@
-Badness = "Same as ../can_manage, with the deployment in the syncing identity's home folder: where the deployment state lives does not tell who deploys it."
-
 # On a real workspace the service principal cannot deploy into another identity's home folder
 # without a grant on that folder.
 Cloud = false

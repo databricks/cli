@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -427,8 +428,10 @@ func TestUnreadPermissionsAdapters(t *testing.T) {
 	b := &bundle.Bundle{}
 	b.DeploymentBundle.Adapters = adapters
 
+	remoteRunAs := &deployplan.ChangeDesc{Remote: &jobs.JobRunAs{UserName: "other@example.com"}}
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
 		"resources.jobs.unmanaged":                {Action: deployplan.Skip},
+		"resources.jobs.remote_run_as":            {Action: deployplan.Skip, RemoteState: &dresources.JobRemote{}, Changes: deployplan.Changes{"run_as": remoteRunAs}},
 		"resources.jobs.declared":                 {Action: deployplan.Skip},
 		"resources.jobs.declared.permissions":     {Action: deployplan.Skip},
 		"resources.jobs.removed":                  {Action: deployplan.Update},
@@ -444,7 +447,7 @@ func TestUnreadPermissionsAdapters(t *testing.T) {
 	}}
 
 	assert.ElementsMatch(t,
-		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.jobs.undeployed", "resources.pipelines.unmanaged"},
+		[]string{"resources.jobs.remote_run_as", "resources.jobs.undeployed"},
 		slices.Collect(maps.Keys(unreadPermissionsAdapters(b, plan))),
 	)
 }

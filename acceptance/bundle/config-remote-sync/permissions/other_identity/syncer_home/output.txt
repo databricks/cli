@@ -15,33 +15,21 @@ IS_OWNER [TEST_SP_APPLICATION_ID]
 === The current identity runs config-remote-sync
 
 >>> [CLI] bundle config-remote-sync --save
-Detected changes in 1 resource(s):
-
-Resource: resources.jobs.my_job
-  permissions: add
-
+No changes detected.
 
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -9,2 +9,5 @@
-     my_job:
-       name: test-job-[UNIQUE_NAME]
-+      permissions:
-+        - level: IS_OWNER
-+          service_principal_name: [TEST_SP_APPLICATION_ID]
 
 === The service principal deploys the synced config
 
 >>> as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/files...
-Created jobs.my_job.permissions
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === The job's ACL after the deploy
 
+CAN_MANAGE [USERNAME]
 IS_OWNER [TEST_SP_APPLICATION_ID]
 
 >>> as-test-sp [CLI] bundle destroy --auto-approve

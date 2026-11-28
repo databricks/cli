@@ -20,9 +20,7 @@ print_acl jobs $job_id
 title "The current identity runs config-remote-sync"
 sync_and_show_diff
 
-# Undefined: whether a deploy by another identity than the one that synced may ask for the job's
-# ownership. It fails unless that identity is a workspace admin, who would become the owner.
-# Before the sync wrote a permissions block, such a deploy left the ACL alone.
+# The job declares no permissions, so the sync imports nothing and the deploy leaves the ACL alone.
 title "The service principal takes over the deployment and deploys the synced config"
 trace errcode as-test-sp $CLI bundle deploy
 

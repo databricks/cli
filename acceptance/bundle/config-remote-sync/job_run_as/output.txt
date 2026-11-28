@@ -34,7 +34,7 @@ Resources: 0 created, 1 changed, 0 deleted, 7 unchanged
 === Detect and save changes
 
 >>> [CLI] bundle config-remote-sync --save
-Detected changes in 7 resource(s):
+Detected changes in 6 resource(s):
 
 Resource: resources.jobs.no_run_as
   run_as: add
@@ -44,9 +44,6 @@ Resource: resources.jobs.pending_add
 
 Resource: resources.jobs.removed_run_as
   run_as: add
-
-Resource: resources.jobs.transferred_owner
-  permissions: add
 
 Resource: resources.jobs.user_to_creator
   run_as.user_name: replace
@@ -70,15 +67,7 @@ Resource: resources.jobs.user_to_user
 +        service_principal_name: [UUID]
      # The remote run_as names the owner, which is what no run_as means.
      run_as_to_owner:
-@@ -28,4 +30,7 @@
-             notebook_path: /Users/{{workspace_user_name}}/notebook
-
-+      permissions:
-+        - level: IS_OWNER
-+          user_name: new-owner@example.com
-     # run_as is removed from config and deployed; the job keeps it remotely.
-     removed_run_as:
-@@ -36,9 +41,11 @@
+@@ -36,9 +38,11 @@
              notebook_path: /Users/{{workspace_user_name}}/notebook
 
 +      run_as:
@@ -91,21 +80,21 @@ Resource: resources.jobs.user_to_user
 +        user_name: remote-user@example.com
        tasks:
          - task_key: main
-@@ -49,5 +56,5 @@
+@@ -49,5 +53,5 @@
        name: user-to-user-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: second-user@example.com
        tasks:
          - task_key: main
-@@ -58,5 +65,5 @@
+@@ -58,5 +62,5 @@
        name: user-to-creator-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
 +        user_name: [USERNAME]
        tasks:
          - task_key: main
-@@ -67,5 +74,5 @@
+@@ -67,5 +71,5 @@
        name: user-to-sp-[UNIQUE_NAME]
        run_as:
 -        user_name: first-user@example.com
@@ -122,9 +111,7 @@ No changes detected.
 === Plan after sync
 
 >>> [CLI] bundle plan
-create jobs.transferred_owner.permissions
-
-Plan: 1 to add, 0 to change, 0 to delete, 8 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 8 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

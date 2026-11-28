@@ -13,24 +13,24 @@ No changes detected.
 
 === Grant a group CAN_USE in the UI
 
->>> [CLI] bundle config-remote-sync --save
-Detected changes in 1 resource(s):
-
-Resource: resources.cluster_policies.policy
-  permissions: add
-
-
-
->>> [CLI] bundle validate -o json
-[{"principal":"users","level":"CAN_USE"}]
-
-=== Sync again before deploy
+=== A grant on a policy that declares no permissions is not imported
 
 >>> [CLI] bundle config-remote-sync
 No changes detected.
 
 
-=== Deploy applies the synced ACL
+=== Declare the group's grant by hand
+
+>>> [CLI] bundle validate -o json
+[{"principal":"users","level":"CAN_USE"}]
+
+=== Sync before deploy: the creator's CAN_USE is not added to the block
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Deploy applies the declared ACL
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...

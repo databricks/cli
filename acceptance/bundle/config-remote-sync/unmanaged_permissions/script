@@ -12,7 +12,6 @@ job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
 
 title "Add permissions remotely to resources that declare none"
-# The current user's owner entry is managed by deploy, so it must not be written to the config.
 $CLI permissions set jobs $job_id --json '{"access_control_list":[
   {"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},
   {"permission_level":"CAN_MANAGE","user_name":"viewer@example.com"},
@@ -25,23 +24,36 @@ $CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
   {"permission_level":"CAN_VIEW","group_name":"users"}
 ]}' > /dev/null
 
+title "The ACL of a resource that declares no permissions is not imported"
+trace $CLI bundle config-remote-sync
+
+title "Declare the remote ACLs by hand"
+update_file.py databricks.yml "            num_workers: 1
+" "            num_workers: 1
+      permissions:
+        - level: CAN_MANAGE
+          user_name: viewer@example.com
+        - level: CAN_MANAGE_RUN
+          user_name: admin@example.com
+"
+update_file.py databricks.yml "            path: /Users/{{workspace_user_name}}/notebook
+" "            path: /Users/{{workspace_user_name}}/notebook
+      permissions:
+        - level: IS_OWNER
+          user_name: owner@example.com
+        - level: CAN_VIEW
+          group_name: users
+"
+
 title "An ACL that cannot be read is reported as skipped"
 fault.py "GET /api/2.0/permissions/pipelines/$pipeline_id" 403 0 2 PERMISSION_DENIED
 trace $CLI bundle config-remote-sync --select-ids "jobs:$job_id" -o json | jq '{status, skippedChanges}'
 trace $CLI bundle config-remote-sync -o json | jq '{status, changes: (.changes | keys), skippedChanges}'
 
-title "Detect and save changes"
-cp databricks.yml databricks.yml.backup
-$CLI bundle config-remote-sync --save
-
-title "Configuration changes"
-trace diff.py databricks.yml.backup databricks.yml
-rm databricks.yml.backup
-
-title "Sync again: the permissions are now in the config"
+title "Sync again: the declared permissions match the remote ACLs"
 $CLI bundle config-remote-sync
 
-title "Grant access remotely before the saved permissions are deployed"
+title "Grant access remotely before the declared permissions are deployed"
 $CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
   {"permission_level":"IS_OWNER","user_name":"owner@example.com"},
   {"permission_level":"CAN_MANAGE","user_name":"'"$CURRENT_USER_NAME"'"},
