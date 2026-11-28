@@ -51,3 +51,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/resources"}
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]"}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "operations": [{"action_type": "OPERATION_ACTION_TYPE_UPDATE", "resource_key": "jobs.foo"}], "version_type": "VERSION_TYPE_DEPLOY"}}
+
+=== Deployment history lists no resources, so the state helpers read resources.json
+
+>>> replace_ids.py
+Note: no resources recorded in deployment history, reading resources.json
+
+>>> read_state.py jobs foo id name
+Note: no resources recorded in deployment history, reading resources.json
+jobs foo id='[FOO_ID]' name='renamed'
+Note: no resources recorded in deployment history, reading resources.json
+job_id is set: yes

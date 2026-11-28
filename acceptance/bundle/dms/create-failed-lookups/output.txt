@@ -11,18 +11,16 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Nothing is recorded, so the state helpers read resources.json instead of returning nothing
-Note: no deployment recorded in deployment history, reading resources.json
-job_id is set: yes
-
->>> read_state.py jobs foo id name
-Note: no deployment recorded in deployment history, reading resources.json
-jobs foo id='[FOO_ID]' name='foo-[UNIQUE_NAME]'
 
 >>> replace_ids.py
-Note: no deployment recorded in deployment history, reading resources.json
+Note: no resources recorded in deployment history, reading resources.json
+
+>>> read_state.py jobs foo id name
+Note: no resources recorded in deployment history, reading resources.json
+jobs foo id='[FOO_ID]' name='foo-[UNIQUE_NAME]'
 
 >>> print_state.py
-Note: no deployment recorded in deployment history, reading resources.json
+Note: no resources recorded in deployment history, reading resources.json
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
@@ -47,11 +45,13 @@ Note: no deployment recorded in deployment history, reading resources.json
   }
  }
 }
+Note: no resources recorded in deployment history, reading resources.json
+job_id is set: yes
 
 === The ID works for a later command
 
 >>> [CLI] jobs get [FOO_ID]
-foo-[UNIQUE_NAME]
+json.settings.name = "foo-[UNIQUE_NAME]";
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

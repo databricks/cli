@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl, id_repl_name
-from print_state import get_resources_for_lookup, get_state_file
+from print_state import get_direct_state_file, get_resources, get_state_file, use_file_state
 
 
 def iter_ids_terraform(filename):
@@ -28,7 +28,7 @@ def iter_ids_terraform(filename):
 
 
 def iter_ids_recorded(target):
-    for key, value in get_resources_for_lookup(target).items():
+    for key, value in get_resources(target).items():
         if value["id"]:
             yield key.split(".")[1], value["id"]
 
@@ -52,7 +52,10 @@ def main():
     args = parser.parse_args()
 
     if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
-        it = iter_ids_recorded(args.target)
+        if use_file_state(args.target):
+            it = iter_ids_direct(get_direct_state_file(args.target))
+        else:
+            it = iter_ids_recorded(args.target)
     else:
         filename = get_state_file(args.target, args.backup)
         if filename.endswith(".tfstate"):

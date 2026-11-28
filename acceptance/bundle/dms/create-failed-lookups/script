@@ -10,11 +10,12 @@ trace fault.py "POST /api/2.0/bundle/deployments" 400 0 1000 RESOURCE_LIMIT_EXCE
 trace $CLI bundle deploy
 
 title "Nothing is recorded, so the state helpers read resources.json instead of returning nothing"
+# replace_ids.py runs first, so [FOO_ID] below depends on its fallback alone.
+trace replace_ids.py
+trace read_state.py jobs foo id name
+trace print_state.py
 job_id=$(read_id.py foo)
 echo "job_id is set: ${job_id:+yes}"
-trace read_state.py jobs foo id name
-trace replace_ids.py
-trace print_state.py
 
 title "The ID works for a later command"
-trace $CLI jobs get "$job_id" | jq -r .settings.name
+trace $CLI jobs get "$job_id" | gron.py | grep settings.name
