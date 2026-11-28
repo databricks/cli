@@ -1,0 +1,14 @@
+job_id=339
+add_repl "$job_id" SHORT_ID
+
+# The ID is replaced as a whole token only, not inside the hex string or the longer number.
+echo "job $job_id, commit 33939489e027, number 3390"
+echo "job_$job_id deploy-$job_id /$job_id/ $job_id,$job_id"
+
+# diff.py applies the same replacements in Python. The files are equal only if the ID is
+# not replaced inside the commit hash.
+echo "job 339 commit 33939489e027" > a.txt
+echo "job [SHORT_ID] commit 33939489e027" > b.txt
+trace diff.py a.txt b.txt
+rm a.txt b.txt
+echo "diff done"

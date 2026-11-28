@@ -34,6 +34,9 @@ type Replacement struct {
 	New      string
 	Order    int
 	Distinct bool
+	// WholeWord is set for the literal values that scripts add with add_repl. Their matches
+	// must not cut into a longer alphanumeric run, see replaceWholeWord.
+	WholeWord bool
 }
 
 type ReplacementsContext struct {
@@ -53,6 +56,10 @@ func (r *ReplacementsContext) Replace(s string) string {
 		return cmp.Compare(a.Order, b.Order)
 	})
 	for _, repl := range repls {
+		if repl.WholeWord {
+			s = replaceWholeWord(repl.Old, repl.New, s)
+			continue
+		}
 		if !repl.Distinct {
 			s = repl.Old.ReplaceAllString(s, repl.New)
 			continue
@@ -90,15 +97,51 @@ func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string,
 	})
 }
 
-func (r *ReplacementsContext) appendLiteral(old, new string, order int) {
-	r.append(
+// replaceWholeWord replaces the matches of the literal pattern re in s, except for matches that
+// cut into a longer alphanumeric run. A match whose first byte is an ASCII letter or digit must not
+// be preceded by one, and a match whose last byte is one must not be followed by one. Other bytes,
+// including "_", are separators, and a value that starts or ends with anything else has no check
+// on that side. The neighbours are read from the original s, so matches separated by a single
+// character are all replaced.
+func replaceWholeWord(re *regexp.Regexp, repl, s string) string {
+	var b strings.Builder
+	copied := 0 // s[:copied] is already in b
+	for pos := 0; pos < len(s); {
+		loc := re.FindStringIndex(s[pos:])
+		if loc == nil {
+			break
+		}
+		start, end := pos+loc[0], pos+loc[1]
+		leftOK := !isASCIIAlnum(s[start]) || start == 0 || !isASCIIAlnum(s[start-1])
+		rightOK := !isASCIIAlnum(s[end-1]) || end == len(s) || !isASCIIAlnum(s[end])
+		if !leftOK || !rightOK {
+			// Retry one byte later: a valid match may start inside the rejected one.
+			pos = start + 1
+			continue
+		}
+		b.WriteString(s[copied:start])
+		b.Write(re.ExpandString(nil, repl, s[pos:], loc))
+		copied = end
+		pos = end
+	}
+	b.WriteString(s[copied:])
+	return b.String()
+}
+
+func isASCIIAlnum(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
+}
+
+func (r *ReplacementsContext) appendLiteral(old, new string, order int, wholeWord bool) {
+	r.Repls = append(r.Repls, Replacement{
 		// Transform the input strings such that they can be used as literal strings in regular expressions.
-		regexp.MustCompile(regexp.QuoteMeta(old)),
+		Old: regexp.MustCompile(regexp.QuoteMeta(old)),
 		// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
 		// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
-		strings.ReplaceAll(new, `$`, `$$`),
-		order,
-	)
+		New:       strings.ReplaceAll(new, `$`, `$$`),
+		Order:     order,
+		WholeWord: wholeWord,
+	})
 }
 
 func (r *ReplacementsContext) Set(old, new string) {
@@ -106,6 +149,16 @@ func (r *ReplacementsContext) Set(old, new string) {
 }
 
 func (r *ReplacementsContext) SetWithOrder(old, new string, order int) {
+	r.setLiteral(old, new, order, false)
+}
+
+// SetWholeWordWithOrder is SetWithOrder for a value that only matches as a whole alphanumeric
+// run, see replaceWholeWord. Used for the literals that scripts add with add_repl.
+func (r *ReplacementsContext) SetWholeWordWithOrder(old, new string, order int) {
+	r.setLiteral(old, new, order, true)
+}
+
+func (r *ReplacementsContext) setLiteral(old, new string, order int, wholeWord bool) {
 	if old == "" || new == "" {
 		return
 	}
@@ -121,12 +174,12 @@ func (r *ReplacementsContext) SetWithOrder(old, new string, order int) {
 			encodedStrNew := trimQuotes(string(encodedNew))
 			encodedStrOld := trimQuotes(string(encodedOld))
 			if encodedStrNew != new || encodedStrOld != old {
-				r.appendLiteral(encodedStrOld, encodedStrNew, order)
+				r.appendLiteral(encodedStrOld, encodedStrNew, order, wholeWord)
 			}
 		}
 	}
 
-	r.appendLiteral(old, new, order)
+	r.appendLiteral(old, new, order, wholeWord)
 }
 
 func trimQuotes(s string) string {

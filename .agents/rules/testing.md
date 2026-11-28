@@ -54,7 +54,7 @@ Ignore = ["databricks.yml"]
 - `contains.py SUBSTR [!SUBSTR_NOT]`: passthrough filter asserting substrings are present (or absent).
 - `print_requests.py //path [^//exclude] [--get] [--sort] [--unique] [--oneline] [--keep]`: print recorded requests (needs `RecordRequests = true`). Excludes GET unless `--get`; clears `out.requests.txt` unless `--keep` (don't `--keep` if another call follows: it double-prints).
 - `replace_ids.py [-t TARGET]`, `read_id.py [-t TARGET] NAME`: add `[NAME_ID]` replacements for resource IDs from state.
-- `add_repl VALUE REPLACEMENT`: add a custom output replacement. Don't write `$ACC_REPLS` directly.
+- `add_repl VALUE REPLACEMENT`: add a custom output replacement. A value that starts or ends with a letter or digit matches only as a whole alphanumeric run, so `add_repl 339 X` does not change `33939489e027`, but does change `job_339` and `339,339`. Don't write `$ACC_REPLS` directly.
 - `update_file.py FILENAME OLD NEW`, `find.py REGEX [--expect N]`, `diff.py A B` (diff with replacements applied), `print_state.py`, `edit_resource.py TYPE ID < script.py`, `gron.py` (flatten JSON; prefer `gron.py | grep field` over `jq` paths for single values).
 - `plan_filter.py [RESOURCE_KEY]`: filter `bundle plan -o json` for a golden, dropping `remote_state` and the deployment stamp.
 

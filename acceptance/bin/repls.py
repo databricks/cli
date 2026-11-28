@@ -3,19 +3,23 @@
 Read the replacements applied to the test output from $ACC_REPLS.
 
 Every line is one replacement encoded as a JSON object: "Old" is a regular expression
-(written by the test harness), "Literal" is a value to replace verbatim (appended by
-add_repl.py). "New" is the replacement, "Order" defines the order they are applied in.
+(written by the test harness), "Literal" is a value to replace as a whole alphanumeric run
+(appended by add_repl.py). "New" is the replacement, "Order" defines the order they are applied in.
 """
 
 import json
 import os
 import re
+import string
 import sys
 from pathlib import Path
 
 # Order of the replacements added by the scripts, so that they are applied before the ones
 # from the harness: a job id must become [MY_JOB] even if a broader harness pattern matches it.
 USER_ORDER = -100
+
+# Must agree with isASCIIAlnum in libs/testdiff/replacement.go.
+ALNUM = frozenset(string.ascii_letters + string.digits)
 
 
 def read_entries():
@@ -26,6 +30,27 @@ def read_entries():
         if line:
             result.append(json.loads(line))
     return result
+
+
+def literal_pattern(value):
+    r"""Regex for value as a whole alphanumeric run: the same rule as SetWholeWordWithOrder in Go.
+
+    A side of the match where value starts or ends with an ASCII letter or digit must not be next
+    to another one. Other characters, including "_", are separators.
+
+    >>> re.search(literal_pattern("339"), "33939489e027 id=339,339").span()
+    (16, 19)
+    >>> re.search(literal_pattern("339"), "job_339") is not None
+    True
+    >>> re.search(literal_pattern("/tmp/x/"), "/tmp/x/abc") is not None
+    True
+    """
+    pattern = re.escape(value)
+    if value[:1] in ALNUM:
+        pattern = r"(?<![0-9A-Za-z])" + pattern
+    if value[-1:] in ALNUM:
+        pattern = pattern + r"(?![0-9A-Za-z])"
+    return pattern
 
 
 def read_repls():
@@ -45,8 +70,8 @@ def read_repls():
         # values with quotes or backslashes are replaced inside JSON output as well.
         encoded = json.dumps(literal, ensure_ascii=False)[1:-1]
         if encoded != literal:
-            entries.append((order, re.escape(encoded), new, False))
-        entries.append((order, re.escape(literal), new, False))
+            entries.append((order, literal_pattern(encoded), new, False))
+        entries.append((order, literal_pattern(literal), new, False))
 
     # Stable sort: replacements with the same order are applied in the order they were added.
     entries.sort(key=lambda entry: entry[0])
