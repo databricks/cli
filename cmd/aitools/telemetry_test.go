@@ -68,17 +68,6 @@ func TestAgentsField(t *testing.T) {
 	}
 }
 
-// TestAgentTypeCoversRegistry fails when an agent is added to agents.Registry
-// without a matching telemetry enum in agentType. This is the guard against
-// silently logging a new agent as UNSPECIFIED.
-func TestAgentTypeCoversRegistry(t *testing.T) {
-	for _, a := range agents.Registry {
-		assert.NotEqualf(t, protos.AitoolsAgentTypeUnspecified, agentType(a.Name),
-			"agent %q has no telemetry enum: add a case to agentType and a value to "+
-				"AitoolsAgentType in enum.proto (Universe) + aitools_install.go (CLI)", a.Name)
-	}
-}
-
 func TestScopeType(t *testing.T) {
 	assert.Equal(t, protos.AitoolsInstallScopeGlobal, scopeType(installer.ScopeGlobal))
 	assert.Equal(t, protos.AitoolsInstallScopeProject, scopeType(installer.ScopeProject))

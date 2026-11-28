@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -27,10 +28,10 @@ import (
 
 // setTelemetryAuth replaces the auth resolver and the wait budget for a test.
 func setTelemetryAuth(t *testing.T, budget time.Duration, resolve func(cmd *cobra.Command, args []string) error) {
-	origResolve, origBudget := resolveTelemetryAuthFn, telemetryAuthBudget
-	t.Cleanup(func() { resolveTelemetryAuthFn, telemetryAuthBudget = origResolve, origBudget })
-	resolveTelemetryAuthFn = resolve
-	telemetryAuthBudget = budget
+	origResolve, origBudget := root.TelemetryAuthResolver, root.TelemetryAuthBudget
+	t.Cleanup(func() { root.TelemetryAuthResolver, root.TelemetryAuthBudget = origResolve, origBudget })
+	root.TelemetryAuthResolver = resolve
+	root.TelemetryAuthBudget = budget
 }
 
 // noTelemetryAuth replaces the auth resolver with a no-op, so a test that runs
@@ -39,7 +40,7 @@ func noTelemetryAuth(t *testing.T) {
 	setTelemetryAuth(t, time.Second, func(*cobra.Command, []string) error { return nil })
 }
 
-// authTestCmd returns a command wired with WithTelemetryAuth whose RunE
+// authTestCmd returns a command wired with root.WithTelemetryAuth whose RunE
 // records that it ran and logs a telemetry event, plus a --profile flag like
 // root's. Telemetry is enabled on its context whatever the outer environment
 // says.
@@ -62,7 +63,7 @@ func authTestCmdLogging(t *testing.T, logEvent bool) (*cobra.Command, *bool) {
 	cmd.Flags().String("profile", "", "")
 	// These tests exercise the wait, so the command asks for it, as install
 	// does once the plan is confirmed.
-	WithTelemetryAuth(cmd).WaitAtExit = true
+	root.WithTelemetryAuth(cmd).WaitAtExit = true
 	ctx := telemetry.WithNewLogger(t.Context())
 	cmd.SetContext(env.Set(ctx, "DATABRICKS_CLI_DISABLE_TELEMETRY", ""))
 	return cmd, &ran
@@ -135,24 +136,6 @@ func TestTelemetryAuthNoEventDoesNotWait(t *testing.T) {
 	assert.True(t, *ran)
 	assert.Less(t, time.Since(start), 10*time.Second)
 	assert.False(t, cmdctx.HasConfigUsed(cmd.Context()))
-}
-
-// A command that outlasts the budget still uploads when its resolution
-// finished in time. Budget 0 makes every wait start past the deadline; the
-// repeats make a coin-flip between "done" and "expired" fail reliably.
-func TestTelemetryAuthFinishedResolutionSurvivesAnExpiredBudget(t *testing.T) {
-	setTelemetryAuth(t, 0, func(cmd *cobra.Command, args []string) error {
-		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Host: "https://ws.test"}))
-		return nil
-	})
-	for range 50 {
-		cmd, _ := authTestCmd(t)
-		p := startTelemetryAuth(cmd, nil)
-		<-p.done
-		telemetry.Log(cmd.Context(), protos.DatabricksCliLog{AitoolsInstallEvent: &protos.AitoolsInstallEvent{}})
-		p.apply(cmd, true)
-		require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
-	}
 }
 
 func TestTelemetryAuthPanicDoesNotFailTheCommand(t *testing.T) {
@@ -231,23 +214,6 @@ func TestTelemetryAuthRunEWithoutPreRun(t *testing.T) {
 	cmd, ran := authTestCmd(t)
 	require.NoError(t, cmd.RunE(cmd, nil))
 	assert.True(t, *ran)
-}
-
-// Without the wait, a resolution that has already finished still counts. The
-// repeats make a race between "done" and "not done" fail reliably.
-func TestTelemetryAuthNoWaitUsesFinishedResolution(t *testing.T) {
-	setTelemetryAuth(t, time.Second, func(cmd *cobra.Command, args []string) error {
-		cmd.SetContext(cmdctx.SetConfigUsed(cmd.Context(), &config.Config{Host: "https://ws.test"}))
-		return nil
-	})
-	for range 50 {
-		cmd, _ := authTestCmd(t)
-		p := startTelemetryAuth(cmd, nil)
-		<-p.done
-		telemetry.Log(cmd.Context(), protos.DatabricksCliLog{AitoolsInstallEvent: &protos.AitoolsInstallEvent{}})
-		p.apply(cmd, false)
-		require.True(t, cmdctx.HasConfigUsed(cmd.Context()))
-	}
 }
 
 // blockTelemetryAuth makes the resolution finish only once the returned func

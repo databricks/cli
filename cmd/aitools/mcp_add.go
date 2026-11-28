@@ -189,7 +189,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 			}
 			runErr := runMcpAdd(ctx, cmd, f, jsonMode, out)
 			logMcpEvent(ctx, protos.AitoolsMcpEvent{
-				CallingAgent: callingAgentType(),
+				CallingAgent: root.CallingAgentType(),
 				Operation:    protos.AitoolsMcpOperationAdd,
 				Servers:      addServerResults(out.Servers),
 			})

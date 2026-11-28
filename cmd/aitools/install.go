@@ -164,7 +164,7 @@ func newInstallCmd(recordSkillsOnly bool) *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag, pathFlag string
 	var includeExperimental, skillsOnly bool
 	var projectFlag, globalFlag bool
-	var auth *TelemetryAuth
+	var auth *root.TelemetryAuth
 
 	cmd := &cobra.Command{
 		Use:   "install",
@@ -449,7 +449,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	markScopeBoolsDeprecated(cmd)
 	// Resolve auth best-effort and time-bounded so telemetry can upload.
-	auth = WithTelemetryAuth(cmd)
+	auth = root.WithTelemetryAuth(cmd)
 	return cmd
 }
 

@@ -12,8 +12,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -286,4 +288,15 @@ func TestExecuteRaisesTheSignalAutoInstallCaught(t *testing.T) {
 
 	assert.Equal(t, []os.Signal{os.Interrupt}, raised)
 	assert.Contains(t, logged, "no telemetry logs to upload", "the telemetry upload runs before the CLI ends")
+}
+
+// TestAgentTypeCoversRegistry fails when an agent is added to agents.Registry
+// without a matching telemetry enum in root.AgentType. This is the guard against
+// silently logging a new agent as UNSPECIFIED.
+func TestAgentTypeCoversRegistry(t *testing.T) {
+	for _, a := range agents.Registry {
+		assert.NotEqualf(t, protos.AitoolsAgentTypeUnspecified, AgentType(a.Name),
+			"agent %q has no telemetry enum: add a case to root.AgentType and a value to "+
+				"AitoolsAgentType in enum.proto (Universe) + aitools_install.go (CLI)", a.Name)
+	}
 }

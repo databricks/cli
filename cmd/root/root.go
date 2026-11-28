@@ -314,3 +314,44 @@ func ReportUnknownSubcommand(cmd *cobra.Command, args []string) error {
 	}
 	return cmd.Help()
 }
+
+// AgentType maps a CLI agent registry name to its telemetry enum. Every agent
+// in agents.Registry must have a case here; TestAgentTypeCoversRegistry fails
+// if one is missing. The default maps genuinely unknown names to Unspecified
+// so an older proto never drops an install.
+func AgentType(name string) protos.AitoolsAgentType {
+	switch name {
+	case agents.NameClaudeCode:
+		return protos.AitoolsAgentTypeClaudeCode
+	case agents.NameCursor:
+		return protos.AitoolsAgentTypeCursor
+	case agents.NameCodex:
+		return protos.AitoolsAgentTypeCodex
+	case agents.NameOpenCode:
+		return protos.AitoolsAgentTypeOpenCode
+	case agents.NameCopilot:
+		return protos.AitoolsAgentTypeCopilot
+	case agents.NameAntigravity:
+		return protos.AitoolsAgentTypeAntigravity
+	case agents.NamePi:
+		return protos.AitoolsAgentTypePi
+	case agents.NameGemini:
+		return protos.AitoolsAgentTypeGemini
+	case agents.NameGoose:
+		return protos.AitoolsAgentTypeGoose
+	case agents.NameKiro:
+		return protos.AitoolsAgentTypeKiro
+	default:
+		return protos.AitoolsAgentTypeUnspecified
+	}
+}
+
+// CallingAgentType returns the agent that drives the CLI, Unspecified when none is detected. The skills commands
+// report it as their calling agent too.
+func CallingAgentType() protos.AitoolsAgentType {
+	a := agents.CallingAgent()
+	if a == nil {
+		return protos.AitoolsAgentTypeUnspecified
+	}
+	return AgentType(a.Name)
+}
