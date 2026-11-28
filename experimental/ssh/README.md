@@ -56,6 +56,24 @@ file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
 `~/.ssh/known_hosts`, where a name - unique only within one workspace - would collide with an
 entry left by other compute.
 
+### The keys secret scope
+
+Each session keeps its keys in a secret scope named `<user>-<session>-ssh-tunnel-keys`, where
+the session is the cluster ID or the serverless `--name`. The CLI creates the scope if it is
+missing. It reuses an existing scope only if the scope is Databricks-backed and its ACL is
+exactly one entry, MANAGE for the current user, which is what a scope the CLI creates looks
+like; otherwise `ssh connect` fails. This keeps other principals from reading or replacing the
+keys while the scope is in use: the ACL of an Azure Key Vault-backed scope would not, because
+whoever controls the vault can read and replace the keys regardless of it. The checks do not
+show who created the scope or wrote the keys in it, and the CLI uses the keys an accepted scope
+holds as before.
+
+To recover, delete the scope with `databricks secrets delete-scope <scope>` and connect again
+once no SSH server for the session is running. A running server keeps authorizing the client
+key it read when it started, and the CLI reuses it, so connecting before it shuts down
+(`--shutdown-delay` after its last client disconnects) fails. On serverless you can instead
+connect with a different `--name`.
+
 ### Filesystem access
 
 On dedicated compute, the tunnel server registers its own process with the filesystem

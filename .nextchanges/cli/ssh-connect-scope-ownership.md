@@ -1,0 +1,1 @@
+* `databricks ssh connect` now reuses an existing secret scope for its SSH keys only if the scope is Databricks-backed and its ACL grants MANAGE to the current user and no access to any other principal, and otherwise fails with an error that explains how to delete the scope and connect again. ([#8141](https://github.com/databricks/cli/pull/8141))

@@ -1,0 +1,10 @@
+Cloud = false
+
+# Record requests so we can assert that nothing is written or started once the CLI refuses
+# the scope.
+RecordRequests = true
+
+# The rest of acceptance/ssh only runs on Linux; nothing here needs another OS.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false

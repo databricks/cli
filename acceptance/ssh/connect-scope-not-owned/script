@@ -1,0 +1,23 @@
+# An existing keys scope for a serverless connection that also grants access to another
+# principal and already holds a client key pair. The fake workspace grants MANAGE on create to
+# the current user only, so the other principal is modelled by an extra ACL entry. The CLI
+# reuses a scope only if the current user exclusively owns it, so ssh connect must fail without
+# reading the stored keys or starting a server.
+SCOPE="$CURRENT_USER_NAME-scope-not-owned-ssh-tunnel-keys"
+trace $CLI secrets create-scope "$SCOPE"
+trace $CLI secrets put-acl "$SCOPE" other-user@example.test MANAGE
+trace $CLI secrets put-secret "$SCOPE" client-private-key --string-value "existing-private-key"
+trace $CLI secrets put-secret "$SCOPE" client-public-key --string-value 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICTzJweKcgiNoBUAyuvCY2Qu1Od8mKBON5aJeA03Nl+D'
+# Drop the setup requests so the checks below only see what ssh connect sent.
+print_requests.py //api >/dev/null
+
+title "CLI ssh connect"
+trace musterr $CLI ssh connect --name scope-not-owned -- "echo 'Connection successful'"
+
+title "Reported error category"
+trace jq -r 'select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category' "$OUT_REQUESTS"
+
+# Every request ssh connect made: reads up to the ACL check, then nothing. In particular no
+# secrets/get (the stored keys are not read), no secrets/put, no upload and no jobs/runs/submit.
+title "Requests made by ssh connect"
+trace print_requests.py --get --oneline //api
