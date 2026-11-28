@@ -1,3 +1,1 @@
-Badness = "after a CLI older than v1.28.0 saves the aitools state file, the MCP install records are gone: remove cannot remove the servers this CLI added, and serve starts for a profile that points at another host than the one the server was added for"
-
 Ignore = ["home"]

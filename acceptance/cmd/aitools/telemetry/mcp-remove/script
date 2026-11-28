@@ -27,7 +27,8 @@ trace $CLI aitools mcp remove --names genie_one_mcp-logfood --profile logfood --
 mcp_events
 
 title "A record with no agent left goes with a REMOVE of its own: CHANGED with no agent, and no profile bound"
-mkdir -p home/.databricks/aitools/skills
-envsubst < record-only.state.json > home/.databricks/aitools/skills/.state.json
+# The fixture is the section that v1.28.0 wrote into the skills state file. The records file exists by now, so the
+# records go there, in its form.
+envsubst < record-only.state.json | jq '{schema_version: 1, servers: .mcp.servers}' > home/.databricks/aitools/mcp.json
 trace $CLI aitools mcp remove --names dbsql-logfood --profile logfood --output json >> LOG.command
 mcp_events

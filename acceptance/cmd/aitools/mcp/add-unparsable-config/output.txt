@@ -36,7 +36,7 @@ command = "broken"
 
 === State records only the agent that succeeded
 
->>> jq .mcp | [.servers[] | {name, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+>>> jq [.servers[] | {name, agents: (.agents | keys)}] home/.databricks/aitools/mcp.json
 [
   {
     "name": "genie_one_mcp-logfood",

@@ -110,8 +110,9 @@ DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
 
 === State records the binding, without the time and CLI version
 
->>> jq .mcp | del(.servers[].installed_at, .servers[].cli_version) home/.databricks/aitools/skills/.state.json
+>>> jq del(.servers[].installed_at, .servers[].cli_version) home/.databricks/aitools/mcp.json
 {
+  "schema_version": 1,
   "servers": [
     {
       "name": "genie_one_mcp-logfood",

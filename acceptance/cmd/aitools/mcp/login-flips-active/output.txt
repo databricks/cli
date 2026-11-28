@@ -77,7 +77,7 @@ Open this URL to sign in to system.ai.github:
 Waiting for sign-in...
 Signed in to system.ai.github on profile logfood.
 
->>> jq .mcp | [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+>>> jq [.servers[] | {name, service, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp.json
 [
   {
     "name": "github-logfood",

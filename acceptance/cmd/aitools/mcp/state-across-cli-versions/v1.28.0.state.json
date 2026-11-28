@@ -1,0 +1,36 @@
+{
+  "schema_version": 3,
+  "release": "v0.1.0",
+  "last_updated": "2026-01-01T00:00:00Z",
+  "skills": {"databricks": "0.1.0"},
+  "mcp": {
+    "servers": [
+      {
+        "name": "genie_one_mcp-logfood",
+        "service": "system.ai.genie_one_mcp",
+        "profile": "logfood",
+        "host": "$DATABRICKS_HOST",
+        "workspace_id": "",
+        "sign_in_required": false,
+        "command": "databricks",
+        "config_file": "$CFGDIR/.databrickscfg",
+        "agents": {},
+        "installed_at": "2026-01-01T00:00:00Z",
+        "cli_version": "1.28.0"
+      },
+      {
+        "name": "other-logfood",
+        "service": "system.ai.other",
+        "profile": "logfood",
+        "host": "https://recorded-by-v1-28.test",
+        "workspace_id": "",
+        "sign_in_required": false,
+        "command": "databricks",
+        "config_file": "$CFGDIR/.databrickscfg",
+        "agents": {},
+        "installed_at": "2026-02-02T00:00:00Z",
+        "cli_version": "1.28.0"
+      }
+    ]
+  }
+}

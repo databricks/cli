@@ -20,7 +20,7 @@ trace $CLI aitools mcp list --check
 
 title "A recorded binary that is gone is reported as missing"
 # The state records the binary that add was started with, which is $CLI, as JSON writes it. Both servers record it.
-update_file.py home/.databricks/aitools/skills/.state.json "$(python3 -I -c 'import json,sys; print(json.dumps(sys.argv[1])[1:-1])' "$CLI")" /nonexistent/databricks
+update_file.py home/.databricks/aitools/mcp.json "$(python3 -I -c 'import json,sys; print(json.dumps(sys.argv[1])[1:-1])' "$CLI")" /nonexistent/databricks
 trace $CLI aitools mcp list --check --output json
 
 title "logout ends the sign-in; list --check shows it needed again"

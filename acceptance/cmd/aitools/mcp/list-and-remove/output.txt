@@ -140,7 +140,7 @@ Error: nothing was removed: named MCP servers are left in place: github-logfood
   "web_search"
 ]
 
->>> jq .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+>>> jq [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp.json
 [
   {
     "name": "genie_one_mcp-logfood",

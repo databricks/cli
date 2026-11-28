@@ -73,7 +73,7 @@ claude refused to add github: the name is taken
 >>> jq -c .mcpServers | map_values(.args) home/.claude.json
 {"github":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}
 
->>> jq -c .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+>>> jq -c [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp.json
 [{"name":"github","profile":"dogfood","agents":["claude-code"]},{"name":"github","profile":"logfood","agents":["claude-code"]}]
 
 === afterwards remove --all takes the logfood entry out of the agent config and drops the dogfood record
@@ -93,7 +93,7 @@ Skipped github: Claude Code has an entry named github that was changed outside t
 >>> jq -c .mcpServers home/.claude.json
 {}
 
->>> jq -c .mcp | [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/skills/.state.json
+>>> jq -c [.servers[] | {name, profile, agents: (.agents | keys)}] home/.databricks/aitools/mcp.json
 [{"name":"github","profile":"logfood","agents":["claude-code"]}]
 
 >>> cat concurrent.log
