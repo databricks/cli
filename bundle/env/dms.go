@@ -18,3 +18,14 @@ func DeploymentHistoryChoice(ctx context.Context, configured *bool) (enabled, ex
 	}
 	return value == "true", true
 }
+
+// AutoDeployAttemptVariable names the auto-deploy attempt a deploy runs for. The auto-deploy runner
+// sets it, and the deploy records it on the deployment version it creates.
+const AutoDeployAttemptVariable = "DATABRICKS_AUTO_DEPLOY_ATTEMPT"
+
+// AutoDeployAttempt returns the auto-deploy attempt to record on the deployment version.
+func AutoDeployAttempt(ctx context.Context) (string, bool) {
+	return get(ctx, []string{
+		AutoDeployAttemptVariable,
+	})
+}

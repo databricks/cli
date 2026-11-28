@@ -1,0 +1,88 @@
+
+=== With DATABRICKS_AUTO_DEPLOY_ATTEMPT set, the version the deploy creates records the attempt
+
+>>> DATABRICKS_AUTO_DEPLOY_ATTEMPT=webhook-triggers/[UUID][0]/attempts/[UUID][1] [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-attempt-name-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions ^//operations ^//complete
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "auto_deploy_attempt": "webhook-triggers/[UUID][0]/attempts/[UUID][1]",
+    "cli_version": "[CLI_VERSION]",
+    "operations": [
+      {
+        "action_type": "OPERATION_ACTION_TYPE_CREATE",
+        "resource_key": "jobs.foo"
+      }
+    ],
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+
+=== Without it, the request has no attempt
+
+>>> update_file.py databricks.yml name: foo name: renamed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-attempt-name-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions ^//operations ^//complete
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "operations": [
+      {
+        "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+        "resource_key": "jobs.foo"
+      }
+    ],
+    "previous_version_id": "1",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+
+=== A destroy doesn't record the attempt, even with the variable set
+
+>>> DATABRICKS_AUTO_DEPLOY_ATTEMPT=webhook-triggers/[UUID][0]/attempts/[UUID][1] [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-attempt-name-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms //versions ^//operations ^//complete
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
+  "q": {
+    "version_id": "3"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "operations": [
+      {
+        "action_type": "OPERATION_ACTION_TYPE_DELETE",
+        "resource_key": "jobs.foo"
+      }
+    ],
+    "previous_version_id": "2",
+    "version_type": "VERSION_TYPE_DESTROY"
+  }
+}

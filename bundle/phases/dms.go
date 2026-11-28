@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -225,6 +226,13 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 			OriginUrl: git.OriginURL,
 		}
 	}
+	// Links a deploy's version to the auto-deploy attempt that ran it, passed through as is for the
+	// service to validate. Auto-deploy never destroys, and other deploys leave the variable unset, so
+	// their request doesn't change.
+	var attempt string
+	if versionType == dms.VersionTypeDeploy {
+		attempt, _ = env.AutoDeployAttempt(ctx)
+	}
 	version, err := w.BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
 		Parent:    dms.DeploymentName(deploymentID),
 		VersionId: strconv.Itoa(versionID),
@@ -234,6 +242,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 			PreviousVersionId: previousVersionID,
 			GitInfo:           gitInfo,
 			Operations:        staged,
+			AutoDeployAttempt: attempt,
 		},
 	})
 	if err != nil {
