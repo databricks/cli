@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle validate
+Error: resource key "a.b" must not contain "." or "["
+  at resources.jobs['a.b']
+  in databricks.yml:16:7
+
+Error: resource key "c[0]" must not contain "." or "["
+  at resources.jobs['c[0]']
+  in databricks.yml:22:7
+
+Error: resource key "p.q" must not contain "." or "["
+  at resources.pipelines['p.q']
+  in databricks.yml:26:7
+
+Error: resource key "s.x" must not contain "." or "["
+  at resources.schemas['s.x']
+  in databricks.yml:30:7
+
+Name: dotted_key
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dotted_key/default
+
+Found 4 errors
+
+>>> [CLI] bundle deploy
+Error: resource key "a.b" must not contain "." or "["
+  at resources.jobs['a.b']
+  in databricks.yml:16:7
+
+Error: resource key "c[0]" must not contain "." or "["
+  at resources.jobs['c[0]']
+  in databricks.yml:22:7
+
+Error: resource key "p.q" must not contain "." or "["
+  at resources.pipelines['p.q']
+  in databricks.yml:26:7
+
+Error: resource key "s.x" must not contain "." or "["
+  at resources.schemas['s.x']
+  in databricks.yml:30:7
+
+
+>>> print_requests.py //api

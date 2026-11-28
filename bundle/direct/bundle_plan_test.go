@@ -5,6 +5,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -988,6 +989,29 @@ func TestAddParentMoves(t *testing.T) {
 			require.NoError(t, b.addParentMoves(plan))
 			assert.Equal(t, tt.wantID, plan.Plan[volumeKey].ID)
 			assert.Equal(t, tt.wantDependsOn, plan.Plan[volumeKey].DependsOn)
+		})
+	}
+}
+
+func TestMakePlanRejectsPathSyntaxInResourceKey(t *testing.T) {
+	for _, key := range []string{"a.b", "a[0]"} {
+		t.Run(key, func(t *testing.T) {
+			configRoot, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    "`+key+`":
+      name: job
+`))
+			require.Empty(t, diags)
+
+			adapters, err := dresources.InitAll(nil)
+			require.NoError(t, err)
+
+			// Validation rejects these keys first; without it, makePlan must
+			// return an error rather than dereference a nil config.
+			b := &DeploymentBundle{Adapters: adapters}
+			_, err = b.makePlan(t.Context(), configRoot, &dstate.Database{})
+			assert.ErrorContains(t, err, "cannot plan resources.jobs."+key+": resource configuration not found")
 		})
 	}
 }

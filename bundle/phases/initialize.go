@@ -194,6 +194,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// since they can also set and modify resources.
 		validate.Required(),
 
+		// Reads (dynamic): resources.*.*
+		// Rejects resource keys containing "." or "[": the direct engine cannot resolve them.
+		// Runs after PythonMutator so it also sees resources defined in Python.
+		validate.NoPathSyntaxInResourceKey(),
+
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 

@@ -1604,6 +1604,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, err
 		}
 
+		// node was found by walking the config, but GetResourceConfig parses it back
+		// from a string, so a key containing "." or "[" resolves to a different path.
+		// validate.NoPathSyntaxInResourceKey rejects such keys earlier.
+		if inputConfig == nil {
+			return nil, fmt.Errorf("%s: resource configuration not found; resource keys must not contain \".\" or \"[\"", prefix)
+		}
+
 		adapter, err := b.getAdapterForKey(node)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
