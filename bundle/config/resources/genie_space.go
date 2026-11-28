@@ -61,6 +61,13 @@ type GenieSpace struct {
 	// as metadata which is needed for `databricks bundle generate genie-space --resource <key>` to work.
 	// This is not part of GenieSpaceConfig because we don't need to store this in the resource state.
 	FilePath string `json:"file_path,omitempty"`
+
+	// SkipMissingDataSources drops attached tables, metric views, and SQL functions
+	// that Unity Catalog reports as missing, so a deploy can save the space before
+	// those objects exist. A later deploy attaches them. Permission errors still
+	// fail the deploy. Kept beside FilePath, outside GenieSpaceConfig, so it is
+	// not sent to the Genie API and is not compared with the remote space.
+	SkipMissingDataSources bool `json:"skip_missing_data_sources,omitempty"`
 }
 
 func (r *GenieSpace) UnmarshalJSON(b []byte) error {
