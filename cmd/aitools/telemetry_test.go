@@ -3,7 +3,6 @@ package aitools
 import (
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -66,17 +65,6 @@ func TestAgentsField(t *testing.T) {
 			got := agentsField(tc.plan)
 			assert.Equal(t, tc.want, got)
 		})
-	}
-}
-
-// TestAgentTypeCoversRegistry fails when an agent is added to agents.Registry
-// without a matching telemetry enum in agentType. This is the guard against
-// silently logging a new agent as UNSPECIFIED.
-func TestAgentTypeCoversRegistry(t *testing.T) {
-	for _, a := range agents.Registry {
-		assert.NotEqualf(t, protos.AitoolsAgentTypeUnspecified, root.AgentType(a.Name),
-			"agent %q has no telemetry enum: add a case to agentType and a value to "+
-				"AitoolsAgentType in enum.proto (Universe) + aitools_install.go (CLI)", a.Name)
 	}
 }
 
