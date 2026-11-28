@@ -290,3 +290,12 @@ func TestToStructVarRequiresPointerType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
 }
+
+func TestResolveRefLossyNumericConversion(t *testing.T) {
+	sv := structvar.NewStructVar(&TestObj{Age: 25}, map[string]string{"age": "${var.age}"})
+
+	err := sv.ResolveRef("${var.age}", 1.9)
+	require.ErrorContains(t, err, "cannot set 1.9 to int: precision loss")
+	assert.Equal(t, 25, sv.Value.(*TestObj).Age)
+	assert.Contains(t, sv.Refs, "age")
+}

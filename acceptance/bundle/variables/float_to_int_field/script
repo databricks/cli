@@ -1,0 +1,2 @@
+trace $CLI bundle validate
+trace $CLI bundle validate -o json | jq '{variables, max_concurrent_runs: .resources.jobs.foo.max_concurrent_runs}'
