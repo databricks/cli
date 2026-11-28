@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"testing"
 	"time"
@@ -150,6 +151,106 @@ func TestRenderTextKeepsWidestFittingWidth(t *testing.T) {
 	assert.LessOrEqual(t, len(out), textBudget)
 	assert.Contains(t, out, "odd: "+strings.Repeat("x", 35)+"...\n")
 	assert.NotContains(t, out, "databricks skills search")
+}
+
+// renderTextScan is renderText before the width search was bounded: it tries
+// every width from the widest down and keeps the first that fits.
+func renderTextScan(rules string, list []libskills.Skill) string {
+	if len(list) == 0 {
+		return withRules(rules) + "No skills found.\n"
+	}
+	list = oneLineSkills(list)
+	names := layoutText(rules, list, 0)
+	if len(names)-len(searchHint)-1 > textBudget {
+		return names
+	}
+	maxLen := 0
+	for _, s := range list {
+		maxLen = max(maxLen, len(s.Description))
+	}
+	for w := min(maxLen, textBudget); w > 0; w-- {
+		if out := layoutText(rules, list, w); len(out) <= textBudget {
+			return out
+		}
+	}
+	return names
+}
+
+// randomCatalog returns a catalog whose sizes, names, descriptions and rules
+// vary with the random source, so the width search meets every case.
+func randomCatalog(r *rand.Rand) (string, []libskills.Skill) {
+	words := []string{"a", "deploy", "the", "workspace", "x", "notebook-run", "describes", "it.", "averyveryverylongwordthatkeepsgoing", "  "}
+	var rules string
+	if r.IntN(2) == 0 {
+		rules = strings.Repeat("Pick the skill whose description matches. ", 1+r.IntN(3))
+	}
+	// Some catalogs have names long enough that the names alone exceed the budget.
+	nameLen := 70
+	if r.IntN(6) == 0 {
+		nameLen = 200
+	}
+	var list []libskills.Skill
+	for i := range r.IntN(60) {
+		var desc []string
+		for range r.IntN(40) {
+			desc = append(desc, words[r.IntN(len(words))])
+		}
+		sep := " "
+		if r.IntN(10) == 0 {
+			sep = "\n"
+		}
+		text := strings.Join(desc, sep)
+		if r.IntN(8) == 0 {
+			// An unbreakable description has no word boundary to cut at.
+			text = strings.Repeat("x", r.IntN(300))
+		}
+		list = append(list, libskills.Skill{
+			Name:        fmt.Sprintf("skill-%d-%s", i, strings.Repeat("n", r.IntN(nameLen))),
+			Description: text,
+		})
+	}
+	return rules, list
+}
+
+func TestRenderTextMatchesWidthScan(t *testing.T) {
+	for seed := range uint64(300) {
+		r := rand.New(rand.NewPCG(seed, 1))
+		rules, list := randomCatalog(r)
+		want := renderTextScan(rules, list)
+		got := renderText(rules, list)
+		if !assert.Equal(t, want, got, "seed %d", seed) {
+			return
+		}
+	}
+}
+
+// fourHundredLongSkills returns 400 skills whose descriptions are each far
+// longer than the text budget.
+func fourHundredLongSkills() []libskills.Skill {
+	var list []libskills.Skill
+	for i := range 400 {
+		desc := strings.Repeat(fmt.Sprintf("word%d describes the skill in detail. ", i), 40)
+		list = append(list, libskills.Skill{Name: fmt.Sprintf("s%03d", i), Description: desc})
+	}
+	return list
+}
+
+func TestRenderTextFourHundredLongDescriptionsFitsBudget(t *testing.T) {
+	out := renderText("Pick the skill whose description matches the task.", fourHundredLongSkills())
+	assert.LessOrEqual(t, len(out), textBudget)
+	assert.Contains(t, out, "s399")
+}
+
+// BenchmarkRenderTextFourHundredLongDescriptions measures the width search on
+// a 400-skill catalog with long descriptions. The time per op is the figure to
+// compare against the 50 ms the search must stay under.
+func BenchmarkRenderTextFourHundredLongDescriptions(b *testing.B) {
+	list := fourHundredLongSkills()
+	const rules = "Pick the skill whose description matches the task."
+	b.ReportAllocs()
+	for b.Loop() {
+		renderText(rules, list)
+	}
 }
 
 func TestRenderTextNoSearchHintWithoutDescriptions(t *testing.T) {
