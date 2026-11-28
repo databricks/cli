@@ -1,0 +1,68 @@
+bundle:
+  name: test-bundle
+
+variables:
+  tables:
+    type: complex
+    default:
+      - main.default.table_a
+      - main.default.table_b
+
+resources:
+  jobs:
+    # condition is optional for a single table.
+    one_table:
+      name: one_table
+      trigger:
+        table_update:
+          table_names:
+            - main.default.table_a
+
+    two_tables_with_condition:
+      name: two_tables_with_condition
+      trigger:
+        table_update:
+          condition: ALL_UPDATED
+          table_names:
+            - main.default.table_a
+            - main.default.table_b
+
+    # Resource references are resolved at deploy time, so the condition and
+    # the number of tables are not known during validation.
+    condition_from_reference:
+      name: condition_from_reference
+      trigger:
+        table_update:
+          condition: ${resources.jobs.two_tables_with_condition.trigger.table_update.condition}
+          table_names:
+            - main.default.table_a
+            - main.default.table_b
+
+    table_names_from_reference:
+      name: table_names_from_reference
+      trigger:
+        table_update:
+          table_names: ${resources.jobs.one_table.trigger.table_update.table_names}
+
+targets:
+  valid:
+    default: true
+
+  invalid:
+    resources:
+      jobs:
+        # The Jobs API requires condition when more than one table is listed.
+        two_tables:
+          name: two_tables
+          trigger:
+            table_update:
+              table_names:
+                - main.default.table_a
+                - main.default.table_b
+
+        # The variable resolves to two tables.
+        two_tables_from_variable:
+          name: two_tables_from_variable
+          trigger:
+            table_update:
+              table_names: ${var.tables}

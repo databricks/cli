@@ -1,0 +1,8 @@
+trace $CLI bundle validate
+
+musterr trace $CLI bundle validate -t invalid
+
+musterr trace $CLI bundle plan -t invalid
+
+# Deploy must abort at validation, before files are uploaded and the Jobs API rejects the job.
+musterr trace $CLI bundle deploy -t invalid
