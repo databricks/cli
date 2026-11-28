@@ -25,7 +25,8 @@
       "my_data_quality_monitor_2": {
         "data_profiling_config": {
           "assets_dir": "/Workspace/Users/user@example.com/assets",
-          "output_schema_id": "[UUID][0]"
+          "output_schema_id": "[UUID][0]",
+          "snapshot": {}
         },
         "object_id": "[UUID][1] (updated)",
         "object_type": "table"

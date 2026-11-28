@@ -43,11 +43,13 @@ def _transform_to_json_object(value: Any) -> dict[str, Any]:
     out = {}
 
     for field_name, _ in _stable_fields(value):
-        field_value = _transform_to_json_value(getattr(value, field_name))
+        python_value = getattr(value, field_name)
+        json_value = _transform_to_json_value(python_value)
 
-        # we implement omittempty semantics here skipping None, [], and {}
-        if field_value not in [None, [], {}]:
-            out[field_name] = field_value
+        # we implement omitempty semantics here skipping None, [], and {}, but keep an
+        # empty dataclass, as Go keeps a non-nil pointer to an empty struct
+        if json_value not in [None, [], {}] or is_dataclass(python_value):
+            out[field_name] = json_value
 
     return out
 
