@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace as-test-sp $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "The service principal deploys a job that declares no permissions"
+trace as-test-sp $CLI bundle deploy
+job_id=$(as-test-sp $CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+
+title "The current identity is granted CAN_MANAGE on the job, outside the bundle\n"
+$CLI permissions set jobs $job_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"},
+  {"permission_level":"CAN_MANAGE","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"}
+]}' > /dev/null
+print_acl jobs $job_id
+
+title "The current identity adds a permissions block to the config and syncs before it is deployed"
+update_file.py databricks.yml "      name: test-job-$UNIQUE_NAME
+" "      name: test-job-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+"
+sync_and_show_diff
+
+title "The service principal deploys the synced config"
+trace as-test-sp $CLI bundle deploy
+
+title "The job's ACL after the deploy\n"
+print_acl jobs $job_id
