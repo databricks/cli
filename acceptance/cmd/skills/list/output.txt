@@ -5,7 +5,7 @@ Read the skill before you act on it.
 
 -foo: A skill whose name starts with a hyphen.
 demo-skill: A skill for tests.
-future-skill: A skill that needs a newer CLI.
+future-skill: A skill that needs a newer CLI. (needs CLI 99.0.0 or newer)
 guide-skill: A skill with a supporting file.
 To read a skill, run: databricks skills read <name>
 
@@ -15,7 +15,7 @@ Read the skill before you act on it.
 
 -foo: A skill whose name starts with a hyphen.
 demo-skill: A skill for tests.
-future-skill: A skill that needs a newer CLI.
+future-skill: A skill that needs a newer CLI. (needs CLI 99.0.0 or newer)
 guide-skill: A skill with a supporting file.
 preview-skill: An experimental skill for tests.
 To read a skill, run: databricks skills read <name>
@@ -52,6 +52,7 @@ To read a skill, run: databricks skills read <name>
       "name": "future-skill",
       "description": "A skill that needs a newer CLI.",
       "version": "0.0.1",
+      "min_cli_version": "99.0.0",
       "files": [
         "SKILL.md"
       ],
@@ -103,6 +104,7 @@ To read a skill, run: databricks skills read <name>
       "name": "future-skill",
       "description": "A skill that needs a newer CLI.",
       "version": "0.0.1",
+      "min_cli_version": "99.0.0",
       "files": [
         "SKILL.md"
       ],

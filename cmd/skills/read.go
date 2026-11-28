@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/shellquote"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
-	"golang.org/x/mod/semver"
 )
 
 // skillFile is the file that holds a skill's instructions. Every other file of
@@ -72,10 +71,9 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 		return err
 	}
 
-	info := build.GetInfo()
-	if skill.MinCLIVer != "" && semver.Compare("v"+info.Version, "v"+skill.MinCLIVer) < 0 {
+	if needsNewerCLI(skill) {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: skill %q needs CLI version %s or newer, this CLI is %s. Update the CLI to use it.",
-			name, skill.MinCLIVer, info.Version))
+			name, skill.MinCLIVer, build.GetInfo().Version))
 	}
 
 	files := otherFiles(skill.Files)

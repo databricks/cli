@@ -3,11 +3,13 @@ package skills
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libskills "github.com/databricks/cli/libs/skills"
@@ -157,6 +159,25 @@ func TestRenderTextNoSearchHintWithoutDescriptions(t *testing.T) {
 	assert.Equal(t, "alpha\nbeta\n"+readHint+"\n", renderText("", list))
 }
 
+func TestRenderTextMarksSkillThatNeedsNewerCLI(t *testing.T) {
+	list := []libskills.Skill{
+		{Name: "alpha", Description: "Alpha does one thing well."},
+		{Name: "future", Description: "Needs a newer CLI.", MinCLIVer: "99.0.0"},
+	}
+	assert.Equal(t, "alpha: Alpha does one thing well.\nfuture: Needs a newer CLI. (needs CLI 99.0.0 or newer)\n"+readHint+"\n",
+		renderText("", list))
+}
+
+func TestRenderTextMarksNamesOnlyLineThatNeedsNewerCLI(t *testing.T) {
+	list := []libskills.Skill{{Name: "alpha"}, {Name: "future", MinCLIVer: "99.0.0"}}
+	assert.Equal(t, "alpha\nfuture (needs CLI 99.0.0 or newer)\n"+readHint+"\n", renderText("", list))
+}
+
+func TestRenderTextNoMarkWhenCLIIsNewEnough(t *testing.T) {
+	list := []libskills.Skill{{Name: "current", Description: "Current.", MinCLIVer: build.GetInfo().Version}}
+	assert.Equal(t, "current: Current.\n"+readHint+"\n", renderText("", list))
+}
+
 func TestRenderTextNoSkills(t *testing.T) {
 	assert.Equal(t, "No skills found.\n", renderText("", nil))
 }
@@ -215,6 +236,25 @@ func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Contains(t, stderr.String(), "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z)")
 	assert.NotContains(t, stdout.String(), "Skills come from")
+}
+
+func TestRunListJSONCarriesMinCLIVersion(t *testing.T) {
+	catalog := &libskills.Catalog{
+		Label:   "cached",
+		Version: "1.2.3",
+		Skills:  []libskills.Skill{{Name: "alpha"}, {Name: "future", MinCLIVer: "99.0.0"}},
+	}
+
+	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
+	cmd, _, _ := listTestCmd(t, flags.OutputJSON)
+	cmd.SetContext(ctx)
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
+
+	var out listJSON
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out))
+	require.Len(t, out.Skills, 2)
+	assert.Empty(t, out.Skills[0].MinCLIVersion)
+	assert.Equal(t, "99.0.0", out.Skills[1].MinCLIVersion)
 }
 
 func TestProvenanceLineOmitsUnknownFetchTime(t *testing.T) {

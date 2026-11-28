@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 // textBudget is the most bytes the text output of `skills list` may have.
@@ -90,9 +92,10 @@ func provenanceLine(catalog *libskills.Catalog) string {
 }
 
 // renderText returns the text output of `skills list`: the catalog rules, then
-// one line per skill, then a line on how to read a skill. When the whole output
-// is over textBudget, descriptions are cut at a word boundary to the widest
-// width that fits. When even the names do not fit, only the names are printed.
+// one line per skill, then a line on how to read a skill. A skill that needs a
+// newer CLI keeps its line and gets a note after it. When the whole output is
+// over textBudget, descriptions are cut at a word boundary to the widest width
+// that fits. When even the names do not fit, only the names are printed.
 func renderText(rules string, list []libskills.Skill) string {
 	if len(list) == 0 {
 		return withRules(rules) + "No skills found.\n"
@@ -133,11 +136,12 @@ func layoutText(rules string, list []libskills.Skill, width int) string {
 		if width > 0 {
 			cut = cutWords(desc, width)
 		}
+		note := newerCLINote(s)
 		if cut == "" {
-			b.WriteString(s.Name + "\n")
+			b.WriteString(s.Name + note + "\n")
 			dropped = dropped || desc != ""
 		} else {
-			fmt.Fprintf(&b, "%s: %s\n", s.Name, cut)
+			fmt.Fprintf(&b, "%s: %s%s\n", s.Name, cut, note)
 		}
 	}
 	if dropped {
@@ -145,6 +149,23 @@ func layoutText(rules string, list []libskills.Skill, width int) string {
 	}
 	b.WriteString(readHint + "\n")
 	return b.String()
+}
+
+// needsNewerCLI reports whether the running CLI is older than the skill's
+// min_cli_version. `skills list` marks such a skill and `skills read` warns
+// about it, so both commands use this one check.
+func needsNewerCLI(s libskills.Skill) bool {
+	return s.MinCLIVer != "" && semver.Compare("v"+build.GetInfo().Version, "v"+s.MinCLIVer) < 0
+}
+
+// newerCLINote returns the note that marks a skill which needs a newer CLI than
+// the running one, or "" when this CLI is new enough. The skill stays listed,
+// as `skills read` still serves it with a warning.
+func newerCLINote(s libskills.Skill) string {
+	if !needsNewerCLI(s) {
+		return ""
+	}
+	return fmt.Sprintf(" (needs CLI %s or newer)", s.MinCLIVer)
 }
 
 // oneLine joins the words of s with single spaces, so a description takes
@@ -183,11 +204,12 @@ type listJSON struct {
 }
 
 type listJSONSkill struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Version     string   `json:"version"`
-	Files       []string `json:"files"`
-	Commands    []string `json:"commands"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Version       string   `json:"version"`
+	MinCLIVersion string   `json:"min_cli_version,omitempty"`
+	Files         []string `json:"files"`
+	Commands      []string `json:"commands"`
 }
 
 // nonNilList keeps an absent list as [] in JSON rather than null.
@@ -206,11 +228,12 @@ func newListJSON(catalog *libskills.Catalog, list []libskills.Skill) listJSON {
 	}
 	for _, s := range list {
 		out.Skills = append(out.Skills, listJSONSkill{
-			Name:        s.Name,
-			Description: s.Description,
-			Version:     s.Version,
-			Files:       nonNilList(s.Files),
-			Commands:    nonNilList(s.Commands),
+			Name:          s.Name,
+			Description:   s.Description,
+			Version:       s.Version,
+			MinCLIVersion: s.MinCLIVer,
+			Files:         nonNilList(s.Files),
+			Commands:      nonNilList(s.Commands),
 		})
 	}
 	return out
