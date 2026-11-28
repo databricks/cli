@@ -1,0 +1,8 @@
+Cloud = true
+
+# Each test syncs ./src, which its script creates and edits step by step.
+Ignore = ["src"]
+
+# Stops Git Bash on Windows from rewriting the /Users/... sync target into a
+# Windows path (e.g. C:/Program Files/Git/Users/...) before the CLI sees it.
+Env.MSYS_NO_PATHCONV = "1"

@@ -1,0 +1,1 @@
+Badness = "Sync prints \"Deleted dir1\" although dir1 stays: removing a non-empty remote folder fails, the error is ignored, and the delete is still reported."
