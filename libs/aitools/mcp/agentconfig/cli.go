@@ -31,8 +31,8 @@ var runCLI = func(ctx context.Context, c cliCommand) error {
 	return runWithTimeout(ctx, cliTimeout, c)
 }
 
-// cliTimeout bounds one add or remove. Each one edits a single config file and reads no input. A Node-based CLI can take
-// seconds to start, so the bound is generous; it keeps a CLI that hangs from holding up add or remove.
+// cliTimeout bounds one add. It edits a single config file and reads no input. A Node-based CLI can take
+// seconds to start, so the bound is generous; it keeps a CLI that hangs from holding up add.
 const cliTimeout = 30 * time.Second
 
 // cliWaitDelay bounds how long a run waits for the output of the CLI once the CLI has exited or been killed. A launcher
@@ -68,16 +68,17 @@ func runWithTimeout(ctx context.Context, timeout time.Duration, c cliCommand) er
 // Once the CLI has run, the file decides what happens, whatever the CLI's exit status, and afterwards path holds the
 // entry asked for:
 //   - the entry is there and is the one asked for: done. A non-zero exit is logged.
-//   - otherwise the direct writer writes the entry to path. An entry there that differs (another launch key, or another
-//     type) was written by this run's CLI, since it was absent before, and is replaced. When the CLI wrote nothing to
-//     path, it failed, or it wrote another file, the entry is added there.
+//   - otherwise the direct writer writes the entry to path. An entry of ours there that differs (another launch key, or
+//     another type) was written by this run's CLI, and is replaced. An entry that is not ours was written by someone
+//     else while the CLI ran, and is refused unless force is set. When the CLI wrote nothing to path, it failed, or it
+//     wrote another file, the entry is added there.
 //
 // A config file that does not exist yet is left to the direct writer as well. The CLI would create it with its own
 // permissions, where the direct writer makes it 0600, and the CLI does not run.
 //
 // entry is the entry to be written, normalized to JSON values as a file holds them, so that it compares with what the
 // CLI wrote whatever Go types the spec used for it.
-func addViaCLI(ctx context.Context, a *agents.Agent, spec *mcpconfig.Spec, path, name, cmd string, args []string, env map[string]string, entry map[string]any) (bool, error) {
+func addViaCLI(ctx context.Context, a *agents.Agent, spec *mcpconfig.Spec, path, name, cmd string, args []string, env map[string]string, entry map[string]any, force bool) (bool, error) {
 	if spec.AddArgs == nil || flagLike(name) || isSymlink(path) {
 		return false, nil
 	}
@@ -101,7 +102,7 @@ func addViaCLI(ctx context.Context, a *agents.Agent, spec *mcpconfig.Spec, path,
 	}
 	if !found {
 		log.Debugf(ctx, "%s did not write %s; the direct writer adds the entry", commandName(a, sub), filepath.ToSlash(path))
-		return true, putDirect(spec, path, name, entry)
+		return true, putDirect(spec, path, name, entry, force)
 	}
 	asked, err := isAsked(spec, got, entry)
 	if err != nil {
@@ -110,41 +111,7 @@ func addViaCLI(ctx context.Context, a *agents.Agent, spec *mcpconfig.Spec, path,
 	if asked {
 		return true, nil
 	}
-	return true, putDirect(spec, path, name, entry)
-}
-
-// removeViaCLI removes the server through the agent's own CLI, when the agent has a remove command, the CLI is on PATH,
-// and path is the file the agent reads now. The caller has already checked that the entry is ours. It reports whether
-// the entry is gone afterwards. When the CLI fails, or exits 0 and leaves the entry in path (it reads another file, say),
-// it reports false, and the caller removes the entry with the direct writer: the entry is ours, and the user asked for
-// it to go. The CLI's failure is logged.
-func removeViaCLI(ctx context.Context, a *agents.Agent, spec *mcpconfig.Spec, path, name string) (bool, error) {
-	if spec.RemoveArgs == nil || flagLike(name) || isSymlink(path) {
-		return false, nil
-	}
-	current, err := configPath(ctx, spec)
-	if err != nil {
-		// Without the current file, the entry is not in the file the CLI reads.
-		log.Debugf(ctx, "%v; the direct writer removes the entry", err)
-		return false, nil
-	}
-	if path != current {
-		// The entry is in a file the agent no longer reads, so the CLI would not find it.
-		return false, nil
-	}
-	sub := spec.RemoveArgs(name)
-	call, ok, err := cliCall(ctx, a, spec, sub)
-	if !ok {
-		return false, err
-	}
-	if err := runCLI(ctx, call); err != nil {
-		log.Debugf(ctx, "%v; the direct writer removes the entry", cliFailure(a, sub, err))
-	}
-	_, found, err := entryAt(spec, path, name)
-	if err != nil {
-		return false, err
-	}
-	return !found, nil
+	return true, putDirect(spec, path, name, entry, force)
 }
 
 // isSymlink reports whether path is a symbolic link. A CLI that renames a temp file over its config replaces the link with

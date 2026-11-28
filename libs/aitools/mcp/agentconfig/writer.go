@@ -1,8 +1,8 @@
 // Package agentconfig reads and writes the user-scope MCP server entries of
 // coding agents. The direct writer changes only the bytes of the one entry it is
 // asked to change, writes the file back atomically, and keeps comments and layout
-// elsewhere in the file. An add or remove that the agent's own CLI makes (see
-// cli.go) leaves the file in the layout that the CLI writes.
+// elsewhere in the file. An add that the agent's own CLI makes (see cli.go)
+// leaves the file in the layout that the CLI writes.
 package agentconfig
 
 import (
@@ -136,7 +136,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		if err := checkWritable(path); err != nil {
 			return path, "", err
 		}
-		done, cliErr := addViaCLI(ctx, a, spec, path, name, cmd, args, env, ours)
+		done, cliErr := addViaCLI(ctx, a, spec, path, name, cmd, args, env, ours, force)
 		if cliErr != nil {
 			return path, "", cliErr
 		}
@@ -221,10 +221,10 @@ func Changed(a *agents.Agent, current map[string]any, cmd string, args []string,
 
 // RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
 // false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
-// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry. The
-// removal runs through the agent's own CLI when that CLI is on PATH and path is the file it reads now (see removeViaCLI);
-// otherwise, or when the CLI leaves the entry behind, the direct writer removes it.
-func RemoveAt(ctx context.Context, a *agents.Agent, path, name string) (bool, error) {
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry. The direct
+// writer removes the entry, so that the check of who wrote it and the removal are one edit, under the agent's lock
+// where the agent has one: an agent's CLI removes whatever entry holds the name when it runs.
+func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err
 	}
@@ -232,33 +232,14 @@ func RemoveAt(ctx context.Context, a *agents.Agent, path, name string) (bool, er
 	if err != nil {
 		return false, err
 	}
-	if spec.RemoveArgs == nil {
-		return removeDirect(a, spec, path, name)
-	}
-	current, found, err := entryAt(spec, path, name)
-	if err != nil {
-		return false, err
-	}
-	if !found {
-		return false, nil
-	}
-	if !mcpconfig.IsDatabricksEntry(current) {
-		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
-	}
-	if err := checkWritable(path); err != nil {
-		return false, err
-	}
-	removed, err := removeViaCLI(ctx, a, spec, path, name)
-	if err != nil || removed {
-		return removed, err
-	}
 	return removeDirect(a, spec, path, name)
 }
 
 // putDirect writes entry as server name in the config file at path with the direct writer, under the agent's lock (see
-// lockFor). It reads the file again, since the agent's CLI may have changed it. Unlike removeDirect, it does not check who wrote the entry: it is used for
-// an entry that this run's CLI wrote.
-func putDirect(spec *mcpconfig.Spec, path, name string, entry map[string]any) error {
+// lockFor). It reads the file again, since the agent's CLI may have changed it. It runs after the agent's CLI did, and
+// replaces an entry of ours that the CLI wrote in another shape. An entry this CLI did not write was put there by
+// someone else while the agent's CLI ran, and is replaced only when force is set, as upsertDirect replaces it.
+func putDirect(spec *mcpconfig.Spec, path, name string, entry map[string]any, force bool) error {
 	release, err := lockFor(spec, path)
 	if err != nil {
 		return err
@@ -268,7 +249,15 @@ func putDirect(spec *mcpconfig.Spec, path, name string, entry map[string]any) er
 	if err != nil {
 		return err
 	}
-	if err := doc.put(rootPath(spec), name, entry, nil); err != nil {
+	root := rootPath(spec)
+	current, found, err := doc.entry(root, name)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	if found && !mcpconfig.IsDatabricksEntry(current) && !force {
+		return fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	}
+	if err := doc.put(root, name, entry, nil); err != nil {
 		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	return save(path, doc)

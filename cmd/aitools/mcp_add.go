@@ -298,6 +298,13 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	out.Profile = profileName
 
+	// The lock is held from the first read of the install records and the agent configs until the records are saved,
+	// so the plan is made against what is there when the servers are written.
+	unlock, err := lockMCP(ctx)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err
@@ -426,6 +433,8 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	// The results are printed even when the state cannot be saved: the agent files were written. The sign-in does not
 	// depend on the state, so it still runs, and every failure is returned.
 	recordErr := recordInstalls(ctx, req, plans, servers)
+	// The sign-in waits for a browser and writes neither the agent configs nor the records.
+	unlock()
 	printAddResults(ctx, req, servers)
 	var signErr error
 	if req.login || req.askLogin {

@@ -20,8 +20,8 @@ trace cat home/.codex/config.toml
 trace cat home/.gemini/settings.json
 trace cat home/.copilot/mcp-config.json
 
-title "remove goes through the same CLIs; codex is written directly"
+title "remove is written directly for every agent"
 trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 
-title "the argv each agent CLI ran for remove"
-trace cat agent-calls.log
+title "no agent CLI ran for remove"
+trace assert_not_exists.py agent-calls.log

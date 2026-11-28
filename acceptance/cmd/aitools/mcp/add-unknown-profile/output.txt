@@ -5,7 +5,7 @@
 Error: MCP server system.ai.genie_one_mcp needs Databricks profile "logfod", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile logfod
 Existing profiles: logfood, dogfood
 
-=== Nothing was written
+=== Nothing was written but the lock file of add and remove
 
->>> ls -A home
-.claude
+>>> find home -type f
+home/.databricks/aitools/mcp.lock

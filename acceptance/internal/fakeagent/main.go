@@ -4,9 +4,9 @@
 //
 // Run as an agent, it appends its argv to the file named by $FAKE_AGENT_LOG, then makes the change through agentconfig's
 // direct writer, which edits the agent's user-scope config file as the agent's CLI would. The stand-in clears its PATH
-// first, so the writer finds no agent CLI there and writes the file itself, in the writer's layout. Only the add and
-// remove commands that the agents' CLI wrappers use are accepted; any other command fails, so a test that runs an
-// unexpected command fails too.
+// first, so the writer finds no agent CLI there and writes the file itself, in the writer's layout. Only the add
+// commands that the agents' CLI wrappers use are accepted; any other command fails, so a test that runs an unexpected
+// command fails too.
 package main
 
 import (
@@ -90,7 +90,7 @@ func run(ctx context.Context, program string, args []string) error {
 	}
 }
 
-// claude handles `mcp add-json --scope user <name> <json>` and `mcp remove --scope user <name>`.
+// claude handles `mcp add-json --scope user <name> <json>`.
 func claude(ctx context.Context, agent *agents.Agent, args []string) error {
 	switch {
 	case len(args) == 6 && args[0] == "mcp" && args[1] == "add-json" && args[2] == "--scope" && args[3] == "user":
@@ -103,14 +103,11 @@ func claude(ctx context.Context, agent *agents.Agent, args []string) error {
 			return err
 		}
 		return upsert(ctx, agent, args[4], entry.Command, entry.Args, entry.Env)
-	case len(args) == 5 && args[0] == "mcp" && args[1] == "remove" && args[2] == "--scope" && args[3] == "user":
-		return remove(ctx, agent, args[4])
 	}
 	return unexpected("claude", args)
 }
 
-// copilot handles `mcp add <name> [--env K=V]... -- <command> <args>...` and `mcp remove <name>`, with `--tools *` after
-// the name on add.
+// copilot handles `mcp add <name> [--env K=V]... -- <command> <args>...`, with `--tools *` after the name.
 func copilot(ctx context.Context, agent *agents.Agent, program string, args []string) error {
 	switch {
 	case len(args) >= 3 && args[0] == "mcp" && args[1] == "add":
@@ -131,13 +128,11 @@ func copilot(ctx context.Context, agent *agents.Agent, program string, args []st
 			return unexpected(program, args)
 		}
 		return upsert(ctx, agent, name, rest[1], rest[2:], env)
-	case len(args) == 3 && args[0] == "mcp" && args[1] == "remove":
-		return remove(ctx, agent, args[2])
 	}
 	return unexpected(program, args)
 }
 
-// gemini handles `mcp add --scope user [-e K=V]... <name> <command> -- <args>...` and `mcp remove --scope user <name>`.
+// gemini handles `mcp add --scope user [-e K=V]... <name> <command> -- <args>...`.
 func gemini(ctx context.Context, agent *agents.Agent, args []string) error {
 	switch {
 	case len(args) >= 5 && args[0] == "mcp" && args[1] == "add" && args[2] == "--scope" && args[3] == "user":
@@ -155,8 +150,6 @@ func gemini(ctx context.Context, agent *agents.Agent, args []string) error {
 			return unexpected("gemini", args)
 		}
 		return upsert(ctx, agent, rest[0], rest[1], rest[3:], env)
-	case len(args) == 5 && args[0] == "mcp" && args[1] == "remove" && args[2] == "--scope" && args[3] == "user":
-		return remove(ctx, agent, args[4])
 	}
 	return unexpected("gemini", args)
 }
@@ -164,16 +157,6 @@ func gemini(ctx context.Context, agent *agents.Agent, args []string) error {
 // upsert adds the server through the direct writer, which writes the entry as the agent's CLI would.
 func upsert(ctx context.Context, agent *agents.Agent, name, cmd string, args []string, env map[string]string) error {
 	_, _, err := agentconfig.Upsert(ctx, agent, name, cmd, args, env, false)
-	return err
-}
-
-// remove deletes the server from the config file that the agent reads now.
-func remove(ctx context.Context, agent *agents.Agent, name string) error {
-	path, err := agentconfig.Path(ctx, agent)
-	if err != nil {
-		return err
-	}
-	_, err = agentconfig.RemoveAt(ctx, agent, path, name)
 	return err
 }
 

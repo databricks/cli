@@ -475,26 +475,9 @@ func TestClaudeMCPAddArgsPassesTheEntryAsJSON(t *testing.T) {
 	assert.JSONEq(t, string(want), got[5])
 }
 
-func TestMCPRemoveArgsPerAgent(t *testing.T) {
-	tests := []struct {
-		agent string
-		want  []string
-	}{
-		{NameClaudeCode, []string{"mcp", "remove", "--scope", "user", "github"}},
-		{NameGemini, []string{"mcp", "remove", "--scope", "user", "github"}},
-		{NameCopilot, []string{"mcp", "remove", "github"}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.agent, func(t *testing.T) {
-			assert.Equal(t, tt.want, ByName(tt.agent).MCP.RemoveArgs("github"))
-		})
-	}
-}
-
 func TestOtherAgentsHaveNoCLIArgs(t *testing.T) {
 	for _, name := range []string{NameCursor, NameOpenCode, NameAntigravity, NameCodex} {
 		spec := ByName(name).MCP
 		assert.Nil(t, spec.AddArgs, name)
-		assert.Nil(t, spec.RemoveArgs, name)
 	}
 }

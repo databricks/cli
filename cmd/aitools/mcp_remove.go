@@ -203,6 +203,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		}
 	}
 
+	// The lock is held from the first read of the install records until they are saved, as add holds it.
+	unlock, err := lockMCP(ctx)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err
@@ -576,7 +582,7 @@ func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *age
 		return plan, nil
 	}
 	for _, path := range plan.paths {
-		if _, err := agentconfig.RemoveAt(ctx, a, path, e.Name); err != nil {
+		if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
 			return agentRemoval{}, removeAgentError(err, a.Name, explicit)
 		}
 	}

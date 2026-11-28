@@ -303,44 +303,12 @@ DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
   }
 }
 
-=== remove goes through the same CLIs; codex is written directly
+=== remove is written directly for every agent
 
 >>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
 Removed github-logfood  system.ai.github  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
 
-=== the argv each agent CLI ran for remove
+=== no agent CLI ran for remove
 
->>> cat agent-calls.log
-claude
-	mcp
-	remove
-	--scope
-	user
-	genie_one_mcp-logfood
-copilot
-	mcp
-	remove
-	genie_one_mcp-logfood
-gemini
-	mcp
-	remove
-	--scope
-	user
-	genie_one_mcp-logfood
-claude
-	mcp
-	remove
-	--scope
-	user
-	github-logfood
-copilot
-	mcp
-	remove
-	github-logfood
-gemini
-	mcp
-	remove
-	--scope
-	user
-	github-logfood
+>>> assert_not_exists.py agent-calls.log
