@@ -1,12 +1,12 @@
 # The panic's stack trace depends on the build, so drop its frames.
 title "number property set to null in the config file"
-trace errcode $CLI bundle init . --config-file ratio-null.json --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d}'
+trace errcode $CLI bundle init . --config-file ratio-null.json --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d;}'
 
 title "integer property set to null in the config file"
 trace errcode $CLI bundle init . --config-file count-null.json --output-dir rendered
 
 title "null in the enum of a number property"
-trace errcode $CLI bundle init ./enum-null --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d}'
+trace errcode $CLI bundle init ./enum-null --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d;}'
 
 title "integer property declared only in anyOf set to null in the config file"
-trace errcode $CLI bundle init ./any-of --config-file extra-null.json --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d}'
+trace errcode $CLI bundle init ./any-of --config-file extra-null.json --output-dir rendered 2>&1 | sed '/^goroutine /,/^Exit code/{/^Exit code/!d;}'
