@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.4
 
 require (
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/mod v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
