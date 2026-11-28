@@ -1,0 +1,43 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+
+variables:
+  id:
+    default: 42
+
+# Each target sets a different default for var.id.
+targets:
+  int:
+    default: true
+  # YAML reads a leading-zero value containing 8 or 9 as a float.
+  leading_zero:
+    variables:
+      id: 0012345678901234
+  float_whole:
+    variables:
+      id: 1.0
+  exponent:
+    variables:
+      id: 1e3
+  float_fraction:
+    variables:
+      id: 3.10
+  # Beyond 2^53 the CLI sends the float's shortest decimal, which Python reads
+  # as an int that is not exactly equal to the float.
+  above_2_53:
+    variables:
+      id: 1234567890123456789.0
+  complex:
+    variables:
+      id:
+        nested: 1.0
+  # A whole float beyond int64 comes back from Python as an int we can't parse.
+  huge:
+    variables:
+      id: 0012345678901234567890

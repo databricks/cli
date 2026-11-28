@@ -1,0 +1,5 @@
+for target in int leading_zero float_whole exponent float_fraction above_2_53 complex huge; do
+  title "$target"
+  errcode trace uv run $UV_ARGS -q $CLI bundle validate -t $target --output json > tmp.json
+  jq -c .variables.id tmp.json
+done

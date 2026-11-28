@@ -1,0 +1,64 @@
+
+=== int
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t int --output json
+{"default":42,"value":42}
+
+=== leading_zero
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t leading_zero --output json
+Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default" (update)
+
+
+Exit code: 1
+{"default":12345678901234,"value":12345678901234}
+
+=== float_whole
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t float_whole --output json
+Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default" (update)
+
+
+Exit code: 1
+{"default":1,"value":1}
+
+=== exponent
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t exponent --output json
+Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default" (update)
+
+
+Exit code: 1
+{"default":1000,"value":1000}
+
+=== float_fraction
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t float_fraction --output json
+{"default":3.1,"value":3.1}
+
+=== above_2_53
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t above_2_53 --output json
+Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default" (update)
+
+
+Exit code: 1
+{"default":1234567890123456800,"value":1234567890123456800}
+
+=== complex
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t complex --output json
+Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default.nested" (update)
+
+
+Exit code: 1
+{"default":{"nested":1},"value":{"nested":1}}
+
+=== huge
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate -t huge --output json
+Error: failed to parse output file: yaml ([TEST_TMP_DIR]/__generated_by_python__.yml:[POS]): invalid int value: 12345678901234567000
+
+
+Exit code: 1
+{"default":12345678901234567000,"value":12345678901234567000}

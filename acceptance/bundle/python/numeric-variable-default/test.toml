@@ -1,0 +1,8 @@
+Badness = 'Whole-number float variable defaults fail with an internal error when the bundle has Python code. A whole float beyond int64 fails differently: the Python output cannot be parsed.'
+Ignore = [".databricks", "__pycache__", "tmp.json"]
+
+# The position depends on the size of the Python output, which includes paths.
+# The separator before the file name is a backslash on Windows.
+[[Repls]]
+Old = '[\\/]__generated_by_python__\.yml:\d+:\d+'
+New = '/__generated_by_python__.yml:[POS]'
