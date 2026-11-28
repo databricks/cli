@@ -159,6 +159,14 @@ experimental:
   "description": |-
     Defines attributes for experimental features.
   "$fields":
+    "check_git_branch_freshness":
+      "description": |-
+        Before deployment, fetch the current Git branch's upstream and ask for confirmation if the branch is behind. This also applies when deploying a saved plan. If the check cannot run, a warning is emitted and deployment continues. Use --auto-approve to proceed without prompting, including in CI; this also approves other deployment actions.
+      "markdown_examples": |-
+        ```yaml
+        experimental:
+          check_git_branch_freshness: true
+        ```
     "deployment_history":
       "description": |-
         Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments. When not set, history is recorded if Databricks has enrolled the workspace.

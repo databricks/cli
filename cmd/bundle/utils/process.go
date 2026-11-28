@@ -241,6 +241,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
+	if opts.Deploy {
+		if err := phases.CheckGitBranchFreshness(ctx, b); err != nil {
+			return b, nil, err
+		}
+	}
+
 	// Record the engine up front so deploy telemetry reports it even when
 	// the deploy fails before the state is pulled (e.g. PullResourcesState itself
 	// errors). Refined to the state's engine below once it is known; the two differ
