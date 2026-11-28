@@ -9,8 +9,8 @@ records=home/.databricks/aitools/mcp.json
 # The records name the config file as the binary spells it. Git Bash's $PWD is /c/..., which the Windows binary does not
 # match, so there use pwd -W, as sethome does.
 case "$OSTYPE" in
-  msys*|cygwin*) cfgdir="$(pwd -W)" ;;
-  *) cfgdir="$PWD" ;;
+  msys*|cygwin*) export CFGDIR="$(pwd -W)" ;;
+  *) export CFGDIR="$PWD" ;;
 esac
 
 # The service, created in the fake workspace.
@@ -55,40 +55,28 @@ trace $CLI aitools mcp remove --names genie_one_mcp-logfood
 trace jq -c '.mcpServers // {} | keys' home/.claude.json
 trace jq -c '.mcpServers // {} | keys' home/.cursor/mcp.json
 
-title "Records that v1.28.0 wrote into the skills state file are read from there, and the next add moves them"
-cat > $state <<JSON
-{
-  "schema_version": 3,
-  "release": "v0.1.0",
-  "last_updated": "2026-01-01T00:00:00Z",
-  "skills": {"databricks": "0.1.0"},
-  "mcp": {
-    "servers": [
-      {
-        "name": "genie_one_mcp-logfood",
-        "service": "system.ai.genie_one_mcp",
-        "profile": "logfood",
-        "host": "$DATABRICKS_HOST",
-        "workspace_id": "",
-        "sign_in_required": false,
-        "command": "$CLI",
-        "config_file": "$cfgdir/.databrickscfg",
-        "agents": {},
-        "installed_at": "2026-01-01T00:00:00Z",
-        "cli_version": "1.28.0"
-      }
-    ]
-  }
-}
-JSON
+title "Records that v1.28.0 wrote into the skills state file are read from there, and the next add copies them"
+# v1.28.0 kept the records as a section of the skills state file. The fixture holds two servers; only one is added again.
+rm $records
+envsubst < v1.28.0.state.json > $state
 trace $CLI aitools mcp list
 trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
-trace jq -c '{skills, has_mcp: has("mcp")}' $state
-trace jq -c '{schema_version, servers: [.servers[] | {name, agents: (.agents | keys)}]}' $records
+# The section is left as it is, for a v1.28.0 binary on the same machine. The records file has both servers, the one
+# that was not added again with the host and the time that v1.28.0 recorded.
+trace jq -c '{skills, mcp: [.mcp.servers[].name]}' $state
+trace jq -c '{schema_version, servers: [.servers[] | {name, host, installed_at, agents: (.agents | keys)}]}' $records
 
-title "A records file that a newer CLI wrote is refused, and left as it is"
+title "After the last server is removed the records file stays, so the section is not read again"
+trace $CLI aitools mcp remove --all
+trace jq -c '{schema_version, servers}' $records
+trace $CLI aitools mcp list
+
+title "A records file that a newer CLI wrote is read, and is not written"
+$CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code &> LOG.add-again
 jq '.schema_version = 2 | .future_section = {"records": ["written by a newer CLI"]}' $records > records.tmp
 mv records.tmp $records
+trace $CLI aitools mcp list
 trace musterr $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
-trace musterr $CLI aitools mcp list
-trace jq -c '{schema_version, future_section}' $records
+trace musterr $CLI aitools mcp remove --all
+trace jq -c '.mcpServers // {} | keys' home/.cursor/mcp.json
+trace jq -c '{schema_version, future_section, servers: [.servers[].name]}' $records

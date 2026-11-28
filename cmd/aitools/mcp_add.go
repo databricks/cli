@@ -298,6 +298,10 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	out.Profile = profileName
 
+	// A records file that this CLI cannot write is refused before any agent config is changed.
+	if err := mcp.CheckWritable(ctx); err != nil {
+		return err
+	}
 	state, err := mcp.LoadState(ctx)
 	if err != nil {
 		return err

@@ -46,11 +46,13 @@ Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude
 >>> jq -c .mcpServers // {} | keys home/.cursor/mcp.json
 []
 
-=== Records that v1.28.0 wrote into the skills state file are read from there, and the next add moves them
+=== Records that v1.28.0 wrote into the skills state file are read from there, and the next add copies them
 
 >>> [CLI] aitools mcp list
 Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        
+  other-logfood            system.ai.other                
+  broken: it was set up for https://recorded-by-v1-28.test, but profile "logfood" now points at [DATABRICKS_URL]; run `databricks aitools mcp remove --names other-logfood` and add it again
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
 Profile logfood ([DATABRICKS_URL])
@@ -59,19 +61,38 @@ Agents (named with --agents): claude-code
 genie_one_mcp-logfood  system.ai.genie_one_mcp
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
 
->>> jq -c {skills, has_mcp: has("mcp")} home/.databricks/aitools/skills/.state.json
-{"skills":{"databricks":"0.1.0"},"has_mcp":false}
+>>> jq -c {skills, mcp: [.mcp.servers[].name]} home/.databricks/aitools/skills/.state.json
+{"skills":{"databricks":"0.1.0"},"mcp":["genie_one_mcp-logfood","other-logfood"]}
 
->>> jq -c {schema_version, servers: [.servers[] | {name, agents: (.agents | keys)}]} home/.databricks/aitools/mcp.json
-{"schema_version":1,"servers":[{"name":"genie_one_mcp-logfood","agents":["claude-code"]}]}
+>>> jq -c {schema_version, servers: [.servers[] | {name, host, installed_at, agents: (.agents | keys)}]} home/.databricks/aitools/mcp.json
+{"schema_version":1,"servers":[{"name":"genie_one_mcp-logfood","host":"[DATABRICKS_URL]","installed_at":"[TIMESTAMP]","agents":["claude-code"]},{"name":"other-logfood","host":"https://recorded-by-v1-28.test","installed_at":"[TIMESTAMP]","agents":[]}]}
 
-=== A records file that a newer CLI wrote is refused, and left as it is
+=== After the last server is removed the records file stays, so the section is not read again
+
+>>> [CLI] aitools mcp remove --all
+Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code)
+Removed other-logfood  system.ai.other  profile logfood
+
+>>> jq -c {schema_version, servers} home/.databricks/aitools/mcp.json
+{"schema_version":1,"servers":[]}
+
+>>> [CLI] aitools mcp list
+No Databricks MCP servers installed by this CLI.
+
+=== A records file that a newer CLI wrote is read, and is not written
+
+>>> [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code
 
 >>> musterr [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
-Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI reads 1); upgrade the CLI to manage MCP servers
+Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI writes 1); upgrade the CLI to add or remove MCP servers
 
->>> musterr [CLI] aitools mcp list
-Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI reads 1); upgrade the CLI to manage MCP servers
+>>> musterr [CLI] aitools mcp remove --all
+Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI writes 1); upgrade the CLI to add or remove MCP servers
 
->>> jq -c {schema_version, future_section} home/.databricks/aitools/mcp.json
-{"schema_version":2,"future_section":{"records":["written by a newer CLI"]}}
+>>> jq -c .mcpServers // {} | keys home/.cursor/mcp.json
+[]
+
+>>> jq -c {schema_version, future_section, servers: [.servers[].name]} home/.databricks/aitools/mcp.json
+{"schema_version":2,"future_section":{"records":["written by a newer CLI"]},"servers":["genie_one_mcp-logfood"]}
