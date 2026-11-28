@@ -1,0 +1,1 @@
+* `serving-endpoints create NAME --json ...` now accepts the endpoint name as the argument together with `--json` (it previously failed with `no positional arguments are allowed`), and `serving-endpoints update-config --json ...` now accepts the name as `"name"` in the JSON when the argument is omitted. ([#7665](https://github.com/databricks/cli/pull/7665))

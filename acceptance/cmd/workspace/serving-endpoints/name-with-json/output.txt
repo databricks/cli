@@ -1,0 +1,144 @@
+
+=== create: NAME as the argument together with --json
+
+>>> [CLI] serving-endpoints create my-endpoint --no-wait --json {"description": "from arg"}
+{"name":"my-endpoint","description":"from arg"}
+
+=== create: NAME inside --json still works
+
+>>> [CLI] serving-endpoints create --no-wait --json {"name": "other-endpoint"}
+{"name":"other-endpoint"}
+
+=== create: the same name in both places is fine
+
+>>> [CLI] serving-endpoints create third-endpoint --no-wait --json {"name": "third-endpoint"}
+{"name":"third-endpoint"}
+
+=== create: different names are rejected
+
+>>> musterr [CLI] serving-endpoints create my-endpoint --json {"name": "something-else"}
+Error: the endpoint name "my-endpoint" doesn't match "name" "something-else" in --json; pass it in one place only
+
+=== update-config: NAME from --json when the argument is omitted
+
+>>> [CLI] serving-endpoints update-config --no-wait --json {"name": "my-endpoint", "served_entities": [{"entity_name": "main.default.m", "entity_version": "1", "workload_size": "Small"}]}
+{"name":"my-endpoint"}
+
+=== update-config: the argument still works
+
+>>> [CLI] serving-endpoints update-config my-endpoint --no-wait --json {"served_entities": [{"entity_name": "main.default.m", "entity_version": "2", "workload_size": "Small"}]}
+{"name":"my-endpoint"}
+
+=== update-config: no name anywhere
+
+>>> musterr [CLI] serving-endpoints update-config --json {"served_entities": []}
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks serving-endpoints update-config NAME [flags]
+
+Flags:
+  -h, --help               help for update-config
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach NOT_UPDATING state
+      --timeout duration   maximum amount of time to reach NOT_UPDATING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+=== Without --json, NAME is still required
+
+>>> musterr [CLI] serving-endpoints create
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks serving-endpoints create NAME [flags]
+
+Flags:
+      --budget-policy-id string   The budget policy to be applied to the serving endpoint.
+      --description string        The description of the serving endpoint.
+  -h, --help                      help for create
+      --json JSON                 either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait                   do not wait to reach NOT_UPDATING state
+      --route-optimized           Enable route optimization for the serving endpoint.
+      --timeout duration          maximum amount of time to reach NOT_UPDATING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> musterr [CLI] serving-endpoints update-config
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks serving-endpoints update-config NAME [flags]
+
+Flags:
+  -h, --help               help for update-config
+      --json JSON          either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --no-wait            do not wait to reach NOT_UPDATING state
+      --timeout duration   maximum amount of time to reach NOT_UPDATING state (default 20m0s)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "description": "from arg",
+    "name": "my-endpoint"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "other-endpoint"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "third-endpoint"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/serving-endpoints/my-endpoint/config",
+  "body": {
+    "served_entities": [
+      {
+        "entity_name": "main.default.m",
+        "entity_version": "1",
+        "workload_size": "Small"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/serving-endpoints/my-endpoint/config",
+  "body": {
+    "served_entities": [
+      {
+        "entity_name": "main.default.m",
+        "entity_version": "2",
+        "workload_size": "Small"
+      }
+    ]
+  }
+}
