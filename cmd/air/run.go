@@ -234,11 +234,15 @@ databricks-ai-runtime skill:
 			// Local and credential-free, so it runs before workspace validation.
 			var snapshotFileCount *int
 			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
+				files, err := listSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
 				if err != nil {
 					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 				}
+				count := len(files)
 				snapshotFileCount = &count
+				if msg := relativeScriptWarning(cfg, files); msg != "" {
+					cmdio.LogString(ctx, msg)
+				}
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)

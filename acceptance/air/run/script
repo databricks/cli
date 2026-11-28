@@ -59,6 +59,9 @@ trace $CLI air run -f torch-standard.yaml --dry-run
 title "the Databricks AI environment provides torch, so no warning"
 trace $CLI air run -f torch-databricks-ai.yaml --dry-run
 
+title "a script path relative to root_path warns to use CODE_SOURCE_PATH"
+trace $CLI air run -f relative-script.yaml --dry-run
+
 title "git.remote is rejected"
 errcode trace $CLI air run -f git-remote.yaml --dry-run
 

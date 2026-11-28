@@ -234,9 +234,9 @@ func (g gitRepo) validateIncludePathsExist(ctx context.Context, commitSHA string
 	return nil
 }
 
-// countFilesAtCommit returns how many files `git archive` would package from
+// listFilesAtCommit returns the files `git archive` would package from
 // commitSHA, limited to subtreePrefix and includePaths when set.
-func (g gitRepo) countFilesAtCommit(ctx context.Context, commitSHA, subtreePrefix string, includePaths []string) (int, error) {
+func (g gitRepo) listFilesAtCommit(ctx context.Context, commitSHA, subtreePrefix string, includePaths []string) ([]string, error) {
 	treeish := commitSHA
 	lsTreeGit := g
 	if subtreePrefix != "" {
@@ -245,7 +245,7 @@ func (g gitRepo) countFilesAtCommit(ctx context.Context, commitSHA, subtreePrefi
 		// as createGitArchiveSnapshot does.
 		repoRoot, err := g.repositoryRoot(ctx)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		lsTreeGit = newGitRepo(repoRoot)
 		treeish = commitSHA + ":" + subtreePrefix
@@ -253,9 +253,9 @@ func (g gitRepo) countFilesAtCommit(ctx context.Context, commitSHA, subtreePrefi
 	args := append([]string{"ls-tree", "-r", "-z", "--name-only", treeish, "--"}, includePaths...)
 	out, err := lsTreeGit.runBytes(ctx, args...)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return bytes.Count(out, []byte{0}), nil
+	return strings.FieldsFunc(string(out), func(r rune) bool { return r == 0 }), nil
 }
 
 // shortSHA abbreviates a commit SHA to 8 chars for log/error messages, tolerating

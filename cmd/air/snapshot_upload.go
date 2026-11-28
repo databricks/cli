@@ -117,23 +117,31 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 	return path.Join(sidecarBase, gitStateName), diffPath
 }
 
-// countSnapshotFiles runs the snapshot file selection without packaging or
+// listSnapshotFiles runs the snapshot file selection without packaging or
 // uploading, so --dry-run fails on the same selection errors as a submission.
-func countSnapshotFiles(ctx context.Context, snap *snapshotSourceConfig, configPath string) (int, error) {
+// It returns the snapshot-relative, slash-separated paths that would be packaged.
+func listSnapshotFiles(ctx context.Context, snap *snapshotSourceConfig, configPath string) ([]string, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	git := newGitRepo(repoPath)
 	plan, err := resolveSnapshotPlan(ctx, git, snap.Git, snap.IncludePaths)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if plan.mode == modeGitArchive {
-		return git.countFilesAtCommit(ctx, plan.commitSHA, plan.subtreePrefix, plan.includePaths)
+		return git.listFilesAtCommit(ctx, plan.commitSHA, plan.subtreePrefix, plan.includePaths)
 	}
 	files, err := snapshotFiles(ctx, repoPath, plan.includePaths, plan.isGitRepo)
-	return len(files), err
+	if err != nil {
+		return nil, err
+	}
+	rels := make([]string, len(files))
+	for i, f := range files {
+		rels[i] = filepath.ToSlash(f.rel)
+	}
+	return rels, nil
 }
 
 // snapshotTarName resolves the content-addressed upload filename for the snapshot and,

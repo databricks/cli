@@ -114,6 +114,15 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
+=== a script path relative to root_path warns to use CODE_SOURCE_PATH
+
+>>> [CLI] air run -f relative-script.yaml --dry-run
+Warning: command may refer to "train.py" relative to code_source.root_path. If it does, "$CODE_SOURCE_PATH/train.py" is safer. If the command already handles its working directory, ignore this. Docs on command paths and $CODE_SOURCE_PATH:
+  AWS:   https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
 === git.remote is rejected
 
 >>> [CLI] air run -f git-remote.yaml --dry-run
