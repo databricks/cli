@@ -206,11 +206,26 @@ on code the change adds or modifies, not on pre-existing issues next to it.
      so a test under `regression=` or `unreleased=` fails without the fix,
      and one under `coverage=` passes without it unless the fix is already
      released. Revert the fix locally and run the test only when the report
-     cannot tell: a unit test, a test it did not select, or a released fix; a
-     variant that still passes does not assert the claim. For a test that
+     cannot tell: a unit test, a test it did not select, a released fix, or
+     a fix in the harness, which is anything the CLI binary is not built
+     from: `acceptance/` code and scripts (`internal/`, `bin/`,
+     `script.prepare`), `libs/testdiff`, `libs/testserver`,
+     `libs/testproxy`. The report swaps only the CLI binary, so for a
+     harness fix restore the changed helper from `BASE`.
+     When the fix has several parts, revert only the part the test targets.
+     A variant that still passes does not assert the claim. A test that
+     records a bug ahead of its fix (a `Badness` note) has nothing to revert:
+     when the description links the fix PR, apply its production hunk and
+     check that the output changes where the note says. For a test that
      asserts an invariant over existing types or files, run a scratch
      positive control to see the check fire, and compare the check with the
      walker or helper the repo already uses for that traversal.
+   - When the fix adds several branches, guards or wrapped returns, or a new
+     mechanism (batching, a lookup by index), break each one in turn in a
+     scratch copy and rerun the package and the nearest acceptance
+     directory. A mutation that stays green is a branch no test reaches: name
+     the input that would reach it and ask for that case. Skip guards whose
+     removal no user could see.
    - When a script or helper changes only to keep goldens equal across
      `EnvMatrix` variants (a `nostamp` pipe, a new scrub pattern), restore it
      from `BASE` and run the variant it targets; a change that passes without
