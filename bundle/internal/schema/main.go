@@ -120,6 +120,21 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
+func allowForEachTaskInputArrays(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ != reflect.TypeFor[jobs.ForEachTask]() {
+		return s
+	}
+
+	inputs := s.Properties["inputs"]
+	stringRef := inputs.Reference
+	inputs.Reference = nil
+	inputs.OneOf = []jsonschema.Schema{
+		{Reference: stringRef},
+		{Type: jsonschema.ArrayType},
+	}
+	return s
+}
+
 func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
 	case reflect.TypeFor[resources.Pipeline]():
@@ -287,6 +302,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
+		allowForEachTaskInputArrays,
 		removeOutputOnlyFields,
 	}
 	if !docsMode {

@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle validate
+Error: failed to rewrite for_each_task.inputs in [TEST_TMP_DIR]/databricks.yml: resources.jobs.fan.tasks[0].for_each_task.inputs at [TEST_TMP_DIR]/databricks.yml:15:15 contains variable reference ${var.item} in a YAML array; use a JSON string for interpolated inputs
+
+
+Found 1 error
