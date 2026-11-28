@@ -1,7 +1,0 @@
-Badness = '''The patched wheel is not equivalent to the original:
-- unix file modes are dropped (100755 becomes 0), so pip and uv install mypkg/bin/tool without its executable bit;
-- mypkg-1.0.data/ keeps the old version while the .dist-info directory is renamed, so uv does not install data/scripts/myscript and leaves mypkg-1.0.data/ in site-packages;
-- for lib2-2, the first "2" in "lib2-2.dist-info/" is replaced, giving lib2+<mtime>-2.dist-info/, and pip refuses to install the wheel;
-- "Version: 0.9" in the description body of readme-1.0 is treated as the version header, so patching fails and the bundle deploys the unpatched wheel with only a warning.
-- "Version: 1.0" in the description body of samever-1.0 equals the real version, so it is silently rewritten to "Version: 1.0+<mtime>".
-Expected: modes preserved, <dist>-<newversion>.data/ and <dist>-<newversion>.dist-info/, only the Version header rewritten.'''

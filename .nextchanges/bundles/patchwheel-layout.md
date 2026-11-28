@@ -1,0 +1,1 @@
+* Fix wheels patched for `dynamic_version`: keep file modes, rename the `.data` directory, keep distribution names that contain the version, and only rewrite the `Version` header. ([#7928](https://github.com/databricks/cli/pull/7928))

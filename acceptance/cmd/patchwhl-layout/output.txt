@@ -13,12 +13,20 @@
 Warn: Patched whl: mypkg-1.0-py3-none-any.whl -> mypkg-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl
 
 >>> python3 list_wheel.py mypkg-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl
-0 mypkg/__init__.py
-0 mypkg/bin/tool
-0 mypkg-1.0.data/scripts/myscript
-0 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/METADATA
-0 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/WHEEL
-0 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/RECORD
+100644 mypkg/__init__.py
+100755 mypkg/bin/tool
+100755 mypkg-1.0+[UNIX_TIME_NANOS].data/scripts/myscript
+100644 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/METADATA
+100644 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/WHEEL
+100644 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/RECORD
+
+>>> unzip -p mypkg-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl *.dist-info/RECORD
+mypkg/__init__.py,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+mypkg/bin/tool,sha256=v2ZM-E8A9u12FkyEV_3q-OTe5Ucibp_8-CdOLSJG_tk,20
+mypkg-1.0+[UNIX_TIME_NANOS].data/scripts/myscript,sha256=hBm4q2DrIhmBHyNlsEOtLzUV-COB2WZmBDPl2f_HZ9w,24
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/METADATA,sha256=e3__8kyEVFvZWWhRcjLp4e0SO-iF-e_jzf_twQUI9J0,67
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/WHEEL,sha256=GOJWfGKy_s7ZRMtmrMyJFvIHxzo0gLZVhGWWyTqB6uo,75
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/RECORD,,
 
 === Wheel whose distribution name contains its version:
 
@@ -26,19 +34,25 @@ Warn: Patched whl: mypkg-1.0-py3-none-any.whl -> mypkg-1.0+[UNIX_TIME_NANOS]-py3
 Warn: Patched whl: lib2-2-py3-none-any.whl -> lib2-2+[UNIX_TIME_NANOS]-py3-none-any.whl
 
 >>> python3 list_wheel.py lib2-2+[UNIX_TIME_NANOS]-py3-none-any.whl
-0 lib2/__init__.py
-0 lib2+[UNIX_TIME_NANOS]-2.dist-info/METADATA
-0 lib2+[UNIX_TIME_NANOS]-2.dist-info/WHEEL
-0 lib2+[UNIX_TIME_NANOS]-2.dist-info/RECORD
+100644 lib2/__init__.py
+100644 lib2-2+[UNIX_TIME_NANOS].dist-info/METADATA
+100644 lib2-2+[UNIX_TIME_NANOS].dist-info/WHEEL
+100644 lib2-2+[UNIX_TIME_NANOS].dist-info/RECORD
 
 === Wheel whose description contains a Version: line:
 
 >>> [CLI] selftest patchwhl readme-1.0-py3-none-any.whl
-Warn: Failed to patch whl: readme-1.0-py3-none-any.whl: unexpected version in METADATA: Version: 0.9 (expected 1.0)
+Warn: Patched whl: readme-1.0-py3-none-any.whl -> readme-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl
 
->>> unzip -p readme-1.0+*-py3-none-any.whl */METADATA
+>>> unzip -p readme-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl */METADATA
+Metadata-Version: 2.1
+Name: readme
+Version: 1.0+[UNIX_TIME_NANOS]
 
-Exit code: 9
+Changelog
+
+Version: 0.9
+- fixed bugs
 
 === Wheel whose description contains a Version: line equal to the version:
 
@@ -52,5 +66,5 @@ Version: 1.0+[UNIX_TIME_NANOS]
 
 Changelog
 
-Version: 1.0+[UNIX_TIME_NANOS]
+Version: 1.0
 - first release

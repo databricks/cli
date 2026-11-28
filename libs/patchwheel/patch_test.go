@@ -232,3 +232,87 @@ func TestNonZip(t *testing.T) {
 	require.NoError(t, err, "file must exist for this test")
 	errPatchWheel(t, "patch.go", tempDir)
 }
+
+func TestPatchMetadata(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		err      string
+	}{
+		{
+			name:     "headers only",
+			input:    "Metadata-Version: 2.1\nName: foo\nVersion: 1.0\n",
+			expected: "Metadata-Version: 2.1\nName: foo\nVersion: 1.0+1\n",
+		},
+		{
+			name:     "Version line in description is kept",
+			input:    "Name: foo\nVersion: 1.0\n\nVersion: 0.9\nVersion: 1.0\n",
+			expected: "Name: foo\nVersion: 1.0+1\n\nVersion: 0.9\nVersion: 1.0\n",
+		},
+		{
+			// bufio.ScanLines drops the \r, so the blank separator line is still empty.
+			name:     "CRLF line endings",
+			input:    "Name: foo\r\nVersion: 1.0\r\n\r\nVersion: 0.9\r\n",
+			expected: "Name: foo\nVersion: 1.0+1\n\nVersion: 0.9\n",
+		},
+		{
+			name:  "different version",
+			input: "Name: foo\nVersion: 2.0\n",
+			err:   "unexpected version in METADATA: Version: 2.0 (expected 1.0)",
+		},
+		{
+			name:  "no Version header",
+			input: "Name: foo\n\nVersion: 1.0\n",
+			err:   "expected one Version header in METADATA, found 0",
+		},
+		{
+			name:  "duplicate Version header",
+			input: "Name: foo\nVersion: 1.0\nVersion: 1.0\n",
+			err:   "expected one Version header in METADATA, found 2",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := patchMetadata(strings.NewReader(tc.input), "1.0", "1.0+1")
+			if tc.err != "" {
+				assert.EqualError(t, err, tc.err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, string(out))
+		})
+	}
+}
+
+func TestPatchRecord(t *testing.T) {
+	renamePath := func(name string) string {
+		if suffix, ok := strings.CutPrefix(name, "mypkg-1.0.dist-info/"); ok {
+			return "mypkg-1.0+1.dist-info/" + suffix
+		}
+		if suffix, ok := strings.CutPrefix(name, "mypkg-1.0.data/"); ok {
+			return "mypkg-1.0+1.data/" + suffix
+		}
+		return name
+	}
+	input := strings.Join([]string{
+		"mypkg/__init__.py,sha256=abc,0",
+		`"mypkg-1.0.data/data/a,b.txt",sha256=def,10`,
+		"  \t",
+		"",
+		"mypkg-1.0.dist-info/METADATA,sha256=old,5",
+		"short-row",
+		"mypkg-1.0.dist-info/RECORD,,",
+	}, "\r\n") + "\r\n"
+	expected := strings.Join([]string{
+		"mypkg/__init__.py,sha256=abc,0",
+		`"mypkg-1.0+1.data/data/a,b.txt",sha256=def,10`,
+		"mypkg-1.0+1.dist-info/METADATA,sha256=newhash,42",
+		"short-row",
+		"mypkg-1.0+1.dist-info/RECORD,,",
+	}, "\n") + "\n"
+
+	out, err := patchRecord(strings.NewReader(input), renamePath, "mypkg-1.0+1.dist-info/METADATA", "newhash", 42)
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(out))
+}

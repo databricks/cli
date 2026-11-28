@@ -5,6 +5,7 @@ title "Wheel with an executable file and a .data directory:"
 trace python3 list_wheel.py mypkg-1.0-py3-none-any.whl
 trace $CLI selftest patchwhl mypkg-1.0-py3-none-any.whl
 trace python3 list_wheel.py mypkg-1.0+*-py3-none-any.whl
+trace unzip -p mypkg-1.0+*-py3-none-any.whl '*.dist-info/RECORD'
 
 title "Wheel whose distribution name contains its version:"
 trace $CLI selftest patchwhl lib2-2-py3-none-any.whl
