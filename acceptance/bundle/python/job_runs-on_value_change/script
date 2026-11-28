@@ -1,0 +1,20 @@
+title "validate resolves watches from YAML, from Python and from a Python mutator"
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | jq .resources.job_runs
+
+title "first deploy runs both"
+trace uv run $UV_ARGS -q $CLI bundle deploy
+
+title "redeploy with unchanged values plans nothing"
+trace uv run $UV_ARGS -q $CLI bundle plan
+
+title "changing the variable watched in YAML and Python re-fires both runs"
+update_file.py databricks.yml "default: x1" "default: x2"
+trace uv run $UV_ARGS -q $CLI bundle plan
+trace uv run $UV_ARGS -q $CLI bundle deploy
+
+title "changing the variable the Python mutator watches re-fires both runs"
+update_file.py databricks.yml "default: y1" "default: y2"
+trace uv run $UV_ARGS -q $CLI bundle plan
+trace uv run $UV_ARGS -q $CLI bundle deploy
+
+rm -fr .databricks __pycache__

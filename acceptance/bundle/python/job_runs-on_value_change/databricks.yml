@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle
+
+sync: {paths: []} # don't need to copy files
+
+variables:
+  x:
+    default: x1
+  y:
+    default: y1
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:watch_y"
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    yaml_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_value_change: ${var.x}

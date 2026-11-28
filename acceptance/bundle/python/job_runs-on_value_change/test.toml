@@ -1,0 +1,7 @@
+Cloud = false # tests don't interact with APIs
+
+# job_runs are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# Both runs fire in parallel, so their progress lines interleave in any order.
+SuppressLines.run_output = '^Output from job_runs\.'
