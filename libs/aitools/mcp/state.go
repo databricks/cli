@@ -2,12 +2,16 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
@@ -27,8 +31,10 @@ var (
 	errProfileNoHost = errors.New("profile has no host")
 )
 
-// State is the MCP section of the aitools install state. It lives in the same file as
-// the skills state, so writers that save the whole file keep it.
+// State is the MCP install records. They live in a file of their own, ~/.databricks/aitools/mcp.json, so that a CLI
+// that does not know them never writes it. v1.28.0 kept them as a section of the skills state file, which the skills
+// installer of an older CLI writes back without the section; LoadState still reads that section when the file of
+// their own does not exist, and the first SaveState moves the records.
 type State = installer.MCPState
 
 // Entry is one installed server: a service bound to one profile for one set of agents.
@@ -54,31 +60,98 @@ type Drift struct {
 	NoHost bool
 }
 
-// LoadState reads the MCP section of the aitools state file. A missing file or section
-// yields an empty state.
-func LoadState(ctx context.Context) (*State, error) {
-	dir, err := installer.GlobalSkillsDir(ctx)
-	if err != nil {
-		return nil, err
-	}
-	mcp, err := installer.LoadMCPState(dir)
-	if err != nil {
-		return nil, err
-	}
-	if mcp == nil {
-		return &State{}, nil
-	}
-	return mcp, nil
+// recordsFileName is the file of the MCP install records, in ~/.databricks/aitools.
+const recordsFileName = "mcp.json"
+
+// recordsSchemaVersion is the schema version of the records file that this CLI writes. A file with a newer version is
+// refused: writing it back would drop what this CLI does not know.
+const recordsSchemaVersion = 1
+
+// recordsFile is the records file as it is on disk.
+type recordsFile struct {
+	SchemaVersion int     `json:"schema_version"`
+	Servers       []Entry `json:"servers"`
 }
 
-// SaveState replaces the MCP section of the aitools state file. The skills and plugins records
-// are kept as they are on disk, including those written since the caller's LoadState.
+// recordsPaths returns the path of the records file, and the directory of the skills state file that held the records
+// in v1.28.0.
+func recordsPaths(ctx context.Context) (path, skillsDir string, err error) {
+	skillsDir, err = installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	return filepath.Join(filepath.Dir(skillsDir), recordsFileName), skillsDir, nil
+}
+
+// readRecords reads the records file at path. It returns nil when the file does not exist.
+func readRecords(path string) (*State, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to read MCP records file: %w", err)
+	}
+	var file recordsFile
+	if err := json.Unmarshal(data, &file); err != nil {
+		return nil, &installer.StateError{Path: path, Err: fmt.Errorf("failed to parse MCP records file %s: %w", filepath.ToSlash(path), err)}
+	}
+	if file.SchemaVersion > recordsSchemaVersion {
+		return nil, &installer.StateError{Path: path, Err: fmt.Errorf("%s was written by a newer Databricks CLI (schema version %d, this CLI reads %d); upgrade the CLI to manage MCP servers", filepath.ToSlash(path), file.SchemaVersion, recordsSchemaVersion)}
+	}
+	return &State{Servers: file.Servers}, nil
+}
+
+// LoadState reads the MCP install records. When their file does not exist, it reads the section of the skills state
+// file that v1.28.0 wrote. No file and no section yield an empty state.
+func LoadState(ctx context.Context) (*State, error) {
+	path, skillsDir, err := recordsPaths(ctx)
+	if err != nil {
+		return nil, err
+	}
+	state, err := readRecords(path)
+	if err != nil || state != nil {
+		return state, err
+	}
+	legacy, err := installer.LoadMCPState(skillsDir)
+	if err != nil {
+		return nil, err
+	}
+	if legacy == nil {
+		return &State{}, nil
+	}
+	return legacy, nil
+}
+
+// SaveState writes the MCP install records to their file, and removes the file when no record is left. It then removes
+// the section that v1.28.0 wrote to the skills state file, so that those records are not read again once the file of
+// their own is gone. A records file that a newer CLI wrote is not written.
 func SaveState(ctx context.Context, state *State) error {
-	dir, err := installer.GlobalSkillsDir(ctx)
+	path, skillsDir, err := recordsPaths(ctx)
 	if err != nil {
 		return err
 	}
-	return installer.SaveMCPState(dir, state)
+	if _, err := readRecords(path); err != nil {
+		return err
+	}
+	if len(state.Servers) == 0 {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to remove MCP records file: %w", err)
+		}
+	} else {
+		data, err := json.MarshalIndent(recordsFile{SchemaVersion: recordsSchemaVersion, Servers: state.Servers}, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal MCP records: %w", err)
+		}
+		if err := atomicfile.Write(path, append(data, '\n'), 0o600, atomicfile.MkDir(0o755)); err != nil {
+			return err
+		}
+	}
+	legacy, err := installer.LoadMCPState(skillsDir)
+	if err != nil || legacy == nil {
+		return err
+	}
+	return installer.SaveMCPState(skillsDir, nil)
 }
 
 // EntryCheck is the result of checking one state entry. Drift is nil when the entry's profile still names the recorded

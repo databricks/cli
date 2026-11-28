@@ -18,56 +18,60 @@ Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but pro
 
 Exit code: 2
 
-=== A CLI older than v1.28.0 runs aitools uninstall
+=== A CLI older than v1.28.0 runs aitools install, then aitools uninstall
 
 >>> [CLI] aitools mcp list
 Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
   genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code, Cursor
 
-=== list shows the servers as not installed by this CLI
+>>> [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Claude Code, Cursor
+
+=== serve still refuses a profile that now points at another host
+
+>>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
+Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but profile "logfood" now points at [OTHER_HOST_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
+
+Exit code: 2
+
+=== remove takes the server out of both agent configs
+
+>>> [CLI] aitools mcp remove --names genie_one_mcp-logfood
+Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code, Cursor)
+
+>>> jq -c .mcpServers // {} | keys home/.claude.json
+[]
+
+>>> jq -c .mcpServers // {} | keys home/.cursor/mcp.json
+[]
+
+=== Records that v1.28.0 wrote into the skills state file are read from there, and the next add moves them
 
 >>> [CLI] aitools mcp list
-Unmanaged Databricks MCP entries (not changed by this command):
-  Claude Code    genie_one_mcp-logfood databricks aitools mcp serve, no install record
-    to adopt it, so that remove works, run `DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp add --names system.ai.genie_one_mcp --profile logfood --agents claude-code`
-  Cursor         genie_one_mcp-logfood databricks aitools mcp serve, no install record
-    to adopt it, so that remove works, run `DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp add --names system.ai.genie_one_mcp --profile logfood --agents cursor`
-
-=== remove finds no server, and the entries stay in both agent configs
-
->>> musterr [CLI] aitools mcp remove --names genie_one_mcp-logfood
-Error: no installed MCP server named genie_one_mcp-logfood; Claude Code has an entry named genie_one_mcp-logfood that runs aitools mcp serve with no install record. To adopt it, so that remove works, run `DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp add --names system.ai.genie_one_mcp --profile logfood --agents claude-code`
-
->>> [CLI] aitools mcp remove --all
-No Databricks MCP servers to remove.
-
->>> jq -c .mcpServers | keys home/.claude.json
-["genie_one_mcp-logfood"]
-
->>> jq -c .mcpServers | keys home/.cursor/mcp.json
-["genie_one_mcp-logfood"]
-
-=== serve starts for a profile that now points at another host
-{"id":1,"tools":[],"error":null}
-{"id":2,"tools":["echo"],"error":null}
-{"id":3,"tools":[],"error":null}
-
->>> cat LOG.stderr
-
->>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
-No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [OTHER_HOST_URL]
-
-=== This CLI saves a state file that a newer CLI wrote
-
->>> jq -c {schema_version, future_section} home/.databricks/aitools/skills/.state.json
-{"schema_version":4,"future_section":{"records":["written by a newer CLI"]}}
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
 Profile logfood ([DATABRICKS_URL])
 Agents (named with --agents): claude-code
 
 genie_one_mcp-logfood  system.ai.genie_one_mcp
-  claude-code  already installed, re-asserted  [TEST_TMP_DIR]/home/.claude.json
+  claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
 
->>> jq -c {schema_version, future_section} home/.databricks/aitools/skills/.state.json
-{"schema_version":4,"future_section":null}
+>>> jq -c {skills, has_mcp: has("mcp")} home/.databricks/aitools/skills/.state.json
+{"skills":{"databricks":"0.1.0"},"has_mcp":false}
+
+>>> jq -c {schema_version, servers: [.servers[] | {name, agents: (.agents | keys)}]} home/.databricks/aitools/mcp.json
+{"schema_version":1,"servers":[{"name":"genie_one_mcp-logfood","agents":["claude-code"]}]}
+
+=== A records file that a newer CLI wrote is refused, and left as it is
+
+>>> musterr [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI reads 1); upgrade the CLI to manage MCP servers
+
+>>> musterr [CLI] aitools mcp list
+Error: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.json was written by a newer Databricks CLI (schema version 2, this CLI reads 1); upgrade the CLI to manage MCP servers
+
+>>> jq -c {schema_version, future_section} home/.databricks/aitools/mcp.json
+{"schema_version":2,"future_section":{"records":["written by a newer CLI"]}}

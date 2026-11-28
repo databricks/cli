@@ -1,9 +1,17 @@
-# Isolate HOME so the agent config files and the state file land in this test directory.
+# Isolate HOME so the agent config files, the MCP records and the skills state file land in this test directory.
 sethome home
 mkdir -p home/.claude home/.cursor
 envsubst < .databrickscfg > out && mv out .databrickscfg
 export DATABRICKS_CONFIG_FILE=.databrickscfg
 state=home/.databricks/aitools/skills/.state.json
+records=home/.databricks/aitools/mcp.json
+
+# The records name the config file as the binary spells it. Git Bash's $PWD is /c/..., which the Windows binary does not
+# match, so there use pwd -W, as sethome does.
+case "$OSTYPE" in
+  msys*|cygwin*) cfgdir="$(pwd -W)" ;;
+  *) cfgdir="$PWD" ;;
+esac
 
 # The service, created in the fake workspace.
 MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
@@ -27,41 +35,60 @@ repoint
 trace errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson > LOG.stdout
 restore
 
-title "A CLI older than v1.28.0 runs aitools uninstall"
-# The MCP records are a section of the state file that the skills installer also writes. A CLI older than v1.28.0 does
-# not know the section: v1.27.0's aitools uninstall deletes a state file that holds no skills or plugins, and its
-# install, update and uninstall --skills write the file back without the section. No such binary is here, so the script
-# deletes the file, as v1.27.0's uninstall does.
+title "A CLI older than v1.28.0 runs aitools install, then aitools uninstall"
+# The MCP records have a file of their own, which a CLI older than v1.28.0 does not know. Its aitools install writes the
+# skills state file, and its aitools uninstall deletes that file. No such binary is here, so the script writes the file
+# as v1.27.0 does, and then deletes it.
+mkdir -p home/.databricks/aitools/skills
+echo '{"schema_version": 2, "release": "v0.1.0", "last_updated": "2026-01-01T00:00:00Z", "skills": {"databricks": "0.1.0"}}' > $state
 trace $CLI aitools mcp list
-rm -f $state
-
-title "list shows the servers as not installed by this CLI"
+rm $state
 trace $CLI aitools mcp list
 
-title "remove finds no server, and the entries stay in both agent configs"
-# Badness: this CLI wrote both entries, and it can no longer remove them. Each one has to be added again, per agent,
-# before remove takes it.
-trace musterr $CLI aitools mcp remove --names genie_one_mcp-logfood
-trace $CLI aitools mcp remove --all
-trace jq -c '.mcpServers | keys' home/.claude.json
-trace jq -c '.mcpServers | keys' home/.cursor/mcp.json
-
-title "serve starts for a profile that now points at another host"
-# Badness: the record held the host the server was added for. Without it serve takes the host the profile names now, so
-# the agent talks to another workspace than the one the user chose, with one line on stderr.
+title "serve still refuses a profile that now points at another host"
 repoint
-trace $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson 2> LOG.stderr | jq -Rsc "$frames"
-trace cat LOG.stderr
+trace errcode $CLI aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code < requests.ndjson > LOG.stdout
 restore
 
-title "This CLI saves a state file that a newer CLI wrote"
-# Undefined: what a CLI does with a state file whose schema version is newer than its own. This CLI reads it without a
-# version check and writes it back without the sections it does not know, which is how the older CLI above loses the
-# MCP records. The next section added to the file is lost the same way.
-# Adding the server again writes the record again, so there is a state file for the newer CLI to have written.
-$CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,cursor &> LOG.add-again
-jq '.schema_version = 4 | .future_section = {"records": ["written by a newer CLI"]}' $state > state.tmp
-mv state.tmp $state
-trace jq -c '{schema_version, future_section}' $state
+title "remove takes the server out of both agent configs"
+trace $CLI aitools mcp remove --names genie_one_mcp-logfood
+trace jq -c '.mcpServers // {} | keys' home/.claude.json
+trace jq -c '.mcpServers // {} | keys' home/.cursor/mcp.json
+
+title "Records that v1.28.0 wrote into the skills state file are read from there, and the next add moves them"
+cat > $state <<JSON
+{
+  "schema_version": 3,
+  "release": "v0.1.0",
+  "last_updated": "2026-01-01T00:00:00Z",
+  "skills": {"databricks": "0.1.0"},
+  "mcp": {
+    "servers": [
+      {
+        "name": "genie_one_mcp-logfood",
+        "service": "system.ai.genie_one_mcp",
+        "profile": "logfood",
+        "host": "$DATABRICKS_HOST",
+        "workspace_id": "",
+        "sign_in_required": false,
+        "command": "$CLI",
+        "config_file": "$cfgdir/.databrickscfg",
+        "agents": {},
+        "installed_at": "2026-01-01T00:00:00Z",
+        "cli_version": "1.28.0"
+      }
+    ]
+  }
+}
+JSON
+trace $CLI aitools mcp list
 trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
-trace jq -c '{schema_version, future_section}' $state
+trace jq -c '{skills, has_mcp: has("mcp")}' $state
+trace jq -c '{schema_version, servers: [.servers[] | {name, agents: (.agents | keys)}]}' $records
+
+title "A records file that a newer CLI wrote is refused, and left as it is"
+jq '.schema_version = 2 | .future_section = {"records": ["written by a newer CLI"]}' $records > records.tmp
+mv records.tmp $records
+trace musterr $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+trace musterr $CLI aitools mcp list
+trace jq -c '{schema_version, future_section}' $records

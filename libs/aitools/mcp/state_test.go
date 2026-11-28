@@ -84,10 +84,48 @@ func TestSaveStateThenLoadStateRoundTrips(t *testing.T) {
 	assert.Equal(t, saved, loaded)
 }
 
-// TestSaveStateKeepsInstallerRecords checks that an MCP save changes only the MCP section of the
-// shared file.
-func TestSaveStateKeepsInstallerRecords(t *testing.T) {
-	ctx, _ := stateTestCtx(t)
+// TestSaveStateLeavesSkillsStateFileAlone checks that an MCP save writes its own file and not the skills state file,
+// which a CLI that does not know the MCP records also writes.
+func TestSaveStateLeavesSkillsStateFileAlone(t *testing.T) {
+	ctx, path := stateTestCtx(t)
+	raw := `{"schema_version": 2, "release": "v0.2.0", "skills": {"databricks": "1.0.0"}}`
+	writeStateFile(t, path, raw)
+
+	require.NoError(t, mcp.SaveState(ctx, &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}))
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, raw, string(data))
+	records, err := os.ReadFile(filepath.Join(filepath.Dir(filepath.Dir(path)), "mcp.json"))
+	require.NoError(t, err)
+	var file map[string]any
+	require.NoError(t, json.Unmarshal(records, &file))
+	assert.EqualValues(t, 1, file["schema_version"])
+	assert.Len(t, file["servers"], 1)
+}
+
+// TestRecordsSurviveSkillsStateFileOfOlderCLI checks the reason the records have a file of their own: a CLI older than
+// v1.28.0 writes the skills state file back without the sections it does not know, or deletes it.
+func TestRecordsSurviveSkillsStateFileOfOlderCLI(t *testing.T) {
+	ctx, path := stateTestCtx(t)
+	saved := &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}
+	require.NoError(t, mcp.SaveState(ctx, saved))
+
+	writeStateFile(t, path, `{"schema_version": 2, "release": "v0.2.0", "skills": {}}`)
+	loaded, err := mcp.LoadState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, saved, loaded)
+
+	require.NoError(t, os.Remove(path))
+	loaded, err = mcp.LoadState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, saved, loaded)
+}
+
+// TestSaveStateMovesRecordsOfV1_28 checks the records that v1.28.0 wrote as a section of the skills state file: they are
+// read from there, and the first save moves them to their own file and keeps the installer's records.
+func TestSaveStateMovesRecordsOfV1_28(t *testing.T) {
+	ctx, path := stateTestCtx(t)
 	dir, err := installer.GlobalSkillsDir(ctx)
 	require.NoError(t, err)
 	original := &installer.InstallState{
@@ -95,39 +133,58 @@ func TestSaveStateKeepsInstallerRecords(t *testing.T) {
 		Release:       "v0.2.0",
 		LastUpdated:   time.Date(2026, 11, 12, 9, 0, 0, 0, time.UTC),
 		Skills:        map[string]string{"databricks": "1.0.0"},
-		RepoDirs:      map[string]string{"databricks": "skills"},
 		Scope:         installer.ScopeGlobal,
-		Plugins: map[string]installer.PluginRecord{
-			"claude-code": {Marketplace: "databricks", Plugin: "databricks", Scope: "user", Version: "1.0.0"},
-		},
-		Files: map[string]installer.FileRecord{
-			"databricks/SKILL.md": {SHA256: "abc123", Origin: "skills"},
-		},
 	}
 	require.NoError(t, installer.SaveState(dir, original))
+	legacy := &installer.MCPState{Servers: []installer.MCPEntry{stateTestEntry()}}
+	require.NoError(t, installer.SaveMCPState(dir, legacy))
 
-	require.NoError(t, mcp.SaveState(ctx, &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}))
-
-	loaded, err := installer.LoadState(dir)
+	loaded, err := mcp.LoadState(ctx)
 	require.NoError(t, err)
-	original.MCP = &installer.MCPState{Servers: []installer.MCPEntry{stateTestEntry()}}
-	assert.Equal(t, original, loaded)
+	assert.Equal(t, legacy, loaded)
+
+	loaded.Servers = append(loaded.Servers, stateTestEntryWith(stateTestOtherProfile, stateTestOtherHost, ""))
+	require.NoError(t, mcp.SaveState(ctx, loaded))
+
+	section, err := installer.LoadMCPState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, section, "the section is gone from the skills state file")
+	kept, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, original, kept)
+	reloaded, err := mcp.LoadState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, loaded, reloaded)
+
+	// Once the last record is removed, the records of the section must not come back.
+	require.NoError(t, mcp.SaveState(ctx, &mcp.State{}))
+	_, err = os.Stat(filepath.Join(filepath.Dir(dir), "mcp.json"))
+	require.ErrorIs(t, err, os.ErrNotExist)
+	empty, err := mcp.LoadState(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, empty.Servers)
+	_, err = os.Stat(path)
+	assert.NoError(t, err, "the skills state file still holds the installer's records")
 }
 
-// TestSaveStateUpgradesV2FileToV3 checks that the first MCP save on a v2 file writes schema v3.
-func TestSaveStateUpgradesV2FileToV3(t *testing.T) {
+// TestRecordsFileOfNewerCLIIsRefused checks that a records file with a newer schema version is neither read nor
+// written: writing it back would drop what this CLI does not know.
+func TestRecordsFileOfNewerCLIIsRefused(t *testing.T) {
 	ctx, path := stateTestCtx(t)
-	writeStateFile(t, path, `{"schema_version": 2, "release": "v0.2.0", "skills": {"databricks": "1.0.0"}}`)
+	records := filepath.Join(filepath.Dir(filepath.Dir(path)), "mcp.json")
+	raw := `{"schema_version": 2, "servers": [], "future": {"records": 1}}`
+	writeStateFile(t, records, raw)
 
-	require.NoError(t, mcp.SaveState(ctx, &mcp.State{Servers: []mcp.Entry{stateTestEntry()}}))
+	_, err := mcp.LoadState(ctx)
+	_, isStateError := errors.AsType[*installer.StateError](err)
+	require.True(t, isStateError, "got %v", err)
+	assert.Contains(t, err.Error(), "newer Databricks CLI")
 
-	data, err := os.ReadFile(path)
-	require.NoError(t, err)
-	var raw map[string]any
-	require.NoError(t, json.Unmarshal(data, &raw))
-	assert.EqualValues(t, 3, raw["schema_version"])
-	assert.Equal(t, map[string]any{"databricks": "1.0.0"}, raw["skills"])
-	assert.Contains(t, raw, "mcp")
+	err = mcp.SaveState(ctx, &mcp.State{Servers: []mcp.Entry{stateTestEntry()}})
+	require.Error(t, err)
+	data, readErr := os.ReadFile(records)
+	require.NoError(t, readErr)
+	assert.Equal(t, raw, string(data))
 }
 
 // stateTestProfiles is the profiles file used by the drift tests. The profiles named
