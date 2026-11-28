@@ -1,8 +1,8 @@
 // Package agentconfig reads and writes the user-scope MCP server entries of
 // coding agents. The direct writer changes only the bytes of the one entry it is
 // asked to change, writes the file back atomically, and keeps comments and layout
-// elsewhere in the file. An add or remove that the agent's own CLI makes (see
-// cli.go) leaves the file in the layout that the CLI writes.
+// elsewhere in the file. An add that the agent's own CLI makes (see cli.go)
+// leaves the file in the layout that the CLI writes.
 package agentconfig
 
 import (
@@ -222,8 +222,8 @@ func Changed(a *agents.Agent, current map[string]any, cmd string, args []string,
 // RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
 // false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
 // the file an entry was written to, and the agent's config may have moved since. A missing file has no entry. The direct
-// writer removes the entry, so that the check of who wrote it and the removal happen under one lock: an agent's CLI
-// removes whatever entry holds the name when it runs.
+// writer removes the entry, so that the check of who wrote it and the removal are one edit, under the agent's lock
+// where the agent has one: an agent's CLI removes whatever entry holds the name when it runs.
 func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err

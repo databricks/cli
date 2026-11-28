@@ -64,6 +64,7 @@ github  system.ai.github
 
 >>> cat second-add.txt
 Error: another databricks aitools mcp add or remove is running; run this command again when it finishes: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.lock: held by another CLI process
+Exit code: 1
 
 >>> jq -c .mcpServers | map_values(.args) home/.claude.json
 {"github":["aitools","mcp","serve","--profile","logfood","--service","system.ai.github","--agent","claude-code"]}

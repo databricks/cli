@@ -22,7 +22,6 @@ import (
 const (
 	cliMCP        = "mcp"
 	cliAdd        = "add"
-	cliRemove     = "remove"
 	cliScopeFlag  = "--scope"
 	cliUserScope  = "user"
 	cliEndOfFlags = "--"

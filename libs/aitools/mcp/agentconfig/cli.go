@@ -31,8 +31,8 @@ var runCLI = func(ctx context.Context, c cliCommand) error {
 	return runWithTimeout(ctx, cliTimeout, c)
 }
 
-// cliTimeout bounds one add or remove. Each one edits a single config file and reads no input. A Node-based CLI can take
-// seconds to start, so the bound is generous; it keeps a CLI that hangs from holding up add or remove.
+// cliTimeout bounds one add. It edits a single config file and reads no input. A Node-based CLI can take
+// seconds to start, so the bound is generous; it keeps a CLI that hangs from holding up add.
 const cliTimeout = 30 * time.Second
 
 // cliWaitDelay bounds how long a run waits for the output of the CLI once the CLI has exited or been killed. A launcher
