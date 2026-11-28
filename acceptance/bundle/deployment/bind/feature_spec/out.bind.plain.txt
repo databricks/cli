@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle deployment bind spec1 main.fspec_[UNIQUE_NAME].boundspec --auto-approve
+Successfully bound feature_spec with an id 'main.fspec_[UNIQUE_NAME].boundspec'
+Run 'bundle deploy' to deploy changes to your workspace

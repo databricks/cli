@@ -1,3 +1,9 @@
+# Keep history warnings in separate outputs.
+EnvMatrix.OUTPUT_MODE = ["plain", "recorded"]
+EnvMatrixExclude.plain_history = ["DMS=true", "OUTPUT_MODE=plain"]
+EnvMatrixExclude.recorded_without_history = ["DMS=", "OUTPUT_MODE=recorded"]
+EnvVaryOutput = "OUTPUT_MODE"
+
 Ignore = [
     ".databricks",
 ]

@@ -7,8 +7,11 @@ echo "Warn: Could not read deployment history: response body: stream error: stre
 echo "Warn: Could not delete deployment history: response body: stream error: stream ID 7; INTERNAL_ERROR; received from peer"
 echo "Warn: Failed to record deployment history: context deadline exceeded"
 
+echo "Warn: Failed to record deployment history for bind: unexpected EOF"
+
 # Kept: errors the service returns, and transport errors outside deployment history.
 echo "Warn: Could not enable deployment history for this deploy: failed to create deployment: "
 echo "Warn: Could not enable deployment history for this deploy: failed to create deployment version: operations.resource_key must have a known resource type"
 echo "Warn: Failed to complete deployment history version: Internal error"
 echo "Error: cannot create resources.secrets.foo: response body: stream error: stream ID 73; INTERNAL_ERROR; received from peer"
+echo "Warn: Failed to record deployment history for bind: operations.resource_key must have a known resource type"

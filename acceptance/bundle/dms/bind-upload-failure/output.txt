@@ -1,0 +1,46 @@
+
+=== A remote state upload failure fails the bind version
+
+>>> fault.py POST /api/2.0/workspace-files/import-file/**resources.json 400 0 1
+
+>>> musterr [CLI] bundle deployment bind upload_failed [JOB_ID] --auto-approve
+Error: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Fdms-bind-upload-failure-[UNIQUE_NAME]%2Fdefault%2Fstate%2Fresources.json?overwrite=true
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+>>> print_requests.py --dms //complete --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/4/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+
+=== Remote state still contains only the successful bindings
+
+>>> [CLI] bundle summary -o json
+{
+  "history_failed": null,
+  "kept": "[JOB_ID]",
+  "upload_failed": null
+}
+
+=== A history upload failure only warns the bind, but fails its version: the service holds no record of the binding
+
+>>> fault.py PATCH /api/2.0/bundle/deployments/*/versions/*/operations/* 500 0 1
+
+>>> [CLI] bundle deployment bind history_failed [JOB_ID] --auto-approve
+Warn: Failed to record deployment history for bind: recording operation for resources.jobs.history_failed: Fault injected by test.
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> print_requests.py --dms //complete --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+
+=== Remote state contains the binding whose history upload failed
+
+>>> [CLI] bundle summary -o json
+{
+  "history_failed": "[JOB_ID]",
+  "kept": "[JOB_ID]",
+  "upload_failed": null
+}

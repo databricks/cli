@@ -7,17 +7,25 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 type BindOptions struct {
@@ -26,6 +34,12 @@ type BindOptions struct {
 	Group       string
 	ResourceKey string
 	ResourceId  string
+}
+
+// bindingHistory keeps the recorder alive through the remote state upload.
+type bindingHistory struct {
+	name   string
+	buffer *dms.OperationBuffer
 }
 
 func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *statemgmt.StateDesc) {
@@ -37,7 +51,12 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	var history *bindingHistory
+	var historyErr error
 	defer func() {
+		// As deploy's CompleteVersion does, a failed history upload fails the version even though the
+		// bind itself succeeded: the service does not hold what the state file does.
+		completeBindingHistory(ctx, b, history, historyErr == nil && !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -114,7 +133,31 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	history, historyErr = recordBindHistory(ctx, b, resourceKey, result.DMSMetadata)
+	if historyErr != nil {
+		log.Warnf(ctx, "Failed to record deployment history for bind: %s", historyErr)
+	}
+
 	statemgmt.PushResourcesState(ctx, b)
+}
+
+// completeBindingHistory completes the recorded version after the remote state upload.
+func completeBindingHistory(ctx context.Context, b *bundle.Bundle, history *bindingHistory, success bool) {
+	if history == nil {
+		return
+	}
+	history.buffer.Stop()
+	reason := bundledeployments.VersionCompleteVersionCompleteFailure
+	if success {
+		reason = bundledeployments.VersionCompleteVersionCompleteSuccess
+	}
+	_, err := b.WorkspaceClient(ctx).BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
+		Name:             history.name,
+		CompletionReason: reason,
+	})
+	if err != nil {
+		log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+	}
 }
 
 func jsonDump(ctx context.Context, v any, field string) string {
@@ -154,4 +197,89 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
+}
+
+// recordBindHistory publishes a committed binding when DMS metadata was requested.
+func recordBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string, metadata *direct.DMSBindMetadata) (*bindingHistory, error) {
+	if metadata == nil {
+		return nil, nil
+	}
+	entry := metadata.ResourceState
+	state, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+	if err != nil {
+		return nil, err
+	}
+	history, err := createBindingVersion(ctx, b, metadata.Serial, []bundledeployments.StagedOperation{{
+		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
+		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
+	}})
+	if err != nil {
+		return nil, err
+	}
+	history.buffer.RecordOperation(ctx, resourceKey, false, entry.ID, state)
+	return history, history.buffer.Drain(ctx)
+}
+
+// createBindingVersion claims a history version for the staged binding operations.
+func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, staged []bundledeployments.StagedOperation) (*bindingHistory, error) {
+	w := b.WorkspaceClient(ctx)
+	deploymentID, current, err := dms.FetchDeployment(ctx, w, b.Config.Workspace.StatePath)
+	if err != nil {
+		return nil, err
+	}
+	previous := ""
+	if current != nil {
+		previous = current.LastVersionId
+	}
+	next, err := dms.NextVersion(previous)
+	if err != nil {
+		return nil, err
+	}
+	// Deploy owns existing metadata; binding does not publish pending config changes.
+	if current == nil {
+		deployment := deploymentMetadataForBind(b).Deployment()
+		deployment.InitialParentPath = b.Config.Workspace.StatePath
+		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: deployment})
+		if err != nil {
+			deploymentID = recoverCreatedDeployment(ctx, b, err)
+			if deploymentID == "" {
+				return nil, fmt.Errorf("failed to create deployment: %w", err)
+			}
+		} else {
+			deploymentID, err = dms.DeploymentIDFromName(created.Name)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	// The bind already bumped the serial, so that is this version's number unless the service is
+	// further ahead; it never falls behind either counter.
+	versionID := max(next, serial)
+	versionInfo := bundledeployments.Version{
+		CliVersion:        build.GetInfo().Version,
+		VersionType:       dms.VersionTypeDeploy,
+		PreviousVersionId: previous,
+		Operations:        staged,
+	}
+	if git := b.Config.Bundle.Git; git.Branch != "" || git.Commit != "" || git.OriginURL != "" {
+		versionInfo.GitInfo = &bundledeployments.GitInfo{Branch: git.Branch, Commit: git.Commit, OriginUrl: git.OriginURL}
+	}
+	version, err := w.BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
+		Parent:    dms.DeploymentName(deploymentID),
+		VersionId: strconv.Itoa(versionID),
+		Version:   versionInfo,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create deployment version: %w", err)
+	}
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	}
+	return &bindingHistory{
+		name: version.Name,
+		buffer: dms.StartOperationBuffer(ctx, deploymentID, versionID, dms.BufferOptions{
+			BestEffort:           true,
+			StagedOperationCount: len(staged),
+		}),
+	}, nil
 }
