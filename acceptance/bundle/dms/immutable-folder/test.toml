@@ -1,5 +1,8 @@
 # The immutable folder API is not available against a real workspace yet.
 Cloud = false
+# The fake snapshots API stores the snapshot in the testserver workspace, which Litebox's
+# workspace fake cannot see, so the recorded path reads as deleted there.
+Litebox = false
 
 EnvMatrix.READPLAN = ["", "1"]
 

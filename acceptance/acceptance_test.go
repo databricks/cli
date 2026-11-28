@@ -461,8 +461,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
+	liteboxConfigured := false
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t, LogRequests)
+		liteboxConfigured = internal.DMSLiteboxConfigured(t)
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", testserver.TestDefaultWarehouseId)
 		}
@@ -636,7 +638,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, namedTests.Exact(dir))
+			skipReason := getSkipReason(&config, configPath, namedTests.Exact(dir), liteboxConfigured)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -773,7 +775,7 @@ func isSelectedVariant(changedTests map[string][]string, namedTests selection.Na
 // Return a reason to skip the test. Empty string means "don't skip". named is set for a test
 // the last commit message names by its own name (not by a path above it), which runs on cloud
 // even if it is CloudSlow.
-func getSkipReason(config *internal.TestConfig, configPath string, named bool) string {
+func getSkipReason(config *internal.TestConfig, configPath string, named, liteboxConfigured bool) string {
 	if Forcerun {
 		return ""
 	}
@@ -785,6 +787,10 @@ func getSkipReason(config *internal.TestConfig, configPath string, named bool) s
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
+	}
+
+	if liteboxConfigured && config.Litebox != nil && !*config.Litebox {
+		return "Disabled via Litebox setting in " + configPath
 	}
 
 	cloudEnv := os.Getenv("CLOUD_ENV")

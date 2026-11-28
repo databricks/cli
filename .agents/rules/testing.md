@@ -24,7 +24,7 @@ Tests live in `acceptance/`, one directory per test, with sources (`script`, `te
 - Useful flags: `-v`, `-tail` (follow output, needs `-v`), `-logrequests` (log HTTP traffic, needs `-v`).
 - Run on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>`.
 
-**RULE: `Cloud = true` adds a cloud run; it never removes the local run.** Every test under `acceptance/` runs locally against the fake server in `libs/testserver`. The `Cloud*` settings (`CloudSlow`, `CloudEnvs`) only narrow the cloud run. What skips a test *locally* is `GOOS`, `RunsOnDbr` and `DATABRICKS_TEST_SELECT_CHANGED`. Since `Cloud` is inherited, read `out.test.toml`, not the leaf `test.toml`, for a test's effective settings.
+**RULE: `Cloud = true` adds a cloud run; it never removes the local run.** Every test under `acceptance/` runs locally against the fake server in `libs/testserver`. The `Cloud*` settings (`CloudSlow`, `CloudEnvs`) only narrow the cloud run. What skips a test *locally* is `GOOS`, `RunsOnDbr`, `Litebox` (only when local DMS connection settings are found) and `DATABRICKS_TEST_SELECT_CHANGED`. Since `Cloud` is inherited, read `out.test.toml`, not the leaf `test.toml`, for a test's effective settings.
 
 **RULE: Never edit generated output files directly; regenerate them with `-update` (or `./task test-update`).** Exception: a predictable mass string replacement that is much cheaper than re-running the suite. After regenerating, run `./task fmt` and `./task lint`; if they modify files in `acceptance/`, fix the source and regenerate.
 

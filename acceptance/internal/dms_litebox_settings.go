@@ -18,6 +18,12 @@ type dmsLiteboxSettings struct {
 	CA   string `json:"ca"`
 }
 
+// DMSLiteboxConfigured reports whether local DMS connection settings were found.
+func DMSLiteboxConfigured(t *testing.T) bool {
+	t.Helper()
+	return loadDMSLiteboxSettings(t) != nil
+}
+
 func loadDMSLiteboxSettings(t *testing.T) *dmsLiteboxSettings {
 	t.Helper()
 	acceptanceDir, err := os.Getwd()

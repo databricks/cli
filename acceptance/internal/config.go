@@ -56,6 +56,10 @@ type TestConfig struct {
 	// This also sets -tail when -v is passed. It does not enable the cloud run on its own.
 	CloudSlow *bool
 
+	// If false, skip this test when Litebox serves DMS and the workspace API.
+	// Unlike Cloud, an unset value means the test runs.
+	Litebox *bool
+
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
 
