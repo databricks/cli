@@ -209,6 +209,20 @@ func newIntValue(i64 int64, loc diag.Location) dyn.Value {
 }
 
 func (d *loader) loadScalar(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
+	v, err := d.resolveScalar(node, loc)
+	if err != nil {
+		return v, err
+	}
+	switch v.Kind() {
+	case dyn.KindInt, dyn.KindFloat:
+		// Keep the source text for string fields, e.g. a policy id "0012345678901234".
+		return v.WithSourceText(node.Value), nil
+	default:
+		return v, nil
+	}
+}
+
+func (d *loader) resolveScalar(node *yaml.Node, loc diag.Location) (dyn.Value, error) {
 	st := node.ShortTag()
 	switch st {
 	case "!!str":

@@ -13,18 +13,18 @@
     "version": 3.1
   },
   "max_concurrent_runs": 10,
-  "policy_id": "12345678901234",
+  "policy_id": "0012345678901234",
   "base_parameters": {
-    "exponent": "12345678901000000000000000000000000000000000000000000",
+    "exponent": "12345678901E0042",
     "from_env": "0012345678901234",
     "from_flag": "0012345678901234",
-    "interpolated": "id-1.2345678901234e+13",
-    "interpolated_int": "id-42",
-    "interpolated_version": "v3.1",
-    "leading_zero": "12345678901234",
-    "leading_zero_int": "42",
+    "interpolated": "id-0012345678901234",
+    "interpolated_int": "id-0042",
+    "interpolated_version": "v3.10",
+    "leading_zero": "0012345678901234",
+    "leading_zero_int": "0042",
     "quoted": "0012345678901234",
-    "target_override": "12345678901234",
-    "version": "3.1"
+    "target_override": "0012345678901234",
+    "version": "3.10"
   }
 }

@@ -90,3 +90,23 @@ func TestIsZero(t *testing.T) {
 	assert.True(t, dyn.V([]dyn.Value{}).IsZero(), "Sequence")
 	assert.False(t, dyn.V([]dyn.Value{dyn.V(0)}).IsZero(), "Sequence")
 }
+
+func TestValueSourceText(t *testing.T) {
+	v := dyn.V(42).WithSourceText("0042")
+	for _, w := range []dyn.Value{
+		v,
+		v.WithLocations([]diag.Location{{File: "file"}}),
+		v.AppendLocationsFromValue(dyn.V(1)),
+		v.MarkAnchor(),
+	} {
+		text, ok := w.SourceText()
+		assert.True(t, ok)
+		assert.Equal(t, "0042", text)
+	}
+
+	// Only numbers report source text.
+	_, ok := dyn.V("0042").WithSourceText("0042").SourceText()
+	assert.False(t, ok)
+	_, ok = dyn.V(true).WithSourceText("True").SourceText()
+	assert.False(t, ok)
+}

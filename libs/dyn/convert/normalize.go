@@ -333,6 +333,10 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	if text, ok := src.SourceText(); ok {
+		return dyn.NewValue(text, src.Locations()), nil
+	}
+
 	switch src.Kind() {
 	case dyn.KindString:
 		return dyn.NewValue(src.MustString(), src.Locations()), nil

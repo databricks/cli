@@ -1,7 +1,6 @@
 # Unquoted scalars that YAML resolves to a number, bool or timestamp, used in
 # string-typed fields. Each value is written twice: unquoted and quoted ("q_").
-# The quoted value is kept verbatim; the unquoted one is converted from the
-# resolved number and may not match the source text.
+# Both must keep the source text verbatim.
 bundle:
   name: yaml-numeric-strings
 

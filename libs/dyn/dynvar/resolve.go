@@ -164,7 +164,7 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
+		return resolved[0].WithLocations(ref.Value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.
@@ -184,6 +184,9 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 
 		// Try to turn the resolved value into a string.
 		s, ok := resolved[j].AsString()
+		if !ok {
+			s, ok = resolved[j].SourceText()
+		}
 		if !ok {
 			// Only allow primitive types to be converted to string.
 			switch resolved[j].Kind() {
