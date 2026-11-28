@@ -1,0 +1,12 @@
+# Older CLIs resolve my_user_ to my_userqc, the name created here.
+trace $CLI bundle deploy
+trace $CLI bundle summary -o json | jq .resources.schemas.qc.id
+add_repl "$($CLI schemas get main.my_userqc | jq -r .schema_id)" SCHEMA_ID
+trace $CLI bundle plan
+
+title "A corrected prefix plans to rename the existing schema"
+trace update_file.py databricks.yml "name_prefix: my_user" "name_prefix: my_user_"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI schemas get main.my_user_qc | jq '{full_name, schema_id}'
+trace $CLI bundle plan

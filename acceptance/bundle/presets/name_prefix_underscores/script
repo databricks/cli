@@ -1,0 +1,3 @@
+trace $CLI bundle validate -o json -t trailing | jq '{schema: .resources.schemas.qc.name, model: .resources.registered_models.model.name, endpoint: .resources.model_serving_endpoints.endpoint.name}'
+trace $CLI bundle validate -o json -t repeated | jq '{schema: .resources.schemas.qc.name, model: .resources.registered_models.model.name, endpoint: .resources.model_serving_endpoints.endpoint.name}'
+trace $CLI bundle validate -o json -t generated | jq '{schema: .resources.schemas.qc.name, model: .resources.registered_models.model.name, endpoint: .resources.model_serving_endpoints.endpoint.name}'

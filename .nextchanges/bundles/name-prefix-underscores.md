@@ -1,0 +1,1 @@
+* Fix underscores in custom `presets.name_prefix` for schemas, registered models, and serving endpoints; affected schemas can rename in place, while registered models and serving endpoints can be recreated, so inspect `bundle plan` and references before deploying. ([#7287](https://github.com/databricks/cli/pull/7287))

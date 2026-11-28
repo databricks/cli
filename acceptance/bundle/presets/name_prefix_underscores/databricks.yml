@@ -1,0 +1,25 @@
+bundle:
+  name: name_prefix_underscores
+
+resources:
+  schemas:
+    qc:
+      name: qc
+      catalog_name: my_catalog
+  registered_models:
+    model:
+      name: model
+  model_serving_endpoints:
+    endpoint:
+      name: endpoint
+
+targets:
+  trailing:
+    default: true
+    presets:
+      name_prefix: ${workspace.current_user.short_name}_
+  repeated:
+    presets:
+      name_prefix: team__${workspace.current_user.short_name}__
+  generated:
+    mode: development
