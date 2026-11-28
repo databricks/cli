@@ -217,9 +217,24 @@ func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	assert.NotContains(t, stdout.String(), "Skills come from")
 }
 
+func TestRunListBundledCatalogOmitsFetchTime(t *testing.T) {
+	catalog := &libskills.Catalog{
+		Label:   "bundled",
+		Version: "1.2.3",
+		Stale:   true,
+		Skills:  []libskills.Skill{{Name: "alpha", Description: "First."}},
+	}
+
+	cmd, stdout, stderr := listTestCmd(t, flags.OutputText)
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
+	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the skills may be out of date.\n",
+		stderr.String())
+	assert.NotContains(t, stdout.String(), "Skills come from")
+}
+
 func TestProvenanceLineOmitsUnknownFetchTime(t *testing.T) {
 	catalog := &libskills.Catalog{Label: "bundled", Version: "1.2.3", Stale: true}
-	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the list may be out of date.",
+	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the skills may be out of date.",
 		provenanceLine(catalog))
 }
 

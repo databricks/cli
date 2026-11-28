@@ -77,15 +77,16 @@ func visibleSkills(all []libskills.Skill, experimental bool) []libskills.Skill {
 	return list
 }
 
-// provenanceLine says where a stale catalog came from. A bundled copy has no
-// fetch time, so the line leaves it out rather than print the zero time.
+// provenanceLine says where a stale catalog came from, for `skills list` and
+// `skills read` alike. A bundled copy has no fetch time, so the line leaves it
+// out rather than print the zero time.
 func provenanceLine(catalog *libskills.Catalog) string {
 	label := filepath.ToSlash(catalog.Label)
 	if catalog.FetchedAt.IsZero() {
-		return fmt.Sprintf("Skills come from %s (release %s). The source could not be refreshed, so the list may be out of date.",
+		return fmt.Sprintf("Skills come from %s (release %s). The source could not be refreshed, so the skills may be out of date.",
 			label, catalog.Version)
 	}
-	return fmt.Sprintf("Skills come from %s (release %s, fetched %s). The source could not be refreshed, so the list may be out of date.",
+	return fmt.Sprintf("Skills come from %s (release %s, fetched %s). The source could not be refreshed, so the skills may be out of date.",
 		label, catalog.Version, catalog.FetchedAt.Format(time.RFC3339))
 }
 
