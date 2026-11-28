@@ -39,14 +39,22 @@ Resource: resources.jobs.my_job
 
 >>> errcode as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
-Created jobs.my_job.permissions
+Error: cannot create resources.jobs.my_job.permissions: [TEST_SP_APPLICATION_ID] does not have Manage permissions on Jobs: only workspace admins can change the owner of a job. Please contact the owner or an administrator for access. (403 PERMISSION_DENIED)
+
+Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/jobs/[MY_JOB_ID]
+HTTP Status: 403 Forbidden
+API error_code: PERMISSION_DENIED
+API message: [TEST_SP_APPLICATION_ID] does not have Manage permissions on Jobs: only workspace admins can change the owner of a job. Please contact the owner or an administrator for access.
+
 Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+Exit code: 1
 
 === The job's ACL after the deploy
 
+CAN_MANAGE [TEST_SP_APPLICATION_ID]
 CAN_VIEW users
-IS_OWNER [TEST_SP_APPLICATION_ID]
+IS_OWNER [USERNAME]
 
 >>> as-test-sp [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

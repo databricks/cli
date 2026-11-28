@@ -8,6 +8,7 @@ trap cleanup EXIT
 title "The service principal deploys a job that declares no permissions"
 trace as-test-sp $CLI bundle deploy
 job_id=$(as-test-sp $CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+add_repl "$job_id" MY_JOB_ID
 
 title "The job's ownership is transferred to the current identity, outside the bundle\n"
 $CLI permissions set jobs $job_id --json '{"access_control_list":[

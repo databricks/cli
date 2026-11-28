@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -108,6 +109,29 @@ func (s *FakeWorkspace) guestHasJobAccess(jobId int64, principal string) bool {
 		}
 	}
 	return false
+}
+
+// jobOwner returns the principal with IS_OWNER in a job's ACL or, while no owner was set
+// explicitly, the job's creator. Call with s.mu held.
+func (s *FakeWorkspace) jobOwner(jobId int64) string {
+	for _, acl := range s.Permissions[fmt.Sprintf("/jobs/%d", jobId)].AccessControlList {
+		for _, p := range acl.AllPermissions {
+			if p.PermissionLevel == "IS_OWNER" {
+				return cmp.Or(acl.UserName, acl.ServicePrincipalName)
+			}
+		}
+	}
+	return s.Jobs[jobId].CreatorUserName
+}
+
+// requestedOwner returns the principal a permissions update makes the owner, if any.
+func requestedOwner(update iam.UpdateObjectPermissions) string {
+	for _, acl := range update.AccessControlList {
+		if acl.PermissionLevel == "IS_OWNER" {
+			return cmp.Or(acl.UserName, acl.ServicePrincipalName)
+		}
+	}
+	return ""
 }
 
 // GetPermissions retrieves permissions for a given object type and ID
@@ -235,6 +259,18 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		return Response{
 			StatusCode: 400,
 			Body:       map[string]string{"message": fmt.Sprintf("Failed to parse permissions update: %s", err)},
+		}
+	}
+
+	// Only a workspace admin can change the owner of a job (verified against the backend). The
+	// primary identity is treated as an admin; an as-test-sp guest that is not the owner is not.
+	if requestObjectType == "jobs" && isGuestToken(req.Token) {
+		caller := userForToken(req.Token).UserName
+		if jobId, err := strconv.ParseInt(objectId, 10, 64); err == nil {
+			owner := s.jobOwner(jobId)
+			if owner != "" && owner != caller && requestedOwner(updateRequest) != owner {
+				return jobPermissionDenied(caller + " does not have Manage permissions on Jobs: only workspace admins can change the owner of a job. Please contact the owner or an administrator for access.")
+			}
 		}
 	}
 

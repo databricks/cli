@@ -8,6 +8,7 @@ trap cleanup EXIT
 title "The current identity deploys a job that declares no permissions"
 trace $CLI bundle deploy
 job_id=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+add_repl "$job_id" MY_JOB_ID
 
 title "The service principal and a group are granted access to the job, outside the bundle\n"
 $CLI permissions set jobs $job_id --json '{"access_control_list":[
@@ -20,8 +21,9 @@ print_acl jobs $job_id
 title "The current identity runs config-remote-sync"
 sync_and_show_diff
 
-# Undefined: whether a deploy by another identity than the one that synced may take the job's
-# ownership. Before the sync wrote a permissions block, such a deploy left the ACL alone.
+# Undefined: whether a deploy by another identity than the one that synced may ask for the job's
+# ownership. It fails unless that identity is a workspace admin, who would become the owner.
+# Before the sync wrote a permissions block, such a deploy left the ACL alone.
 title "The service principal takes over the deployment and deploys the synced config"
 trace errcode as-test-sp $CLI bundle deploy
 
