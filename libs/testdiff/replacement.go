@@ -91,14 +91,29 @@ func (r *ReplacementsContext) append(pattern *regexp.Regexp, replacement string,
 }
 
 func (r *ReplacementsContext) appendLiteral(old, new string, order int) {
+	// Transform the input strings such that they can be used as literal strings in regular expressions.
+	pattern := regexp.QuoteMeta(old)
+	// A short numeric id (Litebox allocates two-digit ones) would otherwise also match inside a
+	// longer alphanumeric run, such as a UUID segment, and cut it up.
+	if isAllDigits(old) {
+		pattern = `\b` + pattern + `\b`
+	}
 	r.append(
-		// Transform the input strings such that they can be used as literal strings in regular expressions.
-		regexp.MustCompile(regexp.QuoteMeta(old)),
+		regexp.MustCompile(pattern),
 		// Transform the replacement string such that `$` is interpreted as a literal dollar sign.
 		// For more information about how the replacement string is used, see [regexp.Regexp.Expand].
 		strings.ReplaceAll(new, `$`, `$$`),
 		order,
 	)
+}
+
+func isAllDigits(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return s != ""
 }
 
 func (r *ReplacementsContext) Set(old, new string) {

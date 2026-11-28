@@ -14,6 +14,28 @@ func TestReplacement_Literal(t *testing.T) {
 	assert.Equal(t, `[replacement]`, repls.Replace(`foobar`))
 }
 
+func TestReplacement_NumericLiteralIsWordBounded(t *testing.T) {
+	tests := []struct {
+		name, literal, input, want string
+	}{
+		{"path segment", "21", "deployments/21", "deployments/[ID]"},
+		{"quoted", "21", `"21"`, `"[ID]"`},
+		{"inside a uuid", "21", "842521b7-a159-4c21-849b-24f82c5ce190", "[UUID]"},
+		{"inside a longer number", "21", "3210 1213", "3210 1213"},
+		{"next to a word character", "21", "job_21 v21", "job_21 v21"},
+		{"timestamp field still matches", "21", "10:21:05", "10:[ID]:05"},
+		{"non-numeric literal matches anywhere", "ab", "cabd", "c[ID]d"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var repls ReplacementsContext
+			repls.SetWithOrder(tc.literal, "[ID]", -100)
+			PrepareReplacementsUUID(t, &repls)
+			assert.Equal(t, tc.want, repls.Replace(tc.input))
+		})
+	}
+}
+
 func TestReplacement_Encoded(t *testing.T) {
 	var repls ReplacementsContext
 

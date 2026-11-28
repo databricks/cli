@@ -28,6 +28,18 @@ def read_entries():
     return result
 
 
+def literal_pattern(value):
+    r"""Mirror appendLiteral in libs/testdiff: a short numeric id must not match inside UUIDs.
+
+    >>> literal_pattern("21")
+    '\\b21\\b'
+    >>> literal_pattern("a.1")
+    'a\\.1'
+    """
+    pattern = re.escape(value)
+    return rf"\b{pattern}\b" if re.fullmatch("[0-9]+", value) else pattern
+
+
 def read_repls():
     """Return (pattern, replacement, distinct) tuples in application order."""
     entries = []
@@ -45,8 +57,8 @@ def read_repls():
         # values with quotes or backslashes are replaced inside JSON output as well.
         encoded = json.dumps(literal, ensure_ascii=False)[1:-1]
         if encoded != literal:
-            entries.append((order, re.escape(encoded), new, False))
-        entries.append((order, re.escape(literal), new, False))
+            entries.append((order, literal_pattern(encoded), new, False))
+        entries.append((order, literal_pattern(literal), new, False))
 
     # Stable sort: replacements with the same order are applied in the order they were added.
     entries.sort(key=lambda entry: entry[0])
