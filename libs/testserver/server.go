@@ -66,8 +66,9 @@ type Server struct {
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
-	kills  *killRules
-	faults *FaultRules
+	kills        *killRules
+	faults       *FaultRules
+	requestFault requestFault
 
 	sqlHandler *testsql.Handler
 
@@ -84,6 +85,9 @@ type Request struct {
 	Workspace *FakeWorkspace
 	Context   context.Context
 	Token     string
+
+	// InjectedFault is the kind of the fault set with SetRequestFault that this request gets, or "".
+	InjectedFault string
 }
 
 type Response struct {
@@ -366,9 +370,15 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 	request := NewRequest(s.t, r, fakeWorkspace)
 	request.Vars = vars
 	request.Token = token
+	request.InjectedFault = s.requestFault.next(r.Method, r.URL.Path)
 
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
+	}
+
+	if request.InjectedFault != "" && !faultRunsHandler(request.InjectedFault) {
+		s.writeRequestFault(w, &request, request.InjectedFault, EncodedResponse{})
+		return
 	}
 
 	var resp EncodedResponse
@@ -398,17 +408,30 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 		}
 	}
 
+	if request.InjectedFault != "" {
+		s.writeRequestFault(w, &request, request.InjectedFault, resp)
+		return
+	}
+
+	s.writeResponse(w, &request, resp)
+}
+
+func (s *Server) writeResponse(w http.ResponseWriter, request *Request, resp EncodedResponse) {
 	maps.Copy(w.Header(), resp.Headers)
 
 	w.WriteHeader(resp.StatusCode)
 
-	if s.ResponseCallback != nil {
-		s.ResponseCallback(&request, &resp)
-	}
+	s.notifyResponse(request, resp)
 
 	if _, err := w.Write(resp.Body); err != nil {
 		s.t.Errorf("Failed to write response: %s", err)
 		return
+	}
+}
+
+func (s *Server) notifyResponse(request *Request, resp EncodedResponse) {
+	if s.ResponseCallback != nil {
+		s.ResponseCallback(request, &resp)
 	}
 }
 

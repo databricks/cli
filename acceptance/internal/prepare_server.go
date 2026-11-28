@@ -198,7 +198,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	// If we are not recording requests, and no custom server stubs are configured,
 	// use the default shared server.
-	if len(config.Server) == 0 && !recordRequests {
+	if len(config.Server) == 0 && !recordRequests && !FaultMode() {
 		cfg := &sdkconfig.Config{
 			Host:  env.Get(t.Context(), "DATABRICKS_DEFAULT_HOST"),
 			Token: token,
@@ -225,6 +225,10 @@ type requestRecorder struct {
 	t              *testing.T
 	includeHeaders []string
 	outputDir      string
+	// onlyInjected treats only requests failed by a planned request fault as failed attempts,
+	// not every transient status: a testserver stub that answers with an error does so on
+	// purpose, and its goldens show every attempt.
+	onlyInjected bool
 
 	mu sync.Mutex
 	// entries holds what was written for requests still waiting for a response; nil unless
@@ -354,8 +358,9 @@ func isTransientStatus(status int) bool {
 // not repeated stays recorded. Before it repeats a failed create, the CLI reads the resource to
 // see whether the request created it anyway; a read answered with 404 is dropped with the failed
 // attempt. A read that finds the resource stays recorded, since no repeat follows, and ends the
-// recovery. Only the proxy uses this: the testserver answers with an error only when a test
-// injects one, and its goldens show that.
+// recovery. The proxy uses this, and so does the testserver when a planned request fault (see
+// request_fault.go) fails a request: otherwise the testserver answers with an error only when a
+// test injects one, and its goldens show that.
 func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -365,7 +370,11 @@ func (r *requestRecorder) noteResponse(request *testserver.Request, response *te
 	if !ok {
 		return
 	}
-	if isTransientStatus(response.StatusCode) {
+	failed := isTransientStatus(response.StatusCode)
+	if r.onlyInjected {
+		failed = request.InjectedFault != ""
+	}
+	if failed {
 		r.failed[entry]++
 		if request.Method == http.MethodPost {
 			// The id of the resource a create names travels in a query parameter such as project_id.
@@ -424,15 +433,37 @@ func startLocalServer(t *testing.T,
 ) string {
 	s := testserver.New(t)
 
+	var planned *PlannedFault
+	if FaultMode() {
+		planned = setupRequestFault(t, s)
+	}
+
+	var responseCallbacks []func(request *testserver.Request, response *testserver.EncodedResponse)
+
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
 	if recordRequests {
-		s.RequestCallback = newRequestRecorder(t, includeHeaders, outputDir, false).record
+		// With a fault planned, the CLI repeats the failed request, and the failed attempt is
+		// dropped from out.requests.txt as on cloud, so the test's goldens still apply.
+		recorder := newRequestRecorder(t, includeHeaders, outputDir, planned != nil)
+		s.RequestCallback = recorder.record
+		if planned != nil {
+			recorder.onlyInjected = true
+			responseCallbacks = append(responseCallbacks, recorder.noteResponse)
+		}
 	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = logResponseCallback(t)
+		responseCallbacks = append(responseCallbacks, logResponseCallback(t))
+	}
+
+	if len(responseCallbacks) > 0 {
+		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			for _, callback := range responseCallbacks {
+				callback(request, response)
+			}
+		}
 	}
 
 	for ind := range stubs {

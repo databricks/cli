@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
@@ -86,6 +87,8 @@ func init() {
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
+	flag.StringVar(&internal.FaultPlanPath, "faultplan", "", "Fail one request per test as planned in this JSON file and skip the tests it does not list (see acceptance/internal/request_fault.go, tools/fault_sweep.py)")
+	flag.StringVar(&internal.FaultLogPath, "faultlog", "", "Append each test's request count and injected fault to this file as JSON lines")
 	flag.BoolVar(&DebugSandbox, "debugsandbox", false, "Use a per-test blocking proxy instead of a shared one; shows exactly which test caused unexpected internet access (slower)")
 }
 
@@ -243,6 +246,14 @@ func requirePrerequisites(t *testing.T) bool {
 func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
+	}
+
+	if internal.FaultMode() {
+		// Outputs under injected faults must not become goldens, and a real workspace cannot be
+		// made to fail a chosen request.
+		require.False(t, testdiff.OverwriteMode, "-faultplan and -faultlog cannot be combined with -update")
+		require.Empty(t, os.Getenv("CLOUD_ENV"), "-faultplan and -faultlog only work against the local testserver")
+		require.NoError(t, internal.LoadFaultPlan())
 	}
 
 	repls := testdiff.ReplacementsContext{}
@@ -890,6 +901,10 @@ func runTest(t *testing.T,
 	testEnv := buildTestEnv(config.Env, customEnv)
 	checkEnvFilters(t, testEnv, envFilters)
 
+	if reason := internal.FaultPlanSkipReason(t); reason != "" {
+		t.Skip(reason)
+	}
+
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
 		require.NoError(t, err)
@@ -1066,6 +1081,11 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "COMMAND_TIMER_DISABLE=1")
 	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull)
 	cmd.Env = append(cmd.Env, "GIT_CONFIG_SYSTEM="+os.DevNull)
+
+	if _, ok := internal.FaultPlanned(t); ok {
+		// The CLI's own retries (libs/retry) pause 15s; a test's Env can still override this.
+		cmd.Env = append(cmd.Env, retry.IntervalMsVariable+"=100")
+	}
 
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
