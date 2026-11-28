@@ -1,0 +1,31 @@
+
+=== skills list under a coding agent: the event and the calling agent are uploaded
+
+>>> [CLI] skills list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+>>> print_skills
+{"calling_agent":"CLAUDE_CODE","command":"LIST","catalog_release_version":"0.0.1","source":"FOLDER","outcome":"SUCCEEDED"}
+
+=== skills read from a folder: the name is not sent, the release version and the source are
+
+>>> [CLI] skills read guide-skill
+
+>>> print_skills
+{"calling_agent":null,"command":"READ","catalog_release_version":"0.0.1","source":"FOLDER","outcome":"SUCCEEDED"}
+
+=== a failed read sends the error category and the version
+
+>>> [CLI] skills read no-such-skill
+Error: unknown skill "no-such-skill": run "databricks skills list" to see the available skills
+
+>>> print_skills
+{"calling_agent":null,"command":"READ","catalog_release_version":"0.0.1","source":"FOLDER","outcome":"FAILED","error_category":"SKILL_NOT_FOUND"}
+
+=== with telemetry disabled, nothing is uploaded
+
+>>> [CLI] skills read guide-skill
+
+>>> print_skills
+
+=== output is the same with telemetry on and off

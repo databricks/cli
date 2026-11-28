@@ -23,4 +23,5 @@ func buildCommand(_ context.Context, cmd *cobra.Command) {
 	cmd.AddCommand(newListFilesCmd())
 	cmd.AddCommand(newReadFileCmd())
 	cmd.AddCommand(newSearchCmd())
+	recordRuns(cmd)
 }

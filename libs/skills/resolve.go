@@ -17,13 +17,14 @@ const dirEnv = "DATABRICKS_SKILLS_DIR"
 var ErrNoSource = errors.New("no skills source is available in this build")
 
 // Resolve returns the source that serves skills. For now that is the folder in
-// DATABRICKS_SKILLS_DIR, when it is set. Otherwise no source is available.
+// DATABRICKS_SKILLS_DIR, when it is set. Otherwise no source is available. On a
+// context from WithRecord, the source records what it reads into the Record.
 func Resolve(ctx context.Context) (Source, error) {
 	dir := env.Get(ctx, dirEnv)
 	if dir == "" {
 		return nil, ErrNoSource
 	}
-	return NewFSSource(os.DirFS(dir), filepath.ToSlash(dir)), nil
+	return record(ctx, NewFSSource(os.DirFS(dir), filepath.ToSlash(dir)), OriginFolder), nil
 }
 
 // LocalCatalog returns the freshest catalog that needs no network call. For now

@@ -1,0 +1,36 @@
+# The skills come from the shared release fixture, a local folder, so no skill name is ever sent.
+export DATABRICKS_SKILLS_DIR=$TESTROOT/cmd/skills/release
+unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
+
+# print_skills prints the skills events uploaded since its last call; print_requests.py clears them.
+print_skills() {
+    if [ -f "$OUT_REQUESTS" ]; then
+        print_requests.py --oneline //telemetry-ext | jq -c '.body.protoLogs[] | fromjson
+            | .entry.databricks_cli_log
+            | select(.skills_command_event != null)
+            | {calling_agent: .execution_context.calling_agent} + .skills_command_event'
+    fi
+}
+
+title "skills list under a coding agent: the event and the calling agent are uploaded"
+export CLAUDECODE=1
+trace $CLI skills list > LOG.list
+trace print_skills
+unset CLAUDECODE
+
+title "skills read from a folder: the name is not sent, the release version and the source are"
+trace $CLI skills read guide-skill > LOG.read
+trace print_skills
+
+title "a failed read sends the error category and the version"
+musterr trace $CLI skills read no-such-skill
+trace print_skills
+
+title "with telemetry disabled, nothing is uploaded"
+DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI skills read guide-skill > LOG.disabled
+trace print_skills
+
+title "output is the same with telemetry on and off"
+$CLI skills list > LOG.on
+DATABRICKS_CLI_DISABLE_TELEMETRY=1 $CLI skills list > LOG.off
+diff LOG.on LOG.off

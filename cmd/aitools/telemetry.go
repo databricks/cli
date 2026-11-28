@@ -23,7 +23,7 @@ import (
 // background auth resolution its telemetry upload needs. A resolution still
 // unfinished when the run ends and the budget has passed drops the events.
 // Matches the upload's own default timeout. A run waits only once its command
-// asks for it (telemetryAuth.waitAtExit).
+// asks for it (TelemetryAuth.WaitAtExit).
 var telemetryAuthBudget = 3 * time.Second
 
 // resolveTelemetryAuthFn resolves auth onto cmd's context. A seam for tests.
@@ -32,26 +32,26 @@ var resolveTelemetryAuthFn = func(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-// telemetryAuth is the best-effort auth resolution of one command run.
-type telemetryAuth struct {
+// TelemetryAuth is the best-effort auth resolution of one command run.
+type TelemetryAuth struct {
 	pending *pendingAuth
 
-	// waitAtExit is whether the end of the run waits for an unfinished
+	// WaitAtExit is whether the end of the run waits for an unfinished
 	// resolution (within telemetryAuthBudget). False by default: the
 	// telemetry uploads only if the resolution has already finished, so a run
 	// that ends early stays instant. RunE sets it once the run has gone far
 	// enough to be worth the wait.
-	waitAtExit bool
+	WaitAtExit bool
 }
 
-// withTelemetryAuth makes cmd resolve auth best-effort so its telemetry can
+// WithTelemetryAuth makes cmd resolve auth best-effort so its telemetry can
 // upload at exit: PreRunE starts the resolution in the background, and RunE's
 // wrapper uses it if it has finished, or waits for it within
-// telemetryAuthBudget once RunE sets waitAtExit on the returned value. Nothing
+// telemetryAuthBudget once RunE sets WaitAtExit on the returned value. Nothing
 // is resolved when telemetry is disabled. The command never fails or prompts
 // because of it.
-func withTelemetryAuth(cmd *cobra.Command) *telemetryAuth {
-	auth := &telemetryAuth{}
+func WithTelemetryAuth(cmd *cobra.Command) *TelemetryAuth {
+	auth := &TelemetryAuth{}
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		auth.pending = startTelemetryAuth(cmd, args)
 		return nil
@@ -59,7 +59,7 @@ func withTelemetryAuth(cmd *cobra.Command) *telemetryAuth {
 	runE := cmd.RunE
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		err := runE(cmd, args)
-		auth.pending.apply(cmd, auth.waitAtExit)
+		auth.pending.apply(cmd, auth.WaitAtExit)
 		return err
 	}
 	return auth
@@ -292,12 +292,12 @@ func scopeType(scope string) protos.AitoolsInstallScope {
 // waitForTelemetryAuth, once the run gets past its cheap early exits.
 func instrumentCommand(cmd *cobra.Command, command protos.AitoolsCommand) *cobra.Command {
 	runE := withCommandFunnel(command, cmd.RunE)
-	var auth *telemetryAuth
+	var auth *TelemetryAuth
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		cmd.SetContext(context.WithValue(cmd.Context(), telemetryAuthKey{}, auth))
 		return runE(cmd, args)
 	}
-	auth = withTelemetryAuth(cmd)
+	auth = WithTelemetryAuth(cmd)
 	return cmd
 }
 
@@ -308,5 +308,5 @@ type telemetryAuthKey struct{}
 // confirmation. Only the RunE of a command wrapped by instrumentCommand calls
 // it.
 func waitForTelemetryAuth(ctx context.Context) {
-	ctx.Value(telemetryAuthKey{}).(*telemetryAuth).waitAtExit = true
+	ctx.Value(telemetryAuthKey{}).(*TelemetryAuth).WaitAtExit = true
 }

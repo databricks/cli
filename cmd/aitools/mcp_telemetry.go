@@ -109,6 +109,12 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 	return protos.AitoolsMcpServiceOtherSystem
 }
 
+// CallingAgentType returns the agent that drives the CLI, Unspecified when none is detected. The skills commands
+// report it as their calling agent too.
+func CallingAgentType() protos.AitoolsAgentType {
+	return callingAgentType()
+}
+
 // callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.
 func callingAgentType() protos.AitoolsAgentType {
 	a := agents.CallingAgent()

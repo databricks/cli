@@ -289,6 +289,7 @@ func TelemetryExecutionContext(cmd *cobra.Command, start time.Time, exitCode int
 	return protos.ExecutionContext{
 		CmdExecID:        cmdctx.ExecId(ctx),
 		StateLineageHash: telemetry.StateLineageHash(ctx),
+		CallingAgent:     telemetry.CallingAgent(ctx),
 		Version:          build.GetInfo().Version,
 		Command:          commandString(cmd),
 		OperatingSystem:  runtime.GOOS,
