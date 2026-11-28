@@ -1,0 +1,24 @@
+# A plain deploy sends the value the config resolves to. A saved plan must send the same value, so the
+# create requests of the two deploys are compared. The API needs the values, so they are read from the
+# request log only and never appear in CLI output.
+# The catalog name is not a secret, so only the escaped variable value is checked for in the output.
+SECRETS=('!escaped-')
+CREATES='select(.method == "POST" and .path == "/api/2.1/unity-catalog/secrets") | {name: .body.name, value: .body.value}'
+
+title "plain deploy"
+trace $CLI bundle deploy | contains.py "${SECRETS[@]}"
+jq -c "$CREATES" < "$OUT_REQUESTS" | sort > .databricks/plain.json
+
+title "bundle destroy, then a saved plan"
+trace $CLI bundle destroy --auto-approve | contains.py "${SECRETS[@]}"
+$CLI bundle plan -o json | contains.py "${SECRETS[@]}" > .databricks/plan.json
+trace jq -S '.plan | map_values(.new_state)' .databricks/plan.json
+
+title "deploy from the saved plan"
+before=$(wc -l < "$OUT_REQUESTS")
+trace $CLI bundle deploy --plan .databricks/plan.json | contains.py "${SECRETS[@]}"
+tail -n +$((before+1)) "$OUT_REQUESTS" | jq -c "$CREATES" | sort > .databricks/saved.json
+
+title "create requests of the plain deploy and the saved plan match"
+cat .databricks/plain.json
+diff .databricks/plain.json .databricks/saved.json

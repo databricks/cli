@@ -1,0 +1,45 @@
+# The values of the sensitive variables must not appear in any CLI output, the saved plan or the
+# local state. The request log is checked for the real values instead, since the API needs them.
+SECRETS=('!dummy-credential' '!dummy-header')
+ROTATED=dummy-rotated
+
+title "bundle plan (text)"
+trace $CLI bundle plan | contains.py "${SECRETS[@]}"
+
+title "bundle plan -o json, saved to a file"
+$CLI bundle plan -o json | contains.py "${SECRETS[@]}" > .databricks/plan.json
+trace jq -S '.plan | map_values(.new_state)' .databricks/plan.json
+
+title "deploy from the saved plan without the sensitive variable"
+musterr trace env -u BUNDLE_VAR_api_header $CLI bundle deploy --plan .databricks/plan.json
+
+# An empty value counts as missing. The deploy reads the workspace before the check, and the number of
+# those reads differs per DMS variant, so only the state-changing requests are counted.
+title "deploy from the saved plan with an empty sensitive variable"
+before=$(wc -l < "$OUT_REQUESTS")
+musterr trace env BUNDLE_VAR_api_credential= $CLI bundle deploy --plan .databricks/plan.json
+echo "state-changing requests sent by the failed deploy: $(tail -n +$((before+1)) "$OUT_REQUESTS" | jq -s 'map(select(.method != "GET" and .path != "/telemetry-ext")) | length')"
+
+title "deploy from the saved plan with the sensitive variables supplied"
+trace $CLI bundle deploy --plan .databricks/plan.json | contains.py "${SECRETS[@]}"
+
+# A plain deploy sends the values from the state cache, a different path from the saved plan.
+title "bundle destroy, then a plain bundle deploy creates the secrets again"
+trace $CLI bundle destroy --auto-approve | contains.py "${SECRETS[@]}"
+trace $CLI bundle deploy | contains.py "${SECRETS[@]}"
+
+title "bundle plan -o json after deploy: remote_state holds the marker"
+$CLI bundle plan -o json | contains.py "${SECRETS[@]}" > .databricks/plan-after.json
+trace jq -S '.plan | map_values(.remote_state.value)' .databricks/plan-after.json
+
+# Rotating a value: the saved plan is applied with the new value, which only the PATCH may carry.
+title "rotate the plain secret: plan and deploy with a new value"
+BUNDLE_VAR_api_header=$ROTATED $CLI bundle plan -o json | contains.py "${SECRETS[@]}" "!$ROTATED" > .databricks/plan-rotate.json
+BUNDLE_VAR_api_header=$ROTATED $CLI bundle deploy --plan .databricks/plan-rotate.json | contains.py "${SECRETS[@]}" "!$ROTATED"
+
+title "requests carrying a secret literal: path, name and value"
+jq -c --arg rotated "$ROTATED" 'select(tostring | contains("dummy-credential") or contains("dummy-header") or contains($rotated)) | {path, name: .body.name, value: .body.value}' < "$OUT_REQUESTS" | sort
+
+# The state dump differs per DMS variant, so only the match is checked, not the output.
+title "no secret value in the local state (the dump differs per DMS variant, so it is not shown)"
+find .databricks -type f -exec cat {} + | contains.py "${SECRETS[@]}" "!$ROTATED" > /dev/null

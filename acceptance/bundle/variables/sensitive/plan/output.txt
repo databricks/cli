@@ -1,0 +1,103 @@
+
+=== bundle plan (text)
+
+>>> [CLI] bundle plan
+create catalogs.audit_catalog
+create secrets.plain_secret
+create secrets.ref_secret
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== bundle plan -o json, saved to a file
+
+>>> jq -S .plan | map_values(.new_state) .databricks/plan.json
+{
+  "resources.catalogs.audit_catalog": {
+    "value": {
+      "name": "audit_catalog"
+    }
+  },
+  "resources.secrets.plain_secret": {
+    "value": {
+      "catalog_name": "main",
+      "name": "plain_secret",
+      "schema_name": "default",
+      "value": "[redacted]"
+    }
+  },
+  "resources.secrets.ref_secret": {
+    "value": {
+      "catalog_name": "audit_catalog",
+      "name": "ref_secret",
+      "schema_name": "default",
+      "value": "[redacted]"
+    }
+  }
+}
+
+=== deploy from the saved plan without the sensitive variable
+
+>>> env -u BUNDLE_VAR_api_header [CLI] bundle deploy --plan .databricks/plan.json
+Error: no value assigned to required variable api_header. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_api_header environment variable, or .databricks/bundle/<target>/variable-overrides.json
+
+
+=== deploy from the saved plan with an empty sensitive variable
+
+>>> env BUNDLE_VAR_api_credential= [CLI] bundle deploy --plan .databricks/plan.json
+Error: resource resources.secrets.ref_secret: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>
+
+state-changing requests sent by the failed deploy: 0
+
+=== deploy from the saved plan with the sensitive variables supplied
+
+>>> [CLI] bundle deploy --plan .databricks/plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sensitive-variables/default/files...
+Created catalogs.audit_catalog
+Created secrets.plain_secret
+Created secrets.ref_secret
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== bundle destroy, then a plain bundle deploy creates the secrets again
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.audit_catalog
+  delete resources.secrets.plain_secret
+  delete resources.secrets.ref_secret
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/sensitive-variables/default
+
+Destroy: 3 deleted
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sensitive-variables/default/files...
+Created catalogs.audit_catalog
+Created secrets.plain_secret
+Created secrets.ref_secret
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== bundle plan -o json after deploy: remote_state holds the marker
+
+>>> jq -S .plan | map_values(.remote_state.value) .databricks/plan-after.json
+{
+  "resources.catalogs.audit_catalog": null,
+  "resources.secrets.plain_secret": "[redacted]",
+  "resources.secrets.ref_secret": "[redacted]"
+}
+
+=== rotate the plain secret: plan and deploy with a new value
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sensitive-variables/default/files...
+Updated secrets.plain_secret
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+=== requests carrying a secret literal: path, name and value
+{"path":"/api/2.1/unity-catalog/secrets","name":"plain_secret","value":"dummy-header"}
+{"path":"/api/2.1/unity-catalog/secrets","name":"plain_secret","value":"dummy-header"}
+{"path":"/api/2.1/unity-catalog/secrets","name":"ref_secret","value":"dummy-credential"}
+{"path":"/api/2.1/unity-catalog/secrets","name":"ref_secret","value":"dummy-credential"}
+{"path":"/api/2.1/unity-catalog/secrets/main.default.plain_secret","name":"plain_secret","value":"dummy-rotated"}
+
+=== no secret value in the local state (the dump differs per DMS variant, so it is not shown)

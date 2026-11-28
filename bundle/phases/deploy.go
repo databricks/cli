@@ -292,7 +292,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan, &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
