@@ -280,6 +280,11 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 	// embed could pick a field three levels down over the same name two levels down in a
 	// later one -- and then reading or writing the field would not be the field serialized
 	// under that name.
+	//
+	// seen visits each embedded type once, as encoding/json's typeFields does. Without it a
+	// struct embedding a pointer to itself would enqueue the same type forever whenever the
+	// key is not found at all.
+	seen := map[reflect.Type]bool{v.Type(): true}
 	level := embeddedStructs(v)
 	for len(level) > 0 {
 		var next []reflect.Value
@@ -287,7 +292,13 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 			if out, sf, found := findFieldInStruct(fv, key); found {
 				return out, sf, fv, true
 			}
-			next = append(next, embeddedStructs(fv)...)
+			for _, deeper := range embeddedStructs(fv) {
+				if seen[deeper.Type()] {
+					continue
+				}
+				seen[deeper.Type()] = true
+				next = append(next, deeper)
+			}
 		}
 		level = next
 	}
