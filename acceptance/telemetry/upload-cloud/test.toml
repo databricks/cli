@@ -1,0 +1,2 @@
+# Whether the real endpoint accepts the logs is a backend fact: run on every cloud.
+Cloud = true

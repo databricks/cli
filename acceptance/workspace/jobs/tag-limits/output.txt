@@ -1,0 +1,7 @@
+key with characters outside the pattern: rejected
+key with non-latin1 characters: rejected
+empty key: rejected
+valid key: accepted, stored tags: {"cafe":"value"}
+value café: rejected on aws and gcp, accepted on azure
+value with non-latin1 characters: rejected
+valid value: accepted, stored tags: {"key":"cafe"}

@@ -1,0 +1,41 @@
+# The real /telemetry-ext endpoint accepts the CLI's frontend logs. Locally the
+# parent test.toml stubs the endpoint with the same response.
+# A host that disables telemetry would upload nothing.
+unset DATABRICKS_CLI_DISABLE_TELEMETRY
+
+# A shared workspace can throttle /telemetry-ext past every retry because of other
+# CI runs. That says nothing about whether the endpoint accepts these logs: skip.
+skip_if_throttled() {
+    if grep -q 'HTTP/1.1 429' "$1"; then
+        echo "SKIP_TEST: /telemetry-ext is rate limited on this workspace"
+        exit 0
+    fi
+}
+
+title "raw response to two test events"
+# The response body as the API returns it: every log a success, an empty error list.
+event() {
+    jq -cn --arg id "$(uuid)" --arg name "$1" '{frontend_log_event_id: $id, entry: {databricks_cli_log: {cli_test_event: {name: $name}}}}'
+}
+jq -n --arg a "$(event VALUE1)" --arg b "$(event VALUE2)" --argjson t "$(date +%s)000" \
+    '{uploadTime: $t, items: [], protoLogs: [$a, $b]}' > body.json
+printf "\n>>> [CLI] api post /telemetry-ext --json @body.json\n"
+# Git Bash would rewrite the /telemetry-ext argument as a Windows path.
+if ! MSYS_NO_PATHCONV=1 $CLI api post /telemetry-ext --json @body.json --debug > response.json 2> LOG.api; then
+    skip_if_throttled LOG.api
+    cat LOG.api >&2
+    exit 1
+fi
+jq '{errors, numProtoSuccess}' response.json
+rm body.json response.json
+
+title "the CLI's own upload"
+# The upload makes one attempt per retry, so a throttled endpoint shows up as a 429
+# in the debug log. A generous timeout avoids a timeout retry.
+export DATABRICKS_CLI_TELEMETRY_TIMEOUT=30
+$CLI selftest send-telemetry --debug 2> LOG.upload
+if ! grep -q 'uploaded successfully' LOG.upload; then
+    skip_if_throttled LOG.upload
+fi
+contains.py 'All 2 logs uploaded successfully' < LOG.upload > /dev/null
+echo "All 2 logs uploaded successfully"

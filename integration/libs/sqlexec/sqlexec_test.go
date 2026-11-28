@@ -34,24 +34,6 @@ func TestSQLExecScalar(t *testing.T) {
 	assert.Equal(t, "1", got)
 }
 
-func TestSQLExecColumnsAndRows(t *testing.T) {
-	wt, c := newClient(t)
-	r, err := c.Execute(wt.Context(), "SELECT id, id * 2 AS doubled FROM range(3) ORDER BY id")
-	require.NoError(t, err)
-	assert.Equal(t, []string{"id", "doubled"}, r.Columns)
-	assert.Equal(t, [][]string{{"0", "0"}, {"1", "2"}, {"2", "4"}}, r.Rows)
-}
-
-func TestSQLExecParameters(t *testing.T) {
-	wt, c := newClient(t)
-	r, err := c.Execute(wt.Context(), "SELECT :n AS n, :s AS s", sqlexec.WithParameters([]sql.StatementParameterListItem{
-		{Name: "n", Type: "INT", Value: "42"},
-		{Name: "s", Value: "hello"},
-	}))
-	require.NoError(t, err)
-	assert.Equal(t, [][]string{{"42", "hello"}}, r.Rows)
-}
-
 func TestSQLExecNullParameter(t *testing.T) {
 	wt, c := newClient(t)
 	// An empty value is sent as SQL NULL (StatementParameterListItem.Value is omitempty).
@@ -73,28 +55,4 @@ func TestSQLExecFailedStatement(t *testing.T) {
 	// The API populates status.sql_state (SQLSTATE) on failures, e.g. 42P01 for
 	// a missing relation; assert it survives into the typed error.
 	assert.NotEmpty(t, se.SQLState)
-}
-
-func TestSQLExecSubmitAndCancel(t *testing.T) {
-	wt, c := newClient(t)
-	ctx := wt.Context()
-	// Submit returns immediately with the statement ID so we can cancel it.
-	stmt, err := c.Submit(ctx, "SELECT count(*) FROM range(100000000000)")
-	require.NoError(t, err)
-	require.NotEmpty(t, stmt.ID)
-
-	require.NoError(t, c.Cancel(ctx, stmt.ID))
-
-	// The cancel is best-effort; poll to a terminal state and accept either a
-	// CANCELED statement or one that finished before the cancel landed.
-	stmt, err = c.Poll(ctx, stmt)
-	require.NoError(t, err)
-	if stmt.State == sql.StatementStateCanceled {
-		require.Error(t, stmt.Err())
-		var se *sqlexec.StatementError
-		require.ErrorAs(t, stmt.Err(), &se)
-		assert.Equal(t, sql.StatementStateCanceled, se.State)
-	} else {
-		assert.Equal(t, sql.StatementStateSucceeded, stmt.State)
-	}
 }

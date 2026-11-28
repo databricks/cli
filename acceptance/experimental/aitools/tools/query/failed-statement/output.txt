@@ -1,0 +1,6 @@
+query failed: BAD_REQUEST [TABLE_OR_VIEW_NOT_FOUND], SQLSTATE: 42P01
+
+=== statement on the wire
+
+>>> print_requests.py //api/2.0/sql/statements
+SELECT * FROM a_table_that_does_not_exist_zzz

@@ -1,0 +1,9 @@
+
+>>> [CLI] experimental aitools tools query --output csv --param n:INT=42 --param s=hello SELECT :n AS n, :s AS s
+n,s
+42,hello
+
+=== statement on the wire
+
+>>> print_requests.py //api/2.0/sql/statements
+{"statement":"SELECT :n AS n, :s AS s","parameters":[{"name":"n","type":"INT","value":"42"},{"name":"s","value":"hello"}]}

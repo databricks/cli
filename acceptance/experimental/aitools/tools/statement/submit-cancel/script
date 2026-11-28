@@ -1,0 +1,20 @@
+# Submit returns at once with a PENDING statement, which the cancel then stops.
+# Locally the testserver's SQL fake tracks the statement and its cancellation.
+trace $CLI experimental aitools tools statement submit "SELECT count(*) FROM range(100000000000)" > out.submit.json
+cat out.submit.json
+STATEMENT_ID=$(jq -r .statement_id out.submit.json)
+add_repl "$STATEMENT_ID" STATEMENT_ID
+rm out.submit.json
+
+trace $CLI experimental aitools tools statement cancel "$STATEMENT_ID"
+
+# Cancel is best-effort: a statement that finished before the cancel landed leaves
+# nothing to check. Otherwise get polls to the terminal state, CANCELED.
+if $CLI experimental aitools tools statement get "$STATEMENT_ID" > LOG.get; then
+    echo "SKIP_TEST: the statement finished before the cancel landed: $(jq -r .state LOG.get)"
+    exit 0
+fi
+musterr trace $CLI experimental aitools tools statement get "$STATEMENT_ID"
+
+title "cancel request"
+print_requests.py --summary //cancel

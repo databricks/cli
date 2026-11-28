@@ -1,0 +1,8 @@
+# The real message goes on with advice and the workspace's search path; keep the
+# stable parts: error code, error class, the relation and the SQLSTATE.
+musterr $CLI experimental aitools tools query --output csv "SELECT * FROM a_table_that_does_not_exist_zzz" 2> LOG.query
+contains.py 'query failed: BAD_REQUEST [TABLE_OR_VIEW_NOT_FOUND] The table or view `a_table_that_does_not_exist_zzz` cannot be found' 'SQLSTATE: 42P01' < LOG.query > /dev/null
+echo "query failed: BAD_REQUEST [TABLE_OR_VIEW_NOT_FOUND], SQLSTATE: 42P01"
+
+title "statement on the wire"
+trace print_requests.py //api/2.0/sql/statements | jq -r .body.statement

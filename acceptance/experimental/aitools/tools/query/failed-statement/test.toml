@@ -1,0 +1,17 @@
+RecordRequests = true
+
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements"
+Response.Body = '''
+{
+  "statement_id": "s1",
+  "status": {
+    "state": "FAILED",
+    "sql_state": "42P01",
+    "error": {
+      "error_code": "BAD_REQUEST",
+      "message": "[TABLE_OR_VIEW_NOT_FOUND] The table or view `a_table_that_does_not_exist_zzz` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`session`, `system`.`builtin`].\nSQLSTATE: 42P01; line 1 pos 14"
+    }
+  }
+}
+'''

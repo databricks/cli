@@ -1,0 +1,9 @@
+
+>>> [CLI] experimental aitools tools query --output csv --param maybe= SELECT :maybe IS NULL AS is_null
+is_null
+true
+
+=== statement on the wire
+
+>>> print_requests.py //api/2.0/sql/statements
+{"statement":"SELECT :maybe IS NULL AS is_null","parameters":[{"name":"maybe"}]}

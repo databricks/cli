@@ -1,0 +1,5 @@
+# An empty value is sent without a value, which the API binds as SQL NULL.
+trace $CLI experimental aitools tools query --output csv --param maybe= "SELECT :maybe IS NULL AS is_null"
+
+title "statement on the wire"
+trace print_requests.py //api/2.0/sql/statements | jq -c '.body | {statement, parameters}'

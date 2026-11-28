@@ -1,0 +1,9 @@
+
+>>> [CLI] experimental aitools tools query --output csv SELECT 1
+1
+1
+
+=== statement on the wire
+
+>>> print_requests.py //api/2.0/sql/statements
+SELECT 1

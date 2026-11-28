@@ -1,0 +1,3 @@
+# The statement lifecycle (submit, cancel, terminal state) is a backend fact: run on
+# every cloud. Locally the testserver's SQL fake tracks statements and cancellation.
+Cloud = true

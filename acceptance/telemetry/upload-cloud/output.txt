@@ -1,0 +1,11 @@
+
+=== raw response to two test events
+
+>>> [CLI] api post /telemetry-ext --json @body.json
+{
+  "errors": [],
+  "numProtoSuccess": 2
+}
+
+=== the CLI's own upload
+All 2 logs uploaded successfully

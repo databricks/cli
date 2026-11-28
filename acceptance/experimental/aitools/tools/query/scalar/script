@@ -1,0 +1,4 @@
+trace $CLI experimental aitools tools query --output csv "SELECT 1"
+
+title "statement on the wire"
+trace print_requests.py //api/2.0/sql/statements | jq -r .body.statement

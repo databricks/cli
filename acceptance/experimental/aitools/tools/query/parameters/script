@@ -1,0 +1,4 @@
+trace $CLI experimental aitools tools query --output csv --param n:INT=42 --param s=hello "SELECT :n AS n, :s AS s"
+
+title "statement on the wire"
+trace print_requests.py //api/2.0/sql/statements | jq -c '.body | {statement, parameters}'

@@ -1,0 +1,120 @@
+# The jobs API rejects tags the cloud provider would reject. The rules differ per
+# cloud, and libs/tags (aws.go, azure.go, gcp.go) normalizes bundle tags to the same
+# patterns and lengths, so these are the facts that keep normalized tags deployable.
+# The expected messages are checked on cloud only: the testserver does not validate
+# tags, so the local run injects each rejection with fault.py instead.
+case "$CLOUD_ENV_BASE" in
+aws)
+    INVALID_KEY='café'
+    KEY_ERROR='The key must match the regular expression ^[\d \w\+\-=\.:\/@]*$.'
+    KEY_MAX=127
+    VALUE_ERROR='The value must match the regular expression ^[\d \w\+\-=\.:/@]*$.'
+    ;;
+azure)
+    INVALID_KEY='café?'
+    KEY_ERROR='The key must match the regular expression ^[^<>\*&%;\\\/\+\?]*$.'
+    KEY_MAX=512
+    # Azure accepts any latin1 tag value: "café" is a valid value there.
+    VALUE_ERROR=''
+    ;;
+gcp)
+    INVALID_KEY='café?'
+    KEY_ERROR='The key must match the regular expression ^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$.'
+    KEY_MAX=63
+    VALUE_ERROR='The value must match the regular expression ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$.'
+    ;;
+*)
+    echo "no tag rules for CLOUD_ENV_BASE=$CLOUD_ENV_BASE" >&2
+    exit 1
+    ;;
+esac
+
+# Same job shape as the integration tests this replaces: a Python task on a new
+# cluster (never run), so tags are validated for a job that would start a cluster.
+job_json() {
+    jq -cn --arg n "$UNIQUE_NAME" --arg k "$1" --arg v "$2" --arg node "$NODE_TYPE_ID" '{
+        name: $n,
+        tags: {($k): $v},
+        tasks: [{
+            task_key: "test",
+            new_cluster: {spark_version: "13.3.x-scala2.12", num_workers: 1, node_type_id: $node},
+            spark_python_task: {python_file: "/doesnt_exist.py"}
+        }]
+    }'
+}
+
+# Delete every job this script created, also when it stops early.
+touch created_jobs.txt
+cleanup() {
+    while read -r id; do
+        errcode $CLI jobs delete "$id"
+    done < created_jobs.txt
+    rm -f created_jobs.txt job.json create.json
+}
+trap cleanup EXIT
+
+# create_job KEY VALUE: create the job and record its id; the exit status is the CLI's.
+create_job() {
+    job_json "$1" "$2" > job.json
+    if $CLI jobs create --json @job.json > create.json 2> LOG.create; then
+        jq -er '.job_id | numbers' create.json >> created_jobs.txt || exit 1
+        return 0
+    fi
+    return 1
+}
+
+# expect_rejected LABEL KEY VALUE MESSAGE
+expect_rejected() {
+    if [ -z "$CLOUD_ENV" ]; then
+        fault.py --body-contains "$(job_json "$2" "$3" | jq -c .tags)" "POST /api/2.2/jobs/create" 400 0 1 INVALID_PARAMETER_VALUE
+        expected="Fault injected by test."
+    else
+        expected="$4"
+    fi
+    if create_job "$2" "$3"; then
+        echo "$1: accepted, expected a rejection" >&2
+        exit 1
+    fi
+    # The CLI wraps long error messages, so contains.py (one line at a time) cannot
+    # match them: join the lines first.
+    msg=$(tr '\n' ' ' < LOG.create)
+    if [[ "$msg" != *"$expected"* ]]; then
+        echo "$1: rejected with an unexpected message: $msg" >&2
+        exit 1
+    fi
+    echo "$1: rejected"
+}
+
+# expect_accepted LABEL KEY VALUE: the job is created and keeps the tag as sent.
+expect_accepted() {
+    if ! create_job "$2" "$3"; then
+        echo "$1: rejected, expected it to be accepted: $(cat LOG.create)" >&2
+        exit 1
+    fi
+    stored=$($CLI jobs get "$(jq -r .job_id create.json)" | jq -c .settings.tags)
+    echo "$1: accepted, stored tags: $stored"
+}
+
+expect_rejected "key with characters outside the pattern" "$INVALID_KEY" value "$KEY_ERROR"
+expect_rejected "key with non-latin1 characters" "🍎" value " contains non-latin1 characters."
+expect_rejected "empty key" "" value " the minimal length is 1, and the maximum length is $KEY_MAX."
+expect_accepted "valid key" cafe value
+
+# One line on every cloud: Azure accepts the value the other clouds reject.
+label="value café: rejected on aws and gcp, accepted on azure"
+if [ -n "$VALUE_ERROR" ]; then
+    expect_rejected "$label" key "café" "$VALUE_ERROR" > /dev/null
+else
+    if ! create_job key "café"; then
+        echo "$label: rejected on azure: $(cat LOG.create)" >&2
+        exit 1
+    fi
+    stored=$($CLI jobs get "$(jq -r .job_id create.json)" | jq -c .settings.tags)
+    if [ "$stored" != '{"key":"café"}' ]; then
+        echo "$label: azure stored $stored" >&2
+        exit 1
+    fi
+fi
+echo "$label"
+expect_rejected "value with non-latin1 characters" key "🍎" " contains non-latin1 characters."
+expect_accepted "valid value" key cafe

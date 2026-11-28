@@ -1,0 +1,25 @@
+
+>>> [CLI] experimental aitools tools statement submit SELECT count(*) FROM range(100000000000)
+{
+  "statement_id": "[STATEMENT_ID]",
+  "state": "PENDING",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] experimental aitools tools statement cancel [STATEMENT_ID]
+{
+  "statement_id": "[STATEMENT_ID]",
+  "state": "CANCELED"
+}
+
+>>> [CLI] experimental aitools tools statement get [STATEMENT_ID]
+{
+  "statement_id": "[STATEMENT_ID]",
+  "state": "CANCELED",
+  "error": {
+    "message": "statement reached terminal state CANCELED"
+  }
+}
+
+=== cancel request
+POST /api/2.0/sql/statements/[STATEMENT_ID]/cancel

@@ -1,0 +1,11 @@
+
+>>> [CLI] experimental aitools tools query --output csv SELECT id, id * 2 AS doubled FROM range(3) ORDER BY id
+id,doubled
+0,0
+1,2
+2,4
+
+=== statement on the wire
+
+>>> print_requests.py //api/2.0/sql/statements
+SELECT id, id * 2 AS doubled FROM range(3) ORDER BY id

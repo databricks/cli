@@ -1,0 +1,12 @@
+RecordRequests = true
+
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements"
+Response.Body = '''
+{
+  "statement_id": "s1",
+  "status": {"state": "SUCCEEDED"},
+  "manifest": {"schema": {"columns": [{"name": "1"}]}, "total_chunk_count": 1},
+  "result": {"data_array": [["1"]]}
+}
+'''

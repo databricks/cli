@@ -1,0 +1,4 @@
+# The testserver fails statements it has no handler for; this pins how the command
+# reports a statement that ends FAILED (the real API's response for that case is
+# pinned on cloud by experimental/aitools/tools/query/failed-statement).
+musterr trace $CLI pipelines show main.default.missing_table

@@ -1,0 +1,11 @@
+# Called by query/ and statement/. Like the integration tests these replace, the
+# SQL tests run on cloud only on Unity Catalog workspaces with a warehouse: the
+# shared classic warehouses of the non-UC ones are unreliable to start, and
+# CloudEnvs cannot tell azure-prod-ucws from azure-prod.
+require_uc_warehouse() {
+    if [ -n "${CLOUD_ENV:-}" ] && { [ -z "${TEST_METASTORE_ID:-}" ] || [ -z "${TEST_DEFAULT_WAREHOUSE_ID:-}" ]; }; then
+        echo "SKIP_TEST: needs a Unity Catalog workspace with a warehouse (TEST_METASTORE_ID, TEST_DEFAULT_WAREHOUSE_ID)"
+        exit 0
+    fi
+    export DATABRICKS_WAREHOUSE_ID=$TEST_DEFAULT_WAREHOUSE_ID
+}
