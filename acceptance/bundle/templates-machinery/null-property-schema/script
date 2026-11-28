@@ -1,0 +1,9 @@
+# The panic's stack trace depends on the build, so drop its frames.
+title "top-level property whose schema is null"
+trace musterr $CLI bundle init ./top --output-dir rendered 2>&1 | sed '/^goroutine /,$d'
+
+title "property whose schema is null in a root anyOf branch"
+trace musterr $CLI bundle init ./any-of --config-file q.json --output-dir rendered 2>&1 | sed '/^goroutine /,$d'
+
+title "property whose schema is null in skip_prompt_if"
+trace musterr $CLI bundle init ./skip-prompt-if --output-dir rendered 2>&1 | sed '/^goroutine /,$d'

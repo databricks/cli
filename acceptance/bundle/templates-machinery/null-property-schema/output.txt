@@ -1,0 +1,31 @@
+
+=== top-level property whose schema is null
+
+>>> musterr [CLI] bundle init ./top --output-dir rendered
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+Stack Trace:
+
+=== property whose schema is null in a root anyOf branch
+
+>>> musterr [CLI] bundle init ./any-of --config-file q.json --output-dir rendered
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+Stack Trace:
+
+=== property whose schema is null in skip_prompt_if
+
+>>> musterr [CLI] bundle init ./skip-prompt-if --output-dir rendered
+Error: not a bundle template: expected to find a template schema file at databricks_template_schema.json

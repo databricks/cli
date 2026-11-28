@@ -1,0 +1,2 @@
+Badness = "A template schema property whose schema is null (\"p\": null under properties), at the root or in a root anyOf branch, makes bundle init panic with a nil pointer dereference; it should fail with an error naming the property."
+Ignore = ["rendered"]

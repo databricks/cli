@@ -1,0 +1,15 @@
+{
+  "properties": {
+    "q": {
+      "type": "integer",
+      "description": "q"
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "q": null
+      }
+    }
+  ]
+}
