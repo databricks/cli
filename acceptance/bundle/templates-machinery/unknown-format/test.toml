@@ -1,2 +1,1 @@
-Badness = "A template property with a standard JSON schema format the CLI doesn't handle (\"email\", \"int32\") gets an empty value instead of its default: owner_email renders empty instead of owner@example.com, and init without a config file fails with 'expected type integer, but value is \"\"' instead of using retries = 3. On a TTY such a property is not prompted for at all, and an integer one repeats 'Validation failed' forever."
-Ignore = ["from-config", "defaults"]
+Ignore = ["from-config", "defaults", "no-default-out"]

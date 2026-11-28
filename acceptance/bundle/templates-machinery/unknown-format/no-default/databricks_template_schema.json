@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "owner_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Owner email"
+        }
+    }
+}

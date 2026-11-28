@@ -5,17 +5,19 @@
 ✨ Successfully initialized template
 
 >>> cat from-config/values.txt
-owner_email: 
+owner_email: owner@example.com
 retries: 5
 
 === integer with format: int32
 
->>> errcode [CLI] bundle init . --output-dir defaults
-Error: validation for template input parameters failed. incorrect type for property retries: expected type integer, but value is ""
-
-Exit code: 1
+>>> [CLI] bundle init . --output-dir defaults
+✨ Successfully initialized template
 
 >>> cat defaults/values.txt
-cat: defaults/values.txt: No such file or directory
+owner_email: owner@example.com
+retries: 3
 
-Exit code: 1
+=== string with format: email, no default
+
+>>> musterr [CLI] bundle init no-default --output-dir no-default-out
+Error: validation for template input parameters failed. no value provided for required property owner_email
