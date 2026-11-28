@@ -84,7 +84,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	fileList := state.Files
 	if s.keepInternalFiles {
-		fileList = withoutInternalFiles(b.Config.Bundle.Target, fileList)
+		fileList, _ = splitInternalFiles(b.Config.Bundle.Target, fileList)
 	}
 
 	log.Infof(ctx, "Creating new snapshot")
@@ -124,19 +124,20 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
-// withoutInternalFiles drops the entries under a "<target>/.internal" directory. It
-// matches that shape anywhere in the path rather than this process's InternalDir,
-// because the deploy that wrote the state may have used another cache directory
-// (DATABRICKS_BUNDLE_TMP).
-func withoutInternalFiles(target string, fl Filelist) Filelist {
+// splitInternalFiles separates the entries under a "<target>/.internal" directory
+// from the rest. It matches that shape anywhere in the path rather than this
+// process's InternalDir, because the deploy that wrote the state may have used
+// another cache directory (DATABRICKS_BUNDLE_TMP).
+func splitInternalFiles(target string, fl Filelist) (rest, internal Filelist) {
 	marker := "/" + target + "/" + bundle.InternalDirName + "/"
-	var out Filelist
 	for _, f := range fl {
-		if !strings.Contains("/"+filepath.ToSlash(f.LocalPath), marker) {
-			out = append(out, f)
+		if strings.Contains("/"+filepath.ToSlash(f.LocalPath), marker) {
+			internal = append(internal, f)
+		} else {
+			rest = append(rest, f)
 		}
 	}
-	return out
+	return rest, internal
 }
 
 // StatePull returns a mutator that pulls the deployment state from the Databricks workspace

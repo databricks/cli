@@ -209,9 +209,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}()
 
+	stateUpdate := deploy.StateUpdate()
+	if plan != nil {
+		stateUpdate = deploy.StateUpdateForSavedPlan()
+	}
+
 	bundle.ApplySeqContext(
 		ctx, b,
-		deploy.StateUpdate(),
+		stateUpdate,
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		trackUsedComputeMutator(),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	stdsync "sync"
 	"time"
 
@@ -70,6 +71,10 @@ type Sync struct {
 	// derived from the event stream because the notifier is a no-op unless the
 	// caller supplies an OutputHandler.
 	fileCounts FileCounts
+
+	// deleted holds the remote names the most recent run deleted; empty for a dry run
+	// or a run that failed.
+	deleted []string
 
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
@@ -181,6 +186,8 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 // Returns the list of files tracked (and synchronized) by the syncer during the run,
 // and an error if any occurred.
 func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
+	s.deleted = nil
+
 	files, err := s.GetFileList(ctx)
 	if err != nil {
 		return files, err
@@ -209,6 +216,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 			log.Errorf(ctx, "cannot store snapshot: %s", err)
 			return files, err
 		}
+		s.deleted = slices.Clone(change.delete)
 	}
 
 	s.notifyComplete(ctx, change)
@@ -218,6 +226,12 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 // FileCounts returns the upload and delete counts from the most recent run.
 func (s *Sync) FileCounts() FileCounts {
 	return s.fileCounts
+}
+
+// Deleted returns the remote names, relative to the remote path, that the most
+// recent run deleted.
+func (s *Sync) Deleted() []string {
+	return s.deleted
 }
 
 // GetFileList returns the local files selected for sync, without syncing them.

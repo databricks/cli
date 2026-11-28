@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -463,7 +464,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
 }
 
-func TestWithoutInternalFiles(t *testing.T) {
+func TestSplitInternalFiles(t *testing.T) {
 	fl := Filelist{
 		{LocalPath: "a.py"},
 		// Default cache directory.
@@ -478,16 +479,24 @@ func TestWithoutInternalFiles(t *testing.T) {
 		{LocalPath: "src/notdev/.internal/w.py"},
 	}
 
-	got := withoutInternalFiles("dev", fl)
+	rest, internal := splitInternalFiles("dev", fl)
 
-	var paths []string
-	for _, f := range got {
-		paths = append(paths, f.LocalPath)
+	paths := func(fl Filelist) []string {
+		var out []string
+		for _, f := range fl {
+			out = append(out, f.LocalPath)
+		}
+		return out
 	}
-	require.Equal(t, []string{
+	assert.Equal(t, []string{
 		"a.py",
 		".databricks/bundle/prod/.internal/w.py",
 		"src/dev/.internal-other/w.py",
 		"src/notdev/.internal/w.py",
-	}, paths)
+	}, paths(rest))
+	assert.Equal(t, []string{
+		".databricks/bundle/dev/.internal/notebook_3_job_task.py",
+		"cache/dev/.internal/notebook_3_job_task.py",
+		"project/.databricks/bundle/dev/.internal/w.py",
+	}, paths(internal))
 }

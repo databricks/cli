@@ -191,6 +191,10 @@ type Bundle struct {
 	// which lists everything tracked, this counts only what actually changed.
 	FileCounts libsync.FileCounts
 
+	// DeletedFiles are the remote names, relative to workspace.file_path, that the
+	// deploy's file sync deleted.
+	DeletedFiles []string
+
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 

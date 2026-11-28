@@ -6,6 +6,10 @@ wrapper_status() {
     trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL" -o json | gron.py | grep '\.path'
 }
 
+state_files() {
+    trace MSYS_NO_PATHCONV=1 $CLI workspace export "$R/state/deployment.json" | gron.py | grep local_path
+}
+
 trace $CLI bundle deploy
 JOB_ID=$(read_id.py whl)
 wrapper_status
@@ -18,8 +22,17 @@ trace $CLI bundle deploy --plan tmp.plan.json
 title "The wrapper notebook the job runs is still in the workspace"
 wrapper_status
 
-title "Known gap: the pushed deployment state does not list the wrapper, since it was not on disk"
-trace MSYS_NO_PATHCONV=1 $CLI workspace export "$R/state/deployment.json" | gron.py | grep local_path
+title "The pushed deployment state still lists the wrapper, although it was not on disk"
+state_files
+
+title "Apply again in the same checkout, which keeps its cache but has no wrapper on disk (plan saved in another checkout)"
+mkdir planner
+cp databricks.yml planner/
+(cd planner && trace $CLI bundle plan -o json > ../tmp.plan.json)
+rm -rf planner
+trace $CLI bundle deploy --plan tmp.plan.json
+wrapper_status
+state_files
 
 title "Apply from a fresh checkout whose cache directory (DATABRICKS_BUNDLE_TMP) is outside the bundle"
 trace $CLI bundle deploy
@@ -31,3 +44,23 @@ trace $CLI bundle deploy --plan tmp.plan.json
 unset DATABRICKS_BUNDLE_TMP
 rm -rf "${bundle_tmp:?}"
 wrapper_status
+state_files
+
+title "A later plain deploy from a fresh checkout deletes the wrapper once the task no longer needs it"
+trace update_file.py databricks.yml 'python_wheel_wrapper: true' 'python_wheel_wrapper: false'
+trace rm -rf .databricks
+trace $CLI bundle deploy
+errcode trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL"
+state_files
+
+title "Plan and apply in one checkout after the wrapper is no longer needed: the apply deletes it and the state drops it"
+trace update_file.py databricks.yml 'python_wheel_wrapper: false' 'python_wheel_wrapper: true'
+trace $CLI bundle deploy
+trace update_file.py databricks.yml 'python_wheel_wrapper: true' 'python_wheel_wrapper: false'
+trace rm -rf .databricks
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+errcode trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL"
+state_files
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
