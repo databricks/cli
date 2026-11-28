@@ -1,0 +1,40 @@
+# DATABRICKS_NOT_AN_AGENT makes agent detection report no agent, so a run that
+# has an agent variable set gets the human output. Claude Code's variable is set
+# throughout; the skills catalog is the one cmd/skills fixture, which maps the fs group.
+sethome ./home
+export DATABRICKS_SKILLS_DIR="$TESTDIR/../../skills/release"
+unset XDG_CONFIG_HOME
+# Claude Code's per-session throttle keys the hint by this id. Without it a
+# machine with no session id (CI) prints the hint on every call, so pin it.
+export CLAUDE_CODE_SESSION_ID=session-1
+
+title "Claude Code is hinted, and its help and quickstart are the agent ones"
+trace CLAUDECODE=1 $CLI jobs list
+trace CLAUDECODE=1 $CLI fs --help | tail -n 3
+trace CLAUDECODE=1 $CLI --help | tail -n 2
+trace CLAUDECODE=1 $CLI quickstart | contains.py 'databricks skills list' > LOG.quickstart-agent
+
+# The positive control above recorded session-1's hint throttle. The variable steps
+# get a fresh session, so a build that ignored the variable would print the hint here.
+export CLAUDE_CODE_SESSION_ID=session-2
+
+title "With the variable set, no hint is printed"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI jobs list
+
+# The same session without the variable still gets the hint, so the run above wrote no throttle marker.
+title "Without the variable, the hint still shows on the same session"
+trace CLAUDECODE=1 $CLI jobs list
+
+title "With the variable set, the help has no skills footer"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI fs --help | tail -n 3
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI --help | tail -n 2
+
+title "With the variable set, quickstart prints the human guide"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | head -n 1
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | contains.py '!databricks skills list' > LOG.quickstart-human
+
+title "With the variable set, auto-install enable says it is still stopped here"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI aitools auto-install enable
+
+title "A false value leaves agent detection on"
+trace DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list

@@ -49,7 +49,7 @@ func TestCallingAgent(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			testutil.SetAgentEnv(t, tc.env...)
-			a := agents.CallingAgent()
+			a := agents.CallingAgent(t.Context())
 			if tc.want == "" {
 				assert.Nil(t, a)
 				return
@@ -58,6 +58,14 @@ func TestCallingAgent(t *testing.T) {
 			assert.Equal(t, tc.want, a.Name)
 		})
 	}
+}
+
+func TestCallingAgentNotAnAgent(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
+	require.NotNil(t, agents.CallingAgent(t.Context()))
+
+	ctx := env.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
+	assert.Nil(t, agents.CallingAgent(ctx))
 }
 
 // toolingFixture isolates HOME, the working directory and agent config env so

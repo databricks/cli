@@ -101,7 +101,7 @@ func runMcpSignInCommand(cmd *cobra.Command, service string, action mcpSignInAct
 	runErr := runMcpSignIn(ctx, cmd.ErrOrStderr(), profileFlag(cmd), service, action, out)
 	// The host is set once the profile's binding has passed and its client exists, so a run that reached no server logs nothing.
 	if out.Host != "" {
-		logMcpEvent(ctx, signInEvent(operation, out, runErr))
+		logMcpEvent(ctx, signInEvent(ctx, operation, out, runErr))
 	}
 	if !jsonMode {
 		return runErr
@@ -173,12 +173,12 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 }
 
 // signInEvent is the SIGN_IN or SIGN_OUT event of one login or logout.
-func signInEvent(operation protos.AitoolsMcpOperation, out *mcpSignInOutput, err error) protos.AitoolsMcpEvent {
+func signInEvent(ctx context.Context, operation protos.AitoolsMcpOperation, out *mcpSignInOutput, err error) protos.AitoolsMcpEvent {
 	if operation == protos.AitoolsMcpOperationSignIn {
-		return signInEventOf(out.Service, out.State, out.alreadySignedIn, err)
+		return signInEventOf(ctx, out.Service, out.State, out.alreadySignedIn, err)
 	}
 	return protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: callingAgentType(ctx),
 		Operation:    operation,
 		Servers:      []protos.AitoolsMcpServerResult{signOutServerResult(out.Service, out.State, err)},
 	}

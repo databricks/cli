@@ -315,6 +315,17 @@ func TestMaybeHint_SkillsHintKindFollowsGuard(t *testing.T) {
 	}
 }
 
+// DATABRICKS_NOT_AN_AGENT hides the calling agent, so a Claude Code caller gets no hint.
+func TestMaybeHint_NotAnAgentSilent(t *testing.T) {
+	setClaudeAgent(t)
+	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
 func TestMaybeHint_SkillsCommandExemptFollowsGuard(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

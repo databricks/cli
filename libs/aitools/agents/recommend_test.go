@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
@@ -113,6 +114,66 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks aitools install")
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
+}
+
+// Under DATABRICKS_NOT_AN_AGENT the recommendation neither prompts nor prints, though a coding agent's config dir exists.
+func TestRecommendSkillsInstallNotAnAgent(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	origRegistry := Registry
+	Registry = []*Agent{agentWithConfigDir(tmpDir)}
+	defer func() { Registry = origRegistry }()
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
+	require.NoError(t, err)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+// Under DATABRICKS_NOT_AN_AGENT a terminal still gets no install prompt. Without the guard the call would wait for
+// an answer that never comes.
+func TestRecommendSkillsInstallNotAnAgentNeverPrompts(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	origRegistry := Registry
+	Registry = []*Agent{agentWithConfigDir(tmpDir)}
+	defer func() { Registry = origRegistry }()
+
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer testIO.Done()
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+
+	stderr := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(testIO.Stderr)
+		stderr <- string(b)
+	}()
+	require.NoError(t, RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall))
+	testIO.Done()
+	assert.Empty(t, <-stderr)
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+// PrintSkillsTip prints the tip unless DATABRICKS_NOT_AN_AGENT is set.
+func TestPrintSkillsTipNotAnAgent(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	quiet := env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+	PrintSkillsTip(quiet)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, quiet))
+
+	PrintSkillsTip(ctx)
+	assert.Equal(t, skillsTipText+"\n", stderr.String())
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
 }
 
@@ -252,6 +313,7 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 		{name: "databricks runtime", agentDirs: []string{".codex"}, onDBR: true, installedPlugins: noPlugins},
 		{name: "claude code caller is left to MaybeHint", agentEnv: []string{"CLAUDECODE", "1"}, agentDirs: []string{".claude"}, installedPlugins: noPlugins},
 		{name: "codex caller is left to MaybeHint", agentEnv: []string{"CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins},
+		{name: "not an agent is silent", agentEnv: []string{"DATABRICKS_NOT_AN_AGENT", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins},
 		{name: "several agents calling get the tip, since MaybeHint skips them", agentEnv: []string{"CLAUDECODE", "1", "CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins, wantTip: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

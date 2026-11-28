@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/folders"
-	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 // providerAliases maps the SDK agent products (useragent.AgentProvider values)
@@ -29,10 +29,10 @@ func AgentForProvider(provider string) *Agent {
 }
 
 // CallingAgent returns the registry agent driving the CLI, or nil when no
-// agent is detected, several are, or the agent is one the CLI cannot install
-// into.
-func CallingAgent() *Agent {
-	return AgentForProvider(useragent.AgentProvider())
+// agent is detected (see agent.Provider), several are, or the agent is one the
+// CLI cannot install into.
+func CallingAgent(ctx context.Context) *Agent {
+	return AgentForProvider(agent.Provider(ctx))
 }
 
 // Tooling is what Databricks AI tooling an agent has in its own location.

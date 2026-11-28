@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -29,7 +30,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -109,6 +109,11 @@ const autoInstallNoticeCommands = "Turn off: databricks aitools auto-install dis
 // would have without auto-install.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
+	// A run that does not notice agents (DATABRICKS_NOT_AN_AGENT) installs nothing and asks nothing, so an eval
+	// baseline keeps its machine as it is.
+	if agent.NotAnAgent(ctx) {
+		return nil
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)
@@ -255,7 +260,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		version:     version,
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
-		interactive: cmdio.HasTerminal(ctx) && useragent.AgentProvider() == "",
+		interactive: cmdio.HasTerminal(ctx) && agent.Provider(ctx) == "",
 		now:         in.Now,
 	}
 	if !reason.Due() {

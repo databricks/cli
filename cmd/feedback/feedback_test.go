@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -177,13 +178,15 @@ func TestNewSubmission(t *testing.T) {
 
 func TestSendWithoutConfirmation(t *testing.T) {
 	tests := []struct {
-		name     string
-		agent    string
-		terminal bool
+		name       string
+		agent      string
+		terminal   bool
+		notAnAgent bool
 	}{
 		{name: "human without a terminal"},
 		{name: "agent without a terminal", agent: "test-agent"},
 		{name: "agent with a terminal", agent: "test-agent", terminal: true},
+		{name: "agent under not-an-agent", agent: "test-agent", notAnAgent: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -218,6 +221,9 @@ func TestSendWithoutConfirmation(t *testing.T) {
 				errOut = cmdio.FakeTTY(errOut)
 			}
 			ctx := t.Context()
+			if tt.notAnAgent {
+				ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+			}
 			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, out, errOut, "", ""))
 			ctx = cmdctx.SetWorkspaceClient(ctx, w)
 			ctx = cmdctx.GenerateExecId(ctx)
@@ -227,7 +233,9 @@ func TestSendWithoutConfirmation(t *testing.T) {
 			require.Len(t, sent, 1)
 			assert.Equal(t, "exact feedback", sent[0].Text)
 			assert.False(t, sent[0].CanBeContacted)
-			if tt.agent != "" {
+			if tt.notAnAgent {
+				assert.NotContains(t, sent[0].UserAgent, "agent/"+tt.agent)
+			} else if tt.agent != "" {
 				assert.Contains(t, sent[0].UserAgent, "agent/"+tt.agent)
 			}
 			assert.Empty(t, stderr.String())

@@ -58,7 +58,7 @@ func WithAiDevKitInUserAgent(ctx context.Context) context.Context {
 // for the registry agent calling the CLI. Nothing is added when no agent is
 // detected, several are, or the CLI cannot install into the agent.
 func WithCallingAgentToolingInUserAgent(ctx context.Context) context.Context {
-	a := agents.CallingAgent()
+	a := agents.CallingAgent(ctx)
 	if a == nil {
 		return ctx
 	}

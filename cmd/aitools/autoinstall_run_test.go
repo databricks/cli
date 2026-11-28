@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
@@ -590,6 +591,23 @@ func TestAutoInstallSkipsTheGateLookup(t *testing.T) {
 	state, err := autoinstall.Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, autoinstall.State{Consented: true, ID: "treatment-machine"}, state, "the version is not settled")
+}
+
+// With DATABRICKS_NOT_AN_AGENT set, a coding agent's run is not an agent's call: auto-install neither asks nor
+// installs, and it does not look the gate up.
+func TestAutoInstallSkipsUnderNotAnAgent(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	gateOn = func(context.Context, string) (bool, error) {
+		t.Error("the gate was looked up")
+		return true, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
+	runAutoInstallHook(ctx)
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
 }
 
 // Root running in a user's home (sudo with HOME kept) leaves the home alone:

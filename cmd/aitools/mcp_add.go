@@ -189,7 +189,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 			}
 			runErr := runMcpAdd(ctx, cmd, f, jsonMode, out)
 			logMcpEvent(ctx, protos.AitoolsMcpEvent{
-				CallingAgent: callingAgentType(),
+				CallingAgent: callingAgentType(ctx),
 				Operation:    protos.AitoolsMcpOperationAdd,
 				Servers:      addServerResults(out.Servers),
 			})
@@ -1256,7 +1256,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			if signedIn(ctx, w, plans[i].service.FullName) {
 				server.SignIn = &addSignInOutput{State: signInStateActive}
 				reportSignedIn(errOut, plans[i].service, req.profile, true)
-				logMcpEvent(ctx, signInEventOf(server.Service, signInStateActive, true, nil))
+				logMcpEvent(ctx, signInEventOf(ctx, server.Service, signInStateActive, true, nil))
 				continue
 			}
 			yes, err := promptSignInNow(server.Service)
@@ -1280,7 +1280,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			eventState = state
 		}
 		server.SignIn = &addSignInOutput{State: state}
-		logMcpEvent(ctx, signInEventOf(server.Service, eventState, alreadySignedIn, err))
+		logMcpEvent(ctx, signInEventOf(ctx, server.Service, eventState, alreadySignedIn, err))
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)
 			server.SignIn.Error = err.Error()

@@ -1,0 +1,54 @@
+
+=== Claude Code is hinted, and its help and quickstart are the agent ones
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
+>>> CLAUDECODE=1 [CLI] fs --help
+
+Coding agents: read the skills for this command group before you use it.
+  databricks skills read demo-skill
+
+>>> CLAUDECODE=1 [CLI] --help
+
+Coding agents: run `databricks skills list` to find skills for the commands you use.
+
+>>> CLAUDECODE=1 [CLI] quickstart
+
+=== With the variable set, no hint is printed
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] jobs list
+
+=== Without the variable, the hint still shows on the same session
+
+>>> CLAUDECODE=1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list
+
+=== With the variable set, the help has no skills footer
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] fs --help
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks fs [command] --help" for more information about a command.
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] --help
+
+Use "databricks [command] --help" for more information about a command.
+
+=== With the variable set, quickstart prints the human guide
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] quickstart
+# Welcome to Databricks
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] quickstart
+
+=== With the variable set, auto-install enable says it is still stopped here
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+DATABRICKS_NOT_AN_AGENT still stops it in this environment; unset it to let it run.
+
+=== A false value leaves agent detection on
+
+>>> DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
+Before you work with Databricks, run: databricks skills list

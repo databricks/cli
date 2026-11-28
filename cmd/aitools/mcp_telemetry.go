@@ -109,9 +109,10 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 	return protos.AitoolsMcpServiceOtherSystem
 }
 
-// callingAgentType returns the agent that drives the CLI, Unspecified when none is detected.
-func callingAgentType() protos.AitoolsAgentType {
-	a := agents.CallingAgent()
+// callingAgentType returns the agent that drives the CLI, Unspecified when none is detected or
+// DATABRICKS_NOT_AN_AGENT holds (see agent.Provider).
+func callingAgentType(ctx context.Context) protos.AitoolsAgentType {
+	a := agents.CallingAgent(ctx)
 	if a == nil {
 		return protos.AitoolsAgentTypeUnspecified
 	}
@@ -120,9 +121,9 @@ func callingAgentType() protos.AitoolsAgentType {
 
 // proxyAgentType returns the agent that started the proxy: the --agent flag when given, else the
 // detected agent.
-func proxyAgentType(flag string) protos.AitoolsAgentType {
+func proxyAgentType(ctx context.Context, flag string) protos.AitoolsAgentType {
 	if flag == "" {
-		return callingAgentType()
+		return callingAgentType(ctx)
 	}
 	return agentType(flag)
 }
@@ -244,9 +245,9 @@ func signInServerResult(service, state string, alreadySignedIn bool, err error) 
 
 // signInEventOf is the SIGN_IN event of one provider sign-in, under add --login or login. A sign-in that found the caller
 // already signed in is UNCHANGED.
-func signInEventOf(service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
+func signInEventOf(ctx context.Context, service, state string, alreadySignedIn bool, err error) protos.AitoolsMcpEvent {
 	return protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: callingAgentType(ctx),
 		Operation:    protos.AitoolsMcpOperationSignIn,
 		Servers:      []protos.AitoolsMcpServerResult{signInServerResult(service, state, alreadySignedIn, err)},
 	}

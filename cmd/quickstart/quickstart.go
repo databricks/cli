@@ -8,6 +8,7 @@ import (
 	_ "embed"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
@@ -65,20 +66,22 @@ denser, agent-oriented version instead.`
 		if printSkill {
 			content = skillFor()
 		} else {
-			content = quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant)
+			ctx := cmd.Context()
+			content = quickstartFor(cmdio.IsPromptSupported(ctx) || agent.NotAnAgent(ctx), skillsVariant)
 		}
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
 	}
 }
 
-// quickstartFor returns the quickstart text for the caller. Interactive
-// terminals (people) get the friendly guide; non-interactive callers (coding
-// agents, scripts, CI) get the agent-oriented version. The detection is
-// intentionally simple for now and can grow more precise later. skillsVariant
-// selects the agent text that points at `databricks skills`.
-func quickstartFor(interactive, skillsVariant bool) string {
-	if interactive {
+// quickstartFor returns the quickstart text for the caller. A human guide goes
+// to interactive terminals (people) and to every caller under
+// DATABRICKS_NOT_AN_AGENT; other callers (coding agents, scripts, CI) get the
+// agent-oriented version. The detection is intentionally simple for now and can
+// grow more precise later. skillsVariant selects the agent text that points at
+// `databricks skills`.
+func quickstartFor(humanGuide, skillsVariant bool) string {
+	if humanGuide {
 		return strings.TrimRight(humanQuickstart, "\n")
 	}
 	return stripFrontmatter(variantText(agentQuickstart, skillsVariant))

@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 // User-Agent extras of a proxied session. useragent.FromContext carries cli/<version> but not
-// agent/<name>, so Run adds that from useragent.AgentProvider. The extras identify the proxy and
+// agent/<name>, so Run adds that from agent.Provider. The extras identify the proxy and
 // the calling agent.
 const (
 	proxyAgentKey  = "aitools-mcp"
@@ -50,8 +51,8 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.Agent != "" {
 		ctx = useragent.InContext(ctx, clientAgentKey, opts.Agent)
 	}
-	if agent := useragent.AgentProvider(); agent != "" {
-		ctx = useragent.InContext(ctx, useragent.AgentKey, agent)
+	if name := agent.Provider(ctx); name != "" {
+		ctx = useragent.InContext(ctx, useragent.AgentKey, name)
 	}
 
 	headers := map[string]string{"User-Agent": useragent.FromContext(ctx)}
