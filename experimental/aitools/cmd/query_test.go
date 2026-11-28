@@ -239,6 +239,7 @@ func TestSelectQueryOutputMode(t *testing.T) {
 		format            sqlcli.Format
 		stdoutInteractive bool
 		promptSupported   bool
+		columns           []string
 		rowCount          int
 		want              queryOutputMode
 	}{
@@ -282,11 +283,70 @@ func TestSelectQueryOutputMode(t *testing.T) {
 			rowCount:          sqlcli.StaticTableThreshold + 1,
 			want:              queryOutputModeInteractiveTable,
 		},
+		{
+			name:              "DDL without schema in a terminal confirms success",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeNoResults,
+		},
+		{
+			name:              "CTAS metadata schema without rows confirms success",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			columns:           []string{"num_affected_rows", "num_inserted_rows"},
+			rowCount:          0,
+			want:              queryOutputModeNoResults,
+		},
+		{
+			name:              "no rows without stdin interactivity confirms success",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   false,
+			rowCount:          0,
+			want:              queryOutputModeNoResults,
+		},
+		{
+			name:              "empty SELECT keeps its header table",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			columns:           []string{"id", "name"},
+			rowCount:          0,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "DML with a row renders the table",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			columns:           []string{"num_affected_rows", "num_inserted_rows"},
+			rowCount:          1,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "no rows with json flag stays json",
+			format:            sqlcli.OutputJSON,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "no rows on non interactive stdout stays json",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: false,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeJSON,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := selectQueryOutputMode(tc.format, tc.stdoutInteractive, tc.promptSupported, tc.rowCount)
+			got := selectQueryOutputMode(tc.format, tc.stdoutInteractive, tc.promptSupported, tc.columns, tc.rowCount)
 			assert.Equal(t, tc.want, got)
 		})
 	}

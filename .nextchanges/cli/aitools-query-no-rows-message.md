@@ -1,0 +1,1 @@
+* `databricks experimental aitools tools query` now prints "Query executed successfully (no results)" in a terminal for DDL and DML statements that return no rows, including `CREATE TABLE ... AS SELECT`, and keeps JSON output a valid empty array instead of that message. ([#7858](https://github.com/databricks/cli/pull/7858))

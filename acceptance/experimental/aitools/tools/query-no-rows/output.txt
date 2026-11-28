@@ -1,0 +1,16 @@
+
+>>> [CLI] experimental aitools tools query CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10
+[]
+
+>>> [CLI] experimental aitools tools query --file setup.sql
+[]
+
+>>> [CLI] experimental aitools tools query CREATE TABLE main.default.empty (id INT)
+[]
+
+=== wire SQL
+
+>>> print_requests.py --sort //api/2.0/sql/statements
+CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10
+CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10
+CREATE TABLE main.default.empty (id INT)

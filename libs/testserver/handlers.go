@@ -1265,7 +1265,13 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
 
 	// The fake keeps no tables or functions, so the statements acceptance scripts
-	// run to set them up succeed without effect.
+	// run to set them up succeed without effect. CTAS mirrors the real API, which
+	// reports the DML row-count schema without any rows; other fixtures have no
+	// schema at all.
+	ctasStatement := regexp.MustCompile(`(?is)^CREATE\s+(OR\s+REPLACE\s+)?TABLE\b.*\bAS\s+SELECT\b`)
+	server.sqlHandler.HandleFallbackPattern(ctasStatement, func(testsql.Request) testsql.Result {
+		return testsql.Result{Columns: []string{"num_affected_rows", "num_inserted_rows"}}
+	})
 	fixtureStatement := regexp.MustCompile(`(?i)^(CREATE\s+(TABLE|FUNCTION)|INSERT\s+INTO)\s`)
 	server.sqlHandler.HandleFallbackPattern(fixtureStatement, func(testsql.Request) testsql.Result {
 		return testsql.Result{}
