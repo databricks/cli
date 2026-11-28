@@ -2,6 +2,7 @@ package python
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -24,6 +25,7 @@ type applyPythonOutputResult struct {
 // Return value is equivalent to output except for:
 // - if property is unchanged in output, it's original location will be preserved
 // - if empty sequence/mapping is deleted in output, it's original value will be preserved
+// - if a whole float comes back from Python as an int, the original float will be preserved
 func applyPythonOutput(root, output dyn.Value) (dyn.Value, applyPythonOutputResult, error) {
 	result, visitor := createOverrideVisitor(root, output)
 	merged, err := merge.Override(root, output, visitor)
@@ -135,7 +137,11 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				return right, nil
 			}
 		},
-		VisitUpdate: func(valuePath dyn.Path, _, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
+			if isWholeFloatAsInt(left, right) {
+				return left, nil
+			}
+
 			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}
@@ -210,4 +216,16 @@ func isOmitemptyDelete(left dyn.Value) bool {
 	default:
 		return false
 	}
+}
+
+// isWholeFloatAsInt reports whether right is the int Python read back for the float left.
+// writeInputFile uses json.Marshal, which writes a whole float such as 1.0 as 1, and Python
+// parses that as an int. Beyond 2^53 json.Marshal writes the float's shortest decimal
+// (1234567890123456789.0 as 1234567890123456800), which differs from the float's exact value.
+func isWholeFloatAsInt(left, right dyn.Value) bool {
+	if left.Kind() != dyn.KindFloat || right.Kind() != dyn.KindInt {
+		return false
+	}
+	f, i := left.MustFloat(), right.MustInt()
+	return (float64(i) == f && int64(f) == i) || strconv.FormatFloat(f, 'f', -1, 64) == strconv.FormatInt(i, 10)
 }
