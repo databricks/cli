@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -426,9 +428,13 @@ func TestUnreadPermissionsAdapters(t *testing.T) {
 	require.NoError(t, err)
 	b := &bundle.Bundle{}
 	b.DeploymentBundle.Adapters = adapters
+	b.Config.Workspace.CurrentUser = &config.User{User: &iam.User{UserName: "me@example.com"}}
+	b.Config.Workspace.StatePath = "/Workspace/Users/me@example.com/.bundle/test/default/state"
 
+	remoteRunAs := &deployplan.ChangeDesc{Remote: &jobs.JobRunAs{UserName: "other@example.com"}}
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
 		"resources.jobs.unmanaged":                {Action: deployplan.Skip},
+		"resources.jobs.remote_run_as":            {Action: deployplan.Skip, RemoteState: &dresources.JobRemote{}, Changes: deployplan.Changes{"run_as": remoteRunAs}},
 		"resources.jobs.declared":                 {Action: deployplan.Skip},
 		"resources.jobs.declared.permissions":     {Action: deployplan.Skip},
 		"resources.jobs.removed":                  {Action: deployplan.Update},
@@ -444,9 +450,23 @@ func TestUnreadPermissionsAdapters(t *testing.T) {
 	}}
 
 	assert.ElementsMatch(t,
-		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.jobs.undeployed", "resources.pipelines.unmanaged"},
+		[]string{"resources.jobs.unmanaged", "resources.jobs.remote_run_as", "resources.jobs.removed", "resources.jobs.undeployed", "resources.pipelines.unmanaged"},
 		slices.Collect(maps.Keys(unreadPermissionsAdapters(b, plan))),
 	)
+
+	// Deployed from anywhere else, the ACL of a resource without permissions is not imported: only
+	// the undeployed block and the job whose owner the run_as sync needs are read.
+	for _, statePath := range []string{
+		"/Workspace/Users/deployer@example.com/.bundle/test/default/state",
+		"/Workspace/Shared/.bundle/test/default/state",
+	} {
+		b.Config.Workspace.StatePath = statePath
+		assert.ElementsMatch(t,
+			[]string{"resources.jobs.remote_run_as", "resources.jobs.undeployed"},
+			slices.Collect(maps.Keys(unreadPermissionsAdapters(b, plan))),
+			statePath,
+		)
+	}
 }
 
 func TestAddUndeployedPermissionsChanges(t *testing.T) {
