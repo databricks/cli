@@ -16,14 +16,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Wheels the job references
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks[].libraries[].whl [OUTPUT_DIR]/out.requests.txt
+>>> print_requests.py --keep //jobs/reset
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.2+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/other_test_code-0.0.1+1577836800000000000-py3-none-any.whl"
 "/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
 
 === Wheels uploaded, these should match the job
 
->>> jq select(.path | test("import-file.*/[.]internal/")) | .path
+>>> print_requests.py --sort //.internal/
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/my_test_code-0.0.2-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-dynamic-readplan/default/artifacts/.internal/other_test_code-0.0.1-py3-none-any.whl"
