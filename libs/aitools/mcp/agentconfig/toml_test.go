@@ -373,7 +373,7 @@ func TestTOMLRemoveLastDropsEmptyRootTable(t *testing.T) {
 
 				_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 				require.NoError(t, err)
-				removed, err := RemoveAt(t.Context(), a, path, testName)
+				removed, err := RemoveAt(a, path, testName)
 				require.NoError(t, err)
 				assert.True(t, removed)
 				assert.Equal(t, strings.ReplaceAll(tc.want, "\n", nl), string(readFile(t, path)), "line ending %q", nl)

@@ -2,30 +2,16 @@ package agents
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/env"
-)
-
-// The words that the agent CLIs' MCP commands share. The user-scope commands name the user scope, since the default
-// scope of each of them is another one.
-const (
-	cliMCP        = "mcp"
-	cliAdd        = "add"
-	cliRemove     = "remove"
-	cliScopeFlag  = "--scope"
-	cliUserScope  = "user"
-	cliEndOfFlags = "--"
 )
 
 // PluginSpec describes the databricks plugin for an agent. A non-nil
@@ -295,14 +281,11 @@ var Registry = []*Agent{
 		Plugin:                claudePlugin(),
 		pluginInstalls:        claudePluginInstalls,
 		MCP: &mcpconfig.Spec{
-			Path:       claudeMCPPath,
-			Format:     mcpconfig.FormatJSON,
-			Root:       mcpServersKey,
-			Entry:      claudeMCPEntry,
-			Lock:       true,
-			AddArgs:    claudeMCPAddArgs,
-			RemoveArgs: claudeMCPRemoveArgs,
-			HomeEnv:    claudeHomeEnv,
+			Path:   claudeMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   mcpServersKey,
+			Entry:  claudeMCPEntry,
+			Lock:   true,
 		},
 		mcpHomeEnvs: []string{claudeHomeEnv},
 	},
@@ -377,13 +360,10 @@ var Registry = []*Agent{
 		Plugin:                   databricksPlugin(),
 		pluginConfigMarketplaces: copilotPluginMarketplaces,
 		MCP: &mcpconfig.Spec{
-			Path:       copilotMCPPath,
-			Format:     mcpconfig.FormatJSON,
-			Root:       mcpServersKey,
-			Entry:      copilotMCPEntry,
-			AddArgs:    copilotMCPAddArgs,
-			RemoveArgs: mcpRemoveArgs,
-			HomeEnv:    copilotHomeEnv,
+			Path:   copilotMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   mcpServersKey,
+			Entry:  copilotMCPEntry,
 		},
 		mcpHomeEnvs: []string{copilotHomeEnv},
 	},
@@ -423,13 +403,10 @@ var Registry = []*Agent{
 		// and installation_id is not reliable, so detection uses this Gemini-only file.
 		MandatoryFile: "projects.json",
 		MCP: &mcpconfig.Spec{
-			Path:       geminiMCPPath,
-			Format:     mcpconfig.FormatJSON,
-			Root:       mcpServersKey,
-			Entry:      stdioEntry,
-			AddArgs:    geminiMCPAddArgs,
-			RemoveArgs: geminiMCPRemoveArgs,
-			HomeEnv:    geminiHomeEnv,
+			Path:   geminiMCPPath,
+			Format: mcpconfig.FormatJSON,
+			Root:   mcpServersKey,
+			Entry:  stdioEntry,
 		},
 		mcpHomeEnvs: []string{geminiHomeEnv},
 	},
@@ -619,69 +596,6 @@ func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[strin
 		vars = map[string]string{}
 	}
 	return map[string]any{"type": "stdio", "command": cmd, "args": args, "env": vars}
-}
-
-// claudeMCPAddArgs passes the entry as JSON to `claude mcp add-json`, so the entry Claude writes is the one
-// claudeMCPEntry builds. The command is described at https://code.claude.com/docs/en/mcp.
-func claudeMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
-	// Cannot fail: the entry holds only strings and maps of strings.
-	raw, _ := json.Marshal(claudeMCPEntry(cmd, args, vars))
-	return []string{cliMCP, "add-json", cliScopeFlag, cliUserScope, name, string(raw)}
-}
-
-// claudeMCPRemoveArgs removes the server from the user scope, which the remove command does not default to.
-func claudeMCPRemoveArgs(name string) []string {
-	return []string{cliMCP, cliRemove, cliScopeFlag, cliUserScope, name}
-}
-
-// copilotMCPAddArgs follows `copilot mcp add <name> --tools * --env K=V -- <command> <args>`, the form in Copilot CLI's
-// documentation at https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers. The docs
-// name no scope flag. The config directory is COPILOT_HOME when it is set, as
-// https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference describes; copilotMCPPath
-// resolves the same, and the read-back after the add checks the file. The docs also make * the default; the flag names it,
-// so the tools of the entry do not depend on that default.
-func copilotMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
-	return envFlagAddArgs(name, cmd, args, vars, "--tools", "*")
-}
-
-// mcpRemoveArgs removes server name from the user config, which is where Copilot CLI keeps the servers that the remove
-// command reads by default.
-func mcpRemoveArgs(name string) []string {
-	return []string{cliMCP, cliRemove, name}
-}
-
-// envFlagAddArgs is the `mcp add` argv of Copilot CLI: the name, then flags, one --env flag per
-// variable, then -- and the command line.
-func envFlagAddArgs(name, cmd string, args []string, vars map[string]string, flags ...string) []string {
-	argv := append([]string{cliMCP, cliAdd, name}, flags...)
-	for _, key := range slices.Sorted(maps.Keys(vars)) {
-		argv = append(argv, "--env", key+"="+vars[key])
-	}
-	argv = append(argv, cliEndOfFlags, cmd)
-	return append(argv, args...)
-}
-
-// geminiMCPAddArgs follows `gemini mcp add --scope user -e K=V <name> <command> -- <args>`, as the gemini-cli source
-// at https://github.com/google-gemini/gemini-cli/blob/main/packages/cli/src/commands/mcp/add.ts parses it, and the
-// command is described at https://geminicli.com/docs/tools/mcp-server/. Gemini adds to the project scope unless told
-// otherwise. The -- ends its option parsing, so an argument of the server that Gemini also knows, such as --help,
-// reaches the server. Its -e splits a value at every '=' and keeps two parts, so a value with '=' is refused: the argv
-// is nil, and the direct writer makes the change.
-func geminiMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
-	argv := []string{cliMCP, cliAdd, cliScopeFlag, cliUserScope}
-	for _, key := range slices.Sorted(maps.Keys(vars)) {
-		if strings.Contains(vars[key], "=") {
-			return nil
-		}
-		argv = append(argv, "-e", key+"="+vars[key])
-	}
-	argv = append(argv, name, cmd, cliEndOfFlags)
-	return append(argv, args...)
-}
-
-// geminiMCPRemoveArgs removes the server from the user scope, because removing from the project scope is the default.
-func geminiMCPRemoveArgs(name string) []string {
-	return []string{cliMCP, cliRemove, cliScopeFlag, cliUserScope, name}
 }
 
 // The variables that move the Claude and Gemini config directories, outside ConfigDir. Codex and Copilot CLI keep their
