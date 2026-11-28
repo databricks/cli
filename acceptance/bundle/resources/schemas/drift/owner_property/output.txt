@@ -1,0 +1,142 @@
+
+=== Create a schema with SQL's CREATE SCHEMA
+
+>>> [CLI] schemas get main.schema_sql_owner_[UNIQUE_NAME]
+{
+  "full_name": "main.schema_sql_owner_[UNIQUE_NAME]",
+  "properties": {
+    "owner": "root"
+  }
+}
+
+=== Bind it: the config matches, so there is nothing to confirm
+
+>>> [CLI] bundle deployment bind schema1 main.schema_sql_owner_[UNIQUE_NAME]
+Successfully bound schema with an id 'main.schema_sql_owner_[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Plan is a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The undeclared owner property is skipped as a backend default
+
+>>> [CLI] bundle plan --output json
+{
+  "action": "update",
+  "state_only": true,
+  "new_state": {
+    "value": {
+      "catalog_name": "main",
+      "name": "schema_sql_owner_[UNIQUE_NAME]"
+    }
+  },
+  "changes": {
+    "properties": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": {
+        "owner": "root"
+      }
+    },
+    "schema_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "remote": "[UUID]"
+    }
+  }
+}
+
+=== Deploying twice changes nothing
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== No UpdateSchema call was sent
+
+>>> print_requests.py --method PATCH //unity-catalog/schemas
+
+=== A property declared next to it is still planned and sent
+
+>>> update_file.py databricks.yml # PROPERTIES properties: {team: data}
+
+>>> [CLI] bundle plan --output json
+{
+  "action": "update",
+  "new_state": {
+    "value": {
+      "catalog_name": "main",
+      "name": "schema_sql_owner_[UNIQUE_NAME]",
+      "properties": {
+        "team": "data"
+      }
+    }
+  },
+  "changes": {
+    "properties": {
+      "action": "update",
+      "new": {
+        "team": "data"
+      },
+      "remote": {
+        "owner": "root"
+      }
+    },
+    "properties['owner']": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": "root"
+    },
+    "properties['team']": {
+      "action": "update",
+      "new": "data"
+    },
+    "schema_id": {
+      "action": "skip",
+      "reason": "internal_id",
+      "old": "[UUID]",
+      "remote": "[UUID]"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated schemas.schema1
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --method PATCH //unity-catalog/schemas
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_sql_owner_[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "properties": {
+      "team": "data"
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

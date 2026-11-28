@@ -1,0 +1,60 @@
+export SCHEMA_NAME="schema_sql_owner_$UNIQUE_NAME"
+SCHEMA="main.$SCHEMA_NAME"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # The schema is created outside the bundle, so it is left behind when the test fails before
+    # bind. After a successful destroy this returns 404.
+    errcode $CLI schemas delete "$SCHEMA" &> LOG.delete_schema
+
+    # Consume the destroy's and the delete's requests so none are left recorded.
+    print_requests.py //unity-catalog/schemas &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Create a schema with SQL's CREATE SCHEMA"
+# On cloud the test warehouse runs the statement, so the golden records what it leaves on the schema.
+# The fake server does not run CREATE SCHEMA, so locally the schema is created through the API with
+# the owner property the issue reports (#6986). Both write LOG.create_schema, which bundle deploy
+# uploads, so the file counts match.
+if [ -n "$CLOUD_ENV" ]; then
+    # MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from converting /api/... to a filesystem path.
+    MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/sql/statements/" --json "{
+        \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
+        \"statement\": \"CREATE SCHEMA $SCHEMA\",
+        \"wait_timeout\": \"50s\"
+      }" > LOG.create_schema
+else
+    $CLI schemas create --json "{\"name\": \"$SCHEMA_NAME\", \"catalog_name\": \"main\", \"properties\": {\"owner\": \"root\"}}" > LOG.create_schema
+fi
+# UC adds unity.catalog.managed.*.defaults.* properties on some clouds; normalize_uc_payload.py drops
+# them here and in the plans below, so the golden shows only the owner property on every cloud.
+trace $CLI schemas get $SCHEMA | jq '{full_name, properties}' | normalize_uc_payload.py
+
+title "Bind it: the config matches, so there is nothing to confirm"
+trace $CLI bundle deployment bind schema1 $SCHEMA
+
+title "Plan is a no-op"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "The undeclared owner property is skipped as a backend default"
+# UC returns an empty comment on a schema created with SQL and the fake server returns none, so drop
+# the comment's "empty" skip entry from the plans to keep one golden.
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py comment
+
+title "Deploying twice changes nothing"
+trace $CLI bundle deploy
+trace $CLI bundle deploy
+
+title "No UpdateSchema call was sent"
+trace print_requests.py --method PATCH //unity-catalog/schemas
+
+title "A property declared next to it is still planned and sent"
+trace update_file.py databricks.yml "# PROPERTIES" "properties: {team: data}"
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py comment
+trace $CLI bundle deploy
+trace print_requests.py --method PATCH //unity-catalog/schemas
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
