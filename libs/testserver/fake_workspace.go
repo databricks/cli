@@ -781,9 +781,10 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 
 	// The real API 404s on a missing path rather than reporting an empty directory.
 	// Repos are listable but tracked outside s.directories, so admit them too.
+	// The root always exists in a real workspace.
 	_, isDir := s.directories[cleaned]
 	_, isRepo := s.repoIdByPath[cleaned]
-	if !isDir && !isRepo {
+	if !isDir && !isRepo && cleaned != "/" {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", listPath)},
@@ -969,12 +970,19 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
+// WorkspaceExport returns the body of GET /api/2.0/workspace/export for path in
+// format, nil when nothing is at path, or a non-zero Response when the real API
+// rejects the export.
+func (s *FakeWorkspace) WorkspaceExport(path string, format workspace.ExportFormat) ([]byte, Response) {
 	defer s.LockUnlock()()
 	if _, isDir := s.directories[path]; isDir {
-		return exportDirectory(path)
+		return exportDirectory(path), Response{}
 	}
-	return s.files[path].Data
+	entry, ok := s.files[path]
+	if !ok {
+		return nil, Response{}
+	}
+	return exportObject(path, entry, format)
 }
 
 // exportDirectory mimics the real API, which exports a directory as a ZIP archive even with
@@ -1078,28 +1086,41 @@ func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, boo
 }
 
 // detectJupyterNotebook reports whether body is a valid Jupyter notebook and
-// the language the workspace gives it on import: the language in its Databricks
-// metadata, else the one in metadata.language_info.name (a notebook with only
-// language_info.name "python" is imported as a PYTHON notebook).
+// the language the workspace object reports for it. The real import reports
+// PYTHON for every Jupyter notebook, whatever its metadata says; the content
+// language is jupyterContentLanguage.
 func detectJupyterNotebook(filePath string, body []byte) (workspace.Language, bool) {
-	isNotebook, language, err := notebook.DetectBytes(filePath, body)
+	isNotebook, _, err := notebook.DetectBytes(filePath, body)
 	if err != nil || !isNotebook {
 		return "", false
 	}
-	if language != "" {
-		return language, true
-	}
+	return workspace.LanguagePython, true
+}
+
+// jupyterContentLanguage returns the language the real export uses for a
+// Jupyter notebook's content (the SOURCE comment syntax and the JUPYTER
+// language metadata): metadata.language_info.name, else the language in its
+// Databricks metadata, else Python.
+func jupyterContentLanguage(body []byte) workspace.Language {
 	var nb struct {
 		Metadata struct {
 			LanguageInfo struct {
 				Name string `json:"name"`
 			} `json:"language_info"`
+			Databricks struct {
+				Language string `json:"language"`
+			} `json:"application/vnd.databricks.v1+notebook"`
 		} `json:"metadata"`
 	}
 	if json.Unmarshal(body, &nb) != nil {
-		return "", true
+		return workspace.LanguagePython
 	}
-	return notebook.LanguageFromJupyterName(strings.ToLower(nb.Metadata.LanguageInfo.Name)), true
+	for _, name := range []string{nb.Metadata.LanguageInfo.Name, nb.Metadata.Databricks.Language} {
+		if language := notebook.LanguageFromJupyterName(strings.ToLower(name)); language != "" {
+			return language
+		}
+	}
+	return workspace.LanguagePython
 }
 
 // detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the
@@ -1131,11 +1152,21 @@ type importConflicts struct {
 	nameTaken func(requestPath, name string) Response
 	// notebookTaken is returned when a file's path is an existing notebook's source name.
 	notebookTaken func(filePath string) Response
+	// notebookExists is returned when a notebook import without overwrite finds a
+	// file or notebook at the notebook's path.
+	notebookExists func(requestPath, notebookPath string) Response
 }
 
 var workspaceImportConflicts = importConflicts{
-	nameTaken:     workspaceImportNameTaken,
-	notebookTaken: workspaceImportNotebookTaken,
+	nameTaken:      workspaceImportNameTaken,
+	notebookTaken:  workspaceImportNotebookTaken,
+	notebookExists: workspaceImportNotebookExists,
+}
+
+// workspaceImportNotebookExists is what /workspace/import returns for a notebook
+// whose path is taken and overwrite is not set.
+func workspaceImportNotebookExists(_, notebookPath string) Response {
+	return importAlreadyExists(notebookPath + " already exists. Please pass overwrite=true to overwrite it.")
 }
 
 func workspaceImportNameTaken(_, name string) Response {
@@ -1166,8 +1197,20 @@ func workspaceImportNotebookTaken(string) Response {
 }
 
 var importFileConflicts = importConflicts{
-	nameTaken:     importFileNameTaken,
-	notebookTaken: importFileNotebookTaken,
+	nameTaken:      importFileNameTaken,
+	notebookTaken:  importFileNotebookTaken,
+	notebookExists: importFileNotebookExists,
+}
+
+// importFileNotebookExists is what the legacy endpoint returns for a notebook
+// whose path is taken: a 400 with the error code only in the message.
+func importFileNotebookExists(requestPath, notebookPath string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"message": fmt.Sprintf("Request failed for POST %s: RESOURCE_ALREADY_EXISTS: %s already exists. Please pass overwrite=true to overwrite it.", requestPath, notebookPath),
+		},
+	}
 }
 
 // importFileNameTaken wraps the notebook import error the way the legacy
@@ -1378,7 +1421,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool,
 		if language, isNotebook := detect(filePath, body); isNotebook {
 			// Notebooks are stripped of their extension by the workspace import API.
 			notebookPath := strings.TrimSuffix(filePath, path.Ext(filePath))
-			return s.storeNotebook(filePath, notebookPath, body, language, conflicts)
+			return s.storeNotebook(filePath, notebookPath, body, language, overwrite, conflicts)
 		}
 	}
 
@@ -1401,8 +1444,12 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool,
 }
 
 // storeNotebook stores a notebook at notebookPath unless a file or directory
-// holds its source name. The caller must hold the lock.
-func (s *FakeWorkspace) storeNotebook(requestPath, notebookPath string, body []byte, language workspace.Language, conflicts importConflicts) Response {
+// holds its source name, or a file or notebook is at notebookPath and overwrite
+// is not set. The caller must hold the lock.
+func (s *FakeWorkspace) storeNotebook(requestPath, notebookPath string, body []byte, language workspace.Language, overwrite bool, conflicts importConflicts) Response {
+	if _, exists := s.files[notebookPath]; exists && !overwrite {
+		return conflicts.notebookExists(requestPath, notebookPath)
+	}
 	sourceName := notebookSourceName(notebookPath, language)
 	_, isFile := s.files[sourceName]
 	_, isDir := s.directories[sourceName]
@@ -1470,16 +1517,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		return resp
 	}
 
-	if !overwrite {
-		if _, exists := s.files[filePath]; exists {
-			return Response{
-				StatusCode: 409,
-				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
-			}
-		}
-	}
-
-	return s.storeNotebook(filePath, filePath, body, language, workspaceImportConflicts)
+	return s.storeNotebook(filePath, filePath, body, language, overwrite, workspaceImportConflicts)
 }
 
 func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {

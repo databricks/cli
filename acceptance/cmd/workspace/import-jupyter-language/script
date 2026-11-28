@@ -1,0 +1,30 @@
+# The workspace reports PYTHON as the object language of every imported Jupyter
+# notebook, while its exports use the content language: language_info.name,
+# else the Databricks metadata language, else Python.
+DIR="/Users/$CURRENT_USER_NAME/import-jupyter-language-$UNIQUE_NAME"
+
+cleanup() {
+    errcode $CLI workspace delete --recursive "$DIR" >> LOG.cleanup 2>&1
+}
+trap cleanup EXIT
+
+$CLI workspace mkdirs "$DIR/import"
+$CLI workspace mkdirs "$DIR/import-dir"
+
+title "import --format JUPYTER and import-dir of the same notebooks"
+for f in notebooks/*.ipynb; do
+    name=$(basename "$f" .ipynb)
+    $CLI workspace import "$DIR/import/$name" --file "$f" --format JUPYTER
+done
+$CLI workspace import-dir notebooks "$DIR/import-dir" > /dev/null
+
+for route in import import-dir; do
+    for f in notebooks/*.ipynb; do
+        name=$(basename "$f" .ipynb)
+        title "$route $name"
+        $CLI workspace get-status "$DIR/$route/$name" | jq -c '{object_type, language}'
+        $CLI workspace export "$DIR/$route/$name"
+        echo
+        $CLI workspace export "$DIR/$route/$name" --format JUPYTER | jq -c '{language_info: .metadata.language_info.name, databricks: .metadata["application/vnd.databricks.v1+notebook"].language, cells: [.cells[] | {cell_type, source}]}'
+    done
+done
