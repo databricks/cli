@@ -1,0 +1,21 @@
+
+=== integer default that matches a const in a root anyOf
+
+>>> [CLI] bundle init . --output-dir default
+✨ Successfully initialized template
+
+>>> cat default/values.txt
+count=3
+
+=== integer from the config file that matches an enum in a root anyOf
+
+>>> [CLI] bundle init . --config-file count-7.json --output-dir from-file
+✨ Successfully initialized template
+
+>>> cat from-file/values.txt
+count=7
+
+=== integer from the config file that matches no anyOf schema
+
+>>> musterr [CLI] bundle init . --config-file count-4.json --output-dir rejected
+Error: failed to load config from file count-4.json: instance does not match any of the schemas in anyOf

@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -324,4 +325,25 @@ func TestValidateInstanceForAnyOf(t *testing.T) {
 	}
 	assert.EqualError(t, schema.validateAnyOf(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+}
+
+// JSON numbers in a schema decode as float64, while prompted and converted
+// integer values are int64; validation must treat them as the same number.
+func TestValidateInstanceIntegerAcrossRepresentations(t *testing.T) {
+	var schema Schema
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"anyOf": [
+			{"properties": {"count": {"const": 3}}, "required": ["count"]},
+			{"properties": {"count": {"enum": [5, 7]}}, "required": ["count"]},
+			{"properties": {"extra": {"type": "integer"}, "ratio": {"type": "number"}}, "required": ["extra"]}
+		]
+	}`), &schema))
+
+	assert.NoError(t, schema.ValidateInstance(map[string]any{"count": int64(3)}))
+	assert.NoError(t, schema.ValidateInstance(map[string]any{"count": int64(7)}))
+	assert.NoError(t, schema.ValidateInstance(map[string]any{"extra": float64(3), "ratio": int64(2)}))
+
+	assert.Error(t, schema.ValidateInstance(map[string]any{"count": int64(4)}))
+	assert.Error(t, schema.ValidateInstance(map[string]any{"extra": float64(3.5)}))
+	assert.Error(t, schema.ValidateInstance(map[string]any{"extra": nil}))
 }

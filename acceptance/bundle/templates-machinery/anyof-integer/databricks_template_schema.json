@@ -1,0 +1,25 @@
+{
+    "properties": {
+        "count": {
+            "type": "integer",
+            "description": "Count",
+            "default": 3
+        }
+    },
+    "anyOf": [
+        {
+            "properties": {
+                "count": {
+                    "const": 3
+                }
+            }
+        },
+        {
+            "properties": {
+                "count": {
+                    "enum": [5, 7]
+                }
+            }
+        }
+    ]
+}

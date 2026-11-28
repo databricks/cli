@@ -1,0 +1,10 @@
+title "integer default that matches a const in a root anyOf"
+trace $CLI bundle init . --output-dir default
+trace cat default/values.txt
+
+title "integer from the config file that matches an enum in a root anyOf"
+trace $CLI bundle init . --config-file count-7.json --output-dir from-file
+trace cat from-file/values.txt
+
+title "integer from the config file that matches no anyOf schema"
+trace musterr $CLI bundle init . --config-file count-4.json --output-dir rejected
