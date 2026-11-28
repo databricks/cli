@@ -5,6 +5,9 @@
 # Before it reads the config, it runs the script that $WHILE_CLAUDE_STARTS names, once. That script is another process
 # that changes the config, or runs a second databricks command, after databricks checked the config and started claude,
 # and before claude reads it.
+#
+# It appends what it did to concurrent.log in the test directory, since databricks shows a CLI's output only in its
+# debug log.
 set -euo pipefail
 config="$HOME/.claude.json"
 
@@ -19,8 +22,10 @@ case "$1 $2" in
     name="$5"
     if jq -e --arg name "$name" '.mcpServers[$name]' "$config" > /dev/null; then
         echo "MCP server $name already exists in user config" >&2
+        echo "claude refused to add $name: the name is taken" >> "$TEST_DIR/concurrent.log"
         exit 1
     fi
+    echo "claude added $name" >> "$TEST_DIR/concurrent.log"
     ;;
 esac
 exec "$FAKE_AGENT_DIR/claude" "$@"

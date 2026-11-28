@@ -31,19 +31,23 @@ trace $CLI aitools mcp add --profile logfood --names system.ai.github --agents c
 export WHILE_CLAUDE_STARTS=user-adds-entry.sh
 trace $CLI aitools mcp remove --names github-logfood
 unset WHILE_CLAUDE_STARTS
-trace assert_not_exists.py concurrent.log
+# claude ran for the add only: nothing ran while a claude CLI started for the removal.
+trace cat concurrent.log
+rm concurrent.log
 trace jq -c '.mcpServers' home/.claude.json
 
 title "two adds of one server name, one after the other: the second is refused"
 trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
 trace musterr $CLI aitools mcp add --profile dogfood --names system.ai.github --name github --agents claude-code
 trace $CLI aitools mcp remove --all
+rm concurrent.log
 
 title "the same two adds at the same time: the second starts while the first waits for the claude CLI, and is refused"
 export WHILE_CLAUDE_STARTS=second-add.sh
 trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
 unset WHILE_CLAUDE_STARTS
 trace cat second-add.txt
+trace cat concurrent.log
 trace jq -c '.mcpServers | map_values(.args)' home/.claude.json
 trace $CLI aitools mcp list
 trace $CLI aitools mcp remove --all
