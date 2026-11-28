@@ -810,6 +810,9 @@ tasks:
   # The cloud tests mostly wait on the workspace, so -parallel 8 rather than 4: at 4
   # the full acceptance suite (~19h of test time) took close to 5h20m when concurrent
   # main runs slowed the workspace down.
+  # Only this task lists ./internal/testarchive: its tests download uv, jq, go and ruff
+  # from the internet and skip without CLOUD_ENV and under -short, so integration-short
+  # and cloud-select would skip them all.
   integration:
     desc: Run integration tests (requires Databricks workspace)
     deps: [install-pythons]
@@ -820,7 +823,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... ./internal/testarchive" \
           -- -parallel 8 -timeout=5h20m
 
   integration-short:

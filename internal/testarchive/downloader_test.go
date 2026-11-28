@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal/testarchive"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,12 +17,13 @@ func TestUvDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
-		err := testarchive.UvDownloader{Arch: arch, BinDir: tmpDir}.Download()
+		err := UvDownloader{Arch: arch, BinDir: tmpDir}.Download()
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(filepath.Join(tmpDir, arch))
@@ -41,12 +41,13 @@ func TestJqDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
-		err := testarchive.JqDownloader{Arch: arch, BinDir: tmpDir}.Download()
+		err := JqDownloader{Arch: arch, BinDir: tmpDir}.Download()
 		require.NoError(t, err)
 
 		files, err := os.ReadDir(filepath.Join(tmpDir, arch))
@@ -64,12 +65,13 @@ func TestGoDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
 
 	for _, arch := range []string{"arm64", "amd64"} {
-		err := testarchive.GoDownloader{Arch: arch, BinDir: tmpDir, RepoRoot: "../.."}.Download()
+		err := GoDownloader{Arch: arch, BinDir: tmpDir, RepoRoot: "../.."}.Download()
 		require.NoError(t, err)
 
 		entries, err := os.ReadDir(filepath.Join(tmpDir, arch))
