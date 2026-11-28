@@ -1,0 +1,21 @@
+
+=== no terminal and no profile: the login saves no profile, asks nothing, and nothing is stored or installed after it
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --log-file LOG.no-terminal --log-level debug
+
+>>> auto_install_state
+{"id": "treatment-machine"}
+
+>>> cursor_skills
+(no skills)
+
+=== --profile: the login saves the profile and asks nothing
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile test --log-file LOG.profile --log-level debug
+Profile test was successfully saved
+
+>>> auto_install_state
+{"id": "treatment-machine"}
+
+>>> cursor_skills
+(no skills)

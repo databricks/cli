@@ -38,6 +38,8 @@ func TestDecide(t *testing.T) {
 		}, want: ReasonRootInUserHome},
 
 		{name: "same version, settled", modify: func(in *Inputs) { in.State.LastVersion = "1.30.0" }, want: ReasonAlreadyRan},
+		{name: "same version, settled before the user agreed", modify: func(in *Inputs) { in.State.LastVersion = "1.30.0"; in.AgreedNow = true }, want: ReasonRun},
+		{name: "older CLI after a newer one ran, the user agreed", modify: func(in *Inputs) { in.State.LastVersion = "1.31.0"; in.AgreedNow = true }, want: ReasonAlreadyRan},
 		{name: "same version, failed before", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 3} }, want: ReasonRun},
 		{name: "same version, last attempt left", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts - 1} }, want: ReasonRun},
 		{name: "same version, retries exhausted", modify: func(in *Inputs) { in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts} }, want: ReasonRetriesExhausted},
@@ -47,6 +49,14 @@ func TestDecide(t *testing.T) {
 		{name: "same version, retry due", modify: func(in *Inputs) {
 			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now.Add(-firstRetryDelay)}
 		}, want: ReasonRun},
+		{name: "same version, gate lookup failed before the user agreed", modify: func(in *Inputs) {
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts}
+			in.AgreedNow = true
+		}, want: ReasonRun},
+		{name: "same version, retries exhausted before the user agreed", modify: func(in *Inputs) {
+			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now.Add(-time.Hour)}
+			in.AgreedNow = true
+		}, want: ReasonRetriesExhausted},
 		{name: "same version, retries exhausted while waiting", modify: func(in *Inputs) {
 			in.State = State{Consented: true, LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now}
 		}, want: ReasonRetriesExhausted},
@@ -145,5 +155,39 @@ func TestReasonDue(t *testing.T) {
 	}
 	for _, r := range due {
 		assert.True(t, r.Due(), r)
+	}
+}
+
+func TestEligible(t *testing.T) {
+	// A run of a released version on a machine whose user never answered.
+	base := Inputs{Version: "1.30.0", Now: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}
+	tests := []struct {
+		name   string
+		modify func(in *Inputs)
+		want   bool
+	}{
+		{name: "eligible", modify: func(in *Inputs) {}, want: true},
+		{name: "skipped command", modify: func(in *Inputs) { in.SkippedCommand = true }},
+		{name: "Databricks Runtime", modify: func(in *Inputs) { in.OnRuntime = true }},
+		{name: "cache disabled", modify: func(in *Inputs) { in.CacheDisabled = true }},
+		{name: "development build", modify: func(in *Inputs) { in.Version = "1.30.0-dev+abcdef123456" }},
+		{name: "root in a user's home", modify: func(in *Inputs) { in.RootInUserHome = true }},
+		{name: "CI", modify: func(in *Inputs) { in.CI = true }},
+		{name: "opt-out in the environment", modify: func(in *Inputs) { in.EnvOptOut = true }},
+		// The state, the gate and the holdout do not matter.
+		{name: "stored consent", modify: func(in *Inputs) { in.State.Consented = true }, want: true},
+		{name: "stored opt-out", modify: func(in *Inputs) { in.State.OptedOut = true }, want: true},
+		{name: "settled version", modify: func(in *Inputs) { in.State.LastVersion = "1.30.0" }, want: true},
+		{name: "newer version ran", modify: func(in *Inputs) { in.State.LastVersion = "1.31.0" }, want: true},
+		{name: "retries used up", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts} }, want: true},
+		{name: "gate on", modify: func(in *Inputs) { in.GateOn = true }, want: true},
+		{name: "holdout", modify: func(in *Inputs) { in.Bucket = 0 }, want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			in := base
+			tc.modify(&in)
+			assert.Equal(t, tc.want, Eligible(in))
+		})
 	}
 }

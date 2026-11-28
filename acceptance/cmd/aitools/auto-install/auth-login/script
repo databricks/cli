@@ -1,0 +1,24 @@
+# `auth login` asks whether to install Databricks AI tools only in a terminal,
+# which acceptance tests do not have, and only when the command names no
+# profile; the unit tests in cmd/aitools and cmd/auth cover the question. These
+# cases show what a login without a terminal does on a machine where
+# everything else would let it ask: the user never answered, Cursor's config
+# dir exists and the gate is on.
+use_home home
+gate true
+# A fake browser that performs a GET on the authorization URL and follows the
+# redirect back to localhost.
+export BROWSER="browser.py"
+
+title "no terminal and no profile: the login saves no profile, asks nothing, and nothing is stored or installed after it"
+trace $CLI auth login --host $DATABRICKS_HOST --log-file LOG.no-terminal --log-level debug
+# The question would look the gate up, which reads the cached manifest.
+contains.py "auto-install: skipped: no_consent" "!Using cached manifest" < LOG.no-terminal > LOG.no-terminal-checked
+trace auto_install_state
+trace cursor_skills
+
+title "--profile: the login saves the profile and asks nothing"
+trace $CLI auth login --host $DATABRICKS_HOST --profile test --log-file LOG.profile --log-level debug
+contains.py "auto-install: skipped: no_consent" "!Using cached manifest" < LOG.profile > LOG.profile-checked
+trace auto_install_state
+trace cursor_skills

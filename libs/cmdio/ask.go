@@ -37,6 +37,13 @@ func readLine(r io.Reader) (string, error) {
 // Ask prompts the user with a question and returns the entered answer.
 // If the user just presses enter, defaultVal is returned.
 func Ask(ctx context.Context, question, defaultVal string) (string, error) {
+	return ask(ctx, question, defaultVal, false)
+}
+
+// ask is Ask. With discardTypedAhead it discards what was typed at the stdin
+// terminal (see DiscardInput) after it printed the question and before it
+// reads the answer.
+func ask(ctx context.Context, question, defaultVal string, discardTypedAhead bool) (string, error) {
 	c := fromContext(ctx)
 
 	// Add default value to question prompt.
@@ -49,6 +56,12 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	_, err := io.WriteString(c.err, question)
 	if err != nil {
 		return "", err
+	}
+
+	if discardTypedAhead {
+		if err := DiscardInput(ctx); err != nil {
+			return "", err
+		}
 	}
 
 	// Read user input. Trim new line characters.
@@ -71,13 +84,27 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 // caller must not read the input again after a cancelled call, because the
 // abandoned read would consume the next line.
 func AskCancellable(ctx context.Context, question, defaultVal string) (string, error) {
+	return askCancellable(ctx, question, defaultVal, false)
+}
+
+// AskCancellableAfterQuestion is like AskCancellable, but reads only what is
+// typed after the question was printed: it discards what was typed at the
+// stdin terminal before (see DiscardInput) right before it reads, so a key
+// pressed while the CLI was busy cannot answer the question. Where that
+// input cannot be discarded, it returns the error without reading.
+func AskCancellableAfterQuestion(ctx context.Context, question, defaultVal string) (string, error) {
+	return askCancellable(ctx, question, defaultVal, true)
+}
+
+// askCancellable is AskCancellable; discardTypedAhead is that of ask.
+func askCancellable(ctx context.Context, question, defaultVal string, discardTypedAhead bool) (string, error) {
 	type answer struct {
 		ans string
 		err error
 	}
 	answers := make(chan answer, 1)
 	go func() {
-		ans, err := Ask(ctx, question, defaultVal)
+		ans, err := ask(ctx, question, defaultVal, discardTypedAhead)
 		answers <- answer{ans, err}
 	}()
 

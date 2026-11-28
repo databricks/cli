@@ -10,11 +10,14 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
+	"path/filepath"
 	"slices"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -29,6 +32,14 @@ import (
 // so it cannot run in the test process.
 const autoInstallSignalHelperEnv = "AITOOLS_TEST_SIGNAL_HELPER"
 
+// loginSignalHelperEnv makes TestMain run a login that asks the question in a
+// helper process, which the test signals at the question.
+const loginSignalHelperEnv = "AITOOLS_TEST_LOGIN_SIGNAL_HELPER"
+
+// sigintIgnoredAtStart is whether the test process started with SIGINT
+// ignored. It is read before any test catches SIGINT, which clears the record.
+var sigintIgnoredAtStart = signal.Ignored(syscall.SIGINT)
+
 // gateLookupStarted is what the helper prints when its gate lookup starts.
 const gateLookupStarted = "looking the gate up"
 
@@ -37,8 +48,13 @@ func init() {
 }
 
 // runAutoInstallSignalHelperProcess runs the hook when
-// TestAutoInstallEndsByTheSignal re-executes the test binary as the helper.
+// TestAutoInstallEndsByTheSignal re-executes the test binary as the helper,
+// and the login when TestAskAtLoginEndsByTheSignal does.
 func runAutoInstallSignalHelperProcess() {
+	if os.Getenv(loginSignalHelperEnv) != "" {
+		runLoginSignalHelper()
+		os.Exit(0)
+	}
 	if os.Getenv(autoInstallSignalHelperEnv) == "" {
 		return
 	}
@@ -67,6 +83,67 @@ func runAutoInstallSignalHelper() os.Signal {
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, cmdio.FakeTTYReader(os.Stdin), cmdio.FakeTTY(io.Discard), cmdio.FakeTTY(os.Stderr), "", ""))
 	ctx = telemetry.WithNewLogger(ctx)
 	return runAutoInstallHook(ctx)
+}
+
+// runLoginSignalHelper runs a login that asks the question through the root
+// command, as main.go wires it, with stdin a pipe that nobody writes to. The
+// root command ends the process by the signal; returning fails the test.
+func runLoginSignalHelper() {
+	// The helper is a new process: it has the real clock, not the test's.
+	now = func() time.Time { return autoInstallTestNow }
+	autoinstall.Run, autoinstall.AskAtLogin = AutoInstall, AskAtLogin
+	// TestMain has no *testing.T, so t.Context() is unavailable here.
+	//nolint:gocritic
+	ctx := context.Background()
+	cli := root.NewTree(ctx)
+	cli.Add(newLoginStandIn())
+	cli.SetIn(cmdio.FakeTTYReader(os.Stdin))
+	cli.SetOut(cmdio.FakeTTY(io.Discard))
+	cli.SetErr(cmdio.FakeTTY(os.Stderr))
+	_ = cli.Execute(ctx, []string{"auth", "login"})
+}
+
+// Ctrl+C at the question of the login ends the CLI by the signal, only after
+// the question was recorded as asked: the consent stays unknown and no later
+// login asks again. Nothing is installed.
+func TestAskAtLoginEndsByTheSignal(t *testing.T) {
+	// The helper inherits a SIGINT ignored at start, as in a background job
+	// of a shell without job control, and the CLI then rightly does not end
+	// by it.
+	if sigintIgnoredAtStart {
+		t.Skip("SIGINT was ignored when the test started")
+	}
+	home := setupAutoInstallHome(t, unaskedState)
+	helper := exec.Command(os.Args[0])
+	helper.Env = append(os.Environ(), loginSignalHelperEnv+"=1")
+	stdin, err := helper.StdinPipe()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = stdin.Close() })
+	stderr, err := helper.StderrPipe()
+	require.NoError(t, err)
+	require.NoError(t, helper.Start())
+
+	output := waitForOutput(t, stderr, cursorQuestion)
+	require.NoError(t, helper.Process.Signal(syscall.SIGINT))
+
+	waitErr := make(chan error, 1)
+	go func() { waitErr <- helper.Wait() }()
+	select {
+	case err := <-waitErr:
+		exitErr, ok := errors.AsType[*exec.ExitError](err)
+		require.True(t, ok, "the helper exited with %v; it printed:\n%s", err, output)
+		status := exitErr.Sys().(syscall.WaitStatus)
+		assert.True(t, status.Signaled(), "the helper must end by the signal, got %v", err)
+		assert.Equal(t, syscall.SIGINT, status.Signal())
+	case <-time.After(10 * time.Second):
+		_ = helper.Process.Kill()
+		t.Fatal("the signal did not end the helper")
+	}
+
+	state, err := autoinstall.Load(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{ConsentAsked: true, ID: "treatment-machine"}, state)
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
 }
 
 // A signal during the gate lookup ends the CLI by that signal, so that the

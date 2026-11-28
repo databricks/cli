@@ -96,6 +96,12 @@ type Inputs struct {
 	// this process (see Declined).
 	EnvOptOut bool
 
+	// AgreedNow is set when the user agreed earlier in this process, at the
+	// question at login. A run that settled Version, or failed to look the
+	// gate up for it, before the user agreed installed nothing, so it does not
+	// stop the install the user is waiting for.
+	AgreedNow bool
+
 	// GateOn is the remote gate for Version.
 	GateOn bool
 
@@ -124,9 +130,9 @@ func Decide(in Inputs) Reason {
 	// change in the user's home.
 	case in.RootInUserHome:
 		return ReasonRootInUserHome
-	case in.State.LastVersion == in.Version && in.State.Attempts >= MaxAttempts:
+	case in.State.LastVersion == in.Version && in.State.Attempts >= MaxAttempts && (!in.AgreedNow || !in.State.gateLookupFailed(in.Version)):
 		return ReasonRetriesExhausted
-	case in.State.LastVersion == in.Version && in.State.Attempts == 0:
+	case in.State.LastVersion == in.Version && in.State.Attempts == 0 && !in.AgreedNow:
 		return ReasonAlreadyRan
 	// A newer CLI already ran here, e.g. an IDE ships its own older CLI next
 	// to the user's: alternating between the two must not run on every
@@ -144,7 +150,10 @@ func Decide(in Inputs) Reason {
 	// A source or agent CLI that stays broken would otherwise make every
 	// following command wait for a failing attempt. The wait is for the
 	// install only: CI and the opt-out settle the version during it.
-	case in.State.LastVersion == in.Version && !retryDue(in.State, in.Now):
+	// Attempts > 0 is load-bearing: with AgreedNow, a settled version
+	// (Attempts == 0) gets past ReasonAlreadyRan, and retryDue shifts by
+	// Attempts-1, which panics when negative.
+	case in.State.LastVersion == in.Version && in.State.Attempts > 0 && !retryDue(in.State, in.Now):
 		return ReasonRetryNotDue
 	case !in.GateOn:
 		return ReasonGateOff
@@ -162,6 +171,24 @@ func Decide(in Inputs) Reason {
 func retryDue(s State, now time.Time) bool {
 	since := now.Sub(s.LastAttempt)
 	return since < 0 || since >= firstRetryDelay<<(s.Attempts-1)
+}
+
+// gateLookupFailed reports whether s records a run for version whose gate
+// lookup failed: it used up the attempts of version without starting an
+// install, so it has no State.LastAttempt.
+func (s State) gateLookupFailed(version string) bool {
+	return s.LastVersion == version && s.Attempts >= MaxAttempts && s.LastAttempt.IsZero()
+}
+
+// Eligible reports whether a run with in may auto-install at all: neither the
+// command, Databricks Runtime, a turned off cache, a development build, root
+// in another user's home, CI nor an opt-out in the environment rules it out.
+// It ignores in.State, the gate and the holdout.
+func Eligible(in Inputs) bool {
+	// Without a state, Decide stops at the first of these checks that rules
+	// the run out, or else at the consent that nobody gave.
+	in.State = State{}
+	return Decide(in) == ReasonNoConsent
 }
 
 // InHoldout reports whether a machine in bucket belongs to the holdout.

@@ -20,15 +20,16 @@ On the first run of a new CLI version, the CLI can install the Databricks AI
 tools (skills and plugins) for the coding agents already on this machine, as
 'databricks aitools install --scope=global' does, or update an existing
 installation, as 'databricks aitools update' does. It never runs in CI or on
-Databricks Runtime, only touches the global scope, and asks nothing.
+Databricks Runtime, only touches the global scope, and asks nothing while it
+runs.
 
 It runs only once the user agreed to it with 'databricks aitools auto-install
-enable', a global-scope 'databricks aitools install' or a "yes" to the skills
-prompt of 'databricks apps init', or when it finds a global installation that
-the CLI made.
+enable', a global-scope 'databricks aitools install', or a "yes" to the skills
+prompt of 'databricks apps init' or to the question that 'databricks auth
+login' asks once, or when it finds a global installation that the CLI made.
 It stays off after 'databricks aitools auto-install disable', a global-scope
-'databricks aitools uninstall', or a "no" to the skills prompt of 'databricks
-apps init', until 'databricks aitools auto-install enable'. Setting
+'databricks aitools uninstall', or a "no" to that prompt or that question,
+until 'databricks aitools auto-install enable'. Setting
 ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes, on) turns
 it off in that environment.`,
 		RunE: root.ReportUnknownSubcommand,

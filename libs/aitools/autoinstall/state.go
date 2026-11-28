@@ -45,17 +45,25 @@ type State struct {
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
 	// `databricks aitools uninstall` and by a "no" to the skills prompt of
-	// `databricks apps init`.
+	// `databricks apps init` or to the question of `databricks auth login`.
 	OptedOut bool `json:"opted_out,omitempty"`
 
 	// Consented records that the user agreed to installing the tools and
 	// keeping them up to date. It is set by `databricks aitools auto-install
 	// enable`, by a global-scope `databricks aitools install` that set an agent
-	// up, by a "yes" to the skills prompt of `databricks apps init`, and by a
-	// run that finds a global installation made by the CLI. It is never set
-	// together with OptedOut (see Consent), so a CLI that knows only OptedOut
-	// still reads an opt-out as one.
+	// up, by a "yes" to the skills prompt of `databricks apps init` or to the
+	// question of `databricks auth login`, and by a run that finds a global
+	// installation made by the CLI. It is never set together with OptedOut
+	// (see Consent), so a CLI that knows only OptedOut still reads an opt-out
+	// as one.
 	Consented bool `json:"consented,omitempty"`
+
+	// ConsentAsked records that `databricks auth login` asked the user for
+	// the consent, so that it never asks again, whatever the answer, and also
+	// when there was none. It is set before the question is shown. A CLI that
+	// does not know it ignores it when it reads the state, and drops it when
+	// it rewrites the state; the question can then be asked once more.
+	ConsentAsked bool `json:"consent_asked,omitempty"`
 
 	// Installing is set while auto-install makes a first install, and stays
 	// set when the install did not finish, including one that was refused
@@ -207,6 +215,20 @@ func GiveConsentIfUnknown(ctx context.Context) (previous Consent, err error) {
 		}
 	})
 	return previous, err
+}
+
+// MarkConsentAsked sets State.ConsentAsked, unless the user answered already
+// or was asked before, and reports whether it did. The question is asked only
+// when it did, so that of two CLI processes that would ask at once, one does.
+// It fails rather than replace a state file it cannot read.
+func MarkConsentAsked(ctx context.Context) (marked bool, err error) {
+	err = updateState(ctx, func(s *State) {
+		if s.Consent() == ConsentUnknown && !s.ConsentAsked {
+			s.ConsentAsked = true
+			marked = true
+		}
+	})
+	return marked && err == nil, err
 }
 
 // declined is set once the user turned the tools down in this process.
