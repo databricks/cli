@@ -84,6 +84,28 @@ func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 	return err
 }
 
+// renderJson passes a response body through when it is already JSON (for
+// example a serving endpoint's OpenAPI schema), so --output json works for
+// commands that return a raw body. Other bodies still can't be shown as JSON.
+func (r readerRenderer) renderJson(_ context.Context, w writeFlusher) error {
+	data, err := io.ReadAll(r.reader)
+	if err != nil {
+		return err
+	}
+	if !json.Valid(data) {
+		return errors.New("json output not supported")
+	}
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, bytes.TrimSpace(data), "", "  "); err != nil {
+		return err
+	}
+	pretty.WriteByte('\n')
+	if _, err := w.Write(pretty.Bytes()); err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
 type iteratorRenderer[T any] struct {
 	t          listing.Iterator[T]
 	bufferSize int

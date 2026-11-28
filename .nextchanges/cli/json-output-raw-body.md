@@ -1,0 +1,1 @@
+* `--output json` now works for commands that return a raw response body when that body is JSON, such as `serving-endpoints get-open-api`, `serving-endpoints http-request` and `fs cat` of a JSON file. It previously failed with `json output not supported`; bodies that aren't JSON still fail with that error. ([#7661](https://github.com/databricks/cli/pull/7661))
