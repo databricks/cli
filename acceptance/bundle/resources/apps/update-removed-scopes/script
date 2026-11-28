@@ -1,0 +1,15 @@
+print_requests() {
+    print_requests.py //apps '^//api/2.0/bundle' --del-body url
+}
+
+trace $CLI bundle deploy
+rm "$OUT_REQUESTS"
+
+title "Remove user_api_scopes from the config; the mask must include it with no value in the body"
+trace update_file.py databricks.yml "user_api_scopes: [sql, files.files]" ""
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests > out.deploy.requests.json
+trace $CLI apps get myappname | jq .user_api_scopes
+
+trace $CLI bundle destroy --auto-approve

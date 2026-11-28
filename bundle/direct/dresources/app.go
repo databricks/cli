@@ -214,17 +214,22 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
+const userApiScopes = "user_api_scopes"
+
 // appUpdateMask returns the update mask for an app update request. compute_size is a
 // backend default (see configs/apps.yml), so when the bundle does not declare it the field
 // is left out of the mask. Naming it while the body omits it asks the backend to reset the
 // size to its default on every deploy, even when the app was resized out of band.
-func appUpdateMask(app *apps.App) string {
-	fields := UpdateMaskFields
-	if app.ComputeSize == "" {
-		fields = slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
-			return f == "compute_size"
-		})
-	}
+//
+// Sending user_api_scopes in the mask clears it unless the body carries a value, and some
+// scopes (e.g. "jobs") can only be added outside this API. So leave it out unless the
+// bundle manages it: declares it, or removed it (the mask is what clears it).
+func appUpdateMask(app *apps.App, entry *PlanEntry) string {
+	change := entry.Changes[userApiScopes]
+	writeScopes := len(app.UserApiScopes) > 0 || (change != nil && change.Action != deployplan.Skip)
+	fields := slices.DeleteFunc(slices.Clone(UpdateMaskFields), func(f string) bool {
+		return (f == "compute_size" && app.ComputeSize == "") || (f == userApiScopes && !writeScopes)
+	})
 	return strings.Join(fields, ",")
 }
 
@@ -242,7 +247,7 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
-			UpdateMask: appUpdateMask(&app),
+			UpdateMask: appUpdateMask(&app, entry),
 		}
 		var updateWaiter *apps.WaitGetUpdateAppSucceeded[apps.AppUpdate]
 		settled, err := r.retryWhileComputeSettles(ctx, id, func() error {

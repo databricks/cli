@@ -1,0 +1,2 @@
+Cloud = false # jobs scope can only be added with account-admin privileges
+Ignore = [".databricks", "databricks.yml"]
