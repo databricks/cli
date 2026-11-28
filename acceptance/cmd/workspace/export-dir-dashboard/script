@@ -12,12 +12,13 @@ trap cleanup EXIT
 
 trace $CLI workspace mkdirs "$DASHBOARD_DIR"
 
-dashboard_id=$($CLI lakeview create \
+$CLI lakeview create \
     --display-name "$DASHBOARD_NAME" \
     --warehouse-id "$TEST_DEFAULT_WAREHOUSE_ID" \
     --serialized-dashboard "$(cat dashboard.lvdash.json)" \
     --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" \
-    -o json | jq -r '.dashboard_id')
+    -o json > created.json
+dashboard_id=$(jq -r '.dashboard_id' created.json)
 add_repl "$dashboard_id" DASHBOARD_ID
 
 mkdir -p "$TEST_TMP_DIR/export"
@@ -27,3 +28,38 @@ trace $CLI workspace export-dir "$DASHBOARD_DIR" "$TEST_TMP_DIR/export"
 # drops an empty "layout": []), so the exported content is not byte-identical to
 # the input. Assert the dashboard was exported rather than diffing the content.
 trace assert_exists.py "$TEST_TMP_DIR/export/$DASHBOARD_NAME.lvdash.json"
+
+# Importing a .lvdash.json over a dashboard's path through the workspace import API updates
+# that dashboard in place: bundle generate --existing-path and the direct engine's create
+# recovery look a dashboard up by its file path, so the file must keep naming the same dashboard.
+# Lakeview reports the path without the /Workspace prefix; both spellings name the same object.
+DASHBOARD_PATH="$DASHBOARD_DIR/$DASHBOARD_NAME.lvdash.json"
+LAKEVIEW_PATH=$(jq -r .path created.json)
+trace echo "$LAKEVIEW_PATH"
+
+title "Overwrite the dashboard with new content through the workspace import API, at the path Lakeview reports"
+trace $CLI workspace import "$LAKEVIEW_PATH" --file imported.lvdash.json --format AUTO --overwrite
+
+title "The workspace object still names the same dashboard, under both spellings of its path"
+trace $CLI workspace get-status "$LAKEVIEW_PATH" | jq '{object_type, resource_id}'
+trace $CLI workspace get-status "$DASHBOARD_PATH" | jq '{object_type, resource_id}'
+
+title "The dashboard has the imported content"
+# Wait for the import to be visible: the etag changes on every write.
+retry --until-not "$(jq -r .etag created.json)" $CLI lakeview get "$dashboard_id" > after.json
+trace jq '.serialized_dashboard | fromjson | [.pages[].name]' after.json
+
+title "Compared with the create response, the import changed only etag and update_time"
+# serialized_dashboard changed on purpose; the backend drops warehouse_id on some versions.
+trace jq -n --slurpfile b created.json --slurpfile a after.json '$b[0] as $b | $a[0] as $a | {
+  updated: ([$a | keys[] | . as $k | select(($b | has($k)) and $b[$k] != $a[$k])] - ["serialized_dashboard"]),
+  inserted: [$a | keys[] | . as $k | select($b | has($k) | not)],
+  deleted: ([$b | keys[] | . as $k | select($a | has($k) | not)] - ["warehouse_id"])
+}'
+
+title "Creating a dashboard with the same name in the same folder is a conflict"
+# Create recovery treats ALREADY_EXISTS and RESOURCE_ALREADY_EXISTS alike; the backend returns
+# either, with wording that varies by version, so only the final status and the code are checked.
+musterr $CLI lakeview create --display-name "$DASHBOARD_NAME" --serialized-dashboard "$(cat imported.lvdash.json)" --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" --debug 2> LOG.conflict
+grep '< HTTP/' LOG.conflict | tail -n 1 | trace contains.py ' 409' > /dev/null
+trace contains.py 'ALREADY_EXISTS' < LOG.conflict > /dev/null

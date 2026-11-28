@@ -7,3 +7,53 @@ Exporting files from /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NA
 Export complete
 
 >>> assert_exists.py [TEST_TMP_DIR]/export/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+
+>>> echo /Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+
+=== Overwrite the dashboard with new content through the workspace import API, at the path Lakeview reports
+
+>>> [CLI] workspace import /Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json --file imported.lvdash.json --format AUTO --overwrite
+
+=== The workspace object still names the same dashboard, under both spellings of its path
+
+>>> [CLI] workspace get-status /Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+{
+  "object_type": "DASHBOARD",
+  "resource_id": "[DASHBOARD_ID]"
+}
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
+{
+  "object_type": "DASHBOARD",
+  "resource_id": "[DASHBOARD_ID]"
+}
+
+=== The dashboard has the imported content
+
+>>> jq .serialized_dashboard | fromjson | [.pages[].name] after.json
+[
+  "imported"
+]
+
+=== Compared with the create response, the import changed only etag and update_time
+
+>>> jq -n --slurpfile b created.json --slurpfile a after.json $b[0] as $b | $a[0] as $a | {
+  updated: ([$a | keys[] | . as $k | select(($b | has($k)) and $b[$k] != $a[$k])] - ["serialized_dashboard"]),
+  inserted: [$a | keys[] | . as $k | select($b | has($k) | not)],
+  deleted: ([$b | keys[] | . as $k | select($a | has($k) | not)] - ["warehouse_id"])
+}
+{
+  "updated": [
+    "etag",
+    "update_time"
+  ],
+  "inserted": [],
+  "deleted": []
+}
+
+=== Creating a dashboard with the same name in the same folder is a conflict
+
+>>> contains.py  409
+
+>>> contains.py ALREADY_EXISTS

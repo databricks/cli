@@ -208,18 +208,9 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		}
 	}
 	updated := *dashboard
-
-	// Bump etag on every write, matching cloud behavior.
-	prevEtag, err := strconv.Atoi(updated.Etag)
-	if err != nil {
-		return Response{
-			Body: map[string]string{
-				"message": "Invalid etag: " + updated.Etag,
-			},
-			StatusCode: 400,
-		}
+	if resp, ok := updated.bumpEtag(); !ok {
+		return resp
 	}
-	updated.Etag = strconv.Itoa(prevEtag + 1)
 
 	if updateReq.SerializedDashboard != updated.InputSerializedDashboard {
 		updated.InputSerializedDashboard = updateReq.SerializedDashboard
@@ -377,4 +368,75 @@ func (s *FakeWorkspace) moveDashboardFile(oldPath, newPath, dashboardId string) 
 		entry.Info.Path = path.Join("/Workspace", newPath)
 		s.files[entry.Info.Path] = entry
 	}
+}
+
+// dashboardEntry finds the workspace object of a dashboard by the path Lakeview returns for it
+// (Dashboard.Path, without the /Workspace prefix), which the real Workspace API accepts as well.
+// Only dashboards are resolved this way. The caller must hold the lock.
+func (s *FakeWorkspace) dashboardEntry(filePath string) (FileEntry, bool) {
+	if strings.HasPrefix(filePath, "/Workspace/") {
+		return FileEntry{}, false
+	}
+	entry, ok := s.files[path.Join("/Workspace", filePath)]
+	if !ok || entry.Info.ObjectType != workspace.ObjectTypeDashboard {
+		return FileEntry{}, false
+	}
+	return entry, true
+}
+
+// bumpEtag advances the etag, as the cloud does on every write. ok is false, with the response to
+// return, when the stored etag is not a number.
+func (d *fakeDashboard) bumpEtag() (Response, bool) {
+	prevEtag, err := strconv.Atoi(d.Etag)
+	if err != nil {
+		return Response{
+			Body: map[string]string{
+				"message": "Invalid etag: " + d.Etag,
+			},
+			StatusCode: 400,
+		}, false
+	}
+	d.Etag = strconv.Itoa(prevEtag + 1)
+	return Response{}, true
+}
+
+// WorkspaceImportOverDashboard serves an AUTO-format /workspace/import with overwrite onto the
+// .lvdash.json path of an existing dashboard. The real API updates that dashboard in place: the
+// path keeps the dashboard's identity (get-status resource_id), and the import sets its
+// serialized_dashboard, etag and update_time. ok is false when the request is not such an import.
+func (s *FakeWorkspace) WorkspaceImportOverDashboard(filePath string, body []byte, overwrite bool) (Response, bool) {
+	if !overwrite {
+		return Response{}, false
+	}
+	filePath = path.Clean("/" + filePath)
+
+	defer s.LockUnlock()()
+
+	entry, ok := s.files[filePath]
+	if !ok {
+		entry, ok = s.dashboardEntry(filePath)
+		filePath = entry.Info.Path
+	}
+	if !ok || entry.Info.ObjectType != workspace.ObjectTypeDashboard {
+		return Response{}, false
+	}
+	dashboard, ok := s.Dashboards.ReadStrong(entry.Info.ResourceId)
+	if !ok {
+		return Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       fmt.Sprintf("internal error: no dashboard %s for workspace object %s", entry.Info.ResourceId, filePath),
+		}, true
+	}
+	updated := *dashboard
+	if resp, ok := updated.bumpEtag(); !ok {
+		return resp, true
+	}
+	updated.InputSerializedDashboard = string(body)
+	updated.SerializedDashboard = transformSerializedDashboard(string(body), "", "")
+	updated.UpdateTime = nextTimestamp()
+	s.Dashboards.Write(updated.DashboardId, &updated)
+
+	entry.Data = []byte(updated.SerializedDashboard)
+	s.files[filePath] = entry
+	return Response{}, true
 }

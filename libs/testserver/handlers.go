@@ -90,6 +90,9 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
 			return w.WorkspaceImportZipFolder(form.Path, form.Content, form.Overwrite)
 		}
+		if resp, ok := w.WorkspaceImportOverDashboard(form.Path, form.Content, form.Overwrite); ok {
+			return resp
+		}
 		if unsupported, ok := autoImportUnsupported(form.Path); ok {
 			return unsupported
 		}
