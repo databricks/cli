@@ -1,0 +1,6 @@
+# Reproduction of a false-positive permissions "update" after migrating to the
+# direct engine. Direct-only: the customer hit this on the direct engine and the
+# JSON plan format is direct-specific.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml"]
