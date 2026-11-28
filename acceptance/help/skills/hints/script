@@ -14,3 +14,10 @@ trace $CLI auth --help | contains.py "!databricks skills" > /dev/null
 
 # A leaf command under a mapped group gets no footer of its own.
 trace $CLI fs ls --help | contains.py "!databricks skills" > /dev/null
+
+# A skill whose name starts with "-" ends the flags before it, so the printed command runs as printed.
+databricks() { "$CLI" "$@"; }
+trace $CLI jobs --help | tail -n 4
+line="databricks skills read -- -foo"
+$CLI jobs --help | contains.py "  $line" > LOG.read
+trace eval "$line"

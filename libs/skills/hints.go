@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 )
@@ -49,6 +50,11 @@ func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Coding agents: read the skills for this command group before you use it.")
 	for _, name := range names {
-		fmt.Fprintf(w, "  databricks skills read %s\n", name)
+		// A leading "-" would make Cobra read the name as a flag, so "--" ends the flags first.
+		endOfFlags := ""
+		if strings.HasPrefix(name, "-") {
+			endOfFlags = "-- "
+		}
+		fmt.Fprintf(w, "  databricks skills read %s%s\n", endOfFlags, name)
 	}
 }
