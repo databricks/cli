@@ -1,0 +1,1 @@
+* `serving-endpoints create`, `update-config`, `put-ai-gateway`, `patch-telemetry-config` and `query` now include example `--json` request bodies in their `--help`. ([#7666](https://github.com/databricks/cli/pull/7666))
