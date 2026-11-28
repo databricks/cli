@@ -222,21 +222,98 @@
     {
       "id": "leading-digit-ascii",
       "input": "${0helloworld.world-world}",
-      "match": false
+      "match": true,
+      "references": ["0helloworld.world-world"],
+      "pure": true,
+      "path": "0helloworld.world-world"
     },
     {
       "id": "leading-digit-second-segment",
       "input": "${helloworld.9world-world}",
-      "match": false
+      "match": true,
+      "references": ["helloworld.9world-world"],
+      "pure": true,
+      "path": "helloworld.9world-world"
     },
     {
       "id": "leading-digit-unicode",
       "input": "${0café.bar}",
-      "match": false
+      "match": true,
+      "references": ["0café.bar"],
+      "pure": true,
+      "path": "0café.bar"
     },
     {
       "id": "leading-digit-cjk",
       "input": "${变量.9世界}",
+      "match": true,
+      "references": ["变量.9世界"],
+      "pure": true,
+      "path": "变量.9世界"
+    },
+    {
+      "id": "resource-key-leading-digits",
+      "input": "${resources.jobs.00_clear_silver_and_gold.id}",
+      "match": true,
+      "references": ["resources.jobs.00_clear_silver_and_gold.id"],
+      "pure": true,
+      "path": "resources.jobs.00_clear_silver_and_gold.id"
+    },
+    {
+      "id": "resource-key-digit-runs-before-letter",
+      "input": "${resources.jobs.2024-01-report.id}",
+      "match": true,
+      "references": ["resources.jobs.2024-01-report.id"],
+      "pure": true,
+      "path": "resources.jobs.2024-01-report.id"
+    },
+    {
+      "id": "resource-key-leading-underscore-and-digit",
+      "input": "${resources.jobs._0job.id}",
+      "match": true,
+      "references": ["resources.jobs._0job.id"],
+      "pure": true,
+      "path": "resources.jobs._0job.id"
+    },
+    {
+      "id": "all-digit-single-segment",
+      "comment": "A segment needs a letter, so shell-style ${1} stays a literal",
+      "input": "${1}",
+      "match": false
+    },
+    {
+      "id": "all-digit-first-segment",
+      "input": "${123.foo}",
+      "match": false
+    },
+    {
+      "id": "all-digit-last-segment",
+      "input": "${foo.1}",
+      "match": false
+    },
+    {
+      "id": "all-digit-resource-key",
+      "input": "${resources.jobs.123.id}",
+      "match": false
+    },
+    {
+      "id": "all-digit-with-separators",
+      "input": "${resources.jobs.2024_01.id}",
+      "match": false
+    },
+    {
+      "id": "all-digit-leading-underscore",
+      "input": "${resources.jobs._1.id}",
+      "match": false
+    },
+    {
+      "id": "all-digit-fullwidth",
+      "input": "${变量.９９}",
+      "match": false
+    },
+    {
+      "id": "leading-digit-trailing-underscore",
+      "input": "${resources.jobs.0job_.id}",
       "match": false
     },
     {
@@ -277,8 +354,40 @@
     },
     {
       "id": "fullwidth-digit",
+      "comment": "Unicode digits lead a segment the same way ASCII digits do",
       "input": "${变量.９世界}",
+      "match": true,
+      "references": ["变量.９世界"],
+      "pure": true,
+      "path": "变量.９世界"
+    },
+    {
+      "id": "non-decimal-number-after-digit",
+      "comment": "Superscript two is a number, not a letter, so the segment has no letter",
+      "input": "${a.1²}",
       "match": false
+    },
+    {
+      "id": "non-decimal-number-segment",
+      "input": "${a.²}",
+      "match": false
+    },
+    {
+      "id": "non-decimal-number-leads-segment",
+      "comment": "Non-decimal numbers lead a segment the same way digits do",
+      "input": "${a.²b}",
+      "match": true,
+      "references": ["a.²b"],
+      "pure": true,
+      "path": "a.²b"
+    },
+    {
+      "id": "non-decimal-number-after-letter",
+      "input": "${a.b²}",
+      "match": true,
+      "references": ["a.b²"],
+      "pure": true,
+      "path": "a.b²"
     },
     {
       "id": "empty-string",

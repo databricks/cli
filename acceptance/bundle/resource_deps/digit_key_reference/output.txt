@@ -1,0 +1,73 @@
+
+>>> [CLI] bundle plan
+create jobs.00_clear
+create jobs.00_clear.permissions
+create jobs.ref
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.00_clear
+Created jobs.00_clear.permissions
+Created jobs.ref
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== jobs.ref is created with the id of jobs.00_clear in its name
+
+>>> print_requests.py --nostamp --keep //jobs/create
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "leading digit",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "id=[00_CLEAR_ID]",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+=== jobs.00_clear.permissions are set on the id of jobs.00_clear
+
+>>> print_requests.py //permissions/jobs
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[00_CLEAR_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "users",
+        "permission_level": "CAN_VIEW"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

@@ -1,10 +1,14 @@
 import json
+import re
+import sys
+import unicodedata
 from pathlib import Path
 from typing import Any, Optional
 
 import pytest
 
 from databricks.bundles.core._transform import (
+    _non_decimal_numbers,
     _unwrap_variable_path,
     _variable_regex,
 )
@@ -51,3 +55,19 @@ def test_reference_vectors(vector: dict[str, Any]) -> None:
         assert unwrap_path == vector["path"], "PureReferenceToPath equivalent"
     elif vector.get("path_ok") is False:
         assert _unwrap_variable_path(value) is None, "PureReferenceToPath equivalent"
+
+
+def test_non_decimal_numbers_match_unicodedata() -> None:
+    numbers = re.compile("[%s]" % _non_decimal_numbers)
+    mismatched = []
+    for code_point in range(sys.maxunicode + 1):
+        char = chr(code_point)
+        category = unicodedata.category(char)
+        in_table = numbers.match(char) is not None
+        # The table comes from Go, whose Unicode version can be newer than Python's,
+        # so an entry can be unassigned (Cn) here.
+        if in_table and category == "Cn":
+            continue
+        if in_table != (category in ("No", "Nl")):
+            mismatched.append(f"U+{code_point:04X} ({category})")
+    assert mismatched == []

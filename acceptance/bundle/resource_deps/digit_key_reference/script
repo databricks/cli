@@ -1,0 +1,9 @@
+trace $CLI bundle plan
+trace $CLI bundle deploy
+replace_ids.py
+
+title "jobs.ref is created with the id of jobs.00_clear in its name"
+trace print_requests.py --nostamp --keep //jobs/create
+
+title "jobs.00_clear.permissions are set on the id of jobs.00_clear"
+trace print_requests.py //permissions/jobs

@@ -14,6 +14,8 @@ func TestPureReferenceMatchesDynvar(t *testing.T) {
 		"${resources.jobs.foo.tasks[1].env.key}",
 		"${var.résumé_2}",
 		"${_private.x}",
+		"${resources.jobs.00_job.id}",
+		"${resources.jobs.123.id}",
 		"${var.foo[0][1]}",
 		"${var.jobs['my_job']}",
 		"${var.-foo}",

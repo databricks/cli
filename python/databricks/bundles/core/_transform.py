@@ -321,7 +321,38 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
 #   - "${a.b}"
 #   - "${a.b.c}"
 #   - "${a.b[0].c}"
-_base_var_def = r"_*[^\W\d_]+([-_]*[^\W_]+)*"
+#
+# Go's \p{N} also takes numbers that are not decimal digits (Unicode categories No
+# and Nl, such as "²" or "Ⅻ"). Python's re has no class for them: \d leaves them out
+# and \w takes them in, so [^\W\d_] alone would take "²" for a letter.
+# Generated from Go's unicode.No and unicode.Nl tables (Unicode 17.0).
+_non_decimal_numbers = (
+    "\u00b2\u00b3\u00b9\u00bc-\u00be\u09f4-\u09f9\u0b72-\u0b77\u0bf0-\u0bf2"
+    "\u0c78-\u0c7e\u0d58-\u0d5e\u0d70-\u0d78\u0f2a-\u0f33\u1369-\u137c"
+    "\u16ee-\u16f0\u17f0-\u17f9\u19da\u2070\u2074-\u2079\u2080-\u2089"
+    "\u2150-\u2182\u2185-\u2189\u2460-\u249b\u24ea-\u24ff\u2776-\u2793\u2cfd"
+    "\u3007\u3021-\u3029\u3038-\u303a\u3192-\u3195\u3220-\u3229\u3248-\u324f"
+    "\u3251-\u325f\u3280-\u3289\u32b1-\u32bf\ua6e6-\ua6ef\ua830-\ua835"
+    "\U00010107-\U00010133\U00010140-\U00010178\U0001018a\U0001018b"
+    "\U000102e1-\U000102fb\U00010320-\U00010323\U00010341\U0001034a"
+    "\U000103d1-\U000103d5\U00010858-\U0001085f\U00010879-\U0001087f"
+    "\U000108a7-\U000108af\U000108fb-\U000108ff\U00010916-\U0001091b"
+    "\U000109bc\U000109bd\U000109c0-\U000109cf\U000109d2-\U000109ff"
+    "\U00010a40-\U00010a48\U00010a7d\U00010a7e\U00010a9d-\U00010a9f"
+    "\U00010aeb-\U00010aef\U00010b58-\U00010b5f\U00010b78-\U00010b7f"
+    "\U00010ba9-\U00010baf\U00010cfa-\U00010cff\U00010e60-\U00010e7e"
+    "\U00010f1d-\U00010f26\U00010f51-\U00010f54\U00010fc5-\U00010fcb"
+    "\U00011052-\U00011065\U000111e1-\U000111f4\U0001173a\U0001173b"
+    "\U000118ea-\U000118f2\U00011c5a-\U00011c6c\U00011fc0-\U00011fd4"
+    "\U00012400-\U0001246e\U00016b5b-\U00016b61\U00016e80-\U00016e96"
+    "\U00016ff4-\U00016ff6\U0001d2c0-\U0001d2d3\U0001d2e0-\U0001d2f3"
+    "\U0001d360-\U0001d378\U0001e8c7-\U0001e8cf\U0001ec71-\U0001ecab"
+    "\U0001ecad-\U0001ecaf\U0001ecb1-\U0001ecb4\U0001ed01-\U0001ed2d"
+    "\U0001ed2f-\U0001ed3d\U0001f100-\U0001f10c"
+)
+_number = r"[\d%s]" % _non_decimal_numbers  # Go's \p{N}
+_letter = r"[^\W\d_%s]" % _non_decimal_numbers  # Go's \p{L}
+_base_var_def = r"_*(%s+[-_]+)*%s*%s+([-_]*[^\W_]+)*" % (_number, _number, _letter)
 _variable_regex = re.compile(
     r"(?<!\$)\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}"
     % (_base_var_def, _base_var_def)
