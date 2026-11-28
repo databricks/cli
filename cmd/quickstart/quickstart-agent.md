@@ -17,6 +17,8 @@ The `databricks` CLI wraps the public Databricks REST API — there's a command 
 - **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and find the matching skill with `databricks skills list` (below). Almost everything is reachable through the CLI.
 <!--aitools-->
 - **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and install the matching skill (below). Almost everything is reachable through the CLI.
+<!--plain-->
+- **Reason, don't refuse.** Before telling the user something can't be done, run `databricks <group> --help` and look for a matching command. Almost everything is reachable through the CLI.
 <!--end-->
 - **Build with bundles.** For anything durable — jobs, pipelines, dashboards, apps — define it as code in a Declarative Automation Bundle (DABs) and ship with `databricks bundle deploy`, not one-off API calls.
 - **Pick the profile deliberately.** Run `databricks auth profiles`. If only one profile exists, use it. If one is already set as the default (via `databricks auth switch`), assume that one — you can confirm if unsure. Otherwise, show the user the profiles with their workspace URLs and let them choose. Don't invent profile names.
@@ -57,6 +59,8 @@ Find the bundle skill in `databricks skills list` and read it for bundle structu
 Read the `databricks-dabs` skill for bundle structure, resource schemas, and multi-target setup.
 
 **Databricks Apps** (full-stack TypeScript + React via AppKit) build on bundles too, with a dedicated scaffolder — see `databricks-apps`:
+<!--plain-->
+**Databricks Apps** (full-stack TypeScript + React via AppKit) build on bundles too, with a dedicated scaffolder:
 <!--end-->
 
 ```bash
@@ -106,6 +110,7 @@ databricks aitools list                    # available + installed skills — ch
 ```
 
 The set evolves, so run `databricks aitools list` rather than relying on a fixed list. Common ones: `databricks-core` (CLI/auth), `databricks-jobs`, `databricks-pipelines`, `databricks-dabs` (deploy as code), `databricks-apps`. Experimental skills reach further (Unity Catalog, vector search, dashboards, AI functions, and more) — worth a look depending on the prompt.
+<!--plain-->
 <!--end-->
 
 ## Explore data
@@ -123,4 +128,6 @@ databricks experimental aitools tools query "SELECT * FROM <table> LIMIT 10" --p
 Re-read `databricks <group> --help`, find the matching skill with `databricks skills list`, and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.
 <!--aitools-->
 Re-read `databricks <group> --help`, install the matching skill, and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.
+<!--plain-->
+Re-read `databricks <group> --help` and check https://docs.databricks.com. If you truly can't do something yourself, tell the user how they can — don't tell them Databricks can't.
 <!--end-->

@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
@@ -109,6 +110,9 @@ const autoInstallNoticeCommands = "Turn off: databricks aitools auto-install dis
 // would have without auto-install.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
+	if skills.AgentFeaturesDisabled(ctx) {
+		return nil
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)

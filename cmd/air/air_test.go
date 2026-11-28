@@ -141,6 +141,7 @@ func TestHelpSkillsFooterForNestedGroup(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644))
 	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", "1")
 	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+	ctx = env.Set(ctx, "DATABRICKS_AGENT_FEATURES_DISABLED", "")
 	ctx = env.Set(ctx, "DATABRICKS_SKILLS_DIR", dir)
 
 	// Under a databricks root, the group key is "air pools", as in the CLI.

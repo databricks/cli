@@ -42,6 +42,7 @@ func TestAutoInstallsFor(t *testing.T) {
 		{name: "a version whose retries ran out installs nothing", state: `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 10}`},
 		{name: "an opt-out installs nothing", state: `{"id": "treatment-machine", "opted_out": true}`},
 		{name: "the env opt-out installs nothing", env: map[string]string{"DATABRICKS_AITOOLS_AUTO_INSTALL": "false"}},
+		{name: "the agent features switch installs nothing", env: map[string]string{"DATABRICKS_AGENT_FEATURES_DISABLED": "1"}},
 		{name: "CI installs nothing", env: map[string]string{"CI": "true"}},
 		{name: "a development build installs nothing", env: map[string]string{"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION": ""}},
 		{name: "a command that skips auto-install installs nothing", command: "aitools list"},

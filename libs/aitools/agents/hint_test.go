@@ -98,6 +98,40 @@ func TestMaybeHint_ClaudeNotInstalledHints(t *testing.T) {
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
 }
 
+// DATABRICKS_AGENT_FEATURES_DISABLED turns the hint off whatever the skills
+// switches say: nothing prints and no event is logged. Unset, or a value that
+// is not true, leaves the hint as it was.
+func TestMaybeHint_AgentFeaturesDisabled(t *testing.T) {
+	cases := []struct {
+		name     string
+		preview  string
+		hints    string
+		disabled string
+		want     string
+		kinds    []protos.AitoolsHintKind
+	}{
+		{name: "skills hint, unset", preview: "1", hints: "1", want: skillsHintText + "\n", kinds: []protos.AitoolsHintKind{protos.AitoolsHintKindSkillsListText}},
+		{name: "skills hint, invalid value", preview: "1", hints: "1", disabled: "maybe", want: skillsHintText + "\n", kinds: []protos.AitoolsHintKind{protos.AitoolsHintKindSkillsListText}},
+		{name: "skills hint, disabled", preview: "1", hints: "1", disabled: "1"},
+		{name: "install text, unset", want: hintText + "\n", kinds: []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}},
+		{name: "install text, disabled", disabled: "true"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+			ctx = env.Set(ctx, "DATABRICKS_AGENT_FEATURES_DISABLED", tc.disabled)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, tc.want, stderr.String())
+			assert.Equal(t, tc.kinds, hintKinds(t, ctx))
+		})
+	}
+}
+
 func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
 	setClaudeAgent(t)
 	home := t.TempDir()

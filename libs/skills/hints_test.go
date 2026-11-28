@@ -32,6 +32,7 @@ func TestWriteGroupHint(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", c.dir)
+			ctx = env.Set(ctx, "DATABRICKS_AGENT_FEATURES_DISABLED", "")
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
 

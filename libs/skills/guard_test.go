@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Each case clears the process environment with testutil.CleanupEnvironment,
+// so an exported value on the developer's machine does not leak in.
 func TestEnabled(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -36,6 +38,55 @@ func TestEnabled(t *testing.T) {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
 			}
 			assert.Equal(t, c.want, Enabled(ctx))
+		})
+	}
+}
+
+// Only a true value turns DATABRICKS_AGENT_FEATURES_DISABLED on. Unset, false
+// and an invalid value leave the feature as its own switches set it.
+func TestAgentFeaturesDisabled(t *testing.T) {
+	cases := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "unset", value: "", want: false},
+		{name: "true", value: "true", want: true},
+		{name: "one", value: "1", want: true},
+		{name: "yes", value: "yes", want: true},
+		{name: "false", value: "false", want: false},
+		{name: "invalid", value: "maybe", want: false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, c.value)
+			assert.Equal(t, c.want, AgentFeaturesDisabled(ctx))
+		})
+	}
+}
+
+// With both skills switches on, a true DATABRICKS_AGENT_FEATURES_DISABLED turns
+// Enabled and HintsEnabled off. Any other value leaves them on.
+func TestAgentFeaturesDisabledOverridesSkillsSwitches(t *testing.T) {
+	cases := []struct {
+		name     string
+		disabled string
+		want     bool
+	}{
+		{name: "unset", want: true},
+		{name: "true", disabled: "true", want: false},
+		{name: "one", disabled: "1", want: false},
+		{name: "false", disabled: "false", want: true},
+		{name: "invalid", disabled: "maybe", want: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, c.disabled)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+			assert.Equal(t, c.want, Enabled(ctx))
+			assert.Equal(t, c.want, HintsEnabled(ctx))
+			assert.Equal(t, c.want, HintsEnabled(WithHintsMemo(ctx)))
 		})
 	}
 }

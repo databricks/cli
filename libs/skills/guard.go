@@ -18,6 +18,10 @@ const (
 	// hintsEnv forces skill hints on or off. It only has an effect while
 	// previewEnv is set. Unset, the compatibility manifest decides.
 	hintsEnv = "DATABRICKS_SKILLS_HINTS"
+
+	// AgentFeaturesDisabledEnv turns the agent features off: the skills feature
+	// and the aitools hints and auto-install. It wins over previewEnv and hintsEnv.
+	AgentFeaturesDisabledEnv = "DATABRICKS_AGENT_FEATURES_DISABLED"
 )
 
 // hintsMemoKey is the context key of the *hintsMemo that WithHintsMemo sets.
@@ -30,11 +34,18 @@ type hintsMemo struct {
 	on       bool
 }
 
+// AgentFeaturesDisabled reports whether DATABRICKS_AGENT_FEATURES_DISABLED is
+// set to a true value. The aitools hints and auto-install check it too. The
+// explicit `databricks aitools` commands still work.
+func AgentFeaturesDisabled(ctx context.Context) bool {
+	return envTrue(ctx, AgentFeaturesDisabledEnv)
+}
+
 // Enabled reports whether the skills feature is on. It is the gate for the
 // whole feature: unless DATABRICKS_SKILLS_PREVIEW is set to a true value, the
 // skills command group is not registered.
 func Enabled(ctx context.Context) bool {
-	return envTrue(ctx, previewEnv)
+	return !AgentFeaturesDisabled(ctx) && envTrue(ctx, previewEnv)
 }
 
 // WithHintsMemo returns ctx with the hints value resolved once for the run.
@@ -53,6 +64,9 @@ func WithHintsMemo(ctx context.Context) context.Context {
 // see internal/build/README.md. On a context from WithHintsMemo it answers once
 // per run; otherwise it reads the manifest cache on every call.
 func HintsEnabled(ctx context.Context) bool {
+	if AgentFeaturesDisabled(ctx) {
+		return false
+	}
 	if !Enabled(ctx) {
 		return false
 	}

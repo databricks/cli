@@ -1,0 +1,30 @@
+
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
+=== disabled: no install notice, no install or skills hint, nothing installed
+
+>>> DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 [CLI] jobs list
+
+>>> print_telemetry
+
+>>> cursor_skills
+(no skills)
+
+>>> auto_install_state
+{
+  "consented": true,
+  "id": "treatment-machine"
+}
+
+=== unset: the first run of this version installs, and no hint is printed
+
+>>> env -u DATABRICKS_AGENT_FEATURES_DISABLED CLAUDECODE=1 [CLI] jobs list
+Installed Databricks AI tools for Claude Code, Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"CLI_NOT_ON_PATH"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-test

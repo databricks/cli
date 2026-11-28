@@ -1,0 +1,20 @@
+# DATABRICKS_AGENT_FEATURES_DISABLED turns off the aitools hint and auto-install,
+# with the skills preview and hints on. The unset run after it installs.
+unset AGENT CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION
+use_home home
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
+gate true
+trace $CLI aitools auto-install enable
+export DATABRICKS_SKILLS_PREVIEW=1
+export DATABRICKS_SKILLS_HINTS=1
+
+title "disabled: no install notice, no install or skills hint, nothing installed"
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+title "unset: the first run of this version installs, and no hint is printed"
+trace env -u DATABRICKS_AGENT_FEATURES_DISABLED CLAUDECODE=1 $CLI jobs list
+trace print_telemetry
+trace cursor_skills

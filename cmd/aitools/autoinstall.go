@@ -3,10 +3,12 @@ package aitools
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +32,9 @@ It stays off after 'databricks aitools auto-install disable', a global-scope
 'databricks aitools uninstall', or a "no" to the skills prompt of 'databricks
 apps init', until 'databricks aitools auto-install enable'. Setting
 ` + autoinstall.EnvVar + ` to anything but a true value (true, 1, yes, on) turns
-it off in that environment.`,
+it off in that environment. Setting ` + skills.AgentFeaturesDisabledEnv + `
+to a true value (true, 1, yes, on) also turns it off, along with the skills and
+the aitools hints.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newAutoInstallToggleCmd(true))
@@ -71,7 +75,19 @@ func printAutoInstallSetting(ctx context.Context, enabled bool) {
 		return
 	}
 	cmdio.LogString(ctx, "Automatic installation of Databricks AI tools is enabled.")
+	// One warning covers both variables, so unsetting only one is not taken for a fix.
+	var overrides []string
 	if autoinstall.EnvOptedOut(ctx) {
-		cmdio.LogString(ctx, cmdio.Yellow(ctx, autoinstall.EnvVar+" still disables it in this environment; unset it to let it run."))
+		overrides = append(overrides, autoinstall.EnvVar)
+	}
+	if skills.AgentFeaturesDisabled(ctx) {
+		overrides = append(overrides, skills.AgentFeaturesDisabledEnv)
+	}
+	switch len(overrides) {
+	case 0:
+	case 1:
+		cmdio.LogString(ctx, cmdio.Yellow(ctx, overrides[0]+" still disables it in this environment; unset it to let it run."))
+	default:
+		cmdio.LogString(ctx, cmdio.Yellow(ctx, strings.Join(overrides, " and ")+" still disable it in this environment; unset both to let it run."))
 	}
 }
