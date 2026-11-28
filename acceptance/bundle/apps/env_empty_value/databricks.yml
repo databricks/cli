@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle
+
+variables:
+  warehouse_id:
+    default: ""
+
+resources:
+  apps:
+    base:
+      name: base
+      source_code_path: ./base_app
+      config:
+        env:
+          - name: MODE
+            value: prod
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      config:
+        env:
+          - name: STATIC_VALUE
+            value: static
+          - name: SECRET_VALUE
+            value_from: my_secret
+          - name: WAREHOUSE_ID
+            value: ${var.warehouse_id}
+          # A whole-entry reference resolves at deploy time; the base entry is checked instead.
+          - ${resources.apps.base.config.env[0]}

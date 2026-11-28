@@ -235,6 +235,45 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 	return diags
 }
 
+// errorForAppEnvWithoutSource errors for inline app env entries with neither value nor
+// value_from: the Deploy API rejects them without naming the entry. An empty value, for
+// example from a variable that resolves to "", is dropped by omitempty and ends up here.
+// A ${resources...} value that resolves to "" only after Initialize is not caught here.
+func errorForAppEnvWithoutSource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey(), dyn.Key("config"), dyn.Key("env"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// A whole-entry reference (e.g. "${resources.apps.base.config.env[0]}") is resolved
+			// at deploy time; the referenced entry is checked where it is defined.
+			if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
+				return v, nil
+			}
+			if !isMissingOrEmptyString(v.Get("value")) || !isMissingOrEmptyString(v.Get("value_from")) {
+				return v, nil
+			}
+			name, _ := v.Get("name").AsString()
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("app environment variable %q must set value or value_from", name),
+				Detail:    "Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported",
+				Locations: v.Locations(),
+				Paths:     dyn.ToStructPaths(p),
+			})
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
 func isMissingOrEmptyString(v dyn.Value) bool {
 	switch v.Kind() {
@@ -263,6 +302,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	diags := errorForMissingFields(ctx, b)
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
+	diags = diags.Extend(errorForAppEnvWithoutSource(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

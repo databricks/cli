@@ -1,0 +1,87 @@
+
+=== Empty variable value is rejected by validate
+
+>>> musterr [CLI] bundle validate
+Error: app environment variable "WAREHOUSE_ID" must set value or value_from
+  at resources.apps.myapp.config.env[2]
+  in databricks.yml:26:13
+
+Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+=== Overriding the variable passes validate
+
+>>> [CLI] bundle validate --var warehouse_id=abc
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+=== Deploy with the override
+
+>>> [CLI] bundle deploy --var warehouse_id=abc
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.base
+Created apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Run with the empty variable fails before calling the Deploy API
+
+>>> musterr [CLI] bundle run myapp
+Error: app environment variable "WAREHOUSE_ID" must set value or value_from
+  at resources.apps.myapp.config.env[2]
+  in databricks.yml:26:13
+
+Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported
+
+
+=== Run with the override sends all env entries; it is the only deployment request
+
+>>> [CLI] bundle run myapp --var warehouse_id=abc
+✓ Getting the status of the app myapp
+✓ App is in UNAVAILABLE state
+✓ App compute is in STOPPED state
+✓ Starting the app myapp
+✓ App is starting...
+✓ App is started!
+✓ Deployment succeeded
+You can access the app at myapp-123.cloud.databricksapps.com
+
+>>> print_requests.py //api/2.0/apps/myapp/deployments
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "env_vars": [
+      {
+        "name": "STATIC_VALUE",
+        "value": "static"
+      },
+      {
+        "name": "SECRET_VALUE",
+        "value_from": "my_secret"
+      },
+      {
+        "name": "WAREHOUSE_ID",
+        "value": "abc"
+      },
+      {
+        "name": "MODE",
+        "value": "prod"
+      }
+    ],
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
+  }
+}
