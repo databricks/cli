@@ -17,8 +17,7 @@ const (
 	OriginFolder  Origin = "FOLDER"
 )
 
-// Record is what a skills command read from its source, for the command's telemetry event. WithRecord installs one on
-// a context, and Resolve then returns a source that fills it in.
+// Record is what a command read from its source, for its telemetry event. WithRecord installs one on a context.
 type Record struct {
 	Origin Origin
 
@@ -82,8 +81,7 @@ func (r *recordingSource) ReadFile(ctx context.Context, skill, file string) ([]b
 	return data, nil
 }
 
-// namesArePublished reports whether this source's skill names are published ones. A folder's names, and those of a ref
-// or base URL the user chose, are the user's own.
+// namesArePublished reports whether the skill names are published. A folder's, or a ref's or base URL's, are the user's.
 func (r *recordingSource) namesArePublished(ctx context.Context) bool {
 	return r.rec.Origin != OriginFolder && env.Get(ctx, "DATABRICKS_SKILLS_REF") == "" && env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") == ""
 }

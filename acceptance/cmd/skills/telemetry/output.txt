@@ -14,7 +14,7 @@ Databricks skills are not installed. To work with Databricks reliably, first run
 >>> print_skills
 {"calling_agent":null,"command":"READ","catalog_release_version":"0.0.1","source":"FOLDER","outcome":"SUCCEEDED"}
 
-=== a failed read sends no name
+=== a failed read sends the error category and the version
 
 >>> [CLI] skills read no-such-skill
 Error: unknown skill "no-such-skill": run "databricks skills list" to see the available skills
@@ -22,7 +22,7 @@ Error: unknown skill "no-such-skill": run "databricks skills list" to see the av
 >>> print_skills
 {"calling_agent":null,"command":"READ","catalog_release_version":"0.0.1","source":"FOLDER","outcome":"FAILED","error_category":"SKILL_NOT_FOUND"}
 
-=== with telemetry disabled, no event is recorded
+=== with telemetry disabled, nothing is uploaded
 
 >>> [CLI] skills read guide-skill
 

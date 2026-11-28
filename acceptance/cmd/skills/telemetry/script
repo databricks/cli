@@ -2,8 +2,7 @@
 export DATABRICKS_SKILLS_DIR=$TESTROOT/cmd/skills/release
 unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
 
-# print_skills prints the skills events uploaded since the last call, one per line, with the calling agent from the
-# execution context. print_requests.py clears the recorded uploads, so the next call sees only the next command's.
+# print_skills prints the skills events uploaded since its last call; print_requests.py clears them.
 print_skills() {
     if [ -f "$OUT_REQUESTS" ]; then
         print_requests.py --oneline //telemetry-ext | jq -c '.body.protoLogs[] | fromjson
@@ -15,20 +14,20 @@ print_skills() {
 
 title "skills list under a coding agent: the event and the calling agent are uploaded"
 export CLAUDECODE=1
-trace $CLI skills list > /dev/null
+trace $CLI skills list > LOG.list
 trace print_skills
 unset CLAUDECODE
 
 title "skills read from a folder: the name is not sent, the release version and the source are"
-trace $CLI skills read guide-skill > /dev/null
+trace $CLI skills read guide-skill > LOG.read
 trace print_skills
 
-title "a failed read sends no name"
+title "a failed read sends the error category and the version"
 musterr trace $CLI skills read no-such-skill
 trace print_skills
 
-title "with telemetry disabled, no event is recorded"
-DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI skills read guide-skill > /dev/null
+title "with telemetry disabled, nothing is uploaded"
+DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI skills read guide-skill > LOG.disabled
 trace print_skills
 
 title "output is the same with telemetry on and off"

@@ -7,8 +7,11 @@ import (
 	"io/fs"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	libskills "github.com/databricks/cli/libs/skills"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,6 +55,7 @@ func TestErrorCategory(t *testing.T) {
 		"unknown file":    {libskills.ErrUnknownFile, protos.SkillsErrorCategoryFileNotFound},
 		"unreachable":     {fmt.Errorf("%w: %w", libskills.ErrSourceUnreachable, errors.New("dial")), protos.SkillsErrorCategorySourceUnavailable},
 		"manifest syntax": {json.Unmarshal([]byte("{"), &v), protos.SkillsErrorCategoryCatalogInvalid},
+		"manifest large":  {libskills.ErrManifestTooLarge, protos.SkillsErrorCategoryCatalogInvalid},
 		"permission":      {fmt.Errorf("read: %w", fs.ErrPermission), protos.SkillsErrorCategoryPermissionDenied},
 		"filesystem":      {&fs.PathError{Op: "open", Path: "x", Err: errors.New("i/o")}, protos.SkillsErrorCategoryFilesystem},
 		"anything else":   {errors.New("something else"), protos.SkillsErrorCategoryUncategorized},
@@ -59,4 +63,14 @@ func TestErrorCategory(t *testing.T) {
 	for name, tc := range tests {
 		assert.Equal(t, tc.want, errorCategory(tc.err), name)
 	}
+}
+
+func TestRecordRunsDisabledLogsNothing(t *testing.T) {
+	group := &cobra.Command{Use: "skills"}
+	group.AddCommand(&cobra.Command{Use: "list", RunE: func(*cobra.Command, []string) error { return nil }})
+	recordRuns(group)
+	group.SetArgs([]string{"list"})
+	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "1")
+	assert.NoError(t, group.ExecuteContext(ctx))
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
 }

@@ -13,9 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// recordRuns makes each command of the group log one SkillsCommandEvent per run, and resolves the auth its upload
-// needs in the background, as the aitools commands do. It is best effort: it never fails, prompts or changes the
-// command's output or exit code, and it logs nothing when telemetry is disabled.
+// recordRuns logs one SkillsCommandEvent per run of each command in the group, and resolves the upload's auth in the
+// background, as aitools does. It is best effort: it never fails, prompts or changes output or exit codes.
 func recordRuns(group *cobra.Command) {
 	for _, c := range group.Commands() {
 		command := commandType(c.Name())
@@ -54,9 +53,6 @@ func commandType(name string) protos.SkillsCommand {
 // logEvent buffers the event of a run for the upload at exit, and sets the calling agent for its execution context.
 func logEvent(cmd *cobra.Command, command protos.SkillsCommand, rec *libskills.Record, err error) {
 	ctx := cmd.Context()
-	if telemetry.Disabled(ctx) {
-		return
-	}
 	event := skillsEvent(command, rec, err)
 	telemetry.Log(ctx, protos.DatabricksCliLog{SkillsCommandEvent: &event})
 	if agent := aitools.CallingAgentType(); agent != protos.AitoolsAgentTypeUnspecified {
@@ -64,8 +60,7 @@ func logEvent(cmd *cobra.Command, command protos.SkillsCommand, rec *libskills.R
 	}
 }
 
-// skillsEvent builds the event of one run. The skill name is sent only for a successful run: a failed read may have
-// been asked for a name the catalog does not list.
+// skillsEvent builds one run's event. A failed run sends no skill name: it may have asked for one the catalog lacks.
 func skillsEvent(command protos.SkillsCommand, rec *libskills.Record, err error) protos.SkillsCommandEvent {
 	event := protos.SkillsCommandEvent{
 		Command:               command,
@@ -96,8 +91,7 @@ func releaseVersion(v string) string {
 	return v
 }
 
-// errorCategory classifies a failed run by the kind of its error. The error's text is never sent, since it can carry a
-// name the user typed.
+// errorCategory classifies a failed run by its error kind. The error's text is never sent: it can carry a typed name.
 func errorCategory(err error) protos.SkillsErrorCategory {
 	_, syntax := errors.AsType[*json.SyntaxError](err)
 	_, typed := errors.AsType[*json.UnmarshalTypeError](err)
@@ -109,7 +103,7 @@ func errorCategory(err error) protos.SkillsErrorCategory {
 		return protos.SkillsErrorCategoryFileNotFound
 	case errors.Is(err, libskills.ErrNoSource), errors.Is(err, libskills.ErrSourceUnreachable):
 		return protos.SkillsErrorCategorySourceUnavailable
-	case errors.Is(err, libskills.ErrUnsafeManifestPath), syntax, typed:
+	case errors.Is(err, libskills.ErrUnsafeManifestPath), errors.Is(err, libskills.ErrManifestTooLarge), syntax, typed:
 		return protos.SkillsErrorCategoryCatalogInvalid
 	case errors.Is(err, fs.ErrPermission):
 		return protos.SkillsErrorCategoryPermissionDenied
