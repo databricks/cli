@@ -18,8 +18,12 @@ trace cat home/.codex/config.toml
 trace cat home/.gemini/settings.json
 trace cat home/.copilot/mcp-config.json
 
-title "remove takes the entries out of every agent config"
+title "remove takes the entries out of every agent config, and leaves the rest of each file"
 trace $CLI aitools mcp remove --names github-logfood,genie_one_mcp-logfood
+trace cat home/.claude.json
+trace cat home/.codex/config.toml
+trace cat home/.gemini/settings.json
+trace cat home/.copilot/mcp-config.json
 
 title "no agent CLI ran"
 trace assert_not_exists.py agent-calls.log

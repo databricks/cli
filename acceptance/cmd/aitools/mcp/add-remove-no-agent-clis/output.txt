@@ -209,11 +209,22 @@ DATABRICKS_CONFIG_FILE = "[TEST_TMP_DIR]/.databrickscfg"
   }
 }
 
-=== remove takes the entries out of every agent config
+=== remove takes the entries out of every agent config, and leaves the rest of each file
 
 >>> [CLI] aitools mcp remove --names github-logfood,genie_one_mcp-logfood
 Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
 Removed github-logfood  system.ai.github  profile logfood  (Claude Code, Codex CLI, GitHub Copilot, Gemini CLI)
+
+>>> cat home/.claude.json
+{}
+
+>>> cat home/.codex/config.toml
+
+>>> cat home/.gemini/settings.json
+{}
+
+>>> cat home/.copilot/mcp-config.json
+{}
 
 === no agent CLI ran
 
