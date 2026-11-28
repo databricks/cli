@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 )
 
@@ -41,8 +42,14 @@ func validateNumber(v any) error {
 
 func validateInteger(v any) error {
 	rv := reflect.ValueOf(v)
-	if rv.CanInt() || rv.CanUint() || (rv.CanFloat() && isIntegerValue(rv.Float())) {
+	if rv.CanInt() || rv.CanUint() {
 		return nil
+	}
+	if rv.CanFloat() {
+		f := rv.Float()
+		if f == math.Trunc(f) && !math.IsInf(f, 0) {
+			return nil
+		}
 	}
 	return fmt.Errorf("expected type integer, but value is %#v", v)
 }
@@ -62,18 +69,21 @@ func numberValue(v any) (float64, bool) {
 }
 
 // valuesEqual compares two values for const and enum checks. Numbers compare by
-// value, so a const of 3 read from the schema (float64) matches 3 from a prompt (int64).
+// value, so a const of 3 read from the schema (float64) matches 3 from a prompt
+// (int64). Integers compare exactly: float64 cannot tell 2^53 from 2^53+1.
 func valuesEqual(a, b any) bool {
-	ra, rb := reflect.ValueOf(a), reflect.ValueOf(b)
-	if ra.CanInt() && rb.CanInt() {
-		return ra.Int() == rb.Int()
+	ia, errA := toInteger(a)
+	ib, errB := toInteger(b)
+	if errA == nil && errB == nil {
+		return ia == ib
 	}
 	fa, okA := numberValue(a)
 	fb, okB := numberValue(b)
 	if okA && okB {
 		return fa == fb
 	}
-	return a == b
+	// DeepEqual, unlike ==, does not panic on array and object values.
+	return reflect.DeepEqual(a, b)
 }
 
 var validateTypeFuncs map[Type]validateTypeFunc = map[Type]validateTypeFunc{

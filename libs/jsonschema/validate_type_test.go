@@ -73,6 +73,9 @@ func TestValidatorInt(t *testing.T) {
 	err = validateInteger(float64(1))
 	assert.NoError(t, err)
 
+	err = validateInteger(float64(1e20))
+	assert.NoError(t, err)
+
 	err = validateInteger(float64(1.5))
 	assert.EqualError(t, err, "expected type integer, but value is 1.5")
 
@@ -144,7 +147,11 @@ func TestValuesEqual(t *testing.T) {
 	assert.True(t, valuesEqual("abc", "abc"))
 	assert.True(t, valuesEqual(nil, nil))
 
+	assert.True(t, valuesEqual([]any{"a"}, []any{"a"}))
+
 	assert.False(t, valuesEqual(int64(1<<62+1), int64(1<<62)))
+	assert.False(t, valuesEqual(float64(1<<53), int64(1<<53+1)))
+	assert.False(t, valuesEqual([]any{"a"}, []any{"b"}))
 	assert.False(t, valuesEqual(float64(3.5), int64(3)))
 	assert.False(t, valuesEqual("3", int64(3)))
 	assert.False(t, valuesEqual(true, int64(1)))
