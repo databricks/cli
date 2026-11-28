@@ -69,24 +69,31 @@ func TestServerHookSendsItsRequestBeforeTheMatchingRequestIsAnswered(t *testing.
 	assert.Equal(t, []string{"GET a", "GET b", "POST x as " + hookTestToken, "GET c"}, events)
 }
 
-func TestServerHookRunsOnceWhenItsRequestMatchesItsOwnPattern(t *testing.T) {
-	calls := 0
-	server := testserver.New(t)
-	server.Handle("POST", "/things", func(req testserver.Request) any {
-		calls++
-		return map[string]string{"status": "created"}
-	})
+// A hook whose request matches its own pattern runs as many times as it was given, each run
+// inside the request of the one before, and then stops.
+func TestServerHookRunsItsTimesWhenItsRequestMatchesItsOwnPattern(t *testing.T) {
+	for _, times := range []int{1, 2} {
+		calls := 0
+		server := testserver.New(t)
+		server.Handle("POST", "/things", func(req testserver.Request) any {
+			calls++
+			return map[string]string{"status": "created"}
+		})
 
-	status, _ := sendTestRequest(t, server, "POST", "/__testserver/hook", map[string]any{
-		"pattern": "POST /things",
-		"times":   1,
-		"method":  "POST",
-		"path":    "/things",
-	})
-	require.Equal(t, 200, status)
+		status, _ := sendTestRequest(t, server, "POST", "/__testserver/hook", map[string]any{
+			"pattern": "POST /things",
+			"times":   times,
+			"method":  "POST",
+			"path":    "/things",
+		})
+		require.Equal(t, 200, status)
 
-	sendTestRequest(t, server, "POST", "/things", nil)
-	assert.Equal(t, 2, calls)
+		sendTestRequest(t, server, "POST", "/things", nil)
+		assert.Equal(t, 1+times, calls)
+
+		sendTestRequest(t, server, "POST", "/things", nil)
+		assert.Equal(t, 2+times, calls)
+	}
 }
 
 func TestServerHookRejectsARuleWithoutARequest(t *testing.T) {

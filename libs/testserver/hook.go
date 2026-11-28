@@ -72,8 +72,9 @@ func (hr *hookRules) check(method, path, token string) *hookRule {
 type clockOffsetKey struct{}
 
 // sendHookRequest handles the hook's request as if a client had sent it with the given token: it
-// is recorded and subject to fault rules like any other request. The hook's own rule was counted
-// before, so a hook whose request matches its own pattern does not start itself again.
+// is recorded and subject to fault and hook rules like any other request. A hook whose request
+// matches its own pattern therefore runs again inside that request while it has times left. Its
+// counters were advanced before the request was sent, so it stops when they are used up.
 func (s *Server) sendHookRequest(ctx context.Context, token string, hook *hookRule) {
 	ctx = context.WithValue(ctx, clockOffsetKey{}, hook.clockOffsetMs)
 	req := httptest.NewRequestWithContext(ctx, hook.method, hook.path, strings.NewReader(hook.body))
