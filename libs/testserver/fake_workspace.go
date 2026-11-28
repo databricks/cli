@@ -149,6 +149,18 @@ func nowMilli() int64 {
 	return lastNowMilli
 }
 
+// nowMilli is nowMilli for a handler that stamps a resource with the time of this request. A
+// request sent by a hook can shift it, so that a test gets e.g. a resource that was created 30
+// seconds ago without waiting for 30 seconds. Handlers that call the package-level nowMilli
+// ignore the shift.
+func (r Request) nowMilli() int64 {
+	if r.Context == nil {
+		return nowMilli()
+	}
+	offset, _ := r.Context.Value(clockOffsetKey{}).(int64)
+	return nowMilli() + offset
+}
+
 // nextTimestamp returns a strictly-increasing RFC3339 timestamp with nanosecond
 // precision. The sub-second component keeps distinct events ordered even within the
 // same wall-clock second, which the dashboard publish lifecycle relies on to compare

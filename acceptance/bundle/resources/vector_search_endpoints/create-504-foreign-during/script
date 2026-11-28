@@ -10,19 +10,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "The bundle's create request fails with a 504 that the backend did not apply; deploy waits 10 seconds before it repeats the request"
+# The testserver sends the outside create itself: when deploy's lookup arrives, after it finds no
+# endpoint and before the lookup is answered. So the endpoint appears between the failed request
+# and its repeat, whatever the speed of the machine.
+title "The bundle's create request fails with a 504 that the backend did not apply. Before deploy repeats it, an endpoint with the name the bundle uses is created outside the bundle: deploy takes it"
 fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
-DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=10000 $CLI bundle deploy > LOG.deploy 2>&1 &
-deploy_pid=$!
-# Wait until deploy has looked for the endpoint and started the pause before it repeats the request.
-RETRY_MAX_ATTEMPTS=150 RETRY_INTERVAL_MS=200 retry --until "retrying after" cat LOG.deploy > /dev/null
+hook.py "GET /api/2.0/vector-search/endpoints/$ENDPOINT" 0 1 "POST /api/2.0/vector-search/endpoints" "{\"name\": \"$ENDPOINT\", \"endpoint_type\": \"STANDARD\"}"
+trace $CLI bundle deploy
 
-title "Meanwhile, outside the bundle, an endpoint with the name the bundle uses is created"
-trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STANDARD --no-wait | jq '{name, endpoint_type}'
-
-title "Deploy repeats its request, is told the endpoint exists, and takes it"
-errcode wait "$deploy_pid"
-cat LOG.deploy
+# The bundle's failed create, its lookup that finds nothing, the outside create, the bundle's
+# repeat that is told the endpoint exists, and the lookups that find the endpoint.
 trace print_requests.py --get --summary //vector-search/endpoints
 trace $CLI bundle plan
 

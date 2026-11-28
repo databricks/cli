@@ -30,7 +30,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
-		CreationTimestamp:       nowMilli(),
+		CreationTimestamp:       req.nowMilli(),
 		EndpointType:            createReq.EndpointType,
 		Id:                      nextUUID(),
 		LastUpdatedUser:         s.CurrentUser().UserName,
