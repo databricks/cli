@@ -1,0 +1,23 @@
+bundle:
+  name: sensitive-variables
+
+variables:
+  api_header:
+    description: Sensitive value supplied with BUNDLE_VAR_api_header, containing an escaped reference.
+    sensitive: true
+
+resources:
+  catalogs:
+    source_catalog:
+      name: dummy-catalog-name
+  secrets:
+    ref_secret:
+      name: ref_secret
+      catalog_name: main
+      schema_name: default
+      value: ${resources.catalogs.source_catalog.name}
+    escaped_secret:
+      name: escaped_secret
+      catalog_name: main
+      schema_name: default
+      value: ${var.api_header}
