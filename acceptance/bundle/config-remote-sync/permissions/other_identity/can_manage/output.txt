@@ -10,7 +10,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The current identity is granted CAN_MANAGE on the job, outside the bundle
 
 CAN_MANAGE [USERNAME]
-CAN_VIEW users
 IS_OWNER [TEST_SP_APPLICATION_ID]
 
 === The current identity runs config-remote-sync
@@ -26,14 +25,12 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -9,2 +9,7 @@
+@@ -9,2 +9,5 @@
      my_job:
        name: test-job-[UNIQUE_NAME]
 +      permissions:
 +        - level: IS_OWNER
 +          service_principal_name: [TEST_SP_APPLICATION_ID]
-+        - group_name: users
-+          level: CAN_VIEW
 
 === The service principal deploys the synced config
 
@@ -45,7 +42,6 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 === The job's ACL after the deploy
 
-CAN_VIEW users
 IS_OWNER [TEST_SP_APPLICATION_ID]
 
 >>> as-test-sp [CLI] bundle destroy --auto-approve

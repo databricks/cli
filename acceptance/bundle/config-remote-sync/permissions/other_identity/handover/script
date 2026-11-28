@@ -1,7 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace as-test-sp $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve
 }
 trap cleanup EXIT
 
@@ -10,11 +10,10 @@ trace $CLI bundle deploy
 job_id=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
 add_repl "$job_id" MY_JOB_ID
 
-title "The service principal and a group are granted access to the job, outside the bundle\n"
+title "The service principal is granted CAN_MANAGE on the job, outside the bundle\n"
 $CLI permissions set jobs $job_id --json '{"access_control_list":[
   {"permission_level":"IS_OWNER","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"},
-  {"permission_level":"CAN_MANAGE","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"},
-  {"permission_level":"CAN_VIEW","group_name":"users"}
+  {"permission_level":"CAN_MANAGE","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"}
 ]}' > /dev/null
 print_acl jobs $job_id
 

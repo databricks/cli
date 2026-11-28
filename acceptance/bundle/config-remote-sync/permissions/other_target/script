@@ -1,8 +1,8 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve -t staging
-    trace $CLI bundle destroy --auto-approve -t prod
+    trace errcode $CLI bundle destroy --auto-approve -t staging
+    trace errcode $CLI bundle destroy --auto-approve -t prod
 }
 trap cleanup EXIT
 

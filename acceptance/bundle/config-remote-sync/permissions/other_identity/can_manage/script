@@ -12,8 +12,7 @@ job_id=$(as-test-sp $CLI bundle summary -o json | jq -r '.resources.jobs.my_job.
 title "The current identity is granted CAN_MANAGE on the job, outside the bundle\n"
 $CLI permissions set jobs $job_id --json '{"access_control_list":[
   {"permission_level":"IS_OWNER","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"},
-  {"permission_level":"CAN_MANAGE","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"},
-  {"permission_level":"CAN_VIEW","group_name":"users"}
+  {"permission_level":"CAN_MANAGE","'"$CURRENT_USER_FIELD"'":"'"$CURRENT_USER_NAME"'"}
 ]}' > /dev/null
 print_acl jobs $job_id
 

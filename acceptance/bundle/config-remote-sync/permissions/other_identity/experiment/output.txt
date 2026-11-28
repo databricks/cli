@@ -11,7 +11,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 CAN_MANAGE [TEST_SP_APPLICATION_ID]
 CAN_MANAGE [USERNAME]
-CAN_READ users
 
 === The current identity runs config-remote-sync
 
@@ -26,14 +25,12 @@ Resource: resources.experiments.my_experiment
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -9,2 +9,7 @@
+@@ -9,2 +9,5 @@
      my_experiment:
        name: /Users/[TEST_SP_APPLICATION_ID]/test-experiment-[UNIQUE_NAME]
 +      permissions:
 +        - level: CAN_MANAGE
 +          service_principal_name: [TEST_SP_APPLICATION_ID]
-+        - group_name: users
-+          level: CAN_READ
 
 === The service principal deploys the synced config
 
@@ -46,7 +43,6 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 === The experiment's ACL after the deploy
 
 CAN_MANAGE [TEST_SP_APPLICATION_ID]
-CAN_READ users
 
 >>> as-test-sp [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

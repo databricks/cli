@@ -7,7 +7,8 @@ fi
 
 # print_acl <object type> <id> prints the direct grants of an object, one "<level> <principal>" per line.
 print_acl() {
-    $CLI permissions get "$1" "$2" | jq -r '[.access_control_list[] | (.user_name // .service_principal_name // .group_name) as $who | .all_permissions[] | select(.inherited | not) | "\(.permission_level) \($who)"] | sort | .[]'
+    # Sorted after the replacements: the principals' names differ between environments.
+    $CLI permissions get "$1" "$2" | jq -r '(.access_control_list // [])[] | (.user_name // .service_principal_name // .group_name) as $who | .all_permissions[] | select(.inherited | not) | "\(.permission_level) \($who)"' | sort_lines.py --repl
 }
 
 # sync_and_show_diff [flags] saves the changes config-remote-sync detects and prints what it wrote.

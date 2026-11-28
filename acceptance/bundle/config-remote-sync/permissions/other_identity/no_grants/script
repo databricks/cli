@@ -10,10 +10,13 @@ trace as-test-sp $CLI bundle deploy
 job_id=$(as-test-sp $CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
 
 title "Nobody changes the job's ACL: the deployer is its owner\n"
-# The backend makes the creator of a job its owner. The testserver does not record that, so set it.
-$CLI permissions set jobs $job_id --json '{"access_control_list":[
-  {"permission_level":"IS_OWNER","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"}
-]}' > /dev/null
+# The backend makes the creator of a job its owner. The testserver does not record that, so set
+# it there; on a real workspace the ACL is left as the deploy made it.
+if [ -z "$(print_acl jobs $job_id)" ]; then
+    $CLI permissions set jobs $job_id --json '{"access_control_list":[
+      {"permission_level":"IS_OWNER","service_principal_name":"'"$TEST_SP_APPLICATION_ID"'"}
+    ]}' > /dev/null
+fi
 print_acl jobs $job_id
 
 title "The current identity runs config-remote-sync"
