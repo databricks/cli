@@ -378,3 +378,15 @@ func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.gone")
 	assert.NotContains(t, p.Plan, "resources.jobs.lib")
 }
+
+// A referrer planned as unchanged (e.g. the reference is in a field whose local changes
+// are ignored) is reported too: applying the plan would delete the target it still uses.
+func TestCheckReferencesToDeleted_ReportsUnchangedReferrer(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.experiments.exp"] = &deployplan.PlanEntry{
+		Action:    deployplan.Skip,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.gone", Label: "${resources.jobs.gone.id}"}},
+	}
+	assert.ErrorContains(t, p.CheckReferencesToDeleted(), "cannot plan resources.experiments.exp: ${resources.jobs.gone.id} refers to resources.jobs.gone")
+}
