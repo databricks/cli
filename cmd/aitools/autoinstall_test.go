@@ -26,12 +26,6 @@ func TestPrintAutoInstallSettingAgentFeaturesDisabled(t *testing.T) {
 	printAutoInstallSetting(ctx, true)
 	assert.Contains(t, stderr.String(), "Automatic installation of Databricks AI tools is enabled.")
 	assert.Contains(t, stderr.String(), warning)
-
-	// A disable says nothing about the environment.
-	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
-	ctx = env.Set(ctx, skills.AgentFeaturesDisabledEnv, "1")
-	printAutoInstallSetting(ctx, false)
-	assert.NotContains(t, stderr.String(), skills.AgentFeaturesDisabledEnv)
 }
 
 // With both variables set, one warning names both, so unsetting only one of

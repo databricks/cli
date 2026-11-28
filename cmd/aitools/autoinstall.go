@@ -75,8 +75,7 @@ func printAutoInstallSetting(ctx context.Context, enabled bool) {
 		return
 	}
 	cmdio.LogString(ctx, "Automatic installation of Databricks AI tools is enabled.")
-	// Both variables can be set. They share one warning, so unsetting only one
-	// is not mistaken for a fix.
+	// One warning covers both variables, so unsetting only one is not taken for a fix.
 	var overrides []string
 	if autoinstall.EnvOptedOut(ctx) {
 		overrides = append(overrides, autoinstall.EnvVar)

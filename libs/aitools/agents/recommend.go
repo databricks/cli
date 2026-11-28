@@ -17,8 +17,7 @@ const skillsTipText = "Tip: coding agents detected without Databricks skills. Ru
 
 // PrintSkillsTip prints the non-interactive `apps init` tip to install skills
 // and records that it was shown. Callers decide whether the tooling is missing
-// (see HasDatabricksToolingInstalled). It prints nothing when
-// DATABRICKS_AGENT_FEATURES_DISABLED is set.
+// (see HasDatabricksToolingInstalled).
 func PrintSkillsTip(ctx context.Context) {
 	if skills.AgentFeaturesDisabled(ctx) {
 		return
@@ -35,8 +34,7 @@ func PrintSkillsTip(ctx context.Context) {
 // cannot import the installer; callers pass installer.InstalledPluginAgents,
 // which counts a plugin recorded in the CLI install state with or without a
 // known version. No telemetry is logged: `databricks version` never resolves
-// auth, so the event would not be uploaded (see logHintShown). It prints
-// nothing when DATABRICKS_AGENT_FEATURES_DISABLED is set.
+// auth, so the event would not be uploaded (see logHintShown).
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
 	if skills.AgentFeaturesDisabled(ctx) {
 		return

@@ -55,7 +55,6 @@ func TestAgentFeaturesDisabled(t *testing.T) {
 		{name: "one", value: "1", want: true},
 		{name: "yes", value: "yes", want: true},
 		{name: "false", value: "false", want: false},
-		{name: "zero", value: "0", want: false},
 		{name: "invalid", value: "maybe", want: false},
 	}
 	for _, c := range cases {

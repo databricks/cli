@@ -592,9 +592,7 @@ func TestAutoInstallSkipsTheGateLookup(t *testing.T) {
 	assert.Equal(t, autoinstall.State{Consented: true, ID: "treatment-machine"}, state, "the version is not settled")
 }
 
-// DATABRICKS_AGENT_FEATURES_DISABLED turns auto-install off: the run neither
-// looks the gate up nor installs, though the same coding agent's call installs
-// without it.
+// DATABRICKS_AGENT_FEATURES_DISABLED turns auto-install off: no gate lookup, no install.
 func TestAutoInstallOffWithAgentFeaturesDisabled(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

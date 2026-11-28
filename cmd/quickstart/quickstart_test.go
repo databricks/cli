@@ -86,6 +86,10 @@ func TestQuickstartAgentFeaturesDisabledDropsAitoolsBlock(t *testing.T) {
 		} else {
 			assert.NotContains(t, out.String(), "aitools install")
 			assert.NotContains(t, out.String(), "databricks-dabs")
+			// The shared guidance and the plain blocks stay, so the off arm keeps its general advice.
+			assert.Contains(t, out.String(), "look for a matching command")
+			assert.Contains(t, out.String(), "scaffolder:")
+			assert.Contains(t, out.String(), "## When you get stuck")
 		}
 	}
 }

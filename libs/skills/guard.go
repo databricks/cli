@@ -43,8 +43,7 @@ func AgentFeaturesDisabled(ctx context.Context) bool {
 
 // Enabled reports whether the skills feature is on. It is the gate for the
 // whole feature: unless DATABRICKS_SKILLS_PREVIEW is set to a true value, the
-// skills command group is not registered. It is never on while
-// DATABRICKS_AGENT_FEATURES_DISABLED is set.
+// skills command group is not registered.
 func Enabled(ctx context.Context) bool {
 	return !AgentFeaturesDisabled(ctx) && envTrue(ctx, previewEnv)
 }

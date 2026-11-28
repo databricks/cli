@@ -1,8 +1,7 @@
 export DATABRICKS_SKILLS_DIR="$TESTDIR/../../../cmd/skills/release"
 
-# DATABRICKS_AGENT_FEATURES_DISABLED is set, with the preview and the hints on
-# and a coding agent calling: the skills group is not registered, so it is an
-# unknown command.
+# With DATABRICKS_AGENT_FEATURES_DISABLED set and a coding agent calling, the
+# skills group is not registered, so it is an unknown command.
 musterr trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI skills list
 
 # Help shows no skills footer, on the root or on a group the fixture skill covers.
@@ -13,7 +12,7 @@ trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contain
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI --help | contains.py "databricks skills" > LOG.help-unset
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > LOG.fs-help-unset
 
-# The agent text drops its aitools block too, so it names no aitools install and keeps the shared text.
-trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI quickstart | contains.py "# Databricks Quickstart" "!aitools install" "!install the matching skill" "!databricks skills" > LOG.quickstart
+# The agent text drops its aitools block too, so it names no aitools install. It keeps the shared text and the plain blocks.
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI quickstart | contains.py "# Databricks Quickstart" "!aitools install" "!install the matching skill" "!databricks skills" "look for a matching command" "## When you get stuck" > LOG.quickstart
 # With the variable unset and the skills preview off, the agent text names the aitools install, so the check above can fail.
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED -u DATABRICKS_SKILLS_PREVIEW $CLI quickstart | contains.py "databricks aitools install" > LOG.quickstart-unset
