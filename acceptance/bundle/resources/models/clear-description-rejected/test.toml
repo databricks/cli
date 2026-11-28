@@ -1,0 +1,9 @@
+Cloud = false
+
+# The finding is direct-engine-specific: direct drops an emptied description (omitempty) from the
+# MLflow UpdateModel request, which the registry rejects.
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
