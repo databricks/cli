@@ -104,9 +104,10 @@ func otherFiles(files []string) []string {
 }
 
 // writeReadText writes SKILL.md, with a trailing newline added if it is missing,
-// then the other files with the command that reads each one. The commands are
-// quoted for the shell of goos. A name or file that no quoting keeps literal
-// is listed without its command. Nothing else goes to stdout.
+// then the other files with the command that reads each one. The name is a
+// skill name the catalog lists, so it is printed as it is. The file is quoted
+// for the shell of goos. A file that no quoting keeps literal is listed without
+// its command. Nothing else goes to stdout.
 func writeReadText(w io.Writer, goos, name string, content []byte, files []string) error {
 	var b strings.Builder
 	b.Write(content)
@@ -115,19 +116,18 @@ func writeReadText(w io.Writer, goos, name string, content []byte, files []strin
 	}
 	if len(files) > 0 {
 		b.WriteString("\nOther files in this skill, each read with its command:\n")
-		quotedName, nameOK := shellquote.Arg(goos, name)
 		for _, f := range files {
 			quotedFile, fileOK := shellquote.Arg(goos, f)
-			if !nameOK || !fileOK {
+			if !fileOK {
 				fmt.Fprintf(&b, "  %s\n", f)
 				continue
 			}
-			// A leading "-" would make Cobra read the name or file as a flag, so "--" ends the flags first.
+			// A leading "-" would make Cobra read the file as a flag, so "--" ends the flags first.
 			endOfFlags := ""
-			if strings.HasPrefix(name, "-") || strings.HasPrefix(f, "-") {
+			if strings.HasPrefix(f, "-") {
 				endOfFlags = "-- "
 			}
-			fmt.Fprintf(&b, "  databricks skills read-file %s%s %s\n", endOfFlags, quotedName, quotedFile)
+			fmt.Fprintf(&b, "  databricks skills read-file %s%s %s\n", endOfFlags, name, quotedFile)
 		}
 	}
 	_, err := io.WriteString(w, b.String())

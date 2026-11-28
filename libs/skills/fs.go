@@ -10,6 +10,8 @@ import (
 	"path"
 	"slices"
 	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 const manifestFile = "manifest.json"
@@ -48,6 +50,11 @@ func (s *fsSource) Catalog(ctx context.Context) (*Catalog, error) {
 		catalog.Rules = string(data)
 	}
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
+		if !IsSkillName(name) {
+			// The installer rejects this name, so the catalog leaves the skill out.
+			log.Debugf(ctx, "skills catalog: skipping skill %q: the name is not a valid skill name", name)
+			continue
+		}
 		meta := m.Skills[name]
 		catalog.Skills = append(catalog.Skills, Skill{
 			Name:         name,
@@ -95,14 +102,15 @@ func (s *fsSource) FileSize(ctx context.Context, skill, file string) (int64, err
 }
 
 // filePath returns the path of a skill file in the release. The manifest must
-// list the file for the skill.
+// list the file for the skill, and a name IsSkillName rejects is unknown, as it
+// is to Catalog.
 func (s *fsSource) filePath(ctx context.Context, skill, file string) (string, error) {
 	m, err := s.manifest(ctx)
 	if err != nil {
 		return "", err
 	}
 	meta, ok := m.Skills[skill]
-	if !ok {
+	if !ok || !IsSkillName(skill) {
 		return "", fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
 	}
 	if !slices.Contains(meta.Files, file) {

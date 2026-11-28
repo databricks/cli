@@ -3,7 +3,6 @@
 Pick the skill whose description matches the task.
 Read the skill before you act on it.
 
--foo: A skill whose name starts with a hyphen.
 demo-skill: A skill for tests.
 future-skill: A skill that needs a newer CLI.
 guide-skill: A skill with a supporting file.
@@ -13,7 +12,6 @@ To read a skill, run: databricks skills read <name>
 Pick the skill whose description matches the task.
 Read the skill before you act on it.
 
--foo: A skill whose name starts with a hyphen.
 demo-skill: A skill for tests.
 future-skill: A skill that needs a newer CLI.
 guide-skill: A skill with a supporting file.
@@ -25,17 +23,6 @@ To read a skill, run: databricks skills read <name>
   "source": "[TESTROOT]/cmd/skills/release",
   "release_version": "0.0.1",
   "skills": [
-    {
-      "name": "-foo",
-      "description": "A skill whose name starts with a hyphen.",
-      "version": "0.0.1",
-      "files": [
-        "SKILL.md"
-      ],
-      "commands": [
-        "jobs"
-      ]
-    },
     {
       "name": "demo-skill",
       "description": "A skill for tests.",
@@ -76,17 +63,6 @@ To read a skill, run: databricks skills read <name>
   "source": "[TESTROOT]/cmd/skills/release",
   "release_version": "0.0.1",
   "skills": [
-    {
-      "name": "-foo",
-      "description": "A skill whose name starts with a hyphen.",
-      "version": "0.0.1",
-      "files": [
-        "SKILL.md"
-      ],
-      "commands": [
-        "jobs"
-      ]
-    },
     {
       "name": "demo-skill",
       "description": "A skill for tests.",

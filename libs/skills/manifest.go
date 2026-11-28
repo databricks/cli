@@ -4,9 +4,32 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
+	"sync"
 )
+
+// MaxSkillNameLength is the Agent Skills limit on the length of a skill name.
+const MaxSkillNameLength = 64
+
+// skillNamePattern is the Agent Skills name format
+// (https://agentskills.io/specification#name-field): lowercase letters, digits
+// and single hyphens. Every name is a directory under the skills dir, next to
+// the installer's state file, so the format also keeps names from aliasing each
+// other on case-insensitive filesystems or through Windows trailing dots and
+// spaces.
+var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+})
+
+// IsSkillName reports whether name has the Agent Skills name format: at most
+// MaxSkillNameLength lowercase letters, digits and single hyphens. The installer
+// also rejects Windows device names such as "con"; that check is separate, in
+// the installer, and IsSkillName does not make it.
+func IsSkillName(name string) bool {
+	return len(name) <= MaxSkillNameLength && skillNamePattern().MatchString(name)
+}
 
 const (
 	// StableRepoDir is the release directory of stable skills (the repo_dir default).

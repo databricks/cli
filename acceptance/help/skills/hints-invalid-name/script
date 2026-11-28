@@ -1,0 +1,7 @@
+# The footer lists only the skills whose names the installer accepts. "-foo" and "a b" are left out, so no printed command starts with a flag or needs quotes.
+trace $CLI jobs --help | tail -n 4
+
+# The catalog leaves those names out, so reading them fails as an unknown skill.
+musterr trace $CLI skills read -- -foo
+musterr trace $CLI skills read-file -- -foo SKILL.md
+musterr trace $CLI skills read "a b"

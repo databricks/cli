@@ -1,0 +1,15 @@
+
+>>> [CLI] jobs --help
+Use "databricks jobs [command] --help" for more information about a command.
+
+Coding agents: read the skills for this command group before you use it.
+  databricks skills read alpha
+
+>>> [CLI] skills read -- -foo
+Error: unknown skill "-foo": run "databricks skills list" to see the available skills
+
+>>> [CLI] skills read-file -- -foo SKILL.md
+Error: unknown skill: "-foo"
+
+>>> [CLI] skills read a b
+Error: unknown skill "a b": run "databricks skills list" to see the available skills
