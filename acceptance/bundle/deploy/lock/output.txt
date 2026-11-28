@@ -1,0 +1,83 @@
+
+=== deploy takes the lock and deletes it when it releases it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.
+
+=== a second deploy takes the released lock
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+=== the lock is held by another deployer: deploy fails, names the holder and leaves the lock in place
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock --file other.lock --format AUTO
+
+>>> [CLI] bundle deploy
+Error: Failed to acquire deployment lock: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+Error: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+{"ID":"[UUID]","AcquisitionTime":"[TIMESTAMP]","IsForced":false,"User":"someone-else"}
+
+=== --force-lock replaces the other deployer's lock and releases it
+
+>>> [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.
+
+=== the deploy uploads a local state/deploy.lock over its own lock: releasing fails because the lock is not ours
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+Error: unlock called when lock is not held: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
+Another deployment may be in progress. Use --force-lock to override, but this may
+conflict with the other deployment if it is still active
+
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+{"ID":"[UUID]","AcquisitionTime":"[TIMESTAMP]","IsForced":false,"User":"someone-else"}
+
+=== the deploy deletes state/deploy.lock, its own lock, removed locally: releasing fails because the lock is gone
+
+>>> [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 1 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+Error: unlock called when lock is not held: no active lock on target dir: file does not exist: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.
+
+=== destroy deletes the root directory before it releases the lock, and the release accepts the missing lock
+
+>>> [CLI] bundle destroy --auto-approve --force-lock
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock", "return_export_info": "true"}}
+{"method": "POST", "path": "/api/2.0/workspace/delete", "body": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default", "recursive": true}}
+{"method": "POST", "path": "/api/2.0/workspace/delete", "body": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]"}}
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock", "return_export_info": "true"}}
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.

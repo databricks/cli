@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -355,4 +356,29 @@ func TestPendingDeleteWindowStartsWhenUnlockDeleteFails(t *testing.T) {
 	second.ReleasedLocksPath = released
 	require.ErrorContains(t, second.Lock(ctx, false), "deploy lock acquired by tester")
 	assert.Equal(t, 0, f.deletes)
+}
+
+func TestUnlockFailsWhenLockFileIsGone(t *testing.T) {
+	ctx := t.Context()
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	locker := newTestLocker(t, local)
+	require.NoError(t, locker.Lock(ctx, false))
+	require.NoError(t, local.Delete(ctx, LockFileName))
+
+	err = locker.Unlock(ctx)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestUnlockAllowsLockFileNotExist(t *testing.T) {
+	ctx := t.Context()
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	locker := newTestLocker(t, local)
+	require.NoError(t, locker.Lock(ctx, false))
+	assert.True(t, locker.Active)
+	require.NoError(t, local.Delete(ctx, LockFileName))
+
+	require.NoError(t, locker.Unlock(ctx, AllowLockFileNotExist))
+	assert.False(t, locker.Active)
 }

@@ -1,0 +1,42 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() {
+    title "destroy deletes the root directory before it releases the lock, and the release accepts the missing lock"
+    print_requests.py > LOG.requests
+    # --force-lock so that a run that failed while another lock was in place still cleans up.
+    trace $CLI bundle destroy --auto-approve --force-lock
+    # The root directory is deleted first; the release then only checks that the lock is gone.
+    # Other get-status calls differ between runs, so only the lock's and the deletes are shown.
+    print_requests.py --get --oneline //api/2.0/workspace/delete //api/2.0/workspace/get-status | grep -e deploy.lock -e workspace/delete
+    musterr trace MSYS_NO_PATHCONV=1 $CLI workspace get-status $LOCK
+}
+trap cleanup EXIT
+
+STATE=/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle-$UNIQUE_NAME/default/files/state
+LOCK=$STATE/deploy.lock
+
+title "deploy takes the lock and deletes it when it releases it"
+trace $CLI bundle deploy
+musterr trace MSYS_NO_PATHCONV=1 $CLI workspace get-status $LOCK
+
+title "a second deploy takes the released lock"
+trace $CLI bundle deploy
+
+title "the lock is held by another deployer: deploy fails, names the holder and leaves the lock in place"
+trace MSYS_NO_PATHCONV=1 $CLI workspace import $LOCK --file other.lock --format AUTO
+musterr trace $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace export $LOCK
+
+title "--force-lock replaces the other deployer's lock and releases it"
+trace $CLI bundle deploy --force-lock
+musterr trace MSYS_NO_PATHCONV=1 $CLI workspace get-status $LOCK
+
+title "the deploy uploads a local state/deploy.lock over its own lock: releasing fails because the lock is not ours"
+mkdir state
+cp other.lock state/deploy.lock
+musterr trace $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace export $LOCK
+
+title "the deploy deletes state/deploy.lock, its own lock, removed locally: releasing fails because the lock is gone"
+rm -r state
+musterr trace $CLI bundle deploy --force-lock
+musterr trace MSYS_NO_PATHCONV=1 $CLI workspace get-status $LOCK

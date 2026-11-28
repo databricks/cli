@@ -1,7 +1,6 @@
 package locker_test
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"io/fs"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/integration/internal/acc"
-	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,64 +128,4 @@ func TestLock(t *testing.T) {
 	err = lockers[indexOfAnInactiveLocker].Lock(ctx, false)
 	assert.NoError(t, err)
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
-}
-
-func setupLockerTest(t *testing.T) (context.Context, *lockpkg.Locker, filer.Filer) {
-	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
-
-	// create temp wsfs dir
-	tmpDir := acc.TemporaryWorkspaceDir(wt, "locker-")
-	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
-	require.NoError(t, err)
-
-	// create locker
-	locker, err := lockpkg.CreateLocker("redfoo@databricks.com", tmpDir, w)
-	require.NoError(t, err)
-
-	return ctx, locker, f
-}
-
-func TestLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
-	ctx, locker, f := setupLockerTest(t)
-	var err error
-
-	// Acquire lock on tmp directory
-	err = locker.Lock(ctx, false)
-	require.NoError(t, err)
-
-	// Assert lock file is created
-	_, err = f.Stat(ctx, "deploy.lock")
-	assert.NoError(t, err)
-
-	// Manually delete lock file
-	err = f.Delete(ctx, "deploy.lock")
-	assert.NoError(t, err)
-
-	// Assert error, because lock file does not exist
-	err = locker.Unlock(ctx)
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-}
-
-func TestLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
-	ctx, locker, f := setupLockerTest(t)
-	var err error
-
-	// Acquire lock on tmp directory
-	err = locker.Lock(ctx, false)
-	require.NoError(t, err)
-	assert.True(t, locker.Active)
-
-	// Assert lock file is created
-	_, err = f.Stat(ctx, "deploy.lock")
-	assert.NoError(t, err)
-
-	// Manually delete lock file
-	err = f.Delete(ctx, "deploy.lock")
-	assert.NoError(t, err)
-
-	// Assert error, because lock file does not exist
-	err = locker.Unlock(ctx, lockpkg.AllowLockFileNotExist)
-	assert.NoError(t, err)
-	assert.False(t, locker.Active)
 }
