@@ -38,12 +38,16 @@ title "two adds of one server name, one after the other: the second is refused"
 trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
 trace musterr $CLI aitools mcp add --profile dogfood --names system.ai.github --name github --agents claude-code
 trace $CLI aitools mcp remove --all
+trace cat concurrent.log
+rm concurrent.log
 
 title "the same two adds at the same time: the second finishes while the first waits for the claude CLI"
 export WHILE_CLAUDE_STARTS=second-add.sh
 trace $CLI aitools mcp add --profile logfood --names system.ai.github --name github --agents claude-code
 unset WHILE_CLAUDE_STARTS
 trace cat second-add.txt
+trace cat concurrent.log
+rm concurrent.log
 # Badness: both runs report github as installed. The agent has one github server, for logfood: the dogfood server
 # that the second run reported is gone. State holds the name twice, once per profile.
 trace jq -c '.mcpServers | map_values(.args)' home/.claude.json
@@ -56,3 +60,4 @@ trace $CLI aitools mcp remove --all
 # entry that is no longer in the agent config.
 trace jq -c '.mcpServers' home/.claude.json
 trace jq -c '[.servers[] | {name, profile, agents: (.agents | keys)}]' home/.databricks/aitools/mcp.json
+trace cat concurrent.log

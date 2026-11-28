@@ -1,6 +1,1 @@
-Ignore = ["home", "original.databrickscfg"]
-
-# The profile is re-pointed at the fake workspace under another spelling of its host, so that serve can reach it.
-[[Repls]]
-Old = 'http://localhost:\d+'
-New = '[OTHER_HOST_URL]'
+Ignore = ["home"]

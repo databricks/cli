@@ -14,7 +14,7 @@ Cursor may ask you to approve genie_one_mcp-logfood. Run: cursor-agent mcp enabl
 === With the install record, serve refuses a profile that now points at another host
 
 >>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
-Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but profile "logfood" now points at [OTHER_HOST_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
+Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but profile "logfood" now points at [CUSTOM_HOST]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
 
 Exit code: 2
 
@@ -31,7 +31,7 @@ Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
 === serve still refuses a profile that now points at another host
 
 >>> errcode [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
-Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but profile "logfood" now points at [OTHER_HOST_URL]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
+Error: MCP server genie_one_mcp-logfood was set up for [DATABRICKS_URL], but profile "logfood" now points at [CUSTOM_HOST]. Run: databricks aitools mcp remove --names genie_one_mcp-logfood and add it again
 
 Exit code: 2
 
