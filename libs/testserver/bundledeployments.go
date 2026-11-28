@@ -132,7 +132,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 		if _, ok := s.DmsDeployments[strconv.FormatInt(objectID, 10)]; ok {
 			return Response{
 				StatusCode: 409,
-				Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": "deployment " + strconv.FormatInt(objectID, 10) + " already exists"},
+				Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": "a deployment already exists under " + dep.InitialParentPath},
 			}
 		}
 	} else {

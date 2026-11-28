@@ -18,7 +18,7 @@
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
-  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: a deployment already exists under /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/state
   Updated jobs.foo
   Updated pipelines.bar
   Files: 3 uploaded, 0 deleted
@@ -95,7 +95,7 @@
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
-  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: a deployment already exists under /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/state
   Updated pipelines.bar
   Files: 6 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -117,7 +117,7 @@
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
-  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: a deployment already exists under /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/state
   Updated jobs.foo
   Files: 2 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -138,7 +138,7 @@
 
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
-  Warn: Could not record deployment history for this destroy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+  Warn: Could not record deployment history for this destroy: failed to create deployment: a deployment already exists under /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/state
   Destroy: 2 deleted
 
 === deployment_history: false

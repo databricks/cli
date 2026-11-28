@@ -31,7 +31,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Warn: Could not read deployment history: Fault injected by test.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/files...
-Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+Warn: Could not enable deployment history for this deploy: failed to create deployment: a deployment already exists under /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/state
 Updated jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
